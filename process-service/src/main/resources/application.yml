@@ -1,8 +1,13 @@
+
 server:
-  port: 8080
+  port: 9094
   error:
     include-message: always
     include-binding-errors: always
+    # 기본은 message만 내려주고, 필요할 때만 `?trace=true`로 stacktrace를 노출
+    include-stacktrace: on_param
+    include-exception: false
+
 spring:
   application:
     name: definition
@@ -15,11 +20,12 @@ uengine:
     basePath: ${UENGINE_BASEPATH:/Users/heon/Documents/workspace/uEngine6-bpm}
   # 감사 로그: 저장소 유연 구성 (jpa | file | composite | none)
   audit:
-    # sink: jpa      # Method 1: DB (default)
-    sink: file       # Method 2: File (경로는 file.basePath만 사용, definition과 별도)
-    file:
-      basePath: ${UENGINE_AUDIT_BASEPATH:/Users/heon/Documents/workspace/uEngine6-bpm/bpm-audit-log}
-      format: json
+    sink: none     # Method 0: None (기본)
+    # sink: jpa      # Method 1: DB 
+    # sink: file       # Method 2: File (경로는 file.basePath만 사용, definition과 별도)
+    # file:
+    #   basePath: ${UENGINE_AUDIT_BASEPATH:/Users/heon/Documents/workspace/uEngine6-bpm/bpm-audit-log}
+    #   format: json
     # sink: composite # Method 3: Composite
     # sinkNames: jpa,file
 
@@ -29,6 +35,9 @@ spring:
   datasource:
     url: jdbc:h2:mem:testdb
     driver-class-name: org.h2.Driver
+    # platform: h2
+    # # H2 전용: HIBERNATE_SEQUENCE 생성 (GenerationType.AUTO 시퀀스 오류 방지)
+    # schema: classpath:schema-h2.sql
   jpa:
     hibernate:
       ddl-auto: update
@@ -67,15 +76,6 @@ logging:
     org.hibernate.type: trace
     org.springframework.cloud: debug
 
-server:
-  port: 9094
-  error:
-    include-message: always
-    include-binding-errors: always
-    # 기본은 message만 내려주고, 필요할 때만 `?trace=true`로 stacktrace를 노출
-    include-stacktrace: on_param
-    include-exception: false
-
 filter:
   payload:
     enabled: true
@@ -104,6 +104,8 @@ keycloak:
 
 ---
 
+server:
+  port: 8080
 spring:
   profiles: docker
   cloud:

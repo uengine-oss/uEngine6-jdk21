@@ -24,8 +24,6 @@ public class AuditConfig {
         if (sinkType == null) sinkType = AuditProperties.SINK_NONE;
 
         switch (sinkType.toLowerCase()) {
-            case AuditProperties.SINK_NONE:
-                return new NoOpAuditSink();
             case AuditProperties.SINK_FILE:
                 return fileAuditSink;
             case AuditProperties.SINK_COMPOSITE:
