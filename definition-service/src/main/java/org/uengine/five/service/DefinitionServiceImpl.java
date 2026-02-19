@@ -477,7 +477,7 @@ public class DefinitionServiceImpl implements DefinitionService, DefinitionXMLSe
             if (status == null) status = HttpStatus.BAD_GATEWAY;
 
             String body = fe.contentUTF8();
-            String summarized = summarizeFeignBody(body);
+            String summarized = summarizeFeignBody(body, fe);
             throw new ResponseStatusException(status,
                     "[process-service:/definition-changes 실패] definitionPath=" + definitionPath + "\n" + summarized,
                     fe);
@@ -500,8 +500,14 @@ public class DefinitionServiceImpl implements DefinitionService, DefinitionXMLSe
         return new DefinitionResource(resource);
     }
 
-    private String summarizeFeignBody(String body) {
-        if (body == null || body.isBlank()) return "(empty body)";
+    private String summarizeFeignBody(String body, FeignException fe) {
+        if (body == null || body.isBlank()) {
+            String fallback = "(empty body) status=" + fe.status();
+            if (fe.getMessage() != null && !fe.getMessage().isBlank()) {
+                fallback += " message=" + fe.getMessage();
+            }
+            return fallback;
+        }
         // Spring Boot 기본 에러 JSON이면 message(또는 trace)만 뽑아낸다.
         try {
             com.fasterxml.jackson.databind.ObjectMapper om = new com.fasterxml.jackson.databind.ObjectMapper();
