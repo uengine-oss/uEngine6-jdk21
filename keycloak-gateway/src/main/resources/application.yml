@@ -10,7 +10,9 @@ keycloak-client:
   realm: uengine
 
 spring:
-  profiles: default
+  config:
+    activate:
+      on-profile: default
   cloud:
     gateway:
       routes:
@@ -50,7 +52,9 @@ spring:
 ---
 
 spring:
-  profiles: docker
+  config:
+    activate:
+      on-profile: docker
   cloud:
     gateway:
       routes:

@@ -131,38 +131,48 @@
     </dependencies>
   </dependencyManagement>
 
+  <profiles>
+    <!-- 보안검사시 사용: mvn -Plicense-report generate-resources -->
+    <profile>
+      <id>license-report</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>license-maven-plugin</artifactId>
+            <version>2.0.0</version>
+            <executions>
+              <execution>
+                <id>aggregate-download-licenses</id>
+                <phase>generate-resources</phase>
+                <goals>
+                  <goal>aggregate-download-licenses</goal>
+                </goals>
+                <configuration>
+                  <outputDirectory>${project.basedir}/target/licenses</outputDirectory>
+                </configuration>
+              </execution>
+              <execution>
+                <id>aggregate-add-third-party</id>
+                <phase>generate-resources</phase>
+                <goals>
+                  <goal>add-third-party</goal>
+                </goals>
+                <configuration>
+                  <aggregate>true</aggregate>
+                  <outputDirectory>${project.basedir}/target/generated-sources/license</outputDirectory>
+                  <thirdPartyFilename>THIRD-PARTY.txt</thirdPartyFilename>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
+
   <build>
     <plugins>
-      <!-- 보안검사/납품: 오픈소스 라이선스 목록 생성 -->
-      <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>license-maven-plugin</artifactId>
-        <version>2.0.0</version>
-        <executions>
-          <execution>
-            <id>aggregate-download-licenses</id>
-            <phase>generate-resources</phase>
-            <goals>
-              <goal>aggregate-download-licenses</goal>
-            </goals>
-            <configuration>
-              <outputDirectory>${project.basedir}/target/licenses</outputDirectory>
-            </configuration>
-          </execution>
-          <execution>
-            <id>aggregate-add-third-party</id>
-            <phase>generate-resources</phase>
-            <goals>
-              <goal>add-third-party</goal>
-            </goals>
-            <configuration>
-              <aggregate>true</aggregate>
-              <outputDirectory>${project.basedir}/target/generated-sources/license</outputDirectory>
-              <thirdPartyFilename>THIRD-PARTY.txt</thirdPartyFilename>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
     </plugins>
   </build>
 
