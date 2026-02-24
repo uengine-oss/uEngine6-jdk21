@@ -10,6 +10,8 @@
 
     <groupId>org.uengine</groupId>
     <artifactId>definition-service</artifactId>
+    <!-- WAR 배포 시 주석 해제 -->
+    <!-- <packaging>war</packaging> -->
     <packaging>jar</packaging>
     <modelVersion>4.0.0</modelVersion>
     <name>uEngine5-definition-service</name>
@@ -25,6 +27,13 @@
     </repositories>
 
     <dependencies>
+        <!-- WAR 배포 시: 외부 Tomcat 등에 배포할 때는 아래 의존성을 추가 (provided: WAS가 제공) -->  
+        <!-- <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-tomcat</artifactId>
+            <scope>provided</scope>
+        </dependency> -->
+       
 
         <!--<dependency>-->
             <!--<groupId>org.uengine</groupId>-->
