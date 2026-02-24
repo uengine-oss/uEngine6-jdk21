@@ -121,7 +121,7 @@ public class BusinessRuleStore {
 
             return new BusinessRuleFile(id, name, description, ruleJson);
         } catch (ResponseStatusException rse) {
-            if (rse.getStatus() == HttpStatus.NOT_FOUND) {
+            if (rse.getStatusCode().value() == HttpStatus.NOT_FOUND.value()) {
                 return null;
             }
             throw rse;

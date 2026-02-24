@@ -78,7 +78,7 @@ public class ScenarioLoader {
             List<Scenario> list = objectMapper.readValue(json, new TypeReference<List<Scenario>>() {});
             return list != null ? list : new ArrayList<>();
         } catch (ResponseStatusException rse) {
-            if (rse.getStatus() == HttpStatus.NOT_FOUND) {
+            if (rse.getStatusCode().value() == HttpStatus.NOT_FOUND.value()) {
                 return new ArrayList<>();
             }
             throw rse;
@@ -164,7 +164,7 @@ public class ScenarioLoader {
             String json = toJsonString(raw);
             return objectMapper.readValue(json, Scenario.class);
         } catch (ResponseStatusException rse) {
-            if (rse.getStatus() == HttpStatus.NOT_FOUND) {
+            if (rse.getStatusCode().value() == HttpStatus.NOT_FOUND.value()) {
                 throw new ResponseStatusException(HttpStatus.NOT_FOUND, "시나리오를 찾을 수 없습니다: " + path);
             }
             throw rse;

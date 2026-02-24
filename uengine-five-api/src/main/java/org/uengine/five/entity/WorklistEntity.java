@@ -2,7 +2,7 @@ package org.uengine.five.entity;
 
 //import org.metaworks.annotation.RestAssociation;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 
 import java.util.Date;
 
@@ -89,7 +89,7 @@ public class WorklistEntity {// implements WorkListDAO {
     int dispatchOption;
     String dispatchParam1;
     String prevUserName;
-    Number rootInstId;
+    Long rootInstId;
 
     @Temporal(TemporalType.DATE)
     Date readDate;
@@ -313,11 +313,11 @@ public class WorklistEntity {// implements WorkListDAO {
         this.prevUserName = prevUserName;
     }
 
-    public Number getRootInstId() {
+    public Long getRootInstId() {
         return rootInstId;
     }
 
-    public void setRootInstId(Number rootInstId) {
+    public void setRootInstId(Long rootInstId) {
         this.rootInstId = rootInstId;
     }
 

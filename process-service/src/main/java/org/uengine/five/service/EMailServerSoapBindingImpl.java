@@ -6,17 +6,17 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Properties;
 
-import javax.activation.DataHandler;
-import javax.activation.FileDataSource;
-import javax.mail.Authenticator;
-import javax.mail.PasswordAuthentication;
-import javax.mail.Session;
-import javax.mail.Transport;
-import javax.mail.internet.InternetAddress;
-import javax.mail.internet.MimeBodyPart;
-import javax.mail.internet.MimeMessage;
-import javax.mail.internet.MimeMultipart;
-import javax.mail.internet.MimeUtility;
+import jakarta.activation.DataHandler;
+import jakarta.activation.FileDataSource;
+import jakarta.mail.Authenticator;
+import jakarta.mail.PasswordAuthentication;
+import jakarta.mail.Session;
+import jakarta.mail.Transport;
+import jakarta.mail.internet.InternetAddress;
+import jakarta.mail.internet.MimeBodyPart;
+import jakarta.mail.internet.MimeMessage;
+import jakarta.mail.internet.MimeMultipart;
+import jakarta.mail.internet.MimeUtility;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -97,7 +97,7 @@ public class EMailServerSoapBindingImpl {
 
 			// set TO address
 			try {
-				mimemessage.setRecipients(javax.mail.Message.RecipientType.TO, mailto);
+				mimemessage.setRecipients(jakarta.mail.Message.RecipientType.TO, mailto);
 			} catch (Exception exception1) {
 				System.out.println("\tError in setting recipients ......\t" + exception1.getMessage());
 			}
@@ -134,7 +134,7 @@ public class EMailServerSoapBindingImpl {
 			// set CC MAIL and SEND the mail
 			// set CC MAIL
 			if (UEngineUtil.isNotEmpty(ccmailid))
-				mimemessage.setRecipients(javax.mail.Message.RecipientType.CC, ccmailid);
+				mimemessage.setRecipients(jakarta.mail.Message.RecipientType.CC, ccmailid);
 
 			Transport.send(mimemessage);
 			System.out.println("\tSent Successfully..........");

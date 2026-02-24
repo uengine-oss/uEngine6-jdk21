@@ -4,8 +4,9 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+// import org.springframework.boot.builder.SpringApplicationBuilder; // WAR
+// import org.springframework.boot.web.servlet.support.SpringBootServletInitializer; // WAR
 import org.springframework.cloud.openfeign.EnableFeignClients;
-import org.springframework.cloud.stream.annotation.EnableBinding;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
@@ -30,10 +31,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 
 @SpringBootApplication
-@EnableBinding(Streams.class)
 @EnableFeignClients
 @ComponentScan(basePackages = { "org.uengine.kernel.bpmn", "org.uengine.five" })
-
+// WAR 배포 시: 아래처럼 SpringBootServletInitializer 상속 후 configure() 오버라이드 (import: SpringApplicationBuilder, SpringBootServletInitializer)
+// public class ProcessServiceApplication extends SpringBootServletInitializer {
+//     @Override
+//     protected SpringApplicationBuilder configure(SpringApplicationBuilder builder) {
+//         return builder.sources(ProcessServiceApplication.class);
+//     }
 public class ProcessServiceApplication {
 
     public static ApplicationContext applicationContext;
@@ -109,8 +114,8 @@ public class ProcessServiceApplication {
     }
 
     @Bean
-    public ActivityQueue activityQueue() {
-        return new ActivityQueue();
+    public ActivityQueue activityQueue(org.springframework.cloud.stream.function.StreamBridge streamBridge) {
+        return new ActivityQueue(streamBridge);
     }
 
     @Bean

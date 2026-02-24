@@ -5,7 +5,8 @@ import org.springframework.hateoas.RepresentationModel;
 import org.uengine.modeling.resource.Version;
 import org.springframework.hateoas.server.core.Relation;
 
-import static org.springframework.hateoas.server.mvc.ControllerLinkBuilder.*;
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
 /**
  * Created by uengine on 2018. 1. 2..

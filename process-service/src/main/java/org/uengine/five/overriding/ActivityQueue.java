@@ -1,13 +1,11 @@
 package org.uengine.five.overriding;
 
-import org.springframework.messaging.MessageChannel;
+import org.springframework.cloud.stream.function.StreamBridge;
 import org.springframework.messaging.MessageHeaders;
 import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.util.MimeTypeUtils;
 import org.uengine.five.events.ActivityInfo;
 import org.uengine.five.events.ActivityQueued;
-import org.uengine.five.ProcessServiceApplication;
-import org.uengine.five.Streams;
 import org.uengine.kernel.IActivityEventQueue;
 
 /**
@@ -15,22 +13,22 @@ import org.uengine.kernel.IActivityEventQueue;
  */
 public class ActivityQueue implements IActivityEventQueue {
 
+    private final StreamBridge streamBridge;
+
+    public ActivityQueue(StreamBridge streamBridge) {
+        this.streamBridge = streamBridge;
+    }
 
     @Override
     public void queue(String instanceId, String tracingTag, int retryingCount, String[] additionalParameters) {
-        Streams streams = ProcessServiceApplication.getApplicationContext().getBean(Streams.class);
-
         ActivityQueued activityQueued = new ActivityQueued();
         activityQueued.setActivityInfo(new ActivityInfo());
         activityQueued.getActivityInfo().setInstanceId(instanceId);
         activityQueued.getActivityInfo().setTracingTag(tracingTag);
 
-
-        MessageChannel messageChannel = streams.outboundChannel();
-        messageChannel.send(MessageBuilder
+        streamBridge.send("bpm-out", MessageBuilder
                 .withPayload(activityQueued)
                 .setHeader(MessageHeaders.CONTENT_TYPE, MimeTypeUtils.APPLICATION_JSON)
                 .build());
-
     }
 }

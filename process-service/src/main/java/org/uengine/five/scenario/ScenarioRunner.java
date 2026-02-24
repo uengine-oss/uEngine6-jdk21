@@ -1,6 +1,7 @@
 package org.uengine.five.scenario;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 import org.uengine.five.dto.InstanceResource;
 import org.uengine.five.dto.Message;
@@ -46,6 +47,7 @@ public class ScenarioRunner {
     private static final int DEFAULT_MAX_ATTEMPTS = 30;
 
     @Autowired
+    @Lazy
     private InstanceServiceImpl instanceService;
 
     @Autowired

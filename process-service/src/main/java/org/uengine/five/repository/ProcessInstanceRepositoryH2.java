@@ -35,8 +35,8 @@ public interface ProcessInstanceRepositoryH2 extends ProcessInstanceRepository {
             "and (:initEp is null or pi.initEp like CONCAT('%',:initEp,'%'))" +
             "and (:currEp is null or pi.currEp like CONCAT('%',:currEp,'%'))" +
             "and (:prevCurrEp is null or pi.prevCurrEp like CONCAT('%',:prevCurrEp,'%'))" +
-            "and ((:rolePattern is null or (regexp_like(pi.currEp, :rolePattern) = true))" +
-            "or (:namePattern is null or (regexp_like(pi.currEp, :namePattern) = true)))" +
+            "and ((:rolePattern is null or (CAST(regexp_like(pi.currEp, :rolePattern) AS boolean) = true))" +
+            "or (:namePattern is null or (CAST(regexp_like(pi.currEp, :namePattern) AS boolean) = true)))" +
             "group by pi.instId, pi.startedDate " +
             "order by pi.startedDate desc")
     Page<ProcessInstanceEntity> findFilterICanSee(
@@ -57,14 +57,14 @@ public interface ProcessInstanceRepositoryH2 extends ProcessInstanceRepository {
 
     @Override
     @Query("SELECT pi FROM ProcessInstanceEntity pi " +
-            "WHERE regexp_like(pi.groups, :pattern) = true " +
+            "WHERE CAST(regexp_like(pi.groups, :pattern) AS boolean) = true " +
             "AND (:status is null or pi.status = :status) " +
             "ORDER BY pi.startedDate DESC")
     Page<ProcessInstanceEntity> findAllByGroupsRegex(@Param("pattern") String pattern,
             @Param("status") String status, Pageable pageable);
 
     @Override
-    @Query("select pi from ProcessInstanceEntity pi where (:name is null or pi.name like CONCAT('%',:name,'%')) and (:status is null or pi.status = :status) and (:startedDate is null or pi.startedDate >= :startedDate) and (:finishedDate is null or :finishedDate >= pi.finishedDate ) and (:subProcess is null or :subProcess = pi.subProcess ) order by pi.startedDate desc")
+    @Query("select pi from ProcessInstanceEntity pi where (:name is null or pi.name like CONCAT('%',:name,'%')) and (:status is null or pi.status = :status) and (:startedDate is null or pi.startedDate >= :startedDate) and (:finishedDate is null or :finishedDate >= pi.finishedDate ) and (:subProcess is null or :subProcess = '' or (pi.subProcess = true and (:subProcess = 'true' or :subProcess = '1')) or (pi.subProcess = false and (:subProcess = 'false' or :subProcess = '0'))) order by pi.startedDate desc")
     Page<ProcessInstanceEntity> findByName(@Param("name") String name, @Param("status") String status,
             @Param("startedDate") String startedDate, @Param("finishedDate") String finishedDate,
             @Param("subProcess") String subProcess, Pageable pageable);

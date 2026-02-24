@@ -1,6 +1,6 @@
 package org.uengine.five.entity;
 
-import javax.persistence.Embeddable;
+import jakarta.persistence.Embeddable;
 
 @Embeddable
 public class CatchEvent {

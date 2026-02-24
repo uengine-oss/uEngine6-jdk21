@@ -1,9 +1,9 @@
 package org.uengine.five.entity;
 
-import javax.persistence.EntityManager;
-import javax.persistence.PersistenceContext;
-import javax.persistence.PreRemove;
-import javax.transaction.Transactional;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
+import jakarta.persistence.PreRemove;
+import jakarta.transaction.Transactional;
 
 public class ServiceEndpointEntityListener {
 

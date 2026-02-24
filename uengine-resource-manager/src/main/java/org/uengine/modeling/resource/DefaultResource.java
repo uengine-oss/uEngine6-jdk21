@@ -3,7 +3,7 @@ package org.uengine.modeling.resource;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import javax.persistence.Id;
+import jakarta.persistence.Id;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;

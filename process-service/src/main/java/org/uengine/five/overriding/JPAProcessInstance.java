@@ -6,8 +6,8 @@ import java.util.Date;
 import java.util.Map;
 import java.util.UUID;
 
-import javax.annotation.PostConstruct;
-import javax.transaction.Transactional;
+import jakarta.annotation.PostConstruct;
+import jakarta.transaction.Transactional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
@@ -15,7 +15,7 @@ import org.springframework.messaging.MessageChannel;
 import org.springframework.messaging.MessageHeaders;
 import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.util.MimeTypeUtils;
-import org.uengine.five.Streams;
+import org.springframework.cloud.stream.function.StreamBridge;
 import org.uengine.five.entity.ProcessInstanceEntity;
 import org.uengine.five.framework.ProcessTransactionContext;
 import org.uengine.five.repository.ProcessInstanceRepository;
@@ -670,10 +670,8 @@ public class JPAProcessInstance extends DefaultProcessInstance implements Transa
     }
 
     public boolean sendBroadcast(String eventType, Object payload) throws Exception {
-        Streams processor = applicationContext.getBean(Streams.class);
-        MessageChannel outputChannel = processor.outboundChannel();
-
-        boolean sent = outputChannel.send(
+        StreamBridge streamBridge = applicationContext.getBean(StreamBridge.class);
+        return streamBridge.send("bpm-out",
                 MessageBuilder
                         .withPayload(payload)
                         .setHeader(
@@ -681,7 +679,6 @@ public class JPAProcessInstance extends DefaultProcessInstance implements Transa
                                 MimeTypeUtils.APPLICATION_JSON)
                         .setHeader("type", eventType)
                         .build());
-        return sent;
     }
 
     @Override

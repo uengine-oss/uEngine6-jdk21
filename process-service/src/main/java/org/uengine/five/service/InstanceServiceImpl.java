@@ -28,8 +28,8 @@ import java.util.Set;
 import java.util.Vector;
 import java.util.concurrent.ConcurrentHashMap;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.QueryParam;
+import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.web.bind.annotation.RequestParam;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
@@ -172,6 +172,64 @@ public class InstanceServiceImpl implements InstanceService {
     static ObjectMapper objectMapper = BpmnXMLParser.createTypedJsonObjectMapper();
     static ObjectMapper arrayObjectMapper = BpmnXMLParser.createTypedJsonArrayObjectMapper();
     static ObjectMapper plainObjectMapper = new ObjectMapper();
+
+    /**
+     * Map을 JSON으로 안전하게 직렬화 가능한 Map으로 변환.
+     * HTTP 응답에서 parameterValues의 key가 누락되지 않고 프론트와 동일하게 나오도록 보장.
+     */
+    @SuppressWarnings("unchecked")
+    private static Map<String, Object> toJsonFriendlyMap(Map<String, Object> map) {
+        if (map == null)
+            return new LinkedHashMap<>();
+        try {
+            String json = plainObjectMapper.writeValueAsString(map);
+            return plainObjectMapper.readValue(json, new TypeReference<LinkedHashMap<String, Object>>() {
+            });
+        } catch (Exception e) {
+            Map<String, Object> result = new LinkedHashMap<>();
+            for (Map.Entry<String, Object> entry : map.entrySet()) {
+                String key = entry.getKey();
+                Object value = entry.getValue();
+                if (value == null || value instanceof String || value instanceof Number || value instanceof Boolean) {
+                    result.put(key, value);
+                } else if (value instanceof Map) {
+                    result.put(key, toJsonFriendlyMap((Map<String, Object>) value));
+                } else if (value instanceof List) {
+                    result.put(key, toJsonFriendlyList((List<?>) value));
+                } else {
+                    try {
+                        result.put(key,
+                                plainObjectMapper.readValue(plainObjectMapper.writeValueAsString(value), Object.class));
+                    } catch (Exception ex) {
+                        result.put(key, value != null ? value.toString() : null);
+                    }
+                }
+            }
+            return result;
+        }
+    }
+
+    private static List<Object> toJsonFriendlyList(List<?> list) {
+        if (list == null)
+            return new ArrayList<>();
+        List<Object> result = new ArrayList<>();
+        for (Object item : list) {
+            if (item == null || item instanceof String || item instanceof Number || item instanceof Boolean) {
+                result.add(item);
+            } else if (item instanceof Map) {
+                result.add(toJsonFriendlyMap((Map<String, Object>) item));
+            } else if (item instanceof List) {
+                result.add(toJsonFriendlyList((List<?>) item));
+            } else {
+                try {
+                    result.add(plainObjectMapper.readValue(plainObjectMapper.writeValueAsString(item), Object.class));
+                } catch (Exception e) {
+                    result.add(item != null ? item.toString() : null);
+                }
+            }
+        }
+        return result;
+    }
 
     // ----------------- execution services -------------------- //
     @RequestMapping(value = "/instance", consumes = "application/json;charset=UTF-8", method = { RequestMethod.POST,
@@ -1145,8 +1203,8 @@ public class InstanceServiceImpl implements InstanceService {
     @RequestMapping(value = SERVICES_ROOT + "/**", method = { RequestMethod.GET,
             RequestMethod.POST }, produces = "application/json;charset=UTF-8")
     public Object serviceMessage(HttpServletRequest request,
-            @QueryParam("correlationValue") String correlationValue,
-            @QueryParam("correlationKey") String correlationKey) throws Exception {
+            @RequestParam(value = "correlationValue", required = false) String correlationValue,
+            @RequestParam(value = "correlationKey", required = false) String correlationKey) throws Exception {
 
         String path = (String) request.getAttribute(HandlerMapping.PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE);
 
@@ -1351,15 +1409,13 @@ public class InstanceServiceImpl implements InstanceService {
             }
         }
 
-        if (parameterValues.size() > 0) {
-            workItem.setParameterValues(parameterValues);
-        }
+        workItem.setParameterValues(toJsonFriendlyMap((Map<String, Object>) parameterValues));
 
         if (activity.getStatus(instance).equals(Activity.STATUS_COMPLETED)
                 && instance instanceof JPAProcessInstance) {
             Map<String, Object> payloadValues = getPayloadValues((JPAProcessInstance) instance, activity);
             if (payloadValues != null) {
-                workItem.setParameterValues(payloadValues);
+                workItem.setParameterValues(toJsonFriendlyMap(payloadValues));
             }
         }
 
@@ -2136,13 +2192,26 @@ public class InstanceServiceImpl implements InstanceService {
                         }
                     }
 
-                    if (parameterValues.size() > 0) {
-                        workItem.setParameterValues(parameterValues);
-                    }
+                    // HTTP 응답에서 parameterValues 키가 누락되지 않도록 JSON 직렬화 가능한 Map으로 변환 후 설정
+                    workItem.setParameterValues(toJsonFriendlyMap(parameterValues));
                     workItem.setActivity(activity);
                 }
-
                 return workItem;
+
+                // RepresentationModel 직렬화 시 parameterValues가 누락될 수 있어, Map으로 감싸서 응답 (직렬 호출과 동일하게 키 노출)
+                // activity는 전체 객체 직렬화 시 순환 참조로 StackOverflow 유발 → 요약(name, tracingTag)만 넣음
+                // Map<String, Object> responseMap = new LinkedHashMap<>();
+                // responseMap.put("parameterValues", toJsonFriendlyMap(workItem.getParameterValues() != null ? workItem.getParameterValues() : new LinkedHashMap<String, Object>()));
+                // responseMap.put("execScope", workItem.getExecScope());
+                // responseMap.put("worklist", workItem.getWorklist());
+                // Map<String, String> activitySummary = new LinkedHashMap<>();
+                // Activity act = workItem.getActivity();
+                // if (act != null) {
+                //     activitySummary.put("name", act.getName());
+                //     activitySummary.put("tracingTag", act.getTracingTag());
+                // }
+                // responseMap.put("activity", activitySummary.isEmpty() ? null : activitySummary);
+                // return responseMap;
             } catch (Exception e) {
                 e.printStackTrace();
                 throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,

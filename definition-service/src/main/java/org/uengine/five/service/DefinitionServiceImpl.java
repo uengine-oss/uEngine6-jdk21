@@ -15,9 +15,9 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 
-import javax.annotation.PostConstruct;
-import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.QueryParam;
+import jakarta.annotation.PostConstruct;
+import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.web.bind.annotation.RequestParam;
 
 import org.apache.commons.io.IOUtils;
 import feign.FeignException;
@@ -206,8 +206,8 @@ public class DefinitionServiceImpl implements DefinitionService, DefinitionXMLSe
     }
 
     @RequestMapping(value = "/version", method = RequestMethod.POST)
-    public CollectionModel<VersionResource> versionUp(Version version, @QueryParam("major") boolean major,
-            @QueryParam("makeProduction") boolean makeProduction) throws Exception {
+    public CollectionModel<VersionResource> versionUp(Version version, @RequestParam(value = "major", defaultValue = "false") boolean major,
+            @RequestParam(value = "makeProduction", defaultValue = "false") boolean makeProduction) throws Exception {
 
         VersionManager versionManager = GlobalContext.getComponent(VersionManager.class);
         versionManager.load("codi", null);
@@ -406,41 +406,46 @@ public class DefinitionServiceImpl implements DefinitionService, DefinitionXMLSe
      * @param definition
      * @throws Exception
      */
+    // @Override
+    // @RequestMapping(value = DEFINITION_RAW + "/{defPath:.+}", method = RequestMethod.PUT, produces = "application/json;charset=UTF-8")
+    // public DefinitionResource putRawDefinition(@PathVariable("defPath") String definitionPath,
+    //         @RequestBody DefinitionRequest definitionRequest) throws Exception {
+
+    //     String dp = definitionPath;
+    //     if (!dp.startsWith("/")) {
+    //         dp = "/" + dp;
+    //     }
+
+    //     // directory
+    //     if (dp.indexOf(".") == -1) {
+    //         IContainer container = new ContainerResource();
+    //         container.setPath(RESOURCE_ROOT + dp);
+    //         resourceManager.createFolder(container);
+    //         return new DefinitionResource(container);
+    //     }
+
+    //     String fileExt = UEngineUtil.getFileExt(dp);
+
+    //     // archive only for bpmn versions
+    //     if (definitionRequest != null && definitionRequest.getVersion() != null && "bpmn".equalsIgnoreCase(fileExt)) {
+    //         DefaultResource versionResource = new DefaultResource(
+    //                 "/archive" + dp + "/" + definitionRequest.getVersion() + ".bpmn");
+    //         resourceManager.save(versionResource, definitionRequest.getDefinition());
+    //     }
+
+    //     DefaultResource resource = new DefaultResource(RESOURCE_ROOT + dp);
+    //     resourceManager.save(resource, definitionRequest.getDefinition());
+    //     instanceService.postCreatedRawDefinition(dp);
+
+    //     return new DefinitionResource(resource);
+    // }
+
     @Override
-    @RequestMapping(value = DEFINITION_RAW
-            + "/{defPath:.+}", method = RequestMethod.PUT, produces = "application/json;charset=UTF-8")
-    public DefinitionResource putRawDefinition(@PathVariable("defPath") String definitionPath,
-            @RequestBody DefinitionRequest definitionRequest) throws Exception {
-
-        String dp = definitionPath;
-        if (!dp.startsWith("/")) {
-            dp = "/" + dp;
-        }
-
-        // directory
-        if (dp.indexOf(".") == -1) {
-            IContainer container = new ContainerResource();
-            container.setPath(RESOURCE_ROOT + dp);
-            resourceManager.createFolder(container);
-            return new DefinitionResource(container);
-        }
-
-        String fileExt = UEngineUtil.getFileExt(dp);
-
-        // archive only for bpmn versions
-        if (definitionRequest != null && definitionRequest.getVersion() != null && "bpmn".equalsIgnoreCase(fileExt)) {
-            DefaultResource versionResource = new DefaultResource(
-                    "/archive" + dp + "/" + definitionRequest.getVersion() + ".bpmn");
-            resourceManager.save(versionResource, definitionRequest.getDefinition());
-        }
-
-        DefaultResource resource = new DefaultResource(RESOURCE_ROOT + dp);
-        resourceManager.save(resource, definitionRequest.getDefinition());
-        instanceService.postCreatedRawDefinition(dp);
-
-        return new DefinitionResource(resource);
+    public Object putRawDefinition(String definitionPath, DefinitionRequest definitionRequest) throws Exception {
+        // TODO Auto-generated method stub
+        return putRawDefinition(definitionPath, definitionRequest);
     }
-
+    
     @RequestMapping(value = DEFINITION_RAW + "/**", method = { RequestMethod.POST, RequestMethod.PUT })
     public DefinitionResource putRawDefinition(@RequestBody DefinitionRequest definitionRequest,
             HttpServletRequest request)
@@ -604,7 +609,7 @@ public class DefinitionServiceImpl implements DefinitionService, DefinitionXMLSe
     @RequestMapping(value = DEFINITION_RAW, method = RequestMethod.PUT, produces = "application/json;charset=UTF-8")
     public DefinitionResource putRawDefinitionByParam(@RequestParam("defPath") String definitionPath,
             @RequestBody DefinitionRequest definitionRequest) throws Exception {
-        return putRawDefinition(definitionPath, definitionRequest);
+        return (DefinitionResource) putRawDefinition(definitionPath, definitionRequest);
     }
 
     @RequestMapping(value = DEFINITION_SYSTEM + "/**", method = { RequestMethod.POST, RequestMethod.PUT })

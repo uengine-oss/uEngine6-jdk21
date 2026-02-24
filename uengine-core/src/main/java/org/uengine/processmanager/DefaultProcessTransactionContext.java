@@ -3,8 +3,8 @@ package org.uengine.processmanager;
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
+import jakarta.servlet.ServletRequest;
+import jakarta.servlet.ServletResponse;
 
 import org.uengine.kernel.DefaultProcessInstance;
 import org.uengine.kernel.GlobalContext;

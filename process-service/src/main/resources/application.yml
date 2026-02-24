@@ -10,7 +10,7 @@ server:
 
 spring:
   application:
-    name: definition
+    name: process
 
   main:
     allow-bean-definition-overriding: true
@@ -47,6 +47,8 @@ spring:
         format_sql: true
 
   cloud:
+    function:
+      definition: bpm
     stream:
       kafka:
         binder:
@@ -60,7 +62,7 @@ spring:
                 value:
                   serde: org.apache.kafka.common.serialization.Serdes$StringSerde
       bindings:
-        bpm-in:
+        bpm-in-0:
           group: bpm
           destination: bpm-topic
           contentType: application/json
@@ -107,8 +109,12 @@ keycloak:
 server:
   port: 8080
 spring:
-  profiles: docker
+  config:
+    activate:
+      on-profile: docker
   cloud:
+    function:
+      definition: bpm
     stream:
       kafka:
         binder:
@@ -122,7 +128,7 @@ spring:
                 value:
                   serde: org.apache.kafka.common.serialization.Serdes$StringSerde
       bindings:
-        bpm-in:
+        bpm-in-0:
           group: bpm
           destination: bpm-topic
           contentType: application/json
@@ -138,7 +144,9 @@ spring:
 # Oracle 컨테이너가 완전히 뜬 뒤(2~3분) 앱 실행. system/oracle = docker-compose ORACLE_PASSWORD.
 # (APP_USER uengine는 첫 기동 시에만 생성되므로, 크래시 후 재기동한 DB는 system 사용)
 spring:
-  profiles: oracle
+  config:
+    activate:
+      on-profile: oracle
   datasource:
     url: jdbc:oracle:thin:@${ORACLE_HOST:localhost}:${ORACLE_PORT:1521}:XE
     username: ${ORACLE_USER:system}

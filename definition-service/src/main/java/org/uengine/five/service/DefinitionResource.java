@@ -1,11 +1,13 @@
 package org.uengine.five.service;
 
-import static org.springframework.hateoas.server.mvc.ControllerLinkBuilder.linkTo;
-import static org.springframework.hateoas.server.mvc.ControllerLinkBuilder.methodOn;
+// import static org.springframework.hateoas.server.mvc.ControllerLinkBuilder.linkTo;
+// import static org.springframework.hateoas.server.mvc.ControllerLinkBuilder.methodOn;
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
 import org.springframework.hateoas.RepresentationModel;
 import org.springframework.hateoas.server.core.Relation;
-import org.springframework.hateoas.server.mvc.ControllerLinkBuilder;
+// import org.springframework.hateoas.server.mvc.ControllerLinkBuilder;
 import org.uengine.modeling.resource.IContainer;
 import org.uengine.modeling.resource.IResource;
 
@@ -51,7 +53,8 @@ public class DefinitionResource extends RepresentationModel {
             // ).withRel("xml")
             // );
             add(
-                    ControllerLinkBuilder.linkTo(
+                    // ControllerLinkBuilder.linkTo(
+                    linkTo(
                             methodOn(InstanceService.class)
                                     .start(
                                             null))

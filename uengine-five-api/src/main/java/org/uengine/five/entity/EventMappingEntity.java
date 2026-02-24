@@ -1,6 +1,6 @@
 package org.uengine.five.entity;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 
 @Entity
 @Table(name = "BPM_EVENT_MAPPING")

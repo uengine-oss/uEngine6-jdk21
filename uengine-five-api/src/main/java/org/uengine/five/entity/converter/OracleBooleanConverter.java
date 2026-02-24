@@ -1,7 +1,7 @@
 package org.uengine.five.entity.converter;
 
-import javax.persistence.AttributeConverter;
-import javax.persistence.Converter;
+import jakarta.persistence.AttributeConverter;
+import jakarta.persistence.Converter;
 
 /**
  * Oracle NUMBER(1) 컬럼과 Java boolean 매핑.

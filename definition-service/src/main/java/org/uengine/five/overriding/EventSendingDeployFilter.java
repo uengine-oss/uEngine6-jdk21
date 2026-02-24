@@ -1,11 +1,10 @@
 package org.uengine.five.overriding;
 
-import org.springframework.messaging.MessageChannel;
+import org.springframework.cloud.stream.function.StreamBridge;
 import org.springframework.messaging.MessageHeaders;
 import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.util.MimeTypeUtils;
 import org.uengine.five.DefinitionServiceApplication;
-import org.uengine.five.Streams;
 import org.uengine.five.events.DefinitionDeployed;
 import org.uengine.kernel.Activity;
 import org.uengine.kernel.DeployFilter;
@@ -28,10 +27,8 @@ public class EventSendingDeployFilter implements DeployFilter {
         DefinitionDeployed definitionDeployed = new DefinitionDeployed();
         definitionDeployed.setDefintionId(path);
 
-        Streams streams = DefinitionServiceApplication.getApplicationContext().getBean(Streams.class);
-
-        MessageChannel messageChannel = streams.outboundChannel();
-        messageChannel.send(MessageBuilder
+        StreamBridge streamBridge = DefinitionServiceApplication.getApplicationContext().getBean(StreamBridge.class);
+        streamBridge.send("bpm-out", MessageBuilder
                 .withPayload(definitionDeployed)
                 .setHeader(MessageHeaders.CONTENT_TYPE, MimeTypeUtils.APPLICATION_JSON)
                 .build());

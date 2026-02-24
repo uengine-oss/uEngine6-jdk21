@@ -53,14 +53,14 @@ public interface ProcessInstanceRepository extends JpaRepository<ProcessInstance
          * - rootInstId: 서브프로세스 태스크까지 포함
          */
         @Query("select wl from WorklistEntity wl where wl.rootInstId = :rootInstId order by wl.startDate asc, wl.taskId asc")
-        List<WorklistEntity> findAllWorklistsByRootInstId(@Param("rootInstId") Number rootInstId);
+        List<WorklistEntity> findAllWorklistsByRootInstId(@Param("rootInstId") Long rootInstId);
 
         /**
          * BackToHere(반송) 후보 태스크만 조회합니다.
          * - 정의: 상태가 COMPLETED 인 태스크만
          */
         @Query("select wl from WorklistEntity wl where wl.rootInstId = :rootInstId and wl.status = 'COMPLETED' order by wl.endDate desc, wl.taskId desc")
-        List<WorklistEntity> findReturnableWorklistsByRootInstId(@Param("rootInstId") Number rootInstId);
+        List<WorklistEntity> findReturnableWorklistsByRootInstId(@Param("rootInstId") Long rootInstId);
 
     @Query("select pi from ProcessInstanceEntity pi where (pi.corrKey = :corrKey and pi.status = :status)")
     List<ProcessInstanceEntity> findByCorrKeyAndStatus(@Param("corrKey") String corrKey,

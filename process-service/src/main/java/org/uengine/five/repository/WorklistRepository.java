@@ -55,10 +55,10 @@ public interface WorklistRepository extends JpaRepository<WorklistEntity, Long> 
     Page<WorklistEntity> findCompleted(Pageable pageable);
 
     @Query("select wl from WorklistEntity wl where (wl.rootInstId = :rootInstId and wl.status = 'COMPLETED') order by wl.endDate ")
-    public List<WorklistEntity> findWorkListByInstId(@Param(value = "rootInstId") Number rootInstId);
+    public List<WorklistEntity> findWorkListByInstId(@Param(value = "rootInstId") Long rootInstId);
 
     @Query("select wl from WorklistEntity wl where (wl.rootInstId = :rootInstId and (wl.status = 'NEW' or wl.status = 'RUNNING')) order by wl.endDate ")
-    public List<WorklistEntity> findCurrentWorkItemByInstId(@Param(value = "rootInstId") Number rootInstId);
+    public List<WorklistEntity> findCurrentWorkItemByInstId(@Param(value = "rootInstId") Long rootInstId);
 
     /**
      * 경합(DispatchOption=1) 등으로 endpoint가 비어있는 workitem들을,

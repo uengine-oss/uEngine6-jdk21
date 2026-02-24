@@ -3,8 +3,10 @@ package org.uengine.five;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+// import org.springframework.boot.builder.SpringApplicationBuilder; // war
+// import org.springframework.boot.web.servlet.support.SpringBootServletInitializer; // war
 import org.springframework.cloud.openfeign.EnableFeignClients;
-import org.springframework.cloud.stream.annotation.EnableBinding;
+// import org.springframework.cloud.stream.annotation.EnableBinding;
 import org.springframework.context.ApplicationContext;
 //import org.springframework.boot.autoconfigure.orm.jpa.JpaProperties;
 //import org.springframework.boot.autoconfigure.transaction.TransactionManagerCustomizers;
@@ -21,9 +23,15 @@ import org.uengine.modeling.resource.Storage;
 import org.uengine.modeling.resource.VersionManager;
 
 
-@EnableBinding(Streams.class)
+// @EnableBinding(Streams.class)
 @SpringBootApplication
 @EnableFeignClients
+// WAR 배포 시: 아래처럼 SpringBootServletInitializer 상속 후 configure() 오버라이드 (import: SpringApplicationBuilder, SpringBootServletInitializer)
+// public class DefinitionServiceApplication extends SpringBootServletInitializer {
+//     @Override
+//     protected SpringApplicationBuilder configure(SpringApplicationBuilder builder) {
+//         return builder.sources(DefinitionServiceApplication.class);
+//     }
 public class DefinitionServiceApplication {
 
     public static ApplicationContext applicationContext;

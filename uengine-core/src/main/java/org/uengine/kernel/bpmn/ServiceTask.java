@@ -2,11 +2,12 @@ package org.uengine.kernel.bpmn;
 
 import com.jayway.jsonpath.JsonPath;
 import com.jayway.jsonpath.PathNotFoundException;
-import org.apache.http.conn.ssl.NoopHostnameVerifier;
-import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClients;
-import org.apache.http.ssl.TrustStrategy;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
+import org.apache.hc.client5.http.impl.classic.HttpClients;
+import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManagerBuilder;
+import org.apache.hc.client5.http.ssl.SSLConnectionSocketFactoryBuilder;
+import org.apache.hc.client5.http.ssl.TrustAllStrategy;
+import org.apache.hc.core5.ssl.SSLContexts;
 //import org.springframework.cloud.client.ServiceInstance;
 //import org.springframework.cloud.client.discovery.DiscoveryClient;
 //import org.springframework.cloud.client.loadbalancer.LoadBalancerClient;
@@ -24,8 +25,8 @@ import org.uengine.kernel.*;
 import org.uengine.webservices.worklist.WorkList;
 
 import javax.net.ssl.SSLContext;
-import javax.security.cert.CertificateException;
-import javax.security.cert.X509Certificate;
+import java.security.cert.CertificateException;
+import java.security.cert.X509Certificate;
 import java.io.Serializable;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -246,24 +247,39 @@ public class ServiceTask extends DefaultActivity {
     private RestTemplate noValidatingRestTemplate() {
 
         try {
-            TrustStrategy acceptingTrustStrategy = new TrustStrategy() {
-                @Override
-                public boolean isTrusted(java.security.cert.X509Certificate[] x509Certificates, String s)
-                        throws java.security.cert.CertificateException {
-                    return true;
-                }
+            // TrustStrategy acceptingTrustStrategy = new TrustStrategy() {
+            //     @Override
+            //     public boolean isTrusted(java.security.cert.X509Certificate[] x509Certificates, String s)
+            //             throws java.security.cert.CertificateException {
+            //         return true;
+            //     }
 
-            };
+            // };
 
-            SSLContext sslContext = org.apache.http.ssl.SSLContexts.custom()
-                    .loadTrustMaterial(null, acceptingTrustStrategy).build();
-            SSLConnectionSocketFactory csf = new SSLConnectionSocketFactory(sslContext, new NoopHostnameVerifier());
-            CloseableHttpClient httpClient = HttpClients.custom().setSSLSocketFactory(csf).build();
-            HttpComponentsClientHttpRequestFactory requestFactory = new HttpComponentsClientHttpRequestFactory();
-            requestFactory.setHttpClient(httpClient);
-            RestTemplate restTemplate = new RestTemplate(requestFactory);
+            // SSLContext sslContext = org.apache.http.ssl.SSLContexts.custom()
+            //         .loadTrustMaterial(null, acceptingTrustStrategy).build();
+            // SSLConnectionSocketFactory csf = new SSLConnectionSocketFactory(sslContext, new NoopHostnameVerifier());
+            // CloseableHttpClient httpClient = HttpClients.custom().setSSLSocketFactory(csf).build();
+            // HttpComponentsClientHttpRequestFactory requestFactory = new HttpComponentsClientHttpRequestFactory();
+            // requestFactory.setHttpClient(httpClient);
+            // RestTemplate restTemplate = new RestTemplate(requestFactory);
 
-            return restTemplate;
+            // return restTemplate;
+
+            CloseableHttpClient httpClient = HttpClients.custom()
+                    .setConnectionManager(
+                            PoolingHttpClientConnectionManagerBuilder.create()
+                                    .setSSLSocketFactory(
+                                            SSLConnectionSocketFactoryBuilder.create()
+                                                    .setSslContext(SSLContexts.custom()
+                                                            .loadTrustMaterial(null, TrustAllStrategy.INSTANCE)
+                                                            .build())
+                                                    .setHostnameVerifier(org.apache.hc.client5.http.ssl.NoopHostnameVerifier.INSTANCE)
+                                                    .build())
+                                    .build())
+                    .build();
+            HttpComponentsClientHttpRequestFactory requestFactory = new HttpComponentsClientHttpRequestFactory(httpClient);
+            return new RestTemplate(requestFactory);
         } catch (Exception e) {
             throw new RuntimeException("failed to establish a RestTemplate for no-validating certificate");
         }

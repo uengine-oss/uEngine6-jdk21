@@ -1,6 +1,6 @@
 package org.uengine.five.entity;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 
 /**
  * Created by uengine on 2017. 8. 1..

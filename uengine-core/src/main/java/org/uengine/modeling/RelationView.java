@@ -2,7 +2,7 @@ package org.uengine.modeling;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
-import javax.persistence.Id;
+import jakarta.persistence.Id;
 import java.io.Serializable;
 
 /**

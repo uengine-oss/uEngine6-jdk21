@@ -4,10 +4,8 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cloud.stream.annotation.StreamListener;
-import org.springframework.messaging.MessageChannel;
+import org.springframework.cloud.stream.function.StreamBridge;
 import org.springframework.messaging.MessageHeaders;
-import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.stereotype.Component;
 import org.springframework.util.MimeTypeUtils;
@@ -32,13 +30,13 @@ public class EventListener {
     InstanceServiceImpl instanceService;
 
     @Autowired
-    Streams streams;
+    StreamBridge streamBridge;
 
     @Autowired
     ActivityQueue activityQueue;
 
-    @StreamListener(Streams.INPUT)
-    public void handleDone(@Payload ActivityDone activityDone) {
+    /** Called from BpmMessageDispatcher (Spring Cloud Stream 4 functional). */
+    public void handleDone(ActivityDone activityDone) {
 
         if (!activityDone.checkMyEvent())
             return;
@@ -61,8 +59,7 @@ public class EventListener {
             instance.execute(activityDone.getActivityInfo().getTracingTag());
 
             // broadcast to a separate topic to avoid loop with bpm-in/bpm-out
-            MessageChannel messageChannel = streams.outboundBrodcastChannel();
-            messageChannel.send(MessageBuilder
+            streamBridge.send("bpm-brodcast", MessageBuilder
                     .withPayload(activityDone)
                     .setHeader(MessageHeaders.CONTENT_TYPE, MimeTypeUtils.APPLICATION_JSON)
                     .build());
@@ -80,8 +77,7 @@ public class EventListener {
             activityFailed
                     .setMessage("[" + e.getClass().getName() + "]" + e.getMessage() + ":" + stringWriter.toString());
 
-            MessageChannel messageChannel = streams.outboundChannel();
-            messageChannel.send(MessageBuilder
+            streamBridge.send("bpm-out", MessageBuilder
                     .withPayload(activityFailed)
                     .setHeader(MessageHeaders.CONTENT_TYPE, MimeTypeUtils.APPLICATION_JSON)
                     .build());
@@ -116,9 +112,8 @@ public class EventListener {
 
     }
 
-    @StreamListener(Streams.INPUT)
     @ProcessTransactional
-    public void handleFailed(@Payload ActivityFailed activityFailed) throws Exception {
+    public void handleFailed(ActivityFailed activityFailed) throws Exception {
 
         if (!activityFailed.checkMyEvent())
             return;
@@ -137,9 +132,8 @@ public class EventListener {
         }
     }
 
-    @StreamListener(Streams.INPUT)
     @ProcessTransactional
-    public void handleQueued(@Payload ActivityQueued activityQueued) throws Exception {
+    public void handleQueued(ActivityQueued activityQueued) throws Exception {
 
         if (!activityQueued.checkMyEvent())
             return;
@@ -158,8 +152,7 @@ public class EventListener {
             activityDone.getActivityInfo().setInstanceId(activityQueued.getActivityInfo().getInstanceId());
             activityDone.getActivityInfo().setTracingTag(activityQueued.getActivityInfo().getTracingTag());
 
-            MessageChannel messageChannel = streams.outboundChannel();
-            messageChannel.send(MessageBuilder
+            streamBridge.send("bpm-out", MessageBuilder
                     .withPayload(activityDone)
                     .setHeader(MessageHeaders.CONTENT_TYPE, MimeTypeUtils.APPLICATION_JSON)
                     .build());
@@ -177,8 +170,7 @@ public class EventListener {
             activityFailed
                     .setMessage("[" + e.getClass().getName() + "]" + e.getMessage() + ":" + stringWriter.toString());
 
-            MessageChannel messageChannel = streams.outboundChannel();
-            messageChannel.send(MessageBuilder
+            streamBridge.send("bpm-out", MessageBuilder
                     .withPayload(activityFailed)
                     .setHeader(MessageHeaders.CONTENT_TYPE, MimeTypeUtils.APPLICATION_JSON)
                     .build());
@@ -210,9 +202,8 @@ public class EventListener {
 
     }
 
-    @StreamListener(Streams.INPUT)
     @ProcessTransactional
-    public void handleDeployed(@Payload DefinitionDeployed definitionDeployed) {
+    public void handleDeployed(DefinitionDeployed definitionDeployed) {
         if (!definitionDeployed.checkMyEvent())
             return;
 

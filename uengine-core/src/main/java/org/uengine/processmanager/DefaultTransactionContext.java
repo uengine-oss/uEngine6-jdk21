@@ -8,13 +8,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-//import javax.transaction.SystemException;
-//import javax.transaction.Transaction;
-//import javax.transaction.TransactionManager;
-import javax.transaction.UserTransaction;
-//import javax.transaction.xa.XAException;
-//import javax.transaction.xa.XAResource;
-//import javax.transaction.xa.Xid;
+//import jakarta.transaction.SystemException;
+//import jakarta.transaction.Transaction;
+//import jakarta.transaction.TransactionManager;
+import jakarta.transaction.UserTransaction;
+//import jakarta.transaction.xa.XAException;
+//import jakarta.transaction.xa.XAResource;
+//import jakarta.transaction.xa.Xid;
 
 //import org.apache.geronimo.transaction.manager.NamedXAResource;
 //import org.apache.kandula.coordinator.CoordinationContext;

@@ -7,13 +7,8 @@ import java.util.List;
 import java.util.regex.Pattern;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cloud.stream.annotation.EnableBinding;
-import org.springframework.cloud.stream.annotation.StreamListener;
-import org.springframework.messaging.handler.annotation.Header;
-import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.uengine.five.Streams;
 import org.uengine.five.dto.ProcessExecutionCommand;
 import org.uengine.five.entity.EventMappingEntity;
 import org.uengine.five.entity.ProcessInstanceEntity;
@@ -28,14 +23,14 @@ import org.uengine.kernel.ReceiveActivity;
 import org.uengine.kernel.bpmn.Event;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonInclude;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-// import javax.transaction.Transactional;
-
-@EnableBinding(Streams.class)
 @Service
 public class AsyncEventListener {
+
+    private static final Logger log = LoggerFactory.getLogger(AsyncEventListener.class);
 
     static ObjectMapper objectMapper = BpmnXMLParser.createTypedJsonObjectMapper();
     private static final Pattern NUMERIC_CSV = Pattern.compile("^\\s*\\d+(\\s*,\\s*\\d+)*\\s*$");
@@ -55,15 +50,16 @@ public class AsyncEventListener {
     @Autowired
     EventMappingRepository eventMappingRepository;
 
-    @StreamListener(Streams.INPUT)
-    public void whatever(@Payload String eventString) {
+    /** Called from BpmMessageDispatcher for every message. */
+    public void whatever(String eventString) {
         System.out.println("\n\n##### listener whatever : " + eventString + "\n\n");
     }
 
+    /** Called from BpmMessageDispatcher when type header is present. */
     @Transactional(rollbackFor = { Exception.class })
-    @StreamListener(value = Streams.INPUT, condition = "headers['type'] != null")
     @ProcessTransactional
-    public void wheneverEvent(@Payload String eventBody, @Header("type") String typeHeader) {
+    public void wheneverEvent(String eventBody, String typeHeader) {
+        log.info("[BPM] wheneverEvent called, typeHeader={}", typeHeader);
         System.out.println("\n\n##### listener wheneverEvent : " + eventBody + "\n\n");
         try {
             // 기본은 raw 헤더 문자열로 매칭. 실패하면 숫자 CSV(예: "76,79,65,...")를 디코딩해서 재시도.
@@ -91,8 +87,10 @@ public class AsyncEventListener {
                 }
             }
 
-            if (eventMappingEntity == null)
-                throw new Exception("EventMappingEntity is null");
+            if (eventMappingEntity == null) {
+                log.error("[BPM] EventMapping not found for eventType='{}'. Register BPM_EVENT_MAPPING for this event type (e.g. LOAN_APPLIED).", eventType);
+                throw new Exception("EventMappingEntity is null for eventType: " + eventType);
+            }
 
             String corrKey = eventMappingEntity.getCorrelationKey();
 
