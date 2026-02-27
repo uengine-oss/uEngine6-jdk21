@@ -10,9 +10,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Vector;
 
-import org.apache.log4j.FileAppender;
-import org.apache.log4j.Logger;
-import org.apache.log4j.SimpleLayout;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.uengine.kernel.bpmn.CatchingErrorEventActivityEventInterceptor;
 import org.uengine.kernel.bpmn.SubProcess;
 import org.uengine.processmanager.ProcessTransactionContext;
@@ -29,7 +28,7 @@ public abstract class AbstractProcessInstance implements ProcessInstance, java.i
     private static final long serialVersionUID = org.uengine.kernel.GlobalContext.SERIALIZATION_UID;
     public final static String PVKEY_EXECUTION_SCOPES = "_executionScopes";
 
-    static Logger logger = Logger.getLogger(AbstractProcessInstance.class);
+    static final Logger logger = LoggerFactory.getLogger(AbstractProcessInstance.class);
 
     // warning: this visibility (public) may occur undesired operation by other
     // components.
@@ -803,10 +802,7 @@ public abstract class AbstractProcessInstance implements ProcessInstance, java.i
 
     public void addDebugInfo(Object message) {
         // getProcessTransactionContext().addDebugInfo(message+"\n");
-
-        SimpleLayout layout = new SimpleLayout();
-        FileAppender appender = new FileAppender();
-        logger.addAppender(appender);
+        logger.debug("{}", message);
     }
 
     public void addDebugInfo(String entry, Object message) {

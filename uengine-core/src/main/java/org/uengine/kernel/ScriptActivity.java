@@ -15,8 +15,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import org.apache.bsf.*;
 import org.codehaus.janino.ExpressionEvaluator;
 import org.codehaus.janino.ScriptEvaluator;
-import org.codehaus.janino.samples.DemoBase;
-import org.codehaus.janino.samples.ScriptDemo;
 // import org.metaworks.FieldDescriptor;
 // import org.metaworks.Type;
 // import org.metaworks.inputter.RadioInput;

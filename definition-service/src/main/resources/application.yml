@@ -12,7 +12,7 @@ spring:
 
 uengine:
   definition:
-    basePath: ${UENGINE_BASEPATH:/Users/heon/Documents/workspace/uEngine6-bpm}
+    basePath: ${UENGINE_BASEPATH:/Users/heon/Documents/workspace/uEngine6-jdk21}
     
     
         

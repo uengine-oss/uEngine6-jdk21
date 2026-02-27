@@ -1,7 +1,7 @@
 package org.uengine.modeling.resource;
 
-import org.codehaus.jackson.map.util.LRUMap;
-
+import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
@@ -10,7 +10,14 @@ import java.util.Map;
 public class CachedResourceManager extends ResourceManager {
 
     public static final String RESOURCE_MANAGER_CACHE = "resourceManagerCache_";
-    static LRUMap<String, Object> lruCache = new LRUMap<>(0, 10);
+    /** LRU 캐시 (최대 10개, Jackson 1.x LRUMap 대체) */
+    static final Map<String, Object> lruCache = Collections.synchronizedMap(
+        new LinkedHashMap<String, Object>(16, 0.75f, true) {
+            @Override
+            protected boolean removeEldestEntry(Map.Entry<String, Object> eldest) {
+                return size() > 10;
+            }
+        });
 
     boolean perTransaction;
 

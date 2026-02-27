@@ -33,8 +33,12 @@
 
   <properties>
     <java.version>21</java.version>
-    <spring-cloud.version>2023.0.2</spring-cloud.version>
+    <spring-cloud.version>2023.0.5</spring-cloud.version>
     <cucumber.version>6.8.1</cucumber.version>
+    <!-- CVE 대응: Spring Boot 3.2.5 기본 버전 오버라이드 -->
+    <tomcat.version>10.1.52</tomcat.version>
+    <spring-framework.version>6.1.21</spring-framework.version>
+    <!-- spring-security: BOM 6.2.10 미공개이므로 dependencyManagement에서 개별 오버라이드 -->
   </properties>
 
   <dependencies>
@@ -127,6 +131,30 @@
         <version>${spring-cloud.version}</version>
         <type>pom</type>
         <scope>import</scope>
+      </dependency>
+      <!-- CVE-2025-48976: commons-fileupload DoS (openfeign 전이 의존성) -->
+      <dependency>
+        <groupId>commons-fileupload</groupId>
+        <artifactId>commons-fileupload</artifactId>
+        <version>1.6.0</version>
+      </dependency>
+      <!-- snappy-java: kafka-clients 전이 의존성 보안 업그레이드 -->
+      <dependency>
+        <groupId>org.xerial.snappy</groupId>
+        <artifactId>snappy-java</artifactId>
+        <version>1.1.10.8</version>
+      </dependency>
+      <!-- zstd-jni: kafka-clients 전이 의존성 보안 업그레이드 -->
+      <dependency>
+        <groupId>com.github.luben</groupId>
+        <artifactId>zstd-jni</artifactId>
+        <version>1.5.7-7</version>
+      </dependency>
+      <!-- CVE-2025-22228: spring-security-crypto BCrypt 72자 우회 (6.2.10 Enterprise전용 → 6.3.10 사용) -->
+      <dependency>
+        <groupId>org.springframework.security</groupId>
+        <artifactId>spring-security-crypto</artifactId>
+        <version>6.3.10</version>
       </dependency>
     </dependencies>
   </dependencyManagement>

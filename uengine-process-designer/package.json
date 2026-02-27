@@ -3,22 +3,11 @@
   "displayName": "Hello",
   "description": "",
   "version": "0.0.1",
-  "engines": {
-    "vscode": "^1.87.0"
-  },
-  "categories": [
-    "Other"
-  ],
+  "engines": {"vscode": "^1.87.0"},
+  "categories": ["Other"],
   "activationEvents": [],
   "main": "./out/extension.js",
-  "contributes": {
-    "commands": [
-      {
-        "command": "hello.helloWorld",
-        "title": "Hello World"
-      }
-    ]
-  },
+  "contributes": {"commands": [{"command": "hello.helloWorld", "title": "Hello World"}]},
   "scripts": {
     "vscode:prepublish": "npm run compile",
     "compile": "tsc -p ./",
@@ -37,5 +26,16 @@
     "typescript": "^5.3.3",
     "@vscode/test-cli": "^0.0.6",
     "@vscode/test-electron": "^2.3.9"
+  },
+  "overrides": {
+    "micromatch": "4.0.8",
+    "slash": "5.1.0",
+    "minimatch": "9.0.7",
+    "brace-expansion": "2.0.2",
+    "cross-spawn": "7.0.5",
+    "ajv": "6.14.0",
+    "serialize-javascript": "6.0.2",
+    "diff": "5.2.2",
+    "js-yaml": "4.1.1"
   }
 }

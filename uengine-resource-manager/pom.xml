@@ -16,14 +16,14 @@
 		</dependency>
 
 		<dependency>
-			<groupId>commons-lang</groupId>
-			<artifactId>commons-lang</artifactId>
-			<version>2.6</version>
+			<groupId>org.apache.commons</groupId>
+			<artifactId>commons-lang3</artifactId>
+			<version>3.18.0</version>
 		</dependency>
 		<dependency>
 			<groupId>commons-io</groupId>
 			<artifactId>commons-io</artifactId>
-			<version>2.4</version>
+			<version>2.16.1</version>
 		</dependency>
 		<!-- <dependency>
 			<groupId>org.uengine.cloud.garuda</groupId>
@@ -35,11 +35,7 @@
 			<artifactId>uengine-modeling</artifactId>
 			<version>${project.version}</version>
 		</dependency> -->
-		<dependency>
-			<groupId>net.java.dev.jets3t</groupId>
-			<artifactId>jets3t</artifactId>
-			<version>0.9.3</version>
-		</dependency>
+		<!-- jets3t 제거: 코드 미사용, httpclient 4.x/jackson-mapper-asl 등 CVE 유입. S3 필요 시 AWS SDK 사용 권장 -->
 	</dependencies>
 	
 	<build>

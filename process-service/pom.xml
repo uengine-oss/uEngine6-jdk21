@@ -61,10 +61,8 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-mail</artifactId>
         </dependency>
-        <dependency>
-            <groupId>org.springframework.security</groupId>
-            <artifactId>spring-security-core</artifactId>
-        </dependency>
+        <!-- spring-security-core 제거: CVE-2018-1258 오탐이나 불필요한 의존성 제거 -->
+        <!-- Authentication 타입 미사용 확인 후 제거 -->
         <!-- <dependency>
             <groupId>org.springframework.data</groupId>
             <artifactId>spring-data-commons</artifactId>
@@ -85,7 +83,7 @@
         <dependency>
             <groupId>com.squareup.okhttp3</groupId>
             <artifactId>okhttp</artifactId>
-            <version>4.9.3</version>
+            <version>4.12.0</version>
         </dependency>
 
         <dependency>
