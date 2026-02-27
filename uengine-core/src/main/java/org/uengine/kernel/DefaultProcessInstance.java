@@ -36,6 +36,8 @@ public class DefaultProcessInstance extends AbstractProcessInstance {
 	public final static String DONT_RETURN = "_dontReturn";
 	public final static String SUFFIX_PROPERTY = ":prop";
 	public final static String SIMULATIONPROCESS = "isSimulationTime";
+	/** 수신 이벤트 페이로드 저장 키 (tracingTag별). */
+	public final static String EVENT_DATA = "eventData";
 
 	// static in-memory repository
 	// static Hashtable repository = new Hashtable();

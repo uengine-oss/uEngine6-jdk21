@@ -55,7 +55,11 @@ public class DefinitionXMLServiceImpl implements DefinitionXMLService {
             return xmlContent;
 
         } catch (Exception e) {
-            throw new RuntimeException("Error when to load definition: " + definitionPath, e);
+            throw new RuntimeException(
+                    "Error when to load definition: " + definitionPath
+                            + ". Check uengine.definition.basePath (process-service must see the same definitions folder as definition-service). Cause: "
+                            + (e.getCause() != null ? e.getCause().getMessage() : e.getMessage()),
+                    e);
         }
     }
 

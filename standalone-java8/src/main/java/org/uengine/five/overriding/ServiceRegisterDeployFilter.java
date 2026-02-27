@@ -8,7 +8,6 @@ import org.uengine.five.entity.CatchEvent;
 import org.uengine.five.entity.ServiceEndpointEntity;
 import org.uengine.five.repository.ServiceEndpointRepository;
 import org.uengine.kernel.Activity;
-import org.uengine.kernel.CatchingMessageEvent;
 import org.uengine.kernel.DeployFilter;
 import org.uengine.kernel.GlobalContext;
 import org.uengine.kernel.ProcessDefinition;
@@ -57,8 +56,7 @@ public class ServiceRegisterDeployFilter implements DeployFilter {
         
         List<CatchEvent> catchEvents = new ArrayList<>();
         for (Activity activity : catchingMessageEvents) {
-            if (activity instanceof CatchingMessageEvent) {
-                
+            if (activity instanceof CatchingRestMessageEvent) {
                 CatchingRestMessageEvent catchingMessageEvent = (CatchingRestMessageEvent) activity;
                 serviceEndpointEntity.setPath(catchingMessageEvent.getServicePath());
                 CatchEvent catchEvent = new CatchEvent();
@@ -69,7 +67,9 @@ public class ServiceRegisterDeployFilter implements DeployFilter {
             }
         }
 
-        serviceEndpointEntity.setEvents(catchEvents);
-        serviceEndpointRepository.save(serviceEndpointEntity);
+        if (catchEvents.size() > 0) {
+            serviceEndpointEntity.setEvents(catchEvents);
+            serviceEndpointRepository.save(serviceEndpointEntity);
+        }
     }
 }

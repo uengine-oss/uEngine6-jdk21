@@ -1,6 +1,7 @@
 package org.uengine.modeling.resource;
 
 import com.thoughtworks.xstream.XStream;
+import com.thoughtworks.xstream.security.WildcardTypePermission;
 import org.uengine.kernel.NeedArrangementToSerialize;
 
 import java.io.*;
@@ -13,6 +14,13 @@ public class Serializer {
     public static XStream xstream = new XStream(/*new DomDriver()*/);
     static{
         xstream.ignoreUnknownElements();
+        // XStream 1.4+ 보안: 프로세스 변수 역직렬화에 필요한 타입 허용 (IAMCompanyRoleMapping 등)
+        xstream.addPermission(new WildcardTypePermission(new String[]{
+                "org.uengine.**",
+                "java.**",
+                "javax.**",
+                "jakarta.**"
+        }));
     }
     public final static String DATABASE_ENCODING = "UTF-8";
 

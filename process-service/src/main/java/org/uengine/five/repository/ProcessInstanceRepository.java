@@ -62,20 +62,20 @@ public interface ProcessInstanceRepository extends JpaRepository<ProcessInstance
         @Query("select wl from WorklistEntity wl where wl.rootInstId = :rootInstId and wl.status = 'COMPLETED' order by wl.endDate desc, wl.taskId desc")
         List<WorklistEntity> findReturnableWorklistsByRootInstId(@Param("rootInstId") Long rootInstId);
 
-    @Query("select pi from ProcessInstanceEntity pi where (pi.corrKey = :corrKey and pi.status = :status)")
-    List<ProcessInstanceEntity> findByCorrKeyAndStatus(@Param("corrKey") String corrKey,
-            @Param("status") String status);
+        @Query("select pi from ProcessInstanceEntity pi where (pi.corrKey = :corrKey and pi.status = :status)")
+        List<ProcessInstanceEntity> findByCorrKeyAndStatus(@Param("corrKey") String corrKey,
+                @Param("status") String status);
 
-    @Query("select pi from ProcessInstanceEntity pi where pi.status = :status")
-    List<ProcessInstanceEntity> findByStatus(@Param("status") String status);
+        @Query("select pi from ProcessInstanceEntity pi where pi.status = :status")
+        List<ProcessInstanceEntity> findByStatus(@Param("status") String status);
 
-    @Query("select pi from ProcessInstanceEntity pi order by pi.startedDate desc")
-    Page<ProcessInstanceEntity> findAll(Pageable pageable);
+        @Query("select pi from ProcessInstanceEntity pi order by pi.startedDate desc")
+        Page<ProcessInstanceEntity> findAll(Pageable pageable);
 
-    Page<ProcessInstanceEntity> findAllByGroupsRegex(@Param("pattern") String pattern,
-            @Param("status") String status, Pageable pageable);
+        Page<ProcessInstanceEntity> findAllByGroupsRegex(@Param("pattern") String pattern,
+                @Param("status") String status, Pageable pageable);
 
-    Page<ProcessInstanceEntity> findByName(@Param("name") String name, @Param("status") String status,
+        Page<ProcessInstanceEntity> findByName(@Param("name") String name, @Param("status") String status,
             @Param("startedDate") String startedDate, @Param("finishedDate") String finishedDate,
             @Param("subProcess") String subProcess, Pageable pageable);
 }

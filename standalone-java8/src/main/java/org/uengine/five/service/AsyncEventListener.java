@@ -17,6 +17,7 @@ import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.uengine.contexts.EventSynchronization;
+import org.uengine.kernel.Activity;
 import org.uengine.five.dto.InstanceResource;
 import org.uengine.five.dto.ProcessExecutionCommand;
 import org.uengine.five.entity.EventMappingEntity;
@@ -98,15 +99,16 @@ public class AsyncEventListener {
             for(ProcessInstanceEntity processInstanceEntity : processInstanceList){
                 ProcessInstance instance = instanceServiceImpl.getProcessInstanceLocal(processInstanceEntity.getInstId().toString());
             
+                activityLoop:
                 for (Activity activity: instance.getCurrentRunningActivities()){
-                    if(activity.getEventSynchronization() != null && activity.getEventSynchronization().getEventType().equals(typeHeader)){
-                        // set eventData.
-                        // ((DefaultProcessInstance)instance).setProperty(activity.getTracingTag(), "eventJson", (Serializable) eventContent);
-                        ((DefaultProcessInstance)instance).set(activity.getTracingTag(), "eventData", (Serializable) eventContent);
+                    for (EventSynchronization sync : activity.getEventSynchronizations()) {
+                        if (sync != null && typeHeader.equals(sync.getEventType())) {
+                            ((DefaultProcessInstance)instance).set(activity.getTracingTag(), DefaultProcessInstance.EVENT_DATA, (Serializable) eventContent);
 
-                        ReceiveActivity receiveActivity = (ReceiveActivity) activity;
-                        receiveActivity.fireReceived(instance, eventContent);
-                        break;
+                            ReceiveActivity receiveActivity = (ReceiveActivity) activity;
+                            receiveActivity.fireReceived(instance, eventContent);
+                            break activityLoop;
+                        }
                     }
                 } 
             }    

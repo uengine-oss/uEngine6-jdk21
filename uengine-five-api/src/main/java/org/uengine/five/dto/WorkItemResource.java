@@ -66,8 +66,8 @@ public class WorkItemResource { //extends RepresentationModel {
         Map<String, Object> summary = new LinkedHashMap<>();
         summary.put("name", activity.getName());
         summary.put("tracingTag", activity.getTracingTag());
-        if (activity.getEventSynchronization() != null) {
-            summary.put("eventSynchronization", activity.getEventSynchronization());
+        if (activity.getEventSynchronizations() != null && activity.getEventSynchronizations().length > 0) {
+            summary.put("eventSynchronizations", activity.getEventSynchronizations());
         }
         if (activity instanceof HumanActivity) {
             String tool = ((HumanActivity) activity).getTool();

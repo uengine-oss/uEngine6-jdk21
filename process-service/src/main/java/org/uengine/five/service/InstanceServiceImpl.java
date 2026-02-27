@@ -2197,21 +2197,6 @@ public class InstanceServiceImpl implements InstanceService {
                     workItem.setActivity(activity);
                 }
                 return workItem;
-
-                // RepresentationModel 직렬화 시 parameterValues가 누락될 수 있어, Map으로 감싸서 응답 (직렬 호출과 동일하게 키 노출)
-                // activity는 전체 객체 직렬화 시 순환 참조로 StackOverflow 유발 → 요약(name, tracingTag)만 넣음
-                // Map<String, Object> responseMap = new LinkedHashMap<>();
-                // responseMap.put("parameterValues", toJsonFriendlyMap(workItem.getParameterValues() != null ? workItem.getParameterValues() : new LinkedHashMap<String, Object>()));
-                // responseMap.put("execScope", workItem.getExecScope());
-                // responseMap.put("worklist", workItem.getWorklist());
-                // Map<String, String> activitySummary = new LinkedHashMap<>();
-                // Activity act = workItem.getActivity();
-                // if (act != null) {
-                //     activitySummary.put("name", act.getName());
-                //     activitySummary.put("tracingTag", act.getTracingTag());
-                // }
-                // responseMap.put("activity", activitySummary.isEmpty() ? null : activitySummary);
-                // return responseMap;
             } catch (Exception e) {
                 e.printStackTrace();
                 throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
