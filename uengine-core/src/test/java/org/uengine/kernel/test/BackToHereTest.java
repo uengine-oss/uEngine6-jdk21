@@ -11,6 +11,7 @@ import org.uengine.contexts.TextContext;
 import org.uengine.kernel.Activity;
 import org.uengine.kernel.ActivityFilter;
 import org.uengine.kernel.Evaluate;
+import org.uengine.kernel.FaultContext;
 import org.uengine.kernel.HumanActivity;
 import org.uengine.kernel.MappingElement;
 import org.uengine.kernel.ParameterContext;
@@ -245,6 +246,11 @@ public class BackToHereTest extends UEngineTest {
                             }, instance);
 
                         }
+                    }
+
+                    @Override
+                    public void afterFault(Activity activity, ProcessInstance instance, FaultContext faultContext)
+                            throws Exception {
                     }
 
                     @Override

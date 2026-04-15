@@ -1,1 +1,1 @@
-{ "mega_proc_list": [ { "id": "test", "label": "test", "major_proc_list": [ { "id": "main", "label": "main", "sub_proc_list": [ { "id": "Sales" } ] } ] } ] }
+{"mega_proc_list":[{"id":"test","label":"test","major_proc_list":[{"id":"main","label":"main","sub_proc_list":[{"id":"Sales","name":"Sales"}],"name":"main"}],"name":"test"},{"id":"unclassified","name":"미분류","major_proc_list":[{"id":"unclassified_major","name":"미분류","sub_proc_list":[{"id":"test/test","name":"test/test","path":"test/test"}]}]}]}

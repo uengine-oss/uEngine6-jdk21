@@ -1,12 +1,4 @@
 version: '3.8'
-
-# 컨테이너별 로그 디스크 상한(회전): 단일 파일 최대 100MB × 1개 보관
-x-logging: &default-logging
-  driver: json-file
-  options:
-    max-size: "100m"
-    max-file: "1"
-
 services:
   zookeeper:
     image: confluentinc/cp-zookeeper:latest
@@ -17,8 +9,7 @@ services:
       - 22181:2181
     networks:
       - app-network
-    logging: *default-logging
-
+  
   kafka:
     image: confluentinc/cp-kafka:latest
     depends_on:
@@ -36,7 +27,6 @@ services:
       KAFKA_CREATE_TOPICS: "bpm-topic:1:1"
     networks:
       - app-network
-    logging: *default-logging
 
   process-service:
     image: process-service:v0.0.1
@@ -50,7 +40,6 @@ services:
       - ../test:/app/test
     networks:
     - app-network
-    logging: *default-logging
 
   definition-service:
     image: definition-service:v0.0.1
@@ -64,8 +53,6 @@ services:
       - ../test:/app/test
     networks:
     - app-network
-    logging: *default-logging
-
   frontend:
     image: frontend:0.0.7
     environment:
@@ -74,7 +61,6 @@ services:
       - VITE_KEYCLOAK_CLIENT_ID=uengine
     networks:
       - app-network
-    logging: *default-logging
 
   keycloak:
     image: quay.io/keycloak/keycloak:18.0.1
@@ -95,8 +81,7 @@ services:
     command: ["start-dev", "--import-realm"]
     networks:
       - app-network
-    logging: *default-logging
-
+  
   gateway:
     image: keycloak-gateway:0.0.5
     ports:
@@ -119,7 +104,6 @@ services:
       retries: 3
     networks:
       - app-network
-    logging: *default-logging
 
 volumes:
   archive:

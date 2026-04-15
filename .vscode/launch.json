@@ -9,14 +9,22 @@
             "name": "ProcessServiceApplication",
             "request": "launch",
             "mainClass": "org.uengine.five.ProcessServiceApplication",
-            "projectName": "process-service"
+            "projectName": "process-service",
+            "console": "integratedTerminal",
+            "env": {
+                "UENGINE_BASEPATH": "${workspaceFolder}"
+            }
         },
         {
             "type": "java",
             "name": "DefinitionServiceApplication",
             "request": "launch",
             "mainClass": "org.uengine.five.DefinitionServiceApplication",
-            "projectName": "definition-service"
+            "projectName": "definition-service",
+            "console": "integratedTerminal",
+            "env": {
+                "UENGINE_BASEPATH": "${workspaceFolder}"
+            }
         },
         {
             "type": "java",
@@ -46,7 +54,6 @@
             "projectName": "uengine-definition"
         },
         {
-            "java.home": "/Library/Java/JavaVirtualMachines/jdk1.8.0_45.jdk/Contents/Home",
             "type": "java",
             "name": "Debug (Launch)-ProcessServiceApplication<uengine-process>",
             "request": "launch",

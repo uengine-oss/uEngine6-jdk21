@@ -1,0 +1,36 @@
+# PostgreSQL 단독 기동 (앱은 호스트에서 실행 시 localhost:5432 로 접속)
+# 사용: docker compose -f infra/docker-compose.postgres.yml up -d
+# 앱 프로필: SPRING_PROFILES_ACTIVE=postgres
+# 같은 Docker 네트워크의 다른 컨테이너에서 접속 시 호스트명: postgres, 포트: 5432
+
+version: '3.8'
+
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "100m"
+    max-file: "1"
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: uengine-postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-uengine}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-uengine}
+      POSTGRES_DB: ${POSTGRES_DB:-uengine}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - uengine-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      # POSTGRES_USER/DB 변경 시 아래 -U/-d 도 맞출 것
+      test: ["CMD-SHELL", "pg_isready -U uengine -d uengine"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+    logging: *default-logging
+
+volumes:
+  uengine-postgres-data:

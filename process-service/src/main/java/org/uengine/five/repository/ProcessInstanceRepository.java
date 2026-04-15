@@ -18,7 +18,7 @@ import org.uengine.five.entity.ProcessInstanceEntity;
 
 /**
  * 프로세스 인스턴스 Repository 공통 정의.
- * 구현체는 프로필별로 ProcessInstanceRepositoryH2 / ProcessInstanceRepositoryOracle 사용.
+ * 구현체: oracle 프로필 → Oracle, 그 외(default·docker·postgres 등) → H2 스타일 JPQL(ProcessInstanceRepositoryH2).
  */
 @org.springframework.data.repository.NoRepositoryBean
 public interface ProcessInstanceRepository extends JpaRepository<ProcessInstanceEntity, Long> {

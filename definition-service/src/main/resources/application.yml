@@ -18,7 +18,8 @@ uengine:
         
 spring:
   profiles:
-    active: ${SPRING_PROFILES_ACTIVE:default}
+    # active: ${SPRING_PROFILES_ACTIVE:default}
+    active: ${SPRING_PROFILES_ACTIVE:postgres}
   datasource:
     url: jdbc:h2:mem:testdb
     driver-class-name: org.h2.Driver
@@ -107,6 +108,26 @@ spring:
       initialization-fail-timeout: 30000
   jpa:
     database-platform: org.hibernate.dialect.Oracle12cDialect
+    hibernate:
+      ddl-auto: update
+
+---
+# DB: PostgreSQL (infra/docker-compose.postgres.yml 기동 후 SPRING_PROFILES_ACTIVE=postgres)
+# 호스트에서 앱 실행 시: POSTGRES_HOST=localhost (기본값). Docker 네트워크 내에서는 postgres.
+spring:
+  config:
+    activate:
+      on-profile: postgres
+  datasource:
+    url: jdbc:postgresql://${POSTGRES_HOST:localhost}:${POSTGRES_PORT:5432}/${POSTGRES_DB:uengine}
+    username: ${POSTGRES_USER:uengine}
+    password: ${POSTGRES_PASSWORD:uengine}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      connection-timeout: 30000
+      initialization-fail-timeout: 30000
+  jpa:
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
     hibernate:
       ddl-auto: update
 

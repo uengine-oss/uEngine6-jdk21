@@ -22,6 +22,7 @@ import org.uengine.kernel.GlobalContext;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import org.springframework.cloud.stream.function.StreamBridge;
 import org.springframework.context.ApplicationContext;
 import org.springframework.messaging.MessageHeaders;
 import org.springframework.messaging.support.MessageBuilder;
@@ -54,7 +55,7 @@ public class AsyncEventListenerTest {
     private EventMappingRepository eventMappingRepository;
 
     @Autowired
-    private Streams processor;
+    private StreamBridge streamBridge;
 
     // @Autowired
     // private MessageCollector messageCollector;
@@ -90,9 +91,8 @@ public class AsyncEventListenerTest {
             troubleTicketIssued.setDescription("sw isn't working.");
 
             String msg = objectMapper.writeValueAsString(troubleTicketIssued);
-            processor
-                .inboundGreetings()
-                .send ( 
+            streamBridge.send(
+                    Streams.INPUT,
                     MessageBuilder
                         .withPayload(msg)
                         .setHeader(
@@ -100,8 +100,7 @@ public class AsyncEventListenerTest {
                             MimeTypeUtils.APPLICATION_JSON
                         )
                         .setHeader("type", troubleTicketIssued.getClass().getSimpleName())
-                        .build()
-                );
+                        .build());
         } catch (JsonProcessingException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
@@ -133,9 +132,8 @@ public class AsyncEventListenerTest {
             troubleIssued.setType("sw");
             troubleIssued.setDescription("sw isn't working.");
             String msg = objectMapper.writeValueAsString(troubleIssued);
-            processor
-                .inboundGreetings()
-                .send(
+            streamBridge.send(
+                    Streams.INPUT,
                     MessageBuilder
                         .withPayload(msg)
                         .setHeader(
@@ -143,8 +141,7 @@ public class AsyncEventListenerTest {
                             MimeTypeUtils.APPLICATION_JSON
                         )
                         .setHeader("type", troubleIssued.getClass().getSimpleName())
-                        .build()
-                );
+                        .build());
             // assertEquals("TroubleIssued should be in STATUS_COMPLETED status", Activity.STATUS_COMPLETED, instance.getStatus("Activity_1js38su"));
 
             

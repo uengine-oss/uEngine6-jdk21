@@ -70,6 +70,12 @@
       <version>21.9.0.0</version>
       <scope>runtime</scope>
     </dependency>
+    <!-- PostgreSQL (postgres 프로필 사용 시) — 버전은 Spring Boot BOM -->
+    <dependency>
+      <groupId>org.postgresql</groupId>
+      <artifactId>postgresql</artifactId>
+      <scope>runtime</scope>
+    </dependency>
       <!-- lombok -->
 
     <dependency>
