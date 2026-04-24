@@ -56,14 +56,6 @@ public interface ProcessInstanceRepositoryH2 extends ProcessInstanceRepository {
             Pageable pageable);
 
     @Override
-    @Query("SELECT pi FROM ProcessInstanceEntity pi " +
-            "WHERE CAST(regexp_like(pi.groups, :pattern) AS boolean) = true " +
-            "AND (:status is null or pi.status = :status) " +
-            "ORDER BY pi.startedDate DESC")
-    Page<ProcessInstanceEntity> findAllByGroupsRegex(@Param("pattern") String pattern,
-            @Param("status") String status, Pageable pageable);
-
-    @Override
     @Query("select pi from ProcessInstanceEntity pi where (:name is null or pi.name like CONCAT('%',:name,'%')) and (:status is null or pi.status = :status) and (:startedDate is null or pi.startedDate >= :startedDate) and (:finishedDate is null or :finishedDate >= pi.finishedDate ) and (:subProcess is null or :subProcess = '' or (pi.subProcess = true and (:subProcess = 'true' or :subProcess = '1')) or (pi.subProcess = false and (:subProcess = 'false' or :subProcess = '0'))) order by pi.startedDate desc")
     Page<ProcessInstanceEntity> findByName(@Param("name") String name, @Param("status") String status,
             @Param("startedDate") String startedDate, @Param("finishedDate") String finishedDate,

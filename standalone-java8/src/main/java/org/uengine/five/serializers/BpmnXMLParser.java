@@ -245,14 +245,10 @@ public class BpmnXMLParser {
         for (int l = 0; l < propertiesNodes.getLength(); l++) {
             Node propertiesNode = propertiesNodes.item(l);
             if (propertiesNode.getNodeType() == Node.ELEMENT_NODE) {
-                NodeList jsonNodes = ((Element) propertiesNode).getElementsByTagName("uengine:json");
-                for (int m = 0; m < jsonNodes.getLength(); m++) {
-                    Node jsonNode = jsonNodes.item(m);
-                    if (jsonNode.getNodeType() == Node.CDATA_SECTION_NODE || jsonNode.getNodeType() == Node.TEXT_NODE
-                            || jsonNode.getNodeType() == Node.ELEMENT_NODE) {
-                        String jsonText = jsonNode.getTextContent();
-                        return objectMapper.readValue(jsonText, Role.class);
-                    }
+                Element propertiesElement = (Element) propertiesNode;
+                String jsonText = resolveUenginePropertiesJsonText(propertiesElement);
+                if (jsonText != null && !jsonText.trim().isEmpty()) {
+                    return objectMapper.readValue(jsonText, Role.class);
                 }
             }
         }
@@ -413,26 +409,45 @@ public class BpmnXMLParser {
         String type = variableElement.getAttribute("type");
         ProcessVariable variable = new ProcessVariable();
 
+        String jsonText = null;
         NodeList jsonNodes = variableElement.getElementsByTagName("uengine:json");
         for (int m = 0; m < jsonNodes.getLength(); m++) {
             Node jsonNode = jsonNodes.item(m);
             if (jsonNode.getNodeType() == Node.CDATA_SECTION_NODE || jsonNode.getNodeType() == Node.TEXT_NODE
                     || jsonNode.getNodeType() == Node.ELEMENT_NODE) {
-                String jsonText = jsonNode.getTextContent();
-                ObjectNode jsonVariableNode = (ObjectNode) objectMapper.readTree(jsonText);
-                jsonVariableNode.remove("datasource");
-                jsonVariableNode.remove("type");
-
-                jsonText = objectMapper.writeValueAsString(jsonVariableNode);
-
-                variable = objectMapper.readValue(jsonText, ProcessVariable.class);
-                variable.setName(varName);
-                String javaType = convertToJavaType(type);
-                variable.setType(Class.forName(javaType));
+                String t = jsonNode.getTextContent();
+                if (t != null && !t.trim().isEmpty()) {
+                    jsonText = t;
+                    break;
+                }
+            }
+        }
+        if (jsonText == null || jsonText.trim().isEmpty()) {
+            String attrJson = variableElement.getAttribute("json");
+            if (attrJson != null && !attrJson.trim().isEmpty()) {
+                jsonText = attrJson;
             }
         }
 
-        processDefinition.addProcessVariable(variable);
+        if (jsonText != null && !jsonText.trim().isEmpty()) {
+            ObjectNode jsonVariableNode = (ObjectNode) objectMapper.readTree(jsonText);
+            jsonVariableNode.remove("datasource");
+            jsonVariableNode.remove("type");
+
+            jsonText = objectMapper.writeValueAsString(jsonVariableNode);
+
+            variable = objectMapper.readValue(jsonText, ProcessVariable.class);
+            variable.setName(varName);
+            String javaType = convertToJavaType(type);
+            variable.setType(Class.forName(javaType));
+        } else if (varName != null && !varName.trim().isEmpty() && type != null && !type.trim().isEmpty()) {
+            variable.setName(varName);
+            variable.setType(Class.forName(convertToJavaType(type)));
+        }
+
+        if (variable.getName() != null && !variable.getName().trim().isEmpty()) {
+            processDefinition.addProcessVariable(variable);
+        }
     }
 
     private void parseNode(Element element, LaneInfo laneInfo, ScopeActivity processDefinition,
@@ -469,17 +484,11 @@ public class BpmnXMLParser {
         for (int k = 0; k < propertiesNodes.getLength(); k++) {
             Node propertiesNode = propertiesNodes.item(k);
             if (propertiesNode.getNodeType() == Node.ELEMENT_NODE) {
-                NodeList jsonNodes = ((Element) propertiesNode).getElementsByTagName("uengine:json");
-                for (int l = 0; l < jsonNodes.getLength(); l++) {
-                    Node jsonNode = jsonNodes.item(l);
-                    if (jsonNode.getNodeType() == Node.CDATA_SECTION_NODE || jsonNode.getNodeType() == Node.TEXT_NODE
-                            || jsonNode.getNodeType() == Node.ELEMENT_NODE) {
-                        String jsonText = jsonNode.getTextContent();
-                        if (!"".equals(jsonText)) {
-                            SequenceFlow jsonSequenceFlow = objectMapper.readValue(jsonText, SequenceFlow.class);
-                            BeanUtils.copyProperties(sequenceFlow, jsonSequenceFlow);
-                        }
-                    }
+                Element propertiesElement = (Element) propertiesNode;
+                String jsonText = resolveUenginePropertiesJsonText(propertiesElement);
+                if (jsonText != null && !"".equals(jsonText.trim())) {
+                    SequenceFlow jsonSequenceFlow = objectMapper.readValue(jsonText, SequenceFlow.class);
+                    BeanUtils.copyProperties(sequenceFlow, jsonSequenceFlow);
                 }
             }
         }
@@ -489,6 +498,41 @@ public class BpmnXMLParser {
         sequenceFlow.setTargetRef(targetRef);
 
         processDefinition.addSequenceFlow(sequenceFlow);
+    }
+
+    /**
+     * {@code <uengine:properties>}의 직계 자식 {@code uengine:json} 텍스트(기존) 또는 {@code json} 속성(compact 저장 포맷)에서
+     * JSON 문자열을 얻는다. 자식이 여러 개면 마지막 비어 있지 않은 값을 사용한다(기존 루프와 동일).
+     */
+    private String resolveUenginePropertiesJsonText(Element propertiesElement) {
+        String lastChildJson = null;
+        NodeList jsonNodes = propertiesElement.getElementsByTagName("uengine:json");
+        for (int k = 0; k < jsonNodes.getLength(); k++) {
+            Node jsonNode = jsonNodes.item(k);
+            if (jsonNode.getNodeType() == Node.CDATA_SECTION_NODE
+                    || jsonNode.getNodeType() == Node.TEXT_NODE
+                    || jsonNode.getNodeType() == Node.ELEMENT_NODE) {
+                Node parent = jsonNode.getParentNode();
+                if (parent == null || parent.getNodeType() != Node.ELEMENT_NODE) {
+                    continue;
+                }
+                if (!"uengine:properties".equals(((Element) parent).getNodeName())) {
+                    continue;
+                }
+                String jsonText = jsonNode.getTextContent();
+                if (jsonText != null && !jsonText.trim().isEmpty()) {
+                    lastChildJson = jsonText;
+                }
+            }
+        }
+        if (lastChildJson != null) {
+            return lastChildJson;
+        }
+        String attrJson = propertiesElement.getAttribute("json");
+        if (attrJson != null && !attrJson.trim().isEmpty()) {
+            return attrJson;
+        }
+        return null;
     }
 
     private void parseActivity(Element element, LaneInfo laneInfo, ScopeActivity processDefinition)
@@ -515,27 +559,22 @@ public class BpmnXMLParser {
                         Node propertiesNode = propertiesNodes.item(j);
                         if (propertiesNode.getNodeType() == Node.ELEMENT_NODE) {
                             Element propertiesElement = (Element) propertiesNode;
-                            NodeList jsonNodes = propertiesElement.getElementsByTagName("uengine:json");
-                            for (int k = 0; k < jsonNodes.getLength(); k++) {
-                                Node jsonNode = jsonNodes.item(k);
-                                if (jsonNode.getNodeType() == Node.CDATA_SECTION_NODE
-                                        || jsonNode.getNodeType() == Node.TEXT_NODE
-                                        || jsonNode.getNodeType() == Node.ELEMENT_NODE) {
-                                    String jsonText = jsonNode.getTextContent();
-                                    if (jsonText.contains("_type")) {
-                                        clazz = Activity.class;
-                                    }
+                            String jsonText = resolveUenginePropertiesJsonText(propertiesElement);
+                            if (jsonText == null || jsonText.trim().isEmpty()) {
+                                continue;
+                            }
+                            if (jsonText.contains("_type")) {
+                                clazz = Activity.class;
+                            }
 
-                                    Object jsonObject = objectMapper.readValue(jsonText, clazz);
-                                    if (className.equals("SubProcess") && jsonObject instanceof SubProcess) {
-                                        task = (SubProcess) jsonObject;
-                                    } else if (className.equals("BoundaryEvent")) {
-                                        task = (Event) jsonObject;
-                                        ((Event) task).setAttachedToRef(element.getAttribute("attachedToRef"));
-                                    } else {
-                                        task = (Activity) jsonObject;
-                                    }
-                                }
+                            Object jsonObject = objectMapper.readValue(jsonText, clazz);
+                            if (className.equals("SubProcess") && jsonObject instanceof SubProcess) {
+                                task = (SubProcess) jsonObject;
+                            } else if (className.equals("BoundaryEvent")) {
+                                task = (Event) jsonObject;
+                                ((Event) task).setAttachedToRef(element.getAttribute("attachedToRef"));
+                            } else {
+                                task = (Activity) jsonObject;
                             }
                         }
                     }

@@ -12,7 +12,6 @@ import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 import org.uengine.five.overriding.CLOBProcessInstance;
 import org.uengine.five.overriding.EmailServiceLocalImpl;
 // import org.uengine.five.overriding.AuditActivityFilter;
-import org.uengine.five.overriding.BusinessRuleTaskAutoEvaluatorFilter;
 import org.uengine.five.overriding.InstanceDataAppendingActivityFilter;
 import org.uengine.five.overriding.InstanceServiceLocalImpl;
 import org.uengine.five.overriding.JPAProcessInstance;
@@ -121,11 +120,6 @@ public class ProcessServiceWebConfig {
     @Bean
     public ActivityFilter instanceDataAppendingFilter() {
         return new InstanceDataAppendingActivityFilter();
-    }
-
-    @Bean
-    public ActivityFilter businessRuleTaskAutoEvaluatorFilter() {
-        return new BusinessRuleTaskAutoEvaluatorFilter();
     }
 
     @Bean

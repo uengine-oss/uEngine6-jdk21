@@ -1769,7 +1769,11 @@ public abstract class Activity implements IElement, Validatable, java.io.Seriali
 			Map<String, Object> rootObject = new HashMap<>();
 			if (getProcessDefinition().getProcessVariables() != null) {
 				for (ProcessVariable processVariable : getProcessDefinition().getProcessVariables()) {
-					rootObject.put(processVariable.getName(), instance.get("", processVariable.getName()));
+					String pvName = processVariable.getName();
+					if (pvName == null || pvName.trim().isEmpty()) {
+						continue;
+					}
+					rootObject.put(pvName, instance.get("", pvName));
 				}
 			}
 

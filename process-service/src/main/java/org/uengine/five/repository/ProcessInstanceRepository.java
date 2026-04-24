@@ -3,6 +3,7 @@ package org.uengine.five.repository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -21,7 +22,9 @@ import org.uengine.five.entity.ProcessInstanceEntity;
  * 구현체: oracle 프로필 → Oracle, 그 외(default·docker·postgres 등) → H2 스타일 JPQL(ProcessInstanceRepositoryH2).
  */
 @org.springframework.data.repository.NoRepositoryBean
-public interface ProcessInstanceRepository extends JpaRepository<ProcessInstanceEntity, Long> {
+public interface ProcessInstanceRepository
+        extends JpaRepository<ProcessInstanceEntity, Long>,
+                JpaSpecificationExecutor<ProcessInstanceEntity> {
 
     @Query("select pi from ProcessInstanceEntity pi where exists (select 1 from WorklistEntity wl where wl.endpoint = ?#{loggedUserId})")
     List<ProcessInstanceEntity> findAllICanSee();
@@ -71,9 +74,6 @@ public interface ProcessInstanceRepository extends JpaRepository<ProcessInstance
 
         @Query("select pi from ProcessInstanceEntity pi order by pi.startedDate desc")
         Page<ProcessInstanceEntity> findAll(Pageable pageable);
-
-        Page<ProcessInstanceEntity> findAllByGroupsRegex(@Param("pattern") String pattern,
-                @Param("status") String status, Pageable pageable);
 
         Page<ProcessInstanceEntity> findByName(@Param("name") String name, @Param("status") String status,
             @Param("startedDate") String startedDate, @Param("finishedDate") String finishedDate,

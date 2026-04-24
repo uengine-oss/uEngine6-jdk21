@@ -32,5 +32,21 @@ services:
     restart: unless-stopped
     logging: *default-logging
 
+  # 브라우저 DB 뷰어 (DBeaver 웹판). http://localhost:8089
+  # 첫 접속 시 admin 계정 생성 + DB 연결 추가 wizard 한 번만 진행 (아래 "최초 설정" 안내 참고).
+  cloudbeaver:
+    image: dbeaver/cloudbeaver:latest
+    container_name: uengine-cloudbeaver
+    ports:
+      - "8089:8978"
+    volumes:
+      - uengine-cloudbeaver-data:/opt/cloudbeaver/workspace
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+    logging: *default-logging
+
 volumes:
   uengine-postgres-data:
+  uengine-cloudbeaver-data:

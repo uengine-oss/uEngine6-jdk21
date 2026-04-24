@@ -1,4 +1,5 @@
-version: '3.8'
+# Compose v2: 최상단 version 키는 obsolete — 제거
+# 로컬 전용 이미지 태그(process-service 등)는 Hub pull 금지 → pull_policy: never
 
 # 컨테이너별 로그 디스크 상한(회전): 단일 파일 최대 100MB × 1개 보관
 x-logging: &default-logging
@@ -7,9 +8,10 @@ x-logging: &default-logging
     max-size: "100m"
     max-file: "1"
 
+# latest 는 KRaft 전용 엔트리로 바뀌어 KAFKA_PROCESS_ROLES 를 요구할 수 있음 → ZK 모드와 맞는 버전 고정
 services:
   zookeeper:
-    image: confluentinc/cp-zookeeper:latest
+    image: confluentinc/cp-zookeeper:7.6.1
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
@@ -20,7 +22,7 @@ services:
     logging: *default-logging
 
   kafka:
-    image: confluentinc/cp-kafka:latest
+    image: confluentinc/cp-kafka:7.6.1
     depends_on:
       - zookeeper
     ports:
@@ -40,6 +42,7 @@ services:
 
   process-service:
     image: process-service:v0.0.1
+    pull_policy: never
     depends_on:
       - kafka
     volumes:
@@ -54,6 +57,7 @@ services:
 
   definition-service:
     image: definition-service:v0.0.1
+    pull_policy: never
     depends_on:
       - kafka
     volumes:
@@ -68,6 +72,7 @@ services:
 
   frontend:
     image: frontend:0.0.7
+    pull_policy: never
     environment:
       - VITE_KEYCLOAK_URL=http://keycloak:8080
       - VITE_KEYCLOAK_REALM=uengine
@@ -99,6 +104,7 @@ services:
 
   gateway:
     image: keycloak-gateway:0.0.5
+    pull_policy: never
     ports:
       - 8088:8080
     depends_on:

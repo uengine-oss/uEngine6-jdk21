@@ -12,6 +12,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.Scope;
+import org.springframework.scheduling.annotation.EnableAsync;
 import org.uengine.five.overriding.ActivityQueue;
 import org.uengine.five.overriding.EventMappingDeployFilter;
 import org.uengine.five.service.IAMCompanyRoleMapping;
@@ -31,6 +32,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 
 @SpringBootApplication
+@EnableAsync
 @EnableFeignClients
 @ComponentScan(basePackages = { "org.uengine.kernel.bpmn", "org.uengine.five" })
 // WAR 배포 시: 아래처럼 SpringBootServletInitializer 상속 후 configure() 오버라이드 (import: SpringApplicationBuilder, SpringBootServletInitializer)

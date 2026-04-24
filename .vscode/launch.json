@@ -4,6 +4,8 @@
     // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
     "configurations": [
+        // Java 디버그의 integratedTerminal은 워크스페이스 `.vscode/settings.json`의
+        // `terminal.integrated.automationProfile.windows`(chcp 65001)로 띄워진다.
         {
             "type": "java",
             "name": "ProcessServiceApplication",
@@ -11,6 +13,7 @@
             "mainClass": "org.uengine.five.ProcessServiceApplication",
             "projectName": "process-service",
             "console": "integratedTerminal",
+            "vmArgs": "-Dfile.encoding=UTF-8 -Dstdout.encoding=UTF-8 -Dstderr.encoding=UTF-8",
             "env": {
                 "UENGINE_BASEPATH": "${workspaceFolder}"
             }
@@ -22,6 +25,7 @@
             "mainClass": "org.uengine.five.DefinitionServiceApplication",
             "projectName": "definition-service",
             "console": "integratedTerminal",
+            "vmArgs": "-Dfile.encoding=UTF-8 -Dstdout.encoding=UTF-8 -Dstderr.encoding=UTF-8",
             "env": {
                 "UENGINE_BASEPATH": "${workspaceFolder}"
             }
@@ -30,28 +34,44 @@
             "type": "java",
             "name": "Debug (Launch) - Current File",
             "request": "launch",
-            "mainClass": "${file}"
+            "mainClass": "${file}",
+            "vmArgs": "-Dfile.encoding=UTF-8 -Dstdout.encoding=UTF-8 -Dstderr.encoding=UTF-8",
+            "env": {
+                "UENGINE_BASEPATH": "${workspaceFolder}"
+            }
         },
         {
             "type": "java",
             "name": "Debug (Launch)-Application<bpm-event-consumer-kafka>",
             "request": "launch",
             "mainClass": "org.uengine.bpm.eventconsumer.kafka.Application",
-            "projectName": "bpm-event-consumer-kafka"
+            "projectName": "bpm-event-consumer-kafka",
+            "vmArgs": "-Dfile.encoding=UTF-8 -Dstdout.encoding=UTF-8 -Dstderr.encoding=UTF-8",
+            "env": {
+                "UENGINE_BASEPATH": "${workspaceFolder}"
+            }
         },
         {
             "type": "java",
             "name": "Debug (Launch)-Application<semantic-entity>",
             "request": "launch",
             "mainClass": "org.uengine.msa.Application",
-            "projectName": "semantic-entity"
+            "projectName": "semantic-entity",
+            "vmArgs": "-Dfile.encoding=UTF-8 -Dstdout.encoding=UTF-8 -Dstderr.encoding=UTF-8",
+            "env": {
+                "UENGINE_BASEPATH": "${workspaceFolder}"
+            }
         },
         {
             "type": "java",
             "name": "Debug (Launch)-DefinitionServiceApplication<uengine-definition>",
             "request": "launch",
             "mainClass": "org.uengine.five.DefinitionServiceApplication",
-            "projectName": "uengine-definition"
+            "projectName": "uengine-definition",
+            "vmArgs": "-Dfile.encoding=UTF-8 -Dstdout.encoding=UTF-8 -Dstderr.encoding=UTF-8",
+            "env": {
+                "UENGINE_BASEPATH": "${workspaceFolder}"
+            }
         },
         {
             "type": "java",
@@ -59,7 +79,9 @@
             "request": "launch",
             "mainClass": "org.uengine.five.ProcessServiceApplication",
             "projectName": "uengine-process",
+            "vmArgs": "-Dfile.encoding=UTF-8 -Dstdout.encoding=UTF-8 -Dstderr.encoding=UTF-8",
             "env": {
+                "UENGINE_BASEPATH": "${workspaceFolder}",
                 "server.port": "9094"
             }
         },
@@ -68,7 +90,11 @@
             "name": "Debug (Launch)-Application<uengine-proxy>",
             "request": "launch",
             "mainClass": "org.uengine.zuul.Application",
-            "projectName": "uengine-proxy"
+            "projectName": "uengine-proxy",
+            "vmArgs": "-Dfile.encoding=UTF-8 -Dstdout.encoding=UTF-8 -Dstderr.encoding=UTF-8",
+            "env": {
+                "UENGINE_BASEPATH": "${workspaceFolder}"
+            }
         }
     ]
 }

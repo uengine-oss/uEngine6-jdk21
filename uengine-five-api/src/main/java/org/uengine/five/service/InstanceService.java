@@ -168,6 +168,11 @@ public interface InstanceService {
         @RequestMapping(value = "/definition-changes", method = RequestMethod.POST)
         public void postCreatedRawDefinition(@RequestBody String definitionPath) throws Exception;
 
+        @RequestMapping(value = "/definition-changes/sync-all", method = RequestMethod.POST, produces = "application/json;charset=UTF-8")
+        public Map<String, Object> syncAllDefinitionChanges(
+                        @org.springframework.web.bind.annotation.RequestParam(value = "clearAllEventMappings", required = false, defaultValue = "false") boolean clearAllEventMappings)
+                        throws Exception;
+
         @RequestMapping(value = "/dry-run", method = RequestMethod.POST, produces = "application/json;charset=UTF-8")
         public Object dryRun(@RequestBody ProcessExecutionCommand command) throws Exception;
 

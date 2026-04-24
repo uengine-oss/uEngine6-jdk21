@@ -150,6 +150,7 @@ public class EventMappingDeployFilter implements DeployFilter {
                 }
 
                 eventMappingRepository.save(eventMappingEntity);
+                logRegisteredEventMapping("bpmn-event", eventMappingEntity);
             }
         } else {
             saveEventMappingEntity(activity, definition, isStartEvent);
@@ -193,10 +194,25 @@ public class EventMappingDeployFilter implements DeployFilter {
                 eventMappingEntity.setIsStartEvent(isStartEvent);
 
                 eventMappingRepository.save(eventMappingEntity);
+                logRegisteredEventMapping("event-sync", eventMappingEntity);
             }
         } catch (Exception e) {
             throw new UEngineException("Error when to save EventMappingEntity: " + activity.getName(), e);
         }
+    }
+
+    private void logRegisteredEventMapping(String source, EventMappingEntity eventMappingEntity) {
+        if (eventMappingEntity == null) {
+            return;
+        }
+        log.info(
+                "Registered event mapping: source={}, definitionId={}, eventType={}, correlationKey={}, tracingTag={}, isStartEvent={}",
+                safe(source),
+                safe(eventMappingEntity.getDefinitionId()),
+                safe(eventMappingEntity.getEventType()),
+                safe(eventMappingEntity.getCorrelationKey()),
+                safe(eventMappingEntity.getTracingTag()),
+                eventMappingEntity.isStartEvent());
     }
 
     private static boolean isNullOrBlank(String v) {

@@ -1,23 +1,22 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<bpmn:definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:uengine="http://uengine" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="Definitions_0bfky9r" name="test/test" targetNamespace="http://bpmn.io/schema/bpmn" exporter="bpmn-js (https://demo.bpmn.io)" exporterVersion="16.4.0">
+<?xml version="1.0" encoding="UTF-8"?><bpmn:definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:uengine="http://uengine" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="Definitions_0bfky9r" name="test/test" targetNamespace="http://bpmn.io/schema/bpmn" exporter="bpmn-js (https://demo.bpmn.io)" exporterVersion="16.4.0">
   <bpmn:collaboration id="Collaboration_1h6tb6w">
     <bpmn:participant id="Participant_165r4td" name="test/test" processRef="Process_1oscmbn">
       <bpmn:extensionElements>
-        <uengine:properties json="{}" />
+        <uengine:properties json="{}"/>
       </bpmn:extensionElements>
     </bpmn:participant>
   </bpmn:collaboration>
-  <bpmn:process id="Process_1oscmbn" isExecutable="true">
+  <bpmn:process id="Process_1oscmbn" isExecutable="true" name="test/test">
     <bpmn:extensionElements>
-      <uengine:properties json="{&#34;definitionName&#34;:&#34;test/test&#34;,&#34;version&#34;:&#34;0.1&#34;,&#34;shortDescription&#34;:{&#34;text&#34;:null}}">
-        <uengine:variable json="{&#34;defaultValue&#34;:&#34;&#34;,&#34;name&#34;:&#34;임시저장변수&#34;,&#34;type&#34;:&#34;Text&#34;}" name="임시저장변수" type="Text" />
-        <uengine:variable json="{&#34;defaultValue&#34;:{&#34;_type&#34;:&#34;org.uengine.contexts.HtmlFormContext&#34;,&#34;formDefId&#34;:&#34;서브프로세스 활용/고장내용M&#34;,&#34;filePath&#34;:&#34;서브프로세스 활용/고장내용M.form&#34;}}" name="테스트 폼" type="Form" />
-      </uengine:properties>
+      <uengine:properties>
+        <uengine:variable json="{&quot;defaultValue&quot;:&quot;&quot;,&quot;name&quot;:&quot;임시저장변수&quot;,&quot;type&quot;:&quot;Text&quot;}" name="임시저장변수" type="Text"/>
+        <uengine:variable json="{&quot;defaultValue&quot;:{&quot;_type&quot;:&quot;org.uengine.contexts.HtmlFormContext&quot;,&quot;formDefId&quot;:&quot;서브프로세스 활용/고장내용M&quot;,&quot;filePath&quot;:&quot;서브프로세스 활용/고장내용M.form&quot;}}" name="테스트 폼" type="Form"/>
+      <uengine:json>{"definitionName":"test/test","version":"0.2","shortDescription":{"text":null}}</uengine:json></uengine:properties>
     </bpmn:extensionElements>
     <bpmn:laneSet id="LaneSet_01dabo1">
       <bpmn:lane id="Lane_0c5r2nv" name="신고자">
         <bpmn:extensionElements>
-          <uengine:properties json="{&#34;roleResolutionContext&#34;:{&#34;_type&#34;:&#34;org.uengine.five.overriding.IAMRoleResolutionContext&#34;,&#34;scope&#34;:&#34;manager&#34;}}" />
+          <uengine:properties json="{&quot;roleResolutionContext&quot;:{&quot;_type&quot;:&quot;org.uengine.five.overriding.IAMRoleResolutionContext&quot;,&quot;scope&quot;:&quot;manager&quot;}}"/>
         </bpmn:extensionElements>
         <bpmn:flowNodeRef>Event_0ny0on5</bpmn:flowNodeRef>
         <bpmn:flowNodeRef>Activity_1gsxyw5</bpmn:flowNodeRef>
@@ -26,45 +25,45 @@
       </bpmn:lane>
       <bpmn:lane id="Lane_0kydkeu" name="관리자">
         <bpmn:extensionElements>
-          <uengine:properties json="{&#34;roleResolutionContext&#34;:{&#34;_type&#34;:&#34;org.uengine.five.overriding.IAMRoleResolutionContext&#34;,&#34;scope&#34;:&#34;manager&#34;}}" />
+          <uengine:properties json="{&quot;roleResolutionContext&quot;:{&quot;_type&quot;:&quot;org.uengine.five.overriding.IAMRoleResolutionContext&quot;,&quot;scope&quot;:&quot;manager&quot;}}"/>
         </bpmn:extensionElements>
         <bpmn:flowNodeRef>Activity_1qpz5ts</bpmn:flowNodeRef>
       </bpmn:lane>
     </bpmn:laneSet>
-    <bpmn:sequenceFlow id="Flow_0f5cvw2" sourceRef="Activity_1gsxyw5" targetRef="Activity_1qpz5ts" waypoints="[object Object],[object Object],[object Object],[object Object]" />
-    <bpmn:sequenceFlow id="Flow_15nhx2x" sourceRef="Activity_1qpz5ts" targetRef="Activity_0297msh" waypoints="[object Object],[object Object],[object Object],[object Object]" />
-    <bpmn:sequenceFlow id="Flow_0tw2fiq" sourceRef="Activity_0297msh" targetRef="Event_0tu0p27" waypoints="[object Object],[object Object]" />
-    <bpmn:sequenceFlow id="Flow_1g0lk2g" sourceRef="Event_0ny0on5" targetRef="Activity_1gsxyw5" waypoints="[object Object],[object Object]" />
+    <bpmn:sequenceFlow id="Flow_0f5cvw2" sourceRef="Activity_1gsxyw5" targetRef="Activity_1qpz5ts" waypoints="[object Object],[object Object],[object Object],[object Object]"/>
+    <bpmn:sequenceFlow id="Flow_15nhx2x" sourceRef="Activity_1qpz5ts" targetRef="Activity_0297msh" waypoints="[object Object],[object Object],[object Object],[object Object]"/>
+    <bpmn:sequenceFlow id="Flow_0tw2fiq" sourceRef="Activity_0297msh" targetRef="Event_0tu0p27" waypoints="[object Object],[object Object]"/>
+    <bpmn:sequenceFlow id="Flow_1g0lk2g" sourceRef="Event_0ny0on5" targetRef="Activity_1gsxyw5" waypoints="[object Object],[object Object]"/>
     <bpmn:startEvent id="Event_0ny0on5">
       <bpmn:extensionElements>
-        <uengine:properties json="{&#34;role&#34;:&#34;신고자&#34;}" />
+        <uengine:properties json="{&quot;role&quot;:&quot;신고자&quot;}"/>
       </bpmn:extensionElements>
       <bpmn:outgoing>Flow_1g0lk2g</bpmn:outgoing>
     </bpmn:startEvent>
     <bpmn:userTask id="Activity_1gsxyw5" name="고장신고">
       <bpmn:extensionElements>
-        <uengine:properties json="{&#34;eventSynchronization&#34;:{&#34;eventType&#34;:&#34;&#34;,&#34;attributes&#34;:[{&#34;name&#34;:&#34;신고내용&#34;,&#34;className&#34;:&#34;Array&#34;,&#34;isKey&#34;:false,&#34;isCorrKey&#34;:false}],&#34;mappingContext&#34;:{&#34;mappingElements&#34;:[{&#34;argument&#34;:{&#34;text&#34;:&#34;임시저장변수&#34;},&#34;direction&#34;:&#34;out&#34;,&#34;variable&#34;:{&#34;name&#34;:&#34;[Arguments].신고내용&#34;,&#34;askWhenInit&#34;:false,&#34;isVolatile&#34;:false},&#34;isKey&#34;:false}]}},&#34;_type&#34;:&#34;org.uengine.kernel.HumanActivity&#34;,&#34;role&#34;:&#34;신고자&#34;}" />
+        <uengine:properties json="{&quot;eventSynchronization&quot;:{&quot;eventType&quot;:&quot;&quot;,&quot;attributes&quot;:[{&quot;name&quot;:&quot;신고내용&quot;,&quot;className&quot;:&quot;Array&quot;,&quot;isKey&quot;:false,&quot;isCorrKey&quot;:false}],&quot;mappingContext&quot;:{&quot;mappingElements&quot;:[{&quot;argument&quot;:{&quot;text&quot;:&quot;임시저장변수&quot;},&quot;direction&quot;:&quot;out&quot;,&quot;variable&quot;:{&quot;name&quot;:&quot;[Arguments].신고내용&quot;,&quot;askWhenInit&quot;:false,&quot;isVolatile&quot;:false},&quot;isKey&quot;:false}]}},&quot;_type&quot;:&quot;org.uengine.kernel.HumanActivity&quot;,&quot;role&quot;:&quot;신고자&quot;}"/>
       </bpmn:extensionElements>
       <bpmn:incoming>Flow_1g0lk2g</bpmn:incoming>
       <bpmn:outgoing>Flow_0f5cvw2</bpmn:outgoing>
     </bpmn:userTask>
     <bpmn:userTask id="Activity_0297msh" name="처리확인">
       <bpmn:extensionElements>
-        <uengine:properties json="{&#34;variableForHtmlFormContext&#34;:{&#34;name&#34;:&#34;테스트 폼&#34;},&#34;eventSynchronization&#34;:{&#34;eventType&#34;:&#34;&#34;,&#34;attributes&#34;:[{&#34;name&#34;:&#34;처리결과&#34;,&#34;className&#34;:&#34;String&#34;,&#34;isKey&#34;:false,&#34;isCorrKey&#34;:false}],&#34;mappingContext&#34;:{&#34;mappingElements&#34;:[{&#34;argument&#34;:{&#34;text&#34;:&#34;테스트 폼.고장목록&#34;},&#34;direction&#34;:&#34;out&#34;,&#34;variable&#34;:{&#34;name&#34;:&#34;임시저장변수&#34;,&#34;askWhenInit&#34;:false,&#34;isVolatile&#34;:false},&#34;isKey&#34;:false}]}},&#34;_type&#34;:&#34;org.uengine.kernel.FormActivity&#34;,&#34;role&#34;:&#34;신고자&#34;}" />
+        <uengine:properties json="{&quot;variableForHtmlFormContext&quot;:{&quot;name&quot;:&quot;테스트 폼&quot;},&quot;eventSynchronization&quot;:{&quot;eventType&quot;:&quot;&quot;,&quot;attributes&quot;:[{&quot;name&quot;:&quot;처리결과&quot;,&quot;className&quot;:&quot;String&quot;,&quot;isKey&quot;:false,&quot;isCorrKey&quot;:false}],&quot;mappingContext&quot;:{&quot;mappingElements&quot;:[{&quot;argument&quot;:{&quot;text&quot;:&quot;테스트 폼.고장목록&quot;},&quot;direction&quot;:&quot;out&quot;,&quot;variable&quot;:{&quot;name&quot;:&quot;임시저장변수&quot;,&quot;askWhenInit&quot;:false,&quot;isVolatile&quot;:false},&quot;isKey&quot;:false}]}},&quot;_type&quot;:&quot;org.uengine.kernel.FormActivity&quot;,&quot;role&quot;:&quot;신고자&quot;}"/>
       </bpmn:extensionElements>
       <bpmn:incoming>Flow_15nhx2x</bpmn:incoming>
       <bpmn:outgoing>Flow_0tw2fiq</bpmn:outgoing>
     </bpmn:userTask>
     <bpmn:callActivity id="Activity_1qpz5ts" name="고장접수">
       <bpmn:extensionElements>
-        <uengine:properties json="{&#34;variableBindings&#34;:[{&#34;direction&#34;:&#34;IN-OUT&#34;,&#34;variable&#34;:{&#34;name&#34;:&#34;임시저장변수&#34;},&#34;argument&#34;:{&#34;text&#34;:&#34;고장&#34;},&#34;split&#34;:false}],&#34;roleBindings&#34;:[],&#34;definitionId&#34;:&#34;test/testCall.bpmn&#34;,&#34;forEachVariable&#34;:{&#34;defaultValue&#34;:&#34;&#34;,&#34;name&#34;:&#34;임시저장변수&#34;,&#34;type&#34;:&#34;java.lang.String&#34;},&#34;version&#34;:&#34;1.0&#34;}" />
+        <uengine:properties json="{&quot;variableBindings&quot;:[{&quot;direction&quot;:&quot;IN-OUT&quot;,&quot;variable&quot;:{&quot;name&quot;:&quot;임시저장변수&quot;},&quot;argument&quot;:{&quot;text&quot;:&quot;고장&quot;},&quot;split&quot;:false}],&quot;roleBindings&quot;:[],&quot;definitionId&quot;:&quot;test/testCall.bpmn&quot;,&quot;forEachVariable&quot;:{&quot;defaultValue&quot;:&quot;&quot;,&quot;name&quot;:&quot;임시저장변수&quot;,&quot;type&quot;:&quot;java.lang.String&quot;},&quot;version&quot;:&quot;1.0&quot;}"/>
       </bpmn:extensionElements>
       <bpmn:incoming>Flow_0f5cvw2</bpmn:incoming>
       <bpmn:outgoing>Flow_15nhx2x</bpmn:outgoing>
     </bpmn:callActivity>
     <bpmn:endEvent id="Event_0tu0p27">
       <bpmn:extensionElements>
-        <uengine:properties json="{&#34;role&#34;:&#34;신고자&#34;}" />
+        <uengine:properties json="{&quot;role&quot;:&quot;신고자&quot;}"/>
       </bpmn:extensionElements>
       <bpmn:incoming>Flow_0tw2fiq</bpmn:incoming>
     </bpmn:endEvent>
@@ -72,54 +71,54 @@
   <bpmndi:BPMNDiagram id="BPMNDiagram_1">
     <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Collaboration_1h6tb6w">
       <bpmndi:BPMNShape id="Participant_165r4td_di" bpmnElement="Participant_165r4td" isHorizontal="true">
-        <dc:Bounds x="-30" y="0" width="780" height="240" />
-        <bpmndi:BPMNLabel />
+        <dc:Bounds x="-30" y="0" width="780" height="240"/>
+        <bpmndi:BPMNLabel/>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Lane_0kydkeu_di" bpmnElement="Lane_0kydkeu" isHorizontal="true">
-        <dc:Bounds x="0" y="120" width="750" height="120" />
-        <bpmndi:BPMNLabel />
+        <dc:Bounds x="0" y="120" width="750" height="120"/>
+        <bpmndi:BPMNLabel/>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Lane_0c5r2nv_di" bpmnElement="Lane_0c5r2nv" isHorizontal="true">
-        <dc:Bounds x="0" y="0" width="750" height="120" />
-        <bpmndi:BPMNLabel />
+        <dc:Bounds x="0" y="0" width="750" height="120"/>
+        <bpmndi:BPMNLabel/>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Event_0ny0on5_di" bpmnElement="Event_0ny0on5">
-        <dc:Bounds x="22" y="42" width="36" height="36" />
+        <dc:Bounds x="22" y="42" width="36" height="36"/>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Activity_0gsjof1_di" bpmnElement="Activity_1gsxyw5">
-        <dc:Bounds x="140" y="20" width="100" height="80" />
-        <bpmndi:BPMNLabel />
+        <dc:Bounds x="140" y="20" width="100" height="80"/>
+        <bpmndi:BPMNLabel/>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Activity_10kz2t9_di" bpmnElement="Activity_0297msh">
-        <dc:Bounds x="440" y="20" width="100" height="80" />
-        <bpmndi:BPMNLabel />
+        <dc:Bounds x="440" y="20" width="100" height="80"/>
+        <bpmndi:BPMNLabel/>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Activity_0zflmsd_di" bpmnElement="Activity_1qpz5ts">
-        <dc:Bounds x="290" y="140" width="100" height="80" />
-        <bpmndi:BPMNLabel />
+        <dc:Bounds x="290" y="140" width="100" height="80"/>
+        <bpmndi:BPMNLabel/>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Event_0tu0p27_di" bpmnElement="Event_0tu0p27">
-        <dc:Bounds x="622" y="42" width="36" height="36" />
+        <dc:Bounds x="622" y="42" width="36" height="36"/>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNEdge id="Flow_0f5cvw2_di" bpmnElement="Flow_0f5cvw2">
-        <di:waypoint x="240" y="60" />
-        <di:waypoint x="260" y="60" />
-        <di:waypoint x="260" y="180" />
-        <di:waypoint x="290" y="180" />
+        <di:waypoint x="240" y="60"/>
+        <di:waypoint x="260" y="60"/>
+        <di:waypoint x="260" y="180"/>
+        <di:waypoint x="290" y="180"/>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_15nhx2x_di" bpmnElement="Flow_15nhx2x">
-        <di:waypoint x="390" y="180" />
-        <di:waypoint x="410" y="180" />
-        <di:waypoint x="410" y="60" />
-        <di:waypoint x="440" y="60" />
+        <di:waypoint x="390" y="180"/>
+        <di:waypoint x="410" y="180"/>
+        <di:waypoint x="410" y="60"/>
+        <di:waypoint x="440" y="60"/>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_0tw2fiq_di" bpmnElement="Flow_0tw2fiq">
-        <di:waypoint x="540" y="60" />
-        <di:waypoint x="622" y="60" />
+        <di:waypoint x="540" y="60"/>
+        <di:waypoint x="622" y="60"/>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_1g0lk2g_di" bpmnElement="Flow_1g0lk2g">
-        <di:waypoint x="58" y="60" />
-        <di:waypoint x="140" y="60" />
+        <di:waypoint x="58" y="60"/>
+        <di:waypoint x="140" y="60"/>
       </bpmndi:BPMNEdge>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>

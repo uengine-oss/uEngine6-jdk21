@@ -18,7 +18,12 @@ spring:
 uengine:
   definition:
     # definition-service와 동일한 경로 사용 (같은 definitions 폴더 참조). 불일치 시 "Error when to load definition" 발생.
-    basePath: ${UENGINE_BASEPATH:/Users/heon/Documents/workspace/uEngine6-jdk21}
+    basePath: ${UENGINE_BASEPATH:D:\uEngineProject\uEngine6-jdk21}
+    # 기동 완료(ApplicationReady) 직후 비동기로 /definition-changes/sync-all 과 동일한 전체 동기화 1회
+    sync-on-startup:
+      enabled: true
+      # BPM_EVENT_MAPPING 전체 삭제 후 재구축이 필요할 때만 true
+      clear-all-event-mappings: false
   # 감사 로그: 저장소 유연 구성 (jpa | file | composite | none)
   audit:
     sink: none     # Method 0: None (기본)
@@ -76,6 +81,10 @@ spring:
           contentType: application/json
 
 logging:
+  # Windows 콘솔이 MS949일 때 SLF4J 출력이 깨지지 않도록 명시 (한글 definition 경로 등)
+  charset:
+    console: UTF-8
+    file: UTF-8
   level:
     org.hibernate.type: trace
     org.springframework.cloud: debug
@@ -181,3 +190,7 @@ spring:
     database-platform: org.hibernate.dialect.PostgreSQLDialect
     hibernate:
       ddl-auto: update
+    properties:
+      # ProcessInstanceRepositoryH2 의 JPQL `regexp_like(...)` 를 SQL 로 변환.
+      # 미등록 시 /instances/search/findFilterICanSee 가 500 으로 실패한다.
+      hibernate.metadata_builder_contributor: org.uengine.five.config.OracleHibernateMetadataContributor

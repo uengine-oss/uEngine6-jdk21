@@ -4,8 +4,8 @@
 # EXPOSE 9093
 # ENTRYPOINT ["java","-Xmx256M","-Djava.security.egd=file:/dev/./urandom","-Dserver.port=9093","-jar","/app.jar"]
 
-FROM openjdk:11.0.11-jre-slim
-COPY /target/*-SNAPSHOT.jar definition.jar
+FROM eclipse-temurin:21-jre-jammy
+COPY target/*-SNAPSHOT.jar definition.jar
 COPY src/main/resources/application.yml /app/application.yml
 EXPOSE 8080
 ENV JAVA_OPTS="-Xmx400M -Djava.security.egd=file:/dev/./urandom -Dserver.port=8080"

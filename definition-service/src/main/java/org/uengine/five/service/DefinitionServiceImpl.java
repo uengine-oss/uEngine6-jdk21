@@ -17,7 +17,6 @@ import java.util.zip.ZipOutputStream;
 
 import jakarta.annotation.PostConstruct;
 import jakarta.servlet.http.HttpServletRequest;
-import org.springframework.web.bind.annotation.RequestParam;
 
 import org.apache.commons.io.IOUtils;
 import feign.FeignException;
@@ -440,14 +439,21 @@ public class DefinitionServiceImpl implements DefinitionService, DefinitionXMLSe
     //     return new DefinitionResource(resource);
     // }
 
+    /**
+     * Feign {@link DefinitionService#putRawDefinition} 및 {@link #putRawDefinitionByParam} 가 호출한다.
+     * (기존 스텁이 자기 자신을 호출해 StackOverflow 가 났음)
+     */
     @Override
     public Object putRawDefinition(String definitionPath, DefinitionRequest definitionRequest) throws Exception {
-        // TODO Auto-generated method stub
-        return putRawDefinition(definitionPath, definitionRequest);
+        return saveRawDefinitionCore(definitionPath, definitionRequest);
     }
-    
+
+    /**
+     * {@code PUT/POST /definition/raw/**} — 경로 접미사로 defPath 전달 (쿼리 {@code defPath} 와 별개).
+     * 메서드명을 {@code putRawDefinition} 과 분리해 Feign/스프링 매핑과의 혼동·재귀 위험을 줄인다.
+     */
     @RequestMapping(value = DEFINITION_RAW + "/**", method = { RequestMethod.POST, RequestMethod.PUT })
-    public DefinitionResource putRawDefinition(@RequestBody DefinitionRequest definitionRequest,
+    public DefinitionResource putRawDefinitionWithPathSuffix(@RequestBody DefinitionRequest definitionRequest,
             HttpServletRequest request)
             throws Exception {
 
@@ -455,49 +461,61 @@ public class DefinitionServiceImpl implements DefinitionService, DefinitionXMLSe
 
         String definitionPath = path.substring(DEFINITION_RAW.length());
 
-        String fileName = definitionPath.contains("/")
-                ? definitionPath.substring(definitionPath.lastIndexOf("/") + 1)
-                : definitionPath;
-        if (!fileName.contains(".")) {
-            definitionPath = definitionPath + ".bpmn";
+        return saveRawDefinitionCore(definitionPath, definitionRequest);
+    }
+
+    /**
+     * raw 정의 저장 공통 처리 (경로 정규화, 아카이브, process-service 알림).
+     */
+    private DefinitionResource saveRawDefinitionCore(String definitionPath, DefinitionRequest definitionRequest)
+            throws Exception {
+        if (definitionRequest == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "definitionRequest is required");
         }
 
-        String fileExt = UEngineUtil.getFileExt(definitionPath);
+        String dp = definitionPath == null ? "" : definitionPath.trim().replace("\\", "/");
+        if (dp.startsWith("/")) {
+            dp = dp.substring(1);
+        }
+
+        String fileName = dp.contains("/") ? dp.substring(dp.lastIndexOf("/") + 1) : dp;
+        if (!fileName.contains(".")) {
+            dp = dp + ".bpmn";
+        }
+
+        String fileExt = UEngineUtil.getFileExt(dp);
 
         // 버전 아카이브는 BPMN에 대해서만 저장
         if (definitionRequest.getVersion() != null && "bpmn".equalsIgnoreCase(fileExt)) {
             DefaultResource versionResource = new DefaultResource(
-                    "/archive" + definitionPath + "/" + definitionRequest.getVersion() + ".bpmn");
+                    "/archive/" + dp + "/" + definitionRequest.getVersion() + ".bpmn");
             resourceManager.save(versionResource, definitionRequest.getDefinition());
         }
 
-        DefaultResource resource = new DefaultResource(RESOURCE_ROOT + definitionPath);
+        DefaultResource resource = new DefaultResource(RESOURCE_ROOT + "/" + dp);
         resourceManager.save(resource, definitionRequest.getDefinition());
-        
-        try {
-            instanceService.postCreatedRawDefinition(definitionPath);
-        } catch (FeignException fe) {
-            // process-service가 내려준 JSON 바디가 커질 수 있어(message 위주로) 요약해서 리턴
-            HttpStatus status = HttpStatus.resolve(fe.status());
-            if (status == null) status = HttpStatus.BAD_GATEWAY;
 
-            String body = fe.contentUTF8();
-            String summarized = summarizeFeignBody(body, fe);
-            throw new ResponseStatusException(status,
-                    "[process-service:/definition-changes 실패] definitionPath=" + definitionPath + "\n" + summarized,
-                    fe);
-        }
-
-        // Only BPMN definitions should trigger deploy pipeline in process-service.
-        // For businessRules/*.rule (and other non-bpmn raw files), do not call
-        // /definition-changes.
+        // BPMN만 process-service 배포 파이프라인 호출 (중복 호출 제거)
         if ("bpmn".equalsIgnoreCase(fileExt)) {
-            instanceService.postCreatedRawDefinition(definitionPath);
+            try {
+                instanceService.postCreatedRawDefinition(dp);
+            } catch (FeignException fe) {
+                HttpStatus status = HttpStatus.resolve(fe.status());
+                if (status == null) {
+                    status = HttpStatus.BAD_GATEWAY;
+                }
+
+                String body = fe.contentUTF8();
+                String summarized = summarizeFeignBody(body, fe);
+                throw new ResponseStatusException(status,
+                        "[process-service:/definition-changes 실패] definitionPath=" + dp + "\n" + summarized,
+                        fe);
+            }
         }
 
-        if (definitionPath.indexOf(".") == -1) { // it is a package (directory)
+        if (dp.indexOf(".") == -1) { // it is a package (directory)
             IContainer container = new ContainerResource();
-            container.setPath(RESOURCE_ROOT + "/" + definitionPath);
+            container.setPath(RESOURCE_ROOT + "/" + dp);
             resourceManager.createFolder(container);
             return new DefinitionResource(container);
         }
@@ -609,7 +627,8 @@ public class DefinitionServiceImpl implements DefinitionService, DefinitionXMLSe
     @RequestMapping(value = DEFINITION_RAW, method = RequestMethod.PUT, produces = "application/json;charset=UTF-8")
     public DefinitionResource putRawDefinitionByParam(@RequestParam("defPath") String definitionPath,
             @RequestBody DefinitionRequest definitionRequest) throws Exception {
-        return (DefinitionResource) putRawDefinition(definitionPath, definitionRequest);
+        // putRawDefinition(String, …) 경유 시 동일 시그니처 재귀/프록시 혼선 방지 — 코어로 직접 위임
+        return saveRawDefinitionCore(definitionPath, definitionRequest);
     }
 
     @RequestMapping(value = DEFINITION_SYSTEM + "/**", method = { RequestMethod.POST, RequestMethod.PUT })

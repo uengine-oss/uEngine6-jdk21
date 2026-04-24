@@ -5,6 +5,7 @@ import java.util.Map;
 
 import com.fasterxml.jackson.annotation.JsonAlias;
 
+import org.uengine.kernel.GlobalContext;
 import org.uengine.kernel.ParameterContext;
 import org.uengine.kernel.ProcessInstance;
 import org.uengine.kernel.ResultPayload;
@@ -98,8 +99,35 @@ public class BusinessRuleTask extends ReceiveActivity {
     }
 
     /**
-     * BusinessRuleTask는 ReceiveActivity 흐름(메시지 리스너 등록 → 메시지 수신 시 완료)을 그대로 사용합니다.
-     *
+     * {@link BusinessRuleRuntime} 빈이 등록되어 있으면 DMN 평가 → 출력 매핑 → 완료까지
+     * 동기적으로 처리한다. 빈이 없으면 기존 ReceiveActivity 흐름(리스너 등록)으로 폴백한다.
+     */
+    @Override
+    protected void executeActivity(ProcessInstance instance) throws Exception {
+        String ruleId = getBusinessRuleId();
+        BusinessRuleRuntime runtime = lookupRuntime();
+        if (runtime == null || ruleId == null) {
+            super.executeActivity(instance);
+            return;
+        }
+
+        Map<String, Object> inputs = buildRuleInputs(instance);
+        Map<String, Object> outputs = runtime.evaluate(ruleId, inputs);
+        applyRuleOutputs(instance, outputs);
+        fireComplete(instance);
+    }
+
+    private static BusinessRuleRuntime lookupRuntime() {
+        try {
+            return GlobalContext.getComponent(BusinessRuleRuntime.class);
+        } catch (RuntimeException ignore) {
+            // DefaultComponentFactory는 미등록 인터페이스를 newInstance()로 생성하려다 실패하며 예외를 던진다.
+            // 이 경우 기존 ReceiveActivity 흐름으로 폴백하기 위해 null을 반환한다.
+            return null;
+        }
+    }
+
+    /**
      * 메시지 이름은 designer가 세팅하는 message가 아니라, task 자체에서 결정합니다.
      */
     @Override

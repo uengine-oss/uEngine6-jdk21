@@ -685,11 +685,23 @@ public class GlobalContext {
 	}
 
 	public static String getUserId() {
-		return null;
+		// 원래 stub (return null) 이라 SecurityAwareServletFilter 가 토큰에서 email 을 잘 뽑아도
+		// HumanActivity 의 endpoint fallback (setEndpoint(GlobalContext.getUserId())) 이 항상 null 로 끝났다.
+		// → workitem.endpoint 가 비어 todolist / 사이드바에 안 보이는 근본 원인.
+		// SecurityAwareServletFilter 가 이미 UserContext(ThreadLocal) 에 userId 를 셋업하므로 그쪽으로 위임.
+		try {
+			return org.uengine.contexts.UserContext.getThreadLocalInstance().getUserId();
+		} catch (Throwable t) {
+			return null;
+		}
 	}
 
 	public static void setUserId(String userId) {
-
+		try {
+			org.uengine.contexts.UserContext.getThreadLocalInstance().setUserId(userId);
+		} catch (Throwable t) {
+			// no-op
+		}
 	}
 
 	public static <T> Map<String, T> getComponents(Class<T> clazz, Object[] objects) {

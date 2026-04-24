@@ -16,6 +16,7 @@ import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -29,8 +30,8 @@ import java.util.Vector;
 import java.util.concurrent.ConcurrentHashMap;
 
 import jakarta.servlet.http.HttpServletRequest;
-import org.springframework.web.bind.annotation.RequestParam;
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
 import org.springframework.context.ApplicationContext;
@@ -73,6 +74,7 @@ import org.uengine.five.entity.WorklistEntity;
 import org.uengine.five.framework.ProcessTransactionContext;
 import org.uengine.five.framework.ProcessTransactional;
 import org.uengine.five.overriding.JPAProcessInstance;
+import org.uengine.five.repository.EventMappingRepository;
 import org.uengine.five.repository.ProcessInstanceRepository;
 import org.uengine.five.repository.ServiceEndpointRepository;
 import org.uengine.five.repository.WorklistRepository;
@@ -142,6 +144,8 @@ import com.fasterxml.jackson.databind.node.ValueNode;
 @Service
 public class InstanceServiceImpl implements InstanceService {
 
+    private static final Logger log = LoggerFactory.getLogger(InstanceServiceImpl.class);
+
     @Autowired
     DefinitionServiceUtil definitionService;
 
@@ -153,6 +157,9 @@ public class InstanceServiceImpl implements InstanceService {
 
     @Autowired
     WorklistRepository worklistRepository;
+
+    @Autowired
+    EventMappingRepository eventMappingRepository;
 
     @Autowired
     private ApplicationContext context;
@@ -2028,29 +2035,14 @@ public class InstanceServiceImpl implements InstanceService {
                 return;
             }
 
-            String p = defPath.trim().replace("\\", "/");
-            if (p.startsWith("/")) {
-                p = p.substring(1);
-            }
-
-            // Not a BPMN definition: ignore raw changes for business rules / json / rule
-            // files
-            if (p.startsWith("businessRules/")
-                    || p.endsWith(".rule")
-                    || p.startsWith("buisnessRules/")
-                    || p.endsWith(".json")
-                    || "map.json".equals(p)) {
-                return;
-            }
-
-            if (p.endsWith("form"))
+            String p = normalizeDefinitionRelativePath(defPath);
+            if (shouldSkipDefinitionSyncPath(p))
                 return;
 
-            ProcessDefinition definition = (ProcessDefinition) definitionService.getDefinition(p);
-            definition.setId(p);
+            ProcessDefinition definition = loadDefinitionForSync(p);
 
             if (definition != null && definition instanceof ProcessDefinition) {
-                invokeDeployFilters(definition, p);
+                invokeDeployFiltersForSync(definition, p);
             }
         } catch (Exception e) {
             // invokeDeployFilters(DeployFilter.beforeDeploy)에서 발생한 예외(UEngineException 포함)를
@@ -2060,6 +2052,126 @@ public class InstanceServiceImpl implements InstanceService {
                     "Post CreatedRawDefinition : " + buildThrowableDetail(e),
                     e);
         }
+    }
+
+    @ProcessTransactional
+    @RequestMapping(value = "/definition-changes/sync-all", method = RequestMethod.POST, produces = "application/json;charset=UTF-8")
+    public Map<String, Object> syncAllDefinitionChanges(
+            @RequestParam(value = "clearAllEventMappings", required = false, defaultValue = "false") boolean clearAllEventMappings)
+            throws Exception {
+
+        List<String> definitionPaths = collectAllBpmnDefinitionPaths();
+        List<String> failedPaths = new ArrayList<>();
+        int successCount = 0;
+
+        if (clearAllEventMappings) {
+            eventMappingRepository.deleteAll();
+        }
+
+        for (String definitionPath : definitionPaths) {
+            try {
+                ProcessDefinition definition = loadDefinitionForSync(definitionPath);
+                if (definition == null) {
+                    throw new IllegalStateException("DefinitionService returned null");
+                }
+                invokeDeployFiltersForSync(definition, definitionPath);
+                successCount++;
+            } catch (Exception e) {
+                failedPaths.add(definitionPath);
+                log.warn("Failed to sync definition metadata for {}", definitionPath, e);
+            }
+        }
+
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("clearAllEventMappings", clearAllEventMappings);
+        result.put("totalDefinitionCount", definitionPaths.size());
+        result.put("successCount", successCount);
+        result.put("failedCount", failedPaths.size());
+        result.put("failedPaths", failedPaths);
+        return result;
+    }
+
+    protected List<String> collectAllBpmnDefinitionPaths() throws Exception {
+        List<String> paths = new ArrayList<>();
+        collectAllBpmnDefinitionPaths("", paths);
+        Collections.sort(paths);
+        return paths;
+    }
+
+    private void collectAllBpmnDefinitionPaths(String basePath, List<String> paths) throws Exception {
+        List<IResource> resources = listDefinitionResources(basePath);
+        if (resources == null) {
+            return;
+        }
+
+        for (IResource resource : resources) {
+            if (resource == null || resource.getPath() == null) {
+                continue;
+            }
+
+            String relativePath = normalizeDefinitionRelativePath(resource.getPath());
+            if (relativePath == null || relativePath.isBlank() || shouldSkipDefinitionSyncPath(relativePath)) {
+                continue;
+            }
+
+            if (resource.isContainer()) {
+                collectAllBpmnDefinitionPaths(relativePath, paths);
+                continue;
+            }
+
+            if (relativePath.endsWith(".bpmn")) {
+                paths.add(relativePath);
+            }
+        }
+    }
+
+    protected List<IResource> listDefinitionResources(String basePath) throws Exception {
+        String normalizedBasePath = basePath == null ? "" : basePath.trim();
+        IContainer container = new ContainerResource();
+        container.setPath(normalizedBasePath.isEmpty() ? "definitions" : "definitions/" + normalizedBasePath);
+        return resourceManager.listFiles(container);
+    }
+
+    protected ProcessDefinition loadDefinitionForSync(String definitionPath) throws Exception {
+        ProcessDefinition definition = (ProcessDefinition) definitionService.getDefinition(definitionPath);
+        if (definition != null) {
+            definition.setId(definitionPath);
+        }
+        return definition;
+    }
+
+    protected void invokeDeployFiltersForSync(ProcessDefinition definitionDeployed, String path) throws UEngineException {
+        invokeDeployFilters(definitionDeployed, path);
+    }
+
+    private String normalizeDefinitionRelativePath(String path) {
+        if (path == null) {
+            return null;
+        }
+        String normalized = path.trim().replace("\\", "/");
+        if (normalized.startsWith("/")) {
+            normalized = normalized.substring(1);
+        }
+        if (normalized.startsWith("definitions/")) {
+            normalized = normalized.substring("definitions/".length());
+        } else if ("definitions".equals(normalized)) {
+            normalized = "";
+        }
+        return normalized;
+    }
+
+    private boolean shouldSkipDefinitionSyncPath(String path) {
+        if (path == null || path.isBlank()) {
+            return true;
+        }
+        String normalized = path.trim().replace("\\", "/");
+        return normalized.startsWith("archive/")
+                || normalized.startsWith("businessRules/")
+                || normalized.startsWith("buisnessRules/")
+                || normalized.endsWith(".rule")
+                || normalized.endsWith(".json")
+                || "map.json".equals(normalized)
+                || normalized.endsWith("form");
     }
 
     private void invokeDeployFilters(ProcessDefinition definitionDeployed, String path) throws UEngineException {
@@ -2122,7 +2234,7 @@ public class InstanceServiceImpl implements InstanceService {
 
     //
 
-    @ProcessTransactional(readOnly = true)
+    @ProcessTransactional
     @RequestMapping(value = "/dry-run", method = RequestMethod.POST, produces = "application/json;charset=UTF-8")
     public Object dryRun(@RequestBody ProcessExecutionCommand command) throws Exception {
         ProcessExecutionCommand processCommand = new ProcessExecutionCommand();

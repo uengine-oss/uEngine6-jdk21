@@ -1,7 +1,7 @@
-version: '3.8'
+# compose v2: version 생략 — 로컬 태그는 pull_policy: never
 services:
   zookeeper:
-    image: confluentinc/cp-zookeeper:latest
+    image: confluentinc/cp-zookeeper:7.6.1
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
@@ -11,7 +11,7 @@ services:
       - app-network
   
   kafka:
-    image: confluentinc/cp-kafka:latest
+    image: confluentinc/cp-kafka:7.6.1
     depends_on:
       - zookeeper
     ports:
@@ -30,6 +30,7 @@ services:
 
   process-service:
     image: process-service:v0.0.1
+    pull_policy: never
     depends_on:
       - kafka
     volumes:
@@ -43,6 +44,7 @@ services:
 
   definition-service:
     image: definition-service:v0.0.1
+    pull_policy: never
     depends_on:
       - kafka
     volumes:
@@ -55,6 +57,7 @@ services:
     - app-network
   frontend:
     image: frontend:0.0.7
+    pull_policy: never
     environment:
       - VITE_KEYCLOAK_URL=http://keycloak:8080
       - VITE_KEYCLOAK_REALM=uengine
@@ -84,6 +87,7 @@ services:
   
   gateway:
     image: keycloak-gateway:0.0.5
+    pull_policy: never
     ports:
       - 8088:8080
     depends_on:

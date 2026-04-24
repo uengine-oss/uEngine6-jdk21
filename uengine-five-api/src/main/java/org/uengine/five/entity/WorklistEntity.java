@@ -84,7 +84,7 @@ public class WorklistEntity {// implements WorkListDAO {
      * reason: decision 수행 사유(사용자 입력값 그대로 저장)
      */
     @Lob
-    @Column(name = "reason", columnDefinition = "CLOB")
+    @Column(name = "reason")
     String reason;
     int dispatchOption;
     String dispatchParam1;
@@ -410,7 +410,7 @@ public class WorklistEntity {// implements WorkListDAO {
     }
 
     @Lob
-    @Column(name = "payload", columnDefinition = "CLOB")
+    @Column(name = "payload")
     private String payload;
 
     public String getPayload() {

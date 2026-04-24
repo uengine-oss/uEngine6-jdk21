@@ -158,8 +158,8 @@ public class ReceiveActivity extends DefaultActivity implements MessageListener,
 
         instance.addDebugInfo(this);
 
-        if (payload != null && getEventSynchronization() != null 
-                && getEventSynchronization().getMappingContext() != null 
+        if (payload != null && getEventSynchronization() != null
+                && getEventSynchronization().getMappingContext() != null
                 && getEventSynchronization().getMappingContext().getMappingElements() != null) {
 
             Vector payloads = null;

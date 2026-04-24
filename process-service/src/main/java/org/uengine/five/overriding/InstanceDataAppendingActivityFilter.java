@@ -6,7 +6,6 @@ package org.uengine.five.overriding;
 import org.uengine.kernel.*;
 import org.uengine.kernel.bpmn.ServiceTask;
 import org.uengine.webservices.worklist.WorkList;
-import org.uengine.five.framework.ProcessTransactionContext;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -21,7 +20,8 @@ public class InstanceDataAppendingActivityFilter implements ActivityFilter, Seri
 	public void afterExecute(Activity activity, final ProcessInstance instance)
 			throws Exception {
 
-		if (activity instanceof HumanActivity || activity instanceof ServiceTask || activity instanceof ScriptActivity) {
+		if (activity instanceof HumanActivity || activity instanceof ServiceTask
+				|| activity instanceof ScriptActivity) {
 			try {
 				RoleMapping rm = null;
 				if (activity instanceof HumanActivity) {
@@ -35,15 +35,16 @@ public class InstanceDataAppendingActivityFilter implements ActivityFilter, Seri
 					String roleName = null;
 					if (activity.getExtendedAttributes() != null) {
 						Object rn = activity.getExtendedAttributes().get("role");
-						if (rn != null) roleName = String.valueOf(rn);
+						if (rn != null)
+							roleName = String.valueOf(rn);
 					}
 					if (roleName != null) {
 						Role role = instance.getProcessDefinition().getRole(roleName);
-						if (role != null) rm = role.getMapping(instance);
+						if (role != null)
+							rm = role.getMapping(instance);
 					}
 				}
 
-				// rm.fill(instance);
 				if (rm == null && (activity instanceof ServiceTask || activity instanceof ScriptActivity)) {
 					try {
 						rm = RoleMapping.create();
@@ -58,18 +59,20 @@ public class InstanceDataAppendingActivityFilter implements ActivityFilter, Seri
 				if (rm == null)
 					return;
 
-				// ScriptActivity/ServiceTask는 executeActivity 내부에서 fireComplete 전에 afterExecute를 호출하므로
+				// ScriptActivity/ServiceTask는 executeActivity 내부에서 fireComplete 전에
+				// afterExecute를 호출하므로
 				// 여기서 한 번 worklist에 추가된다. 엔진이 executeActivity 반환 후 다시 afterExecute를 호출하면
 				// 중복 추가를 막기 위해 이미 추가된 (rootInstId, trcTag)는 건너뛴다.
 				// if (activity instanceof ServiceTask || activity instanceof ScriptActivity) {
-				// 	String rootInstId = instance.getRootProcessInstanceId();
-				// 	String trcTag = activity.getTracingTag();
-				// 	String dedupeKey = "worklistAppended:" + rootInstId + ":" + trcTag;
-				// 	ProcessTransactionContext tc = ProcessTransactionContext.getThreadLocalInstance();
-				// 	if (tc != null && Boolean.TRUE.equals(tc.getSharedContext(dedupeKey)))
-				// 		return;
-				// 	if (tc != null)
-				// 		tc.setSharedContext(dedupeKey, true);
+				// String rootInstId = instance.getRootProcessInstanceId();
+				// String trcTag = activity.getTracingTag();
+				// String dedupeKey = "worklistAppended:" + rootInstId + ":" + trcTag;
+				// ProcessTransactionContext tc =
+				// ProcessTransactionContext.getThreadLocalInstance();
+				// if (tc != null && Boolean.TRUE.equals(tc.getSharedContext(dedupeKey)))
+				// return;
+				// if (tc != null)
+				// tc.setSharedContext(dedupeKey, true);
 				// }
 
 				JPAProcessInstance jpaProcessInstance = (JPAProcessInstance) instance.getLocalInstance();
@@ -111,7 +114,8 @@ public class InstanceDataAppendingActivityFilter implements ActivityFilter, Seri
 					params.add(new KeyedParameter(KeyedParameter.TRACINGTAG, activity.getTracingTag()));
 					params.add(new KeyedParameter(KeyedParameter.INSTANCEID, instance.getInstanceId()));
 					params.add(new KeyedParameter(KeyedParameter.ROOTINSTANCEID, instance.getRootProcessInstanceId()));
-					params.add(new KeyedParameter(KeyedParameter.PROCESSDEFINITION, instance.getProcessDefinition().getId()));
+					params.add(new KeyedParameter(KeyedParameter.PROCESSDEFINITION,
+							instance.getProcessDefinition().getId()));
 					params.add(new KeyedParameter(KeyedParameter.DEFAULT_STATUS, Activity.STATUS_COMPLETED));
 					params.add(new KeyedParameter("status", Activity.STATUS_COMPLETED));
 					params.add(new KeyedParameter("endpoint", rm.getEndpoint()));
@@ -123,7 +127,7 @@ public class InstanceDataAppendingActivityFilter implements ActivityFilter, Seri
 
 					String taskId = worklist.addWorkItem(rm, paramArray, instance.getProcessTransactionContext());
 					worklist.completeWorkItem(taskId, paramArray, instance.getProcessTransactionContext());
-					((DefaultActivity)activity).setTaskIds(instance, new String[] { taskId } );
+					((DefaultActivity) activity).setTaskIds(instance, new String[] { taskId });
 				}
 
 			} catch (Exception e) {
@@ -150,11 +154,13 @@ public class InstanceDataAppendingActivityFilter implements ActivityFilter, Seri
 					String roleName = null;
 					if (activity.getExtendedAttributes() != null) {
 						Object rn = activity.getExtendedAttributes().get("role");
-						if (rn != null) roleName = String.valueOf(rn);
+						if (rn != null)
+							roleName = String.valueOf(rn);
 					}
 					if (roleName != null) {
 						Role role = instance.getProcessDefinition().getRole(roleName);
-						if (role != null) rm = role.getMapping(instance);
+						if (role != null)
+							rm = role.getMapping(instance);
 					}
 				}
 				if (rm == null) {
@@ -171,7 +177,8 @@ public class InstanceDataAppendingActivityFilter implements ActivityFilter, Seri
 				params.add(new KeyedParameter(KeyedParameter.TRACINGTAG, activity.getTracingTag()));
 				params.add(new KeyedParameter(KeyedParameter.INSTANCEID, instance.getInstanceId()));
 				params.add(new KeyedParameter(KeyedParameter.ROOTINSTANCEID, instance.getRootProcessInstanceId()));
-				params.add(new KeyedParameter(KeyedParameter.PROCESSDEFINITION, instance.getProcessDefinition().getId()));
+				params.add(
+						new KeyedParameter(KeyedParameter.PROCESSDEFINITION, instance.getProcessDefinition().getId()));
 				params.add(new KeyedParameter(KeyedParameter.DEFAULT_STATUS, Activity.STATUS_FAULT));
 				params.add(new KeyedParameter("status", Activity.STATUS_FAULT));
 				params.add(new KeyedParameter("endpoint", rm.getEndpoint()));

@@ -76,16 +76,6 @@ public interface ProcessInstanceRepositoryOracle extends ProcessInstanceReposito
                         Pageable pageable);
 
         @Override
-        @Query(value = "SELECT * FROM BPM_PROCINST pi " +
-                        "WHERE REGEXP_LIKE(pi.groups, :pattern) " +
-                        "AND (:status IS NULL OR pi.status = :status) " +
-                        "ORDER BY pi.started_date DESC", countQuery = "SELECT COUNT(*) FROM BPM_PROCINST pi " +
-                                        "WHERE REGEXP_LIKE(pi.groups, :pattern) " +
-                                        "AND (:status IS NULL OR pi.status = :status)", nativeQuery = true)
-        Page<ProcessInstanceEntity> findAllByGroupsRegex(@Param("pattern") String pattern,
-                        @Param("status") String status, Pageable pageable);
-
-        @Override
         @Query("select pi from ProcessInstanceEntity pi where (:name is null or pi.name like CONCAT(CONCAT('%',:name),'%')) and (:status is null or pi.status = :status) and (:startedDate is null or pi.startedDate >= :startedDate) and (:finishedDate is null or :finishedDate >= pi.finishedDate ) and (:subProcess is null or :subProcess = '' or (pi.subProcess = true and (:subProcess = 'true' or :subProcess = '1')) or (pi.subProcess = false and (:subProcess = 'false' or :subProcess = '0'))) order by pi.startedDate desc")
         Page<ProcessInstanceEntity> findByName(@Param("name") String name, @Param("status") String status,
                         @Param("startedDate") String startedDate, @Param("finishedDate") String finishedDate,
