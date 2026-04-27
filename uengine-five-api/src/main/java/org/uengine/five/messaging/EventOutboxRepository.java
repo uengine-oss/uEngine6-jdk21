@@ -15,22 +15,20 @@ public interface EventOutboxRepository extends JpaRepository<EventOutbox, Long> 
      * 미처리 outbox row 를 배치 크기만큼 잠그고 가져온다. Postgres 의
      * FOR UPDATE SKIP LOCKED 로 다중 인스턴스 환경에서도 중복 없이 병렬 처리.
      *
-     * <p>호출은 반드시 트랜잭션 내부에서 이루어져야 한다 (OutboxEventPoller.poll 의
-     * {@code @Transactional} 안쪽).
+     * <p>호출은 반드시 트랜잭션 내부에서 이루어져야 한다.
      */
     @Query(value = "SELECT * FROM BPM_EVENT_OUTBOX " +
-                   "WHERE channel IN (:channels) AND processed_at IS NULL " +
+                   "WHERE processed_at IS NULL " +
                    "ORDER BY id ASC LIMIT :limit FOR UPDATE SKIP LOCKED",
            nativeQuery = true)
-    List<EventOutbox> lockUnprocessed(@Param("channels") List<String> channels,
-                                      @Param("limit") int limit);
+    List<EventOutbox> lockUnprocessed(@Param("limit") int limit);
 
     /** TTL 청소용 — 일정 시점 이전의 처리완료 row 삭제. */
     @Modifying
     @Query("DELETE FROM EventOutbox e WHERE e.processedAt IS NOT NULL AND e.processedAt < :olderThan")
     int deleteProcessedBefore(@Param("olderThan") Instant olderThan);
 
-    /** Spring Data REST 로 자동 노출되지 않도록 차단. */
+    /** Spring Data REST 자동 노출 차단. */
     @Override
     @RestResource(exported = false)
     <S extends EventOutbox> S save(S entity);

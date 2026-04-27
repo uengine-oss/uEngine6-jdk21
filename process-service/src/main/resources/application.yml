@@ -22,9 +22,9 @@ uengine:
   messaging:
     mode: ${UENGINE_MESSAGING_MODE:polling}
     polling:
-      consumer-id: process-service
       interval-ms: 1000
       batch-size: 50
+      max-try-cnt: 3                          # dispatch 실패 시 최대 시도 횟수 (도달 시 dead-letter)
       outbox-ttl-hours: 24
       outbox-ttl-cron: "0 0 3 * * ?"
   definition:

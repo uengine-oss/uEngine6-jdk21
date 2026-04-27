@@ -16,16 +16,17 @@ import org.uengine.five.messaging.TypedJsonObjectMapperFactory;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
- * 폴링 전략 발행자. process-service / definition-service 양쪽에서 공용.
+ * 폴링 전략 발행자.
  *
  * <ul>
  *   <li>{@code bpm-brodcast} (프론트 실시간 알림): DB 저장하지 않고 {@code SELECT pg_notify(...)}
  *       만 호출. LISTEN 중인 PgNotifyListener 가 받아 SSE 로 푸시.</li>
- *   <li>{@code bpm-out}, {@code bpm-in-0} (엔진 내부): {@code BPM_EVENT_OUTBOX} INSERT.
- *       OutboxEventPoller 가 꺼내 BpmMessageDispatcher 로 전달.</li>
+ *   <li>그 외 채널 (bpm-out, bpm-in-0): {@code BPM_EVENT_OUTBOX} INSERT. OutboxPollJob 가
+ *       꺼내 BpmMessageDispatcher 로 전달. 채널 자체는 DB 컬럼이 아니라 라우팅 결정용
+ *       메서드 파라미터로만 사용.</li>
  * </ul>
  *
- * 양쪽 경로 모두 호출 트랜잭션에 묶이므로, 도메인 롤백 시 발행도 자동 취소 (원자성 강화).
+ * <p>Kafka 모드에서는 이 클래스가 Bean 으로 등록되지 않고 KafkaEventPublisher 가 사용된다.
  */
 public class OutboxEventPublisher implements EventPublisher {
 
@@ -59,15 +60,17 @@ public class OutboxEventPublisher implements EventPublisher {
             return;
         }
 
+        // 엔진 내부 / 외부 인입: outbox 저장. (Inbox 단일 채널 가정)
         EventOutbox ev = new EventOutbox();
-        ev.setChannel(channel);
         ev.setEventType(type);
         ev.setPayload(payloadJson);
-        ev.setHeaders(toJson(headers));
-        ev.setEventId(headers != null && headers.get("eventId") != null ? headers.get("eventId").toString() : null);
+        ev.setCorrKey(headers != null && headers.get("corrKey") != null ? headers.get("corrKey").toString() : null);
         repo.save(ev);
     }
 
+    /**
+     * 브로드캐스트: pg_notify 직접 호출. 트랜잭션 COMMIT 시점에 구독자에게 배달된다.
+     */
     private void publishBrodcast(String channel, String type, String payloadJson) {
         String notifyChannel = "bpm_" + channel.replace("-", "_"); // bpm_bpm_brodcast
 
@@ -85,22 +88,12 @@ public class OutboxEventPublisher implements EventPublisher {
         }
 
         try {
-            // SELECT pg_notify 는 void 반환이라 queryForObject 는 취약. 결과를 무시하는 query 사용.
             jdbc.query("SELECT pg_notify(?, ?)",
                     (java.sql.ResultSet rs) -> null,
                     notifyChannel, envelopeJson);
         } catch (Exception e) {
             // pg_notify 실패는 알림 손실이지만 도메인 트랜잭션은 살려야 한다.
             log.warn("pg_notify failed channel={}, type={}, err={}", notifyChannel, type, e.toString());
-        }
-    }
-
-    private String toJson(Object o) {
-        if (o == null) return null;
-        try {
-            return objectMapper.writeValueAsString(o);
-        } catch (Exception e) {
-            return null;
         }
     }
 }
