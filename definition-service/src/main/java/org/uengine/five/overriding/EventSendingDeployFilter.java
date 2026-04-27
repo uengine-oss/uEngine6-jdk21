@@ -1,11 +1,8 @@
 package org.uengine.five.overriding;
 
-import org.springframework.cloud.stream.function.StreamBridge;
-import org.springframework.messaging.MessageHeaders;
-import org.springframework.messaging.support.MessageBuilder;
-import org.springframework.util.MimeTypeUtils;
 import org.uengine.five.DefinitionServiceApplication;
 import org.uengine.five.events.DefinitionDeployed;
+import org.uengine.five.messaging.EventPublisher;
 import org.uengine.kernel.Activity;
 import org.uengine.kernel.DeployFilter;
 import org.uengine.kernel.ProcessDefinition;
@@ -27,11 +24,8 @@ public class EventSendingDeployFilter implements DeployFilter {
         DefinitionDeployed definitionDeployed = new DefinitionDeployed();
         definitionDeployed.setDefintionId(path);
 
-        StreamBridge streamBridge = DefinitionServiceApplication.getApplicationContext().getBean(StreamBridge.class);
-        streamBridge.send("bpm-out", MessageBuilder
-                .withPayload(definitionDeployed)
-                .setHeader(MessageHeaders.CONTENT_TYPE, MimeTypeUtils.APPLICATION_JSON)
-                .build());
+        EventPublisher eventPublisher = DefinitionServiceApplication.getApplicationContext().getBean(EventPublisher.class);
+        eventPublisher.send("bpm-out", definitionDeployed);
 
 
         List<Activity> startActivities = definition.getStartActivities();
@@ -40,9 +34,9 @@ public class EventSendingDeployFilter implements DeployFilter {
             for(Activity activity : startActivities){
 
                 if(activity instanceof CatchingRestMessageEvent){
-    
+
                     CatchingRestMessageEvent catchingMessageEvent = (CatchingRestMessageEvent) activity;
-    
+
     //                ServiceEndpointRepository serviceEndpointRepository = MetaworksRemoteService.getComponent(ServiceEndpointRepository.class);
     //
     //                ServiceEndpointEntity serviceEndpointEntity = new ServiceEndpointEntity();
@@ -52,12 +46,12 @@ public class EventSendingDeployFilter implements DeployFilter {
     //                serviceEndpointEntity.setDefId(folder);
     //
     //                serviceEndpointRepository.save(serviceEndpointEntity);
-    
+
                 }
-    
+
             }
         }
-    
+
 
     }
 }

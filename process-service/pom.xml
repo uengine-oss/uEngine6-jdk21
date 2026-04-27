@@ -46,6 +46,11 @@
 			<artifactId>uengine-resource-manager</artifactId>
 			<version>${project.version}</version>
 		</dependency>
+		<!-- 폴링 모드의 PgNotifyListener 가 PGConnection/PGNotification 을 직접 사용하기 위해 compile 스코프 필요. -->
+		<dependency>
+			<groupId>org.postgresql</groupId>
+			<artifactId>postgresql</artifactId>
+		</dependency>
         <dependency>
             <groupId>org.testng</groupId>
             <artifactId>testng</artifactId>

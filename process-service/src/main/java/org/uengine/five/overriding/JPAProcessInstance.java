@@ -670,15 +670,12 @@ public class JPAProcessInstance extends DefaultProcessInstance implements Transa
     }
 
     public boolean sendBroadcast(String eventType, Object payload) throws Exception {
-        StreamBridge streamBridge = applicationContext.getBean(StreamBridge.class);
-        return streamBridge.send("bpm-out",
-                MessageBuilder
-                        .withPayload(payload)
-                        .setHeader(
-                                MessageHeaders.CONTENT_TYPE,
-                                MimeTypeUtils.APPLICATION_JSON)
-                        .setHeader("type", eventType)
-                        .build());
+        // SignalEndEvent / SignalIntermediateThrowEvent 등이 호출. 모드에 따라
+        // Kafka(StreamBridge) 또는 폴링(Outbox) 으로 라우팅된다.
+        org.uengine.five.messaging.EventPublisher eventPublisher =
+                applicationContext.getBean(org.uengine.five.messaging.EventPublisher.class);
+        eventPublisher.send("bpm-out", payload, java.util.Map.of("type", eventType));
+        return true;
     }
 
     @Override

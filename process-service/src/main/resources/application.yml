@@ -16,6 +16,17 @@ spring:
     allow-bean-definition-overriding: true
 ---
 uengine:
+  # Messaging 전략 선택. kafka | polling
+  # - kafka  : 기존 동작 유지 (Spring Cloud Stream + Kafka)
+  # - polling: Outbox 테이블 + pg_notify/SSE 로 전환 (Kafka 브로커 불필요)
+  messaging:
+    mode: ${UENGINE_MESSAGING_MODE:polling}
+    polling:
+      consumer-id: process-service
+      interval-ms: 1000
+      batch-size: 50
+      outbox-ttl-hours: 24
+      outbox-ttl-cron: "0 0 3 * * ?"
   definition:
     # definition-service와 동일한 경로 사용 (같은 definitions 폴더 참조). 불일치 시 "Error when to load definition" 발생.
     basePath: ${UENGINE_BASEPATH:D:\uEngineProject\uEngine6-jdk21}
@@ -52,33 +63,6 @@ spring:
       hibernate:
         show_sql: true
         format_sql: true
-
-  cloud:
-    function:
-      definition: bpm
-    stream:
-      kafka:
-        binder:
-          brokers: localhost:9092
-        streams:
-          binder:
-            configuration:
-              default:
-                key:
-                  serde: org.apache.kafka.common.serialization.Serdes$StringSerde
-                value:
-                  serde: org.apache.kafka.common.serialization.Serdes$StringSerde
-      bindings:
-        bpm-in-0:
-          group: bpm
-          destination: bpm-topic
-          contentType: application/json
-        bpm-out:
-          destination: bpm-topic
-          contentType: application/json
-        bpm-brodcast:
-          destination: bpm-brodcast
-          contentType: application/json
 
 logging:
   # Windows 콘솔이 MS949일 때 SLF4J 출력이 깨지지 않도록 명시 (한글 definition 경로 등)
@@ -123,32 +107,8 @@ spring:
   config:
     activate:
       on-profile: docker
-  cloud:
-    function:
-      definition: bpm
-    stream:
-      kafka:
-        binder:
-          brokers: my-kafka:9092
-        streams:
-          binder:
-            configuration:
-              default:
-                key:
-                  serde: org.apache.kafka.common.serialization.Serdes$StringSerde
-                value:
-                  serde: org.apache.kafka.common.serialization.Serdes$StringSerde
-      bindings:
-        bpm-in-0:
-          group: bpm
-          destination: bpm-topic
-          contentType: application/json
-        bpm-out:
-          destination: bpm-topic
-          contentType: application/json
-        bpm-brodcast:
-          destination: bpm-brodcast
-          contentType: application/json
+# docker 환경의 Kafka 브로커 주소는 messaging-kafka 프로파일에서 KAFKA_BROKERS 환경변수로 주입.
+# 예: SPRING_PROFILES_ACTIVE=docker,messaging-kafka KAFKA_BROKERS=my-kafka:9092
 
 ---
 # DB: Oracle (oracle 폴더 Docker 실행 후 SPRING_PROFILES_ACTIVE=oracle)
@@ -194,3 +154,38 @@ spring:
       # ProcessInstanceRepositoryH2 의 JPQL `regexp_like(...)` 를 SQL 로 변환.
       # 미등록 시 /instances/search/findFilterICanSee 가 500 으로 실패한다.
       hibernate.metadata_builder_contributor: org.uengine.five.config.OracleHibernateMetadataContributor
+
+---
+# Spring Cloud Stream + Kafka 설정. uengine.messaging.mode=kafka 일 때 ProcessServiceApplication 의
+# ApplicationContextInitializer 가 이 프로파일을 자동 활성화한다.
+# 폴링 모드에서는 활성화되지 않아 Kafka 바인더가 아예 로드되지 않음 (StreamBridge bean 없음, 연결 시도 없음).
+spring:
+  config:
+    activate:
+      on-profile: messaging-kafka
+  cloud:
+    function:
+      definition: bpm
+    stream:
+      kafka:
+        binder:
+          brokers: ${KAFKA_BROKERS:localhost:9092}
+        streams:
+          binder:
+            configuration:
+              default:
+                key:
+                  serde: org.apache.kafka.common.serialization.Serdes$StringSerde
+                value:
+                  serde: org.apache.kafka.common.serialization.Serdes$StringSerde
+      bindings:
+        bpm-in-0:
+          group: bpm
+          destination: bpm-topic
+          contentType: application/json
+        bpm-out:
+          destination: bpm-topic
+          contentType: application/json
+        bpm-brodcast:
+          destination: bpm-brodcast
+          contentType: application/json

@@ -116,8 +116,8 @@ public class ProcessServiceApplication {
     }
 
     @Bean
-    public ActivityQueue activityQueue(org.springframework.cloud.stream.function.StreamBridge streamBridge) {
-        return new ActivityQueue(streamBridge);
+    public ActivityQueue activityQueue(org.uengine.five.messaging.EventPublisher eventPublisher) {
+        return new ActivityQueue(eventPublisher);
     }
 
     @Bean
@@ -128,24 +128,7 @@ public class ProcessServiceApplication {
     }
 
     public static ObjectMapper createTypedJsonObjectMapper() {
-        ObjectMapper objectMapper = new ObjectMapper();
-
-        objectMapper.setVisibilityChecker(objectMapper.getSerializationConfig()
-                .getDefaultVisibilityChecker()
-                .withFieldVisibility(JsonAutoDetect.Visibility.ANY)
-                .withGetterVisibility(JsonAutoDetect.Visibility.NONE)
-                .withSetterVisibility(JsonAutoDetect.Visibility.NONE)
-                .withCreatorVisibility(JsonAutoDetect.Visibility.NONE));
-
-        objectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL); // ignore null
-        objectMapper.setSerializationInclusion(JsonInclude.Include.NON_DEFAULT); // ignore zero and false when it is int
-                                                                                 // or boolean
-        objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-        objectMapper.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
-        objectMapper.enableDefaultTypingAsProperty(ObjectMapper.DefaultTyping.NON_CONCRETE_AND_ARRAYS, "_type");
-        objectMapper.configure(DeserializationFeature.ACCEPT_EMPTY_STRING_AS_NULL_OBJECT, true);
-
-        return objectMapper;
+        return org.uengine.five.messaging.TypedJsonObjectMapperFactory.create();
     }
 
 }

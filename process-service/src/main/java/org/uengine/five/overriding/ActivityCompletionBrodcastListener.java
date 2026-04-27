@@ -4,11 +4,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cloud.stream.function.StreamBridge;
-import org.springframework.messaging.MessageHeaders;
-import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.stereotype.Component;
-import org.springframework.util.MimeTypeUtils;
+import org.uengine.five.messaging.EventPublisher;
 import org.uengine.kernel.Activity;
 import org.uengine.kernel.HumanActivity;
 import org.uengine.kernel.IActivityCompletionListener;
@@ -22,7 +19,7 @@ import org.uengine.kernel.ProcessInstance;
 public class ActivityCompletionBrodcastListener implements IActivityCompletionListener {
 
     @Autowired
-    StreamBridge streamBridge;
+    EventPublisher eventPublisher;
 
     @Override
     public void onActivityCompleted(ProcessInstance instance, Activity activity) throws Exception {
@@ -42,10 +39,6 @@ public class ActivityCompletionBrodcastListener implements IActivityCompletionLi
             // optional
         }
 
-        streamBridge.send("bpm-brodcast", MessageBuilder
-                .withPayload(taskEvent)
-                .setHeader(MessageHeaders.CONTENT_TYPE, MimeTypeUtils.APPLICATION_JSON)
-                .setHeader("type", "TASK_COMPLETED")
-                .build());
+        eventPublisher.send("bpm-brodcast", taskEvent, Map.of("type", "TASK_COMPLETED"));
     }
 }

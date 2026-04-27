@@ -5,6 +5,7 @@ import java.nio.charset.StandardCharsets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.messaging.Message;
+import org.springframework.stereotype.Component;
 import org.uengine.five.ProcessServiceApplication;
 import org.uengine.five.events.*;
 import org.uengine.five.service.AsyncEventListener;
@@ -15,7 +16,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 /**
  * Dispatches incoming bpm-in messages to AsyncEventListener and EventListener.
  * Replaces @StreamListener dispatching for Spring Cloud Stream 4 (functional).
+ *
+ * Kafka 모드에서는 BpmStreamFunctions 의 Consumer 가, 폴링 모드에서는 OutboxEventPoller 가
+ * 각각 이 Bean 의 dispatch() 를 호출한다.
  */
+@Component
 public class BpmMessageDispatcher {
 
     private static final Logger log = LoggerFactory.getLogger(BpmMessageDispatcher.class);

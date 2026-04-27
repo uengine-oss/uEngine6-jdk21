@@ -4,17 +4,14 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cloud.stream.function.StreamBridge;
-import org.springframework.messaging.MessageHeaders;
-import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.stereotype.Component;
-import org.springframework.util.MimeTypeUtils;
 import org.uengine.five.events.ActivityDone;
 import org.uengine.five.events.ActivityFailed;
 import org.uengine.five.events.ActivityInfo;
 import org.uengine.five.events.ActivityQueued;
 import org.uengine.five.events.DefinitionDeployed;
 import org.uengine.five.framework.ProcessTransactional;
+import org.uengine.five.messaging.EventPublisher;
 import org.uengine.five.overriding.ActivityQueue;
 import org.uengine.five.service.DefinitionServiceUtil;
 import org.uengine.five.service.InstanceServiceImpl;
@@ -30,7 +27,7 @@ public class EventListener {
     InstanceServiceImpl instanceService;
 
     @Autowired
-    StreamBridge streamBridge;
+    EventPublisher eventPublisher;
 
     @Autowired
     ActivityQueue activityQueue;
@@ -59,10 +56,7 @@ public class EventListener {
             instance.execute(activityDone.getActivityInfo().getTracingTag());
 
             // broadcast to a separate topic to avoid loop with bpm-in/bpm-out
-            streamBridge.send("bpm-brodcast", MessageBuilder
-                    .withPayload(activityDone)
-                    .setHeader(MessageHeaders.CONTENT_TYPE, MimeTypeUtils.APPLICATION_JSON)
-                    .build());
+            eventPublisher.send("bpm-brodcast", activityDone);
 
         } catch (Exception e) {
 
@@ -77,10 +71,7 @@ public class EventListener {
             activityFailed
                     .setMessage("[" + e.getClass().getName() + "]" + e.getMessage() + ":" + stringWriter.toString());
 
-            streamBridge.send("bpm-out", MessageBuilder
-                    .withPayload(activityFailed)
-                    .setHeader(MessageHeaders.CONTENT_TYPE, MimeTypeUtils.APPLICATION_JSON)
-                    .build());
+            eventPublisher.send("bpm-out", activityFailed);
 
             //// retry
 
@@ -152,10 +143,7 @@ public class EventListener {
             activityDone.getActivityInfo().setInstanceId(activityQueued.getActivityInfo().getInstanceId());
             activityDone.getActivityInfo().setTracingTag(activityQueued.getActivityInfo().getTracingTag());
 
-            streamBridge.send("bpm-out", MessageBuilder
-                    .withPayload(activityDone)
-                    .setHeader(MessageHeaders.CONTENT_TYPE, MimeTypeUtils.APPLICATION_JSON)
-                    .build());
+            eventPublisher.send("bpm-out", activityDone);
 
         } catch (Exception e) {
 
@@ -170,10 +158,7 @@ public class EventListener {
             activityFailed
                     .setMessage("[" + e.getClass().getName() + "]" + e.getMessage() + ":" + stringWriter.toString());
 
-            streamBridge.send("bpm-out", MessageBuilder
-                    .withPayload(activityFailed)
-                    .setHeader(MessageHeaders.CONTENT_TYPE, MimeTypeUtils.APPLICATION_JSON)
-                    .build());
+            eventPublisher.send("bpm-out", activityFailed);
 
             // 예외를 다시 던져야 @ProcessTransactional 롤백이 수행되고, 인스턴스 파일(saveVariables)이 저장되지 않음.
             throw e;

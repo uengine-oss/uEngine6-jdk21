@@ -70,9 +70,25 @@ public class WorkItemResource { //extends RepresentationModel {
             summary.put("eventSynchronizations", activity.getEventSynchronizations());
         }
         if (activity instanceof HumanActivity) {
-            String tool = ((HumanActivity) activity).getTool();
+            HumanActivity human = (HumanActivity) activity;
+            String tool = human.getTool();
             if (tool != null) {
                 summary.put("tool", tool);
+            }
+            // role 정보 노출 (프론트의 dispatchingOption 기반 claim/unclaim 버튼 판단용)
+            try {
+                org.uengine.kernel.Role role = human.getRole();
+                if (role != null) {
+                    Map<String, Object> roleInfo = new LinkedHashMap<>();
+                    roleInfo.put("name", role.getName());
+                    roleInfo.put("dispatchingOption", role.getDispatchingOption());
+                    if (role.getRoleResolutionContext() != null) {
+                        roleInfo.put("resolutionContext", role.getRoleResolutionContext());
+                    }
+                    summary.put("role", roleInfo);
+                }
+            } catch (Exception ignored) {
+                // role 조회 실패 시 role 필드 없이 응답
             }
         }
         return summary;

@@ -103,6 +103,7 @@ public class AsyncEventListener {
                     ProcessExecutionCommand processExecutionCommand = new ProcessExecutionCommand();
                     processExecutionCommand.setProcessDefinitionId(startDefId);
                     processExecutionCommand.setCorrelationKeyValue(coorKeyValue);
+                    processExecutionCommand.setProcessVariableValues(toProcessVariables(eventContent, corrKey));
 
                     instanceService.start(processExecutionCommand);
                 }
@@ -116,6 +117,7 @@ public class AsyncEventListener {
                     ProcessExecutionCommand processExecutionCommand = new ProcessExecutionCommand();
                     processExecutionCommand.setProcessDefinitionId(startDefId);
                     processExecutionCommand.setCorrelationKeyValue(coorKeyValue);
+                    processExecutionCommand.setProcessVariableValues(toProcessVariables(eventContent, corrKey));
 
                     instanceService.start(processExecutionCommand);
 
@@ -178,6 +180,26 @@ public class AsyncEventListener {
                 }
             }
         }
+    }
+
+    /**
+     * 외부 이벤트 payload 의 필드를 ProcessVariableValue 배열로 변환. 단,
+     * correlationKey 필드는 인스턴스 식별 용도이므로 변수에서 제외.
+     */
+    private static org.uengine.five.dto.ProcessVariableValue[] toProcessVariables(
+            HashMap<String, Object> eventContent, String corrKey) {
+        java.util.List<org.uengine.five.dto.ProcessVariableValue> vars = new java.util.ArrayList<>();
+        for (java.util.Map.Entry<String, Object> entry : eventContent.entrySet()) {
+            if (entry.getKey().equals(corrKey)) continue;          // 상관 키는 변수에서 제외
+            if (entry.getValue() == null) continue;
+            if (!(entry.getValue() instanceof java.io.Serializable)) continue;
+
+            org.uengine.five.dto.ProcessVariableValue pv = new org.uengine.five.dto.ProcessVariableValue();
+            pv.setName(entry.getKey());
+            pv.setValues(new java.io.Serializable[] { (java.io.Serializable) entry.getValue() });
+            vars.add(pv);
+        }
+        return vars.toArray(new org.uengine.five.dto.ProcessVariableValue[0]);
     }
 
     private static String decodeNumericCsvIfNeeded(String raw) {

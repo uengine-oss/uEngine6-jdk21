@@ -11,6 +11,11 @@ spring:
 ---
 
 uengine:
+  # Messaging 전략 선택. kafka | polling (process-service 의 값과 일치시킬 것).
+  messaging:
+    mode: ${UENGINE_MESSAGING_MODE:polling}
+    polling:
+      consumer-id: definition-service
   definition:
     basePath: ${UENGINE_BASEPATH:D:\uEngineProject\uEngine6-jdk21}
     
@@ -31,29 +36,6 @@ spring:
         show_sql: true
         format_sql: true
 
-  cloud:
-    stream:
-      kafka:
-        binder:
-          brokers: localhost:9092
-        streams:
-          binder:
-            configuration:
-              default:
-                key:
-                  serde: org.apache.kafka.common.serialization.Serdes$StringSerde
-                value:
-                  serde: org.apache.kafka.common.serialization.Serdes$StringSerde
-      bindings:
-        bpm-in-0:
-          group: definition
-          destination: bpm-topic
-          contentType: application/json
-        bpm-out:
-          destination: bpm-topic
-          contentType: application/json
-          
-
 logging:
   level:
     org.hibernate.type: trace
@@ -68,27 +50,7 @@ spring:
   config:
     activate:
       on-profile: docker
-  cloud:
-    stream:
-      kafka:
-        binder:
-          brokers: my-kafka:9092
-        streams:
-          binder:
-            configuration:
-              default:
-                key:
-                  serde: org.apache.kafka.common.serialization.Serdes$StringSerde
-                value:
-                  serde: org.apache.kafka.common.serialization.Serdes$StringSerde
-      bindings:
-        bpm-in-0:
-          group: definition
-          destination: bpm-topic
-          contentType: application/json
-        bpm-out:
-          destination: bpm-topic
-          contentType: application/json
+# docker 환경의 Kafka 브로커는 messaging-kafka 프로파일 + KAFKA_BROKERS 로 주입.
 
 ---
 # DB: Oracle (oracle 폴더 Docker 실행 후 SPRING_PROFILES_ACTIVE=oracle)
@@ -131,4 +93,30 @@ spring:
     hibernate:
       ddl-auto: update
 
-
+---
+# Spring Cloud Stream + Kafka. uengine.messaging.mode=kafka 일 때만 자동 활성화 (DefinitionServiceApplication 의 ContextInitializer).
+spring:
+  config:
+    activate:
+      on-profile: messaging-kafka
+  cloud:
+    stream:
+      kafka:
+        binder:
+          brokers: ${KAFKA_BROKERS:localhost:9092}
+        streams:
+          binder:
+            configuration:
+              default:
+                key:
+                  serde: org.apache.kafka.common.serialization.Serdes$StringSerde
+                value:
+                  serde: org.apache.kafka.common.serialization.Serdes$StringSerde
+      bindings:
+        bpm-in-0:
+          group: definition
+          destination: bpm-topic
+          contentType: application/json
+        bpm-out:
+          destination: bpm-topic
+          contentType: application/json

@@ -947,6 +947,8 @@ public class InstanceServiceImpl implements InstanceService {
     // 수 있는 미디어타입을 xml 에 일일히 설정했었음.
     // produces 의 의미는. 리스폰스 헤더에 콘텐트타입을 설정해줌. 그래야 브라우저가 json 객체로 받아들인다.
     @RequestMapping(value = "/instance/{instanceId}/role-mapping/{roleName}", method = RequestMethod.POST, produces = "application/json; charset=UTF-8")
+    @org.springframework.transaction.annotation.Transactional
+    @ProcessTransactional
     public Object setRoleMapping(@PathVariable("instanceId") String instanceId,
             @PathVariable("roleName") String roleName, @RequestBody RoleMappingCommand roleMapping) throws Exception {
 
@@ -957,20 +959,54 @@ public class InstanceServiceImpl implements InstanceService {
                         instanceId,
                         null
                 });
+        RoleMapping existing = instance.getRoleMapping(roleName);
         RoleMapping rm = RoleMapping.create();
-        if (rm != null && roleMapping != null) {
-            if (roleMapping.getEndpoint() != null) rm.setEndpoint(roleMapping.getEndpoint());
-            if (roleMapping.getResourceName() != null) rm.setResourceName(roleMapping.getResourceName());
-            if (roleMapping.getScope() != null) rm.setScope(roleMapping.getScope());
-            if (roleMapping.getAssignType() != null) rm.setAssignType(roleMapping.getAssignType());
+        rm.setName(roleName);
+        if (roleMapping != null) {
+            // endpoint, resourceName 은 null 도 의미 있는 값 ("선점 해제") 이라 그대로 적용
+            rm.setEndpoint(roleMapping.getEndpoint());
+            rm.setResourceName(roleMapping.getResourceName());
+            // scope, assignType 은 미지정 시 기존 값 보존 (역할 해석 컨텍스트 유실 방지)
+            rm.setScope(roleMapping.getScope() != null
+                    ? roleMapping.getScope()
+                    : (existing != null ? existing.getScope() : null));
+            rm.setAssignType(roleMapping.getAssignType() != null
+                    ? roleMapping.getAssignType()
+                    : (existing != null ? existing.getAssignType() : 0));
         }
 
         instance.putRoleMapping(roleName, rm);
-        rm.setName(roleName);
+        syncCurrEpFromRoleMapping(instance, rm);
+
         return rm;
     }
 
+    /**
+     * RoleMapping 변경 시 BPM_PROCINST 의 curr_ep / curr_rs_nm 를 동기화한다.
+     * endpoint 가 null 이면 (unclaim) 컬럼도 비운다. prev_curr_ep 에는 이전 값이 보존된다.
+     */
+    private void syncCurrEpFromRoleMapping(ProcessInstance instance, RoleMapping rm) {
+        if (!(instance instanceof org.uengine.five.overriding.JPAProcessInstance)) return;
+        org.uengine.five.entity.ProcessInstanceEntity pe =
+                ((org.uengine.five.overriding.JPAProcessInstance) instance).getProcessInstanceEntity();
+        if (pe == null) return;
+
+        pe.setPrevCurrEp(pe.getCurrEp());
+        pe.setPrevCurrRsNm(pe.getCurrRsNm());
+        pe.setCurrEp(rm != null ? rm.getEndpoint() : null);          // null 이면 컬럼도 비움
+        pe.setCurrRsNm(rm != null ? rm.getResourceName() : null);
+
+        // initEp 가 비어있고 새로 endpoint 가 들어왔으면 같이 채움 (시그널 시작 인스턴스 보강).
+        if (rm != null && rm.getEndpoint() != null
+                && (pe.getInitEp() == null || pe.getInitEp().trim().isEmpty())) {
+            pe.setInitEp(rm.getEndpoint());
+            if (rm.getResourceName() != null) pe.setInitRsNm(rm.getResourceName());
+        }
+    }
+
     @RequestMapping(value = "/instance/{instanceId}/role-mapping/{roleName}", method = RequestMethod.PUT, produces = "application/json; charset=UTF-8")
+    @org.springframework.transaction.annotation.Transactional
+    @ProcessTransactional
     public Object putRoleMapping(@PathVariable("instanceId") String instanceId,
             @PathVariable("roleName") String roleName, @RequestBody RoleMappingCommand roleMapping) throws Exception {
 
@@ -981,14 +1017,24 @@ public class InstanceServiceImpl implements InstanceService {
                         instanceId,
                         null
                 });
-       
+
         RoleMapping currentMapping = instance.getRoleMapping(roleName);
-        if (currentMapping != null && roleMapping != null) {
+        if (currentMapping == null) {
+            currentMapping = RoleMapping.create();
+            currentMapping.setName(roleName);
+        }
+        if (roleMapping != null) {
             if (roleMapping.getEndpoint() != null) currentMapping.setEndpoint(roleMapping.getEndpoint());
             if (roleMapping.getResourceName() != null) currentMapping.setResourceName(roleMapping.getResourceName());
             if (roleMapping.getScope() != null) currentMapping.setScope(roleMapping.getScope());
             if (roleMapping.getAssignType() != null) currentMapping.setAssignType(roleMapping.getAssignType());
         }
+
+        // 영속화: putRoleMapping 이 setSourceValue 를 호출해 인스턴스 변수 dirty 마킹 → 트랜잭션 커밋 시 saveVariables.
+        instance.putRoleMapping(roleName, currentMapping);
+
+        // BPM_PROCINST.curr_ep 동기화 (POST/PUT 공용 헬퍼)
+        syncCurrEpFromRoleMapping(instance, currentMapping);
 
         return currentMapping;
     }
@@ -2308,6 +2354,10 @@ public class InstanceServiceImpl implements InstanceService {
                     workItem.setParameterValues(toJsonFriendlyMap(parameterValues));
                     workItem.setActivity(activity);
                 }
+                // dry-run 은 미리보기 용도이므로 DB 에 실인스턴스를 남기지 않는다.
+                // workItem 은 이미 메모리 객체로 조립되어 있어 롤백 후에도 응답 직렬화에 영향이 없다.
+                org.springframework.transaction.interceptor.TransactionAspectSupport
+                        .currentTransactionStatus().setRollbackOnly();
                 return workItem;
             } catch (Exception e) {
                 e.printStackTrace();

@@ -13,6 +13,10 @@ spring:
   profiles: default
   cloud:
     gateway:
+      httpclient:
+        connect-timeout: 3000
+        # SSE 장기 연결 유지 (폴링 모드 /events/stream). 0 은 무제한.
+        response-timeout: 3600000
       routes:
         - id: execution
           uri: http://localhost:8000
@@ -20,6 +24,10 @@ spring:
             - Path=/complete/**, /vision-complete/**, /execution/**
           filters:
             - RewritePath=/execution/?(?<segment>.*), /$\{segment}
+        - id: events
+          uri: http://localhost:9094
+          predicates:
+            - Path=/events/**
         - id: definition-servicce
           uri: http://localhost:9093
           predicates:
@@ -30,7 +38,7 @@ spring:
             - Path=/worklist/**, /test/**, /instance/**, /work-item/** , /instances/**, /dry-run/**, /validate/**, /start-and-complete, /business-rules, /business-rules/**
         - id: inventory-service
           uri: http://localhost:8080
-          predicates: 
+          predicates:
             - Path=/inventories/**, /url-test/**
         - id: frontend
           uri: http://localhost:5173

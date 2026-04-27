@@ -1,22 +1,19 @@
 package org.uengine.five.overriding;
 
-import org.springframework.cloud.stream.function.StreamBridge;
-import org.springframework.messaging.MessageHeaders;
-import org.springframework.messaging.support.MessageBuilder;
-import org.springframework.util.MimeTypeUtils;
 import org.uengine.five.events.ActivityInfo;
 import org.uengine.five.events.ActivityQueued;
+import org.uengine.five.messaging.EventPublisher;
 import org.uengine.kernel.IActivityEventQueue;
 
 /**
- * Created by uengine on 2018. 11. 16..
+ * Activity queue 이벤트 발행. Kafka/Outbox 전략에 무관하게 EventPublisher 로 위임.
  */
 public class ActivityQueue implements IActivityEventQueue {
 
-    private final StreamBridge streamBridge;
+    private final EventPublisher eventPublisher;
 
-    public ActivityQueue(StreamBridge streamBridge) {
-        this.streamBridge = streamBridge;
+    public ActivityQueue(EventPublisher eventPublisher) {
+        this.eventPublisher = eventPublisher;
     }
 
     @Override
@@ -26,9 +23,6 @@ public class ActivityQueue implements IActivityEventQueue {
         activityQueued.getActivityInfo().setInstanceId(instanceId);
         activityQueued.getActivityInfo().setTracingTag(tracingTag);
 
-        streamBridge.send("bpm-out", MessageBuilder
-                .withPayload(activityQueued)
-                .setHeader(MessageHeaders.CONTENT_TYPE, MimeTypeUtils.APPLICATION_JSON)
-                .build());
+        eventPublisher.send("bpm-out", activityQueued);
     }
 }
