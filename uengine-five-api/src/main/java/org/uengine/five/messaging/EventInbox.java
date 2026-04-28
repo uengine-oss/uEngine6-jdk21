@@ -13,7 +13,7 @@ import jakarta.persistence.UniqueConstraint;
 
 /**
  * Polling 모드 외부 이벤트 인입 큐. Inbox 채널 (bpm-in-0) 로 들어오는 이벤트를 보관하고,
- * {@code OutboxPollJob} 이 주기적으로 꺼내 {@code BpmMessageDispatcher} 로 전달한다.
+ * {@code InboxPollJob} 이 주기적으로 꺼내 {@code BpmMessageDispatcher} 로 전달한다.
  *
  * <p>최소 컬럼 구성:
  * <ul>
@@ -34,11 +34,11 @@ import jakarta.persistence.UniqueConstraint;
  * </pre>
  */
 @Entity
-@Table(name = "BPM_EVENT_OUTBOX",
-       indexes = @Index(name = "idx_outbox_unprocessed", columnList = "processed_at"),
-       uniqueConstraints = @UniqueConstraint(name = "uk_outbox_corr_event",
+@Table(name = "BPM_EVENT_INBOX",
+       indexes = @Index(name = "idx_inbox_unprocessed", columnList = "processed_at"),
+       uniqueConstraints = @UniqueConstraint(name = "uk_inbox_corr_event",
                                              columnNames = { "corr_key", "event_type" }))
-public class EventOutbox {
+public class EventInbox {
 
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)

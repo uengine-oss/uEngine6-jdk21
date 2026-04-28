@@ -17,13 +17,13 @@ import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
-import org.uengine.five.messaging.EventOutbox;
-import org.uengine.five.messaging.EventOutboxRepository;
+import org.uengine.five.messaging.EventInbox;
+import org.uengine.five.messaging.EventInboxRepository;
 import org.uengine.five.stream.BpmMessageDispatcher;
 import org.uengine.kernel.GlobalContext;
 
 /**
- * Quartz 기반 Outbox 폴링 잡. 고정 간격으로 BPM_EVENT_OUTBOX 의 미처리 row 를 꺼내
+ * Quartz 기반 Inbox 폴링 잡. 고정 간격으로 BPM_EVENT_INBOX 의 미처리 row 를 꺼내
  * 기존 BpmMessageDispatcher 로 dispatch 한다.
  *
  * <p>처리 정책:
@@ -41,12 +41,12 @@ import org.uengine.kernel.GlobalContext;
 @Component
 @DisallowConcurrentExecution
 @PersistJobDataAfterExecution
-public class OutboxPollJob implements Job {
+public class InboxPollJob implements Job {
 
-    private static final Logger log = LoggerFactory.getLogger(OutboxPollJob.class);
+    private static final Logger log = LoggerFactory.getLogger(InboxPollJob.class);
 
     @Autowired
-    private EventOutboxRepository repo;
+    private EventInboxRepository repo;
 
     @Autowired
     private BpmMessageDispatcher dispatcher;
@@ -60,30 +60,30 @@ public class OutboxPollJob implements Job {
     @Override
     public void execute(JobExecutionContext context) throws JobExecutionException {
         try {
-            GlobalContext.getComponent(OutboxPollJob.class).runBatch();
+            GlobalContext.getComponent(InboxPollJob.class).runBatch();
         } catch (Exception e) {
             throw new JobExecutionException(e);
         }
     }
 
     /**
-     * 한 틱 분량의 outbox 처리. 외부 트랜잭션은 outbox row 의 lock 유지 + try_cnt /
+     * 한 틱 분량의 inbox 처리. 외부 트랜잭션은 row 의 lock 유지 + try_cnt /
      * processed_at / last_error 갱신만 담당. dispatch 자체는 별도 REQUIRES_NEW 트랜잭션에서
      * 격리되어, 실패 시 부작용(인스턴스 생성 등)도 함께 롤백된다.
      */
     @Transactional
     public void runBatch() {
-        List<EventOutbox> batch = repo.lockUnprocessed(batchSize);
+        List<EventInbox> batch = repo.lockUnprocessed(batchSize);
         if (batch.isEmpty()) return;
 
         if (log.isDebugEnabled()) {
-            log.debug("[outbox-poll] picked {} events", batch.size());
+            log.debug("[inbox-poll] picked {} events", batch.size());
         }
 
         Instant now = Instant.now();
-        OutboxPollJob self = GlobalContext.getComponent(OutboxPollJob.class);
+        InboxPollJob self = GlobalContext.getComponent(InboxPollJob.class);
 
-        for (EventOutbox ev : batch) {
+        for (EventInbox ev : batch) {
             ev.setTryCnt(ev.getTryCnt() + 1);
             try {
                 self.dispatchInNewTx(ev);             // REQUIRES_NEW 로 격리
@@ -94,10 +94,10 @@ public class OutboxPollJob implements Job {
                 ev.setLastError(msg);
                 if (ev.getTryCnt() >= maxTryCnt) {
                     ev.setProcessedAt(now);            // 한도 도달 → dead-letter
-                    log.error("[outbox-poll] id={} type={} reached max try cnt ({}) → dead-letter",
+                    log.error("[inbox-poll] id={} type={} reached max try cnt ({}) → dead-letter",
                               ev.getId(), ev.getEventType(), maxTryCnt, e);
                 } else {
-                    log.warn("[outbox-poll] id={} type={} try {}/{} failed, will retry",
+                    log.warn("[inbox-poll] id={} type={} try {}/{} failed, will retry",
                              ev.getId(), ev.getEventType(), ev.getTryCnt(), maxTryCnt, e);
                     // processed_at 비워둠 → 다음 틱에 재시도
                 }
@@ -110,15 +110,15 @@ public class OutboxPollJob implements Job {
      * (예: 인스턴스 생성, worklist 추가) 이 롤백된다 → 재시도 시 부작용 누적 방지.
      */
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void dispatchInNewTx(EventOutbox ev) {
+    public void dispatchInNewTx(EventInbox ev) {
         Message<String> msg = rebuildMessage(ev);
         dispatcher.dispatch(msg);
     }
 
     /**
-     * outbox row 를 dispatcher 가 받는 Message 로 재구성. event_type 컬럼만으로 type 헤더 셋팅.
+     * inbox row 를 dispatcher 가 받는 Message 로 재구성. event_type 컬럼만으로 type 헤더 셋팅.
      */
-    private Message<String> rebuildMessage(EventOutbox ev) {
+    private Message<String> rebuildMessage(EventInbox ev) {
         MessageBuilder<String> builder = MessageBuilder.withPayload(ev.getPayload());
         if (ev.getEventType() != null) {
             builder.setHeader("type", ev.getEventType());

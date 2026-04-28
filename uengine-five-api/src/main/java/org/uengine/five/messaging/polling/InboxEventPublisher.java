@@ -8,8 +8,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.transaction.annotation.Transactional;
-import org.uengine.five.messaging.EventOutbox;
-import org.uengine.five.messaging.EventOutboxRepository;
+import org.uengine.five.messaging.EventInbox;
+import org.uengine.five.messaging.EventInboxRepository;
 import org.uengine.five.messaging.EventPublisher;
 import org.uengine.five.messaging.TypedJsonObjectMapperFactory;
 
@@ -21,24 +21,24 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  * <ul>
  *   <li>{@code bpm-brodcast} (프론트 실시간 알림): DB 저장하지 않고 {@code SELECT pg_notify(...)}
  *       만 호출. LISTEN 중인 PgNotifyListener 가 받아 SSE 로 푸시.</li>
- *   <li>그 외 채널 (bpm-out, bpm-in-0): {@code BPM_EVENT_OUTBOX} INSERT. OutboxPollJob 가
+ *   <li>그 외 채널 (bpm-out, bpm-in-0): {@code BPM_EVENT_INBOX} INSERT. InboxPollJob 가
  *       꺼내 BpmMessageDispatcher 로 전달. 채널 자체는 DB 컬럼이 아니라 라우팅 결정용
  *       메서드 파라미터로만 사용.</li>
  * </ul>
  *
  * <p>Kafka 모드에서는 이 클래스가 Bean 으로 등록되지 않고 KafkaEventPublisher 가 사용된다.
  */
-public class OutboxEventPublisher implements EventPublisher {
+public class InboxEventPublisher implements EventPublisher {
 
-    private static final Logger log = LoggerFactory.getLogger(OutboxEventPublisher.class);
+    private static final Logger log = LoggerFactory.getLogger(InboxEventPublisher.class);
 
     private static final String BRODCAST_CHANNEL = "bpm-brodcast";
 
-    private final EventOutboxRepository repo;
+    private final EventInboxRepository repo;
     private final JdbcTemplate jdbc;
     private final ObjectMapper objectMapper = TypedJsonObjectMapperFactory.create();
 
-    public OutboxEventPublisher(EventOutboxRepository repo, JdbcTemplate jdbc) {
+    public InboxEventPublisher(EventInboxRepository repo, JdbcTemplate jdbc) {
         this.repo = repo;
         this.jdbc = jdbc;
     }
@@ -60,8 +60,8 @@ public class OutboxEventPublisher implements EventPublisher {
             return;
         }
 
-        // 엔진 내부 / 외부 인입: outbox 저장. (Inbox 단일 채널 가정)
-        EventOutbox ev = new EventOutbox();
+        // 엔진 내부 / 외부 인입: inbox 저장. (Inbox 단일 채널 가정)
+        EventInbox ev = new EventInbox();
         ev.setEventType(type);
         ev.setPayload(payloadJson);
         ev.setCorrKey(headers != null && headers.get("corrKey") != null ? headers.get("corrKey").toString() : null);

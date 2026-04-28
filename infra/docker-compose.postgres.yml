@@ -23,6 +23,8 @@ services:
       - "${POSTGRES_PORT:-5432}:5432"
     volumes:
       - uengine-postgres-data:/var/lib/postgresql/data
+      # 첫 기동(빈 데이터 디렉토리)에서만 실행됨. 기존 볼륨에는 영향 없음.
+      - ./postgres/init:/docker-entrypoint-initdb.d:ro
     healthcheck:
       # POSTGRES_USER/DB 변경 시 아래 -U/-d 도 맞출 것
       test: ["CMD-SHELL", "pg_isready -U uengine -d uengine"]

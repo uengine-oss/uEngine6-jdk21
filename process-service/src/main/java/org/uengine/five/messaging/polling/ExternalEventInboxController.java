@@ -15,8 +15,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.uengine.five.ProcessServiceApplication;
 import org.uengine.five.entity.EventMappingEntity;
-import org.uengine.five.messaging.EventOutbox;
-import org.uengine.five.messaging.EventOutboxRepository;
+import org.uengine.five.messaging.EventInbox;
+import org.uengine.five.messaging.EventInboxRepository;
 import org.uengine.five.repository.EventMappingRepository;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -48,11 +48,11 @@ public class ExternalEventInboxController {
 
     private static final Logger log = LoggerFactory.getLogger(ExternalEventInboxController.class);
 
-    private final EventOutboxRepository repo;
+    private final EventInboxRepository repo;
     private final EventMappingRepository eventMappingRepository;
     private final ObjectMapper objectMapper = ProcessServiceApplication.createTypedJsonObjectMapper();
 
-    public ExternalEventInboxController(EventOutboxRepository repo,
+    public ExternalEventInboxController(EventInboxRepository repo,
                                         EventMappingRepository eventMappingRepository) {
         this.repo = repo;
         this.eventMappingRepository = eventMappingRepository;
@@ -77,7 +77,7 @@ public class ExternalEventInboxController {
             corrKey = extractCorrKeyFromPayload(type, body);
         }
 
-        EventOutbox ev = new EventOutbox();
+        EventInbox ev = new EventInbox();
         ev.setEventType(type);
         ev.setPayload(payloadJson);
         ev.setCorrKey(corrKey);
