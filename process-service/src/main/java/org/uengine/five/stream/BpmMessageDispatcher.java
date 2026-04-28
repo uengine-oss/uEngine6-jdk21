@@ -47,6 +47,7 @@ public class BpmMessageDispatcher {
         String payload = message.getPayload();
         Object typeHeaderRaw = message.getHeaders().get("type");
         String typeHeader = typeHeaderAsString(typeHeaderRaw);
+        String corrKeyHeader = typeHeaderAsString(message.getHeaders().get("corrKey"));
 
         // 진단: Kafka에서 메시지가 들어오면 여기서 한 번만 로그 (수신 여부 확인용)
         if (log.isDebugEnabled()) {
@@ -59,7 +60,7 @@ public class BpmMessageDispatcher {
 
         // 2) type 헤더가 있으면 외부 이벤트로 wheneverEvent 처리
         if (typeHeader != null && !typeHeader.isEmpty()) {
-            asyncEventListener.wheneverEvent(payload, typeHeader);
+            asyncEventListener.wheneverEvent(payload, typeHeader, corrKeyHeader);
         } else if (log.isWarnEnabled()) {
             log.warn("[BPM] no 'type' header - external event path skipped. All headers: {}", message.getHeaders().keySet());
         }

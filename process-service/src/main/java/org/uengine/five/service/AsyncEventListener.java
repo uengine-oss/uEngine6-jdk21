@@ -56,11 +56,16 @@ public class AsyncEventListener {
         System.out.println("\n\n##### listener whatever : " + eventString + "\n\n");
     }
 
-    /** Called from BpmMessageDispatcher when type header is present. */
+    /**
+     * Called from BpmMessageDispatcher when type header is present.
+     * inboxCorrKey: 폴링 모드에서 BPM_EVENT_INBOX.corr_key (auto-generated start_&lt;uuid&gt;).
+     * payload 에 EventMapping.correlationKey 매칭 필드가 없을 때 fallback 값으로 사용된다.
+     * Kafka 모드 등 inbox row 없이 호출되는 경로에서는 null.
+     */
     @Transactional(rollbackFor = { Exception.class })
     @ProcessTransactional
-    public void wheneverEvent(String eventBody, String typeHeader) {
-        log.info("[BPM] wheneverEvent called, typeHeader={}", typeHeader);
+    public void wheneverEvent(String eventBody, String typeHeader, String inboxCorrKey) {
+        log.info("[BPM] wheneverEvent called, typeHeader={}, inboxCorrKey={}", typeHeader, inboxCorrKey);
         System.out.println("\n\n##### listener wheneverEvent : " + eventBody + "\n\n");
         try {
             // 기본은 raw 헤더 문자열로 매칭. 실패하면 숫자 CSV(예: "76,79,65,...")를 디코딩해서 재시도.
@@ -110,7 +115,10 @@ public class AsyncEventListener {
 
                 triggerReceiveActivitiesByCorrKeyAndEventType(coorKeyValue, eventType, eventContent);
             } else {
-                String coorKeyValue = corrKey;
+                // payload 에 매칭 필드가 없으면:
+                //   - 폴링 모드: BPM_EVENT_INBOX.corr_key (start_<uuid>) 사용 → 인스턴스 유일성 보장
+                //   - 그 외:    기존 동작 유지 (correlationKey 필드명 자체)
+                String coorKeyValue = (inboxCorrKey != null && !inboxCorrKey.isEmpty()) ? inboxCorrKey : corrKey;
                 if (eventMappingEntity.isStartEvent()) {
                     // START
                     String startDefId = eventMappingEntity.getDefinitionId();
