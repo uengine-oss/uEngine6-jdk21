@@ -769,35 +769,31 @@ public class InstanceServiceImpl implements InstanceService {
 
         String execScope = (executionScope == null) ? "0" : executionScope;
 
+        // tracingTag은 BPMN element id 그대로(UserTask_*, StartEvent_*, ServiceTask_* 등)이므로
+        // prefix 화이트리스트 없이 ":_status:prop" 접미사로만 식별한다.
+        String scopedSuffix = ":" + execScope + ":_status:prop";
+        String unscopedSuffix = ":_status:prop";
         for (Object key : variables.keySet()) {
-            if (key instanceof String) {
-                String keyStr = (String) key;
-                if (keyStr.matches("Activity_\\w+:" + execScope + ":_status:prop")
-                        || keyStr.matches("Gateway_\\w+:" + execScope + ":_status:prop")
-                        || keyStr.matches("Event_\\w+:" + execScope + ":_status:prop")
-                        || keyStr.matches("Flow_\\w+:" + execScope + ":_status:prop")) {
-                    String newKey = keyStr.replace(":" + execScope + ":_status:prop", "");
-                    filteredVariables.put(newKey, variables.get(key));
+            if (!(key instanceof String)) continue;
+            String keyStr = (String) key;
 
-                    Activity activity = instance.getProcessDefinition().getActivity(newKey);
-                    if (activity != null) {
-                        System.out.println("Activity Name: " + activity.getName() + ", New Key: " + newKey
-                                + ", Status: " + variables.get(key));
-                    }
-                } else if (keyStr.matches("Activity_\\w+:_status:prop")
-                        || keyStr.matches("Gateway_\\w+:_status:prop")
-                        || keyStr.matches("Event_\\w+:_status:prop")
-                        || keyStr.matches("Flow_\\w+:_status:prop")) {
-                    String newKey = keyStr.replace(":_status:prop", "");
-                    if (!filteredVariables.containsKey(newKey)) {
-                        filteredVariables.put(newKey, variables.get(key));
-                    }
-                    Activity activity = instance.getProcessDefinition().getActivity(newKey);
-                    if (activity != null) {
-                        System.out.println("Activity Name: " + activity.getName() + ", New Key: " + newKey
-                                + ", Status: " + variables.get(key));
-                    }
-                }
+            String newKey = null;
+            if (keyStr.endsWith(scopedSuffix)) {
+                newKey = keyStr.substring(0, keyStr.length() - scopedSuffix.length());
+            } else if (keyStr.endsWith(unscopedSuffix)) {
+                newKey = keyStr.substring(0, keyStr.length() - unscopedSuffix.length());
+                if (filteredVariables.containsKey(newKey)) continue; // scoped 우선
+            } else {
+                continue;
+            }
+            if (newKey.isEmpty()) continue; // ":_status:prop" 같은 빈 키 제외
+
+            filteredVariables.put(newKey, variables.get(key));
+
+            Activity activity = instance.getProcessDefinition().getActivity(newKey);
+            if (activity != null) {
+                System.out.println("Activity Name: " + activity.getName() + ", New Key: " + newKey
+                        + ", Status: " + variables.get(key));
             }
         }
         variables = filteredVariables;
