@@ -20,7 +20,7 @@ test/
 *.ipr
 
 ### VSCode ###
-.vscode/
+.vscode
 
 ### NetBeans ###
 nbproject/private/
