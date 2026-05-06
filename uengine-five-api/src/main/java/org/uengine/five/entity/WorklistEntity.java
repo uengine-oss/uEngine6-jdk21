@@ -11,10 +11,16 @@ import java.util.Date;
  */
 @Entity
 @Table(name = "BPM_WORKLIST")
+@SequenceGenerator(
+    name = "worklist_seq_gen",
+    sequenceName = "SEQ_BPM_WORKLIST",
+    allocationSize = 1
+)
 public class WorklistEntity {// implements WorkListDAO {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
+    // @GeneratedValue(strategy = GenerationType.AUTO)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "worklist_seq_gen")
     Long taskId;
 
     Long instId;

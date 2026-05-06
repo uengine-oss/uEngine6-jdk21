@@ -7,10 +7,16 @@ import jakarta.persistence.*;
  */
 @Entity
 @Table(name = "BPM_ROLEMAPPING")
+@SequenceGenerator(
+    name = "rolemapping_seq_gen",
+    sequenceName = "SEQ_BPM_ROLEMAPPING",
+    allocationSize = 1
+)
 public class RoleMappingEntity {//implements RoleMappingDAO {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
+    // @GeneratedValue(strategy = GenerationType.AUTO)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "rolemapping_seq_gen")
     Long roleMappingId;
 
 //    @ManyToOne(targetEntity = ProcessInstanceEntity.class)

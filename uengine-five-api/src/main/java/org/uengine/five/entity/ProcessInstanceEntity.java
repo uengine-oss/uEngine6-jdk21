@@ -12,6 +12,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Lob;
 import jakarta.persistence.OneToMany;
+import jakarta.persistence.SequenceGenerator;
 import jakarta.persistence.Table;
 import jakarta.persistence.Temporal;
 import jakarta.persistence.TemporalType;
@@ -41,6 +42,11 @@ class DummyRoleMapping extends RoleMappingEntity {
 @Table(name = "BPM_PROCINST")
 @RepositoryEventHandler(ProcessInstanceEntity.class)
 @Component
+@SequenceGenerator(
+    name = "procinst_seq_gen",
+    sequenceName = "SEQ_BPM_PROCINST",
+    allocationSize = 1
+)
 public class ProcessInstanceEntity {// implements ProcessInstanceDAO {
 
     @Transient
@@ -73,7 +79,8 @@ public class ProcessInstanceEntity {// implements ProcessInstanceDAO {
     }
 
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
+    // @GeneratedValue(strategy = GenerationType.AUTO)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "procinst_seq_gen")
     @JsonProperty("instId")
     Long instId;
 
