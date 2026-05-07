@@ -403,6 +403,34 @@ public class InstanceServiceImpl implements InstanceService {
         return new InstanceResource(instance);
     }
 
+    // 단위 테스트 격리 실행 후 임시 인스턴스 cleanup용 — entity 로드/수정 없이 직접 삭제.
+    // 의도적으로 stop()/getProcessInstanceLocal()을 호출하지 않음:
+    //   같은 트랜잭션에서 entity를 dirty 상태로 로드한 뒤 삭제하면 후처리 merge 단계에서
+    //   ObjectDeletedException 발생. simulation 모드 인스턴스는 putWorkItemComplete가 이미
+    //   롤백되어 추가 stop이 불필요.
+    @RequestMapping(value = "/instance/{instanceId}", method = RequestMethod.DELETE, produces = "application/json;charset=UTF-8")
+    @Transactional
+    public void deleteInstance(@PathVariable("instanceId") String instanceId) throws Exception {
+        Long instId;
+        try {
+            instId = Long.parseLong(instanceId);
+        } catch (NumberFormatException e) {
+            return;
+        }
+
+        try {
+            List<WorklistEntity> worklists = processInstanceRepository.findAllWorklistsByRootInstId(instId);
+            if (worklists != null && !worklists.isEmpty()) {
+                worklistRepository.deleteAll(worklists);
+            }
+        } catch (Exception ignored) {
+        }
+
+        if (processInstanceRepository.existsById(instId)) {
+            processInstanceRepository.deleteById(instId);
+        }
+    }
+
     @RequestMapping(value = "/instance/{instanceId}/suspend", method = RequestMethod.POST)
     @ProcessTransactional
     public InstanceResource suspend(@PathVariable("instanceId") String instanceId) throws Exception {
