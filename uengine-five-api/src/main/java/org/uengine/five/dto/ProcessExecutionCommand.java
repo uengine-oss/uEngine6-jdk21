@@ -18,6 +18,16 @@ public class ProcessExecutionCommand implements Serializable {
 
     private String correlationKeyValue;
 
+    private String definitionXml;
+
+    public String getDefinitionXml() {
+        return definitionXml;
+    }
+
+    public void setDefinitionXml(String definitionXml) {
+        this.definitionXml = definitionXml;
+    }
+
     public String getCorrelationKeyValue() {
         return correlationKeyValue;
     }

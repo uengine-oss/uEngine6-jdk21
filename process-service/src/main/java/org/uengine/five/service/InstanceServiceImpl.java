@@ -253,15 +253,27 @@ public class InstanceServiceImpl implements InstanceService {
         String filePath = command.getProcessDefinitionId();
         String corrKeyValue = command.getCorrelationKeyValue();
         String groups = command.getGroups();
+        String definitionXml = command.getDefinitionXml();
 
         Object definition;
         try {
-            String defPath = java.net.URLDecoder.decode(filePath, "UTF-8");
-            if (simulation) {
-                definition = definitionService.getDefinition(defPath, null); // if simulation time, use the version
+            if (definitionXml != null && !definitionXml.isEmpty()) {
+                ProcessDefinition parsed = new BpmnXMLParser().parse(definitionXml);
+                if (filePath != null && !filePath.isEmpty()) {
+                    parsed.setId(filePath);
+                    if (parsed.getName() == null) {
+                        parsed.setName(filePath);
+                    }
+                }
+                definition = parsed;
             } else {
-                String version = findHighestNumberedFileName(defPath);
-                definition = definitionService.getDefinition(defPath, version);
+                String defPath = java.net.URLDecoder.decode(filePath, "UTF-8");
+                if (simulation) {
+                    definition = definitionService.getDefinition(defPath, null); // if simulation time, use the version
+                } else {
+                    String version = findHighestNumberedFileName(defPath);
+                    definition = definitionService.getDefinition(defPath, version);
+                }
             }
             // under construction
         } catch (ClassNotFoundException cnfe) {
@@ -313,6 +325,9 @@ public class InstanceServiceImpl implements InstanceService {
                 ((JPAProcessInstance) instance).getProcessInstanceEntity().setDefVerId(processDefinition.getVersion());
                 // instance.setDefinitionVersionId(processDefinition.getVersion());
                 instance.execute();
+                if (definitionXml != null && !definitionXml.isEmpty()) {
+                    TestDefinitionRegistry.put(instance.getInstanceId(), processDefinition);
+                }
                 try {
                     return new InstanceResource(instance);
                 } catch (Exception linkEx) {
@@ -429,6 +444,8 @@ public class InstanceServiceImpl implements InstanceService {
         if (processInstanceRepository.existsById(instId)) {
             processInstanceRepository.deleteById(instId);
         }
+
+        TestDefinitionRegistry.remove(instanceId);
     }
 
     @RequestMapping(value = "/instance/{instanceId}/suspend", method = RequestMethod.POST)
