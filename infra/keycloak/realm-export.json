@@ -43,6 +43,9 @@
           }
         ],
         "realmRoles": ["admin", "user"],
+        "clientRoles": {
+          "realm-management": ["view-users", "view-realm"]
+        },
         "attributes": {
           "department": ["IT부서"]
         }
