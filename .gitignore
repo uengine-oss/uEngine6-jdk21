@@ -31,3 +31,9 @@ nbdist/
 keycloak-15.0.2/standalone/data/*.db
 
 .fake
+
+# Local Keycloak installed distributions and generated runtime data
+infra/keycloak/install/keycloak-*/
+infra/keycloak/install/package-staging/
+infra/keycloak/install/*.tar.gz
+infra/keycloak/install/*.zip

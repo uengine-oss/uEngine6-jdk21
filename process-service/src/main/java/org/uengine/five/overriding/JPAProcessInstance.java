@@ -228,8 +228,15 @@ public class JPAProcessInstance extends DefaultProcessInstance implements Transa
     public ProcessDefinition getProcessDefinition() throws Exception {
         ProcessDefinition definition = super.getProcessDefinition();
         if (definition == null) {
-            setProcessDefinition((ProcessDefinition) definitionService.getDefinition(processInstanceEntity.getDefId(),
-                    processInstanceEntity.getDefVerId()));
+            Long instIdLong = processInstanceEntity != null ? processInstanceEntity.getInstId() : null;
+            String instIdStr = instIdLong != null ? String.valueOf(instIdLong) : null;
+            ProcessDefinition fromRegistry = org.uengine.five.service.TestDefinitionRegistry.get(instIdStr);
+            if (fromRegistry != null) {
+                setProcessDefinition(fromRegistry);
+            } else {
+                setProcessDefinition((ProcessDefinition) definitionService.getDefinition(processInstanceEntity.getDefId(),
+                        processInstanceEntity.getDefVerId()));
+            }
         }
         return super.getProcessDefinition();
     }

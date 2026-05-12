@@ -91,11 +91,11 @@ mail:
     password: 123 #${MAIL_PASSWORD}
 
 keycloak:
-  url: http://localhost:9090
-  realm: master
-  clientId: admin-cli
-  username: ${KEYCLOAK_USERNAME}
-  password: ${KEYCLOAK_PASSWORD}
+  url: ${KEYCLOAK_URI:http://localhost:8080}
+  realm: ${KEYCLOAK_ADMIN_REALM:master}
+  clientId: ${KEYCLOAK_ADMIN_CLIENT_ID:admin-cli}
+  username: ${KEYCLOAK_ADMIN_USERNAME:${KEYCLOAK_USERNAME:admin}}
+  password: ${KEYCLOAK_ADMIN_PASSWORD:${KEYCLOAK_PASSWORD:admin}}
 
 
 
