@@ -2,7 +2,7 @@ package org.uengine.five.overriding;
 
 import java.util.Map;
 import org.uengine.five.service.IAMService;
-import org.uengine.five.service.IAMServices;
+import org.uengine.five.service.IAMServiceFactory;
 import org.uengine.kernel.IContainsMapping;
 import org.uengine.kernel.ProcessDefinition;
 import org.uengine.kernel.ProcessInstance;
@@ -65,7 +65,7 @@ public class IAMRoleResolutionContext extends RoleResolutionContext implements I
         }
         
         try {
-            IAMService iamService = IAMServices.getDefault();
+            IAMService iamService = IAMServiceFactory.getDefault();
             return iamService.hasScope(currentLoginEndpoint, scope);
         } catch (Exception e) {
             return false;

@@ -3,7 +3,7 @@ package org.uengine.five.overriding;
 import java.util.Map;
 
 import org.uengine.five.service.IAMService;
-import org.uengine.five.service.IAMServices;
+import org.uengine.five.service.IAMServiceFactory;
 import org.uengine.kernel.IContainsMapping;
 import org.uengine.kernel.ProcessDefinition;
 import org.uengine.kernel.ProcessInstance;
@@ -65,7 +65,7 @@ public class GroupRoleResolutionContext extends RoleResolutionContext implements
         }
         
         try {
-            IAMService iamService = IAMServices.getDefault();
+            IAMService iamService = IAMServiceFactory.getDefault();
             return iamService.isInGroup(testingEndpoint, scope);
         } catch (Exception e) {
             return false;

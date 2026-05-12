@@ -15,7 +15,10 @@ import org.springframework.context.annotation.Scope;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.uengine.five.overriding.ActivityQueue;
 import org.uengine.five.overriding.EventMappingDeployFilter;
+// import org.uengine.five.service.HfcIAMService;
 import org.uengine.five.service.IAMCompanyRoleMapping;
+import org.uengine.five.service.IAMServiceFactory;
+import org.uengine.five.service.KeycloakIAMService;
 import org.uengine.five.overriding.InstanceNameFilter;
 import org.uengine.five.overriding.PayloadFilter;
 import org.uengine.five.overriding.ServiceRegisterDeployFilter;
@@ -25,11 +28,7 @@ import org.uengine.five.service.LocalFileDefinitionServiceUtil;
 import org.uengine.kernel.DeployFilter;
 import org.uengine.kernel.GlobalContext;
 
-import com.fasterxml.jackson.annotation.JsonAutoDetect;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
 
 @SpringBootApplication
 @EnableAsync
@@ -52,12 +51,16 @@ public class ProcessServiceApplication {
     }
 
     public static void main(String[] args) {
+        // IAMService 구현체는 Spring 부팅 전에 등록
+        // Spring 빈 초기화 중 IAMServiceFactory.getDefault()가 호출될 수 있으므로
+        // SpringApplication.run() 보다 먼저 실행해야 합니다.
+        IAMServiceFactory.register("keycloak", KeycloakIAMService.getDefault());
+        // IAMServiceFactory.register("hfc", HfcIAMService.getDefault());
+
         applicationContext = SpringApplication.run(ProcessServiceApplication.class, args);
         GlobalContext.setComponentFactory(new SpringComponentFactory());
-
-        // Application 쪽에서 RoleMapping 구현/캐시 설정을 주입
-        // (GlobalContext는 uengine.properties 기반이므로 Spring 부팅 시점에 override)
-        GlobalContext.getProperties().setProperty("rolemapping.class", IAMCompanyRoleMapping.class.getName());
+        // rolemapping.class, iam.provider는 uengine.properties에서 관리합니다.
+        // (process-service/src/main/resources/org/uengine/uengine.properties)
     }
 
     /**

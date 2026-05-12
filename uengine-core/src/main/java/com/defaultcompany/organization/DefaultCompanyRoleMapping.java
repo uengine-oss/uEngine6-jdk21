@@ -21,7 +21,7 @@ public class DefaultCompanyRoleMapping extends RoleMapping{
 		if (!UEngineUtil.isNotEmpty(endpoint)) return null;
 
 		try {
-			Map<String, Object> user = getUserByIdViaIamServices(endpoint);
+			Map<String, Object> user = getUserByIdViaIamServiceFactory(endpoint);
 			if (user == null) return endpoint;
 
 			String username = asString(user.get("username"));
@@ -33,10 +33,10 @@ public class DefaultCompanyRoleMapping extends RoleMapping{
 	}
 
 	@SuppressWarnings("unchecked")
-	private static Map<String, Object> getUserByIdViaIamServices(String userId) {
+	private static Map<String, Object> getUserByIdViaIamServiceFactory(String userId) {
 		try {
-			Class<?> iamServicesClass = Class.forName("org.uengine.five.service.IAMServices");
-			Method getDefault = iamServicesClass.getMethod("getDefault");
+			Class<?> iamServiceFactoryClass = Class.forName("org.uengine.five.service.IAMServiceFactory");
+			Method getDefault = iamServiceFactoryClass.getMethod("getDefault");
 			Object iamService = getDefault.invoke(null);
 			if (iamService == null) return null;
 

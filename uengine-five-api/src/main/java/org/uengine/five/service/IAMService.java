@@ -8,12 +8,12 @@ import java.util.Map;
  *
  * <p>
  * RoleResolutionContext 계열에서 직렬화 제약이 있어 Spring DI 대신
- * {@link IAMServices#getDefault()} 같은 정적 팩토리 접근 패턴을 사용합니다.
+ * {@link IAMServiceFactory#getDefault()} 같은 정적 팩토리 접근 패턴을 사용합니다.
  * </p>
  *
  * <p>
  * 새 IAM 연동(예: LDAP, 사내 IAM 등)을 추가할 때는 이 인터페이스를 구현하고,
- * {@link IAMServices}에 providerId 매핑을 추가하면 됩니다.
+ * {@link IAMServiceFactory}에 providerId 매핑을 추가하면 됩니다.
  * </p>
  */
 public interface IAMService {
