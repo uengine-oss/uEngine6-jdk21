@@ -29,7 +29,7 @@ public class ScopeActivity extends FlowActivity implements MessageListener {
 		if (pvName == null)
 			return null;
 
-		if (pvName.startsWith("[roles].")) {
+		if (pvName.startsWith("[roles].") || pvName.startsWith("[lanes].")) {
 			ProcessVariable variable = ProcessVariable.forName(pvName);
 			variable.setTypeClassName(RoleMapping.class.getName());
 

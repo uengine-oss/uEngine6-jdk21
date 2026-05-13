@@ -525,7 +525,7 @@ public class ReceiveActivity extends DefaultActivity implements MessageListener,
             } else {
                 srcVariableName = param.getVariable().getName();
                 if (srcVariableName.startsWith("[activities]") || srcVariableName.startsWith("[instance]")
-                        || srcVariableName.startsWith("[roles]")) {
+                        || srcVariableName.startsWith("[roles]") || srcVariableName.startsWith("[lanes]")) {
                     value = instance.getBeanProperty(srcVariableName); // varA
                 } else {
                     String[] wholePartPath = srcVariableName.replace('.', '@').split("@");

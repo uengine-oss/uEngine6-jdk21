@@ -939,7 +939,7 @@ public class DefaultProcessInstance extends AbstractProcessInstance {
 			objects.put("definition", getProcessDefinition());
 			objects.put("activities", new ActivityBeanResolver(this));
 
-			if (key.startsWith("[roles].")) {
+			if (key.startsWith("[roles].") || key.startsWith("[lanes].")) {
 				String[] rolesAndRoleName = key.replace('.', '@').split("@");
 				if (rolesAndRoleName.length > 1) {
 					String roleName = rolesAndRoleName[1];
@@ -1015,7 +1015,7 @@ public class DefaultProcessInstance extends AbstractProcessInstance {
 			objects.put("definition", getProcessDefinition());
 			objects.put("activities", new ActivityBeanResolver(this));
 
-			if (key.startsWith("[roles].")) {
+			if (key.startsWith("[roles].") || key.startsWith("[lanes].")) {
 				String[] rolesAndRoleName = key.replace('.', '@').split("@");
 				if (rolesAndRoleName.length > 1) {
 					return getRoleMapping(rolesAndRoleName[1]);

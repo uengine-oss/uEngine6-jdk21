@@ -18,6 +18,8 @@ import java.util.Properties;
 public abstract class RoleMapping implements java.io.Serializable, Cloneable, CommandVariableValue{
 	private static final long serialVersionUID = org.uengine.kernel.GlobalContext.SERIALIZATION_UID;
 	public static final String ROLES_PREFIX = "[roles].";
+	// 프론트엔드 Mapper의 'Lanes' 표기와 호환. ROLES_PREFIX와 의미적으로 동일하며 양쪽 모두 인식한다.
+	public static final String LANES_PREFIX = "[lanes].";
 	public static Class USE_CLASS = null;
 
 	/**
@@ -660,6 +662,8 @@ public abstract class RoleMapping implements java.io.Serializable, Cloneable, Co
 	public boolean doCommand(ProcessInstance instance, String variableKey) throws Exception {
 		if(variableKey.startsWith(ROLES_PREFIX)){
 			variableKey = variableKey.substring(ROLES_PREFIX.length());
+		} else if(variableKey.startsWith(LANES_PREFIX)){
+			variableKey = variableKey.substring(LANES_PREFIX.length());
 		}
 
 		if(instance.getProcessDefinition().getRole(variableKey)!=null){
