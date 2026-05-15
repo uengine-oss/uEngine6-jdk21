@@ -18,10 +18,12 @@ import org.uengine.kernel.RoleResolutionContext;
  * Updated: IAM 공급자 추상화 적용 (IAMService)
  */
 public class IAMRoleResolutionContext extends RoleResolutionContext implements IContainsMapping {
-    
+
     private static final long serialVersionUID = org.uengine.kernel.GlobalContext.SERIALIZATION_UID;
-    
+
     private String scope;
+    // 그룹 + 권한 교집합 매핑용. scope 없이 단독 지정 시 그룹만으로 매칭.
+    private String groupName;
 
     public String getScope() {
         return scope;
@@ -30,43 +32,78 @@ public class IAMRoleResolutionContext extends RoleResolutionContext implements I
     public void setScope(String scope) {
         this.scope = scope;
     }
-    
+
+    public String getGroupName() {
+        return groupName;
+    }
+
+    public void setGroupName(String groupName) {
+        this.groupName = groupName;
+    }
+
     @Override
     public RoleMapping getActualMapping(ProcessDefinition pd, ProcessInstance instance, String tracingTag, Map options)
             throws Exception {
-        if (scope == null || scope.trim().isEmpty()) {
-            throw new IllegalArgumentException("Scope is required for IAMRoleResolutionContext");
+        boolean hasScope = scope != null && !scope.trim().isEmpty();
+        boolean hasGroup = groupName != null && !groupName.trim().isEmpty();
+        if (!hasScope && !hasGroup) {
+            throw new IllegalArgumentException("Either scope or groupName is required for IAMRoleResolutionContext");
         }
-        
+
         RoleMapping roleMapping = RoleMapping.create();
-        roleMapping.setScope(scope);
-        roleMapping.setAssignType(Role.ASSIGNTYPE_ROLE);
+        if (hasScope) roleMapping.setScope(scope);
+        if (hasGroup) roleMapping.setAssignGroup(groupName);
+
+        // assignType: 둘 다 = GROUP_ROLE, 권한만 = ROLE, 그룹만 = GROUP
+        if (hasScope && hasGroup) {
+            roleMapping.setAssignType(Role.ASSIGNTYPE_GROUP_ROLE);
+        } else if (hasScope) {
+            roleMapping.setAssignType(Role.ASSIGNTYPE_ROLE);
+        } else {
+            roleMapping.setAssignType(Role.ASSIGNTYPE_GROUP);
+        }
 
         return roleMapping;
     }
 
     @Override
     public String getDisplayName() {
-        if (scope != null && !scope.trim().isEmpty()) {
+        boolean hasScope = scope != null && !scope.trim().isEmpty();
+        boolean hasGroup = groupName != null && !groupName.trim().isEmpty();
+        if (hasScope && hasGroup) {
+            return "Who is in group '" + groupName + "' and has the scope '" + scope + "'";
+        }
+        if (hasScope) {
             return "Who has the scope '" + scope + "'";
+        }
+        if (hasGroup) {
+            return "Who is in group '" + groupName + "'";
         }
         return "IAM Role Resolution";
     }
 
     @Override
     public boolean containsMapping(ProcessInstance instance, RoleMapping testingRoleMapping) throws Exception {
-        if (scope == null || testingRoleMapping == null) {
+        if (testingRoleMapping == null) {
             return false;
         }
-        
         String currentLoginEndpoint = testingRoleMapping.getEndpoint();
         if (currentLoginEndpoint == null) {
             return false;
         }
-        
+
+        boolean hasScope = scope != null && !scope.trim().isEmpty();
+        boolean hasGroup = groupName != null && !groupName.trim().isEmpty();
+        if (!hasScope && !hasGroup) {
+            return false;
+        }
+
         try {
             IAMService iamService = IAMServiceFactory.getDefault();
-            return iamService.hasScope(currentLoginEndpoint, scope);
+            // 둘 중 지정된 조건 모두 만족해야 통과 (AND). 미지정 조건은 무시.
+            if (hasScope && !iamService.hasScope(currentLoginEndpoint, scope)) return false;
+            if (hasGroup && !iamService.isInGroup(currentLoginEndpoint, groupName)) return false;
+            return true;
         } catch (Exception e) {
             return false;
         }

@@ -31,8 +31,9 @@ public interface WorklistRepository extends JpaRepository<WorklistEntity, Long> 
     @Query("select wl from WorklistEntity wl " +
             "where (" +
             "   (wl.endpoint = ?#{principal.userId} or wl.endpoint in ?#{principal.scopes})" +
-            "   or (wl.dispatchOption = 1 and wl.endpoint is null and wl.scope in ?#{principal.groups})" +
-            "   or (wl.dispatchOption = 1 and wl.endpoint is null and wl.scope in ?#{principal.scopes})" +
+            "   or (wl.dispatchOption = 1 and wl.endpoint is null and (wl.assignGroup is null or wl.assignGroup = 'null') and wl.scope in ?#{principal.groups})" +
+            "   or (wl.dispatchOption = 1 and wl.endpoint is null and (wl.assignGroup is null or wl.assignGroup = 'null') and wl.scope in ?#{principal.scopes})" +
+            "   or (wl.dispatchOption = 1 and wl.endpoint is null and wl.assignGroup in ?#{principal.groups} and (wl.scope is null or wl.scope = 'null' or wl.scope in ?#{principal.scopes}))" +
             ") and (wl.status != 'COMPLETED') ")
     public List<WorklistEntity> findToDo();
 
@@ -69,13 +70,15 @@ public interface WorklistRepository extends JpaRepository<WorklistEntity, Long> 
     @Query("select wl from WorklistEntity wl " +
             "where ( (wl.rootInstId = :rootInstId) or (wl.rootInstId is null and wl.instId = :rootInstId) ) " +
             "  and wl.roleName = :roleName " +
-            "  and wl.scope = :scope " +
+            "  and ( (:scope is null and wl.scope is null) or (:scope is not null and wl.scope = :scope) ) " +
+            "  and ( (:assignGroup is null and wl.assignGroup is null) or (:assignGroup is not null and wl.assignGroup = :assignGroup) ) " +
             "  and wl.assignType = :assignType " +
             "  and (wl.status = 'NEW' or wl.status = 'RUNNING') " +
             "  and ( (:endpoint is null and wl.endpoint is null) or (:endpoint is not null and wl.endpoint = :endpoint) ) ")
     public List<WorklistEntity> findSiblingsForClaimState(@Param("rootInstId") Long rootInstId,
             @Param("roleName") String roleName,
             @Param("scope") String scope,
+            @Param("assignGroup") String assignGroup,
             @Param("assignType") Integer assignType,
             @Param("endpoint") String endpoint);
     

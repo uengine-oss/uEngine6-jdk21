@@ -149,6 +149,51 @@ public class DefaultProcessInstance extends AbstractProcessInstance {
 		putRoleMapping(roleMap.getName(), roleMap);
 	}
 
+	/**
+	 * 매퍼 출력에서 ProcessVariable wrapper { name, value } 가 그대로 들어왔을 경우 value 를 자동 추출.
+	 * 일반 String/Number 등은 String.valueOf 로 그대로 변환.
+	 */
+	private static String unwrapMapperValue(Object v) {
+		if (v == null) return null;
+		if (v instanceof java.util.Map) {
+			Object inner = ((java.util.Map<?, ?>) v).get("value");
+			if (inner != null) return String.valueOf(inner);
+		}
+		return String.valueOf(v);
+	}
+
+	/**
+	 * Lane(Role) 정의의 RoleResolutionContext 에서 기본 scope/groupName 을 reflection 으로 읽음.
+	 * uengine-core → uengine-five-api 클래스(IAMRoleResolutionContext 등) 직접 참조를 피하기 위함.
+	 *
+	 * @return [defaultScope, defaultGroupName] — 없으면 null.
+	 */
+	private String[] readLaneDefaults(String roleName) {
+		String[] result = new String[] { null, null };
+		try {
+			ProcessDefinition def = getProcessDefinition();
+			if (def == null) return result;
+			Role roleDef = def.getRole(roleName);
+			if (roleDef == null) return result;
+			Object ctx = roleDef.getRoleResolutionContext();
+			if (ctx == null) return result;
+			try {
+				java.lang.reflect.Method m = ctx.getClass().getMethod("getScope");
+				Object v = m.invoke(ctx);
+				if (v != null) result[0] = v.toString();
+			} catch (NoSuchMethodException ignore) {
+			}
+			try {
+				java.lang.reflect.Method m = ctx.getClass().getMethod("getGroupName");
+				Object v = m.invoke(ctx);
+				if (v != null) result[1] = v.toString();
+			} catch (NoSuchMethodException ignore) {
+			}
+		} catch (Exception ignore) {
+		}
+		return result;
+	}
+
 	public void putRoleMapping(String name, String endpoint) throws Exception {
 		if (!UEngineUtil.isNotEmpty(endpoint)) {
 			putRoleMapping(name, (RoleMapping) null);
@@ -944,7 +989,47 @@ public class DefaultProcessInstance extends AbstractProcessInstance {
 				if (rolesAndRoleName.length > 1) {
 					String roleName = rolesAndRoleName[1];
 
-					if (value instanceof String) {
+					// 매퍼(JsonBuild 등)는 String JSON("{...}") 형태로 출력 가능 — Map 으로 파싱하여 처리
+					java.util.Map<?,?> mapForRole = null;
+					if (value instanceof java.util.Map) {
+						mapForRole = (java.util.Map<?,?>) value;
+					} else if (value instanceof String) {
+						String s = ((String) value).trim();
+						if (s.startsWith("{") && s.endsWith("}")) {
+							try {
+								mapForRole = new com.fasterxml.jackson.databind.ObjectMapper().readValue(s, java.util.Map.class);
+							} catch (Exception ignore) {
+								// JSON 파싱 실패 시 일반 String 으로 fallback
+							}
+						}
+					}
+
+					if (mapForRole != null) {
+						// { group, role, endpoint? } (또는 assignGroup/scope) 키 인식
+						// 매퍼가 ProcessVariable wrapper { name, value } 를 그대로 넣었을 경우 value 키 자동 추출
+						RoleMapping rm = RoleMapping.create();
+						rm.setName(roleName);
+						String roleStr = unwrapMapperValue(mapForRole.get("role"));
+						if (roleStr == null) roleStr = unwrapMapperValue(mapForRole.get("scope"));
+						String groupStr = unwrapMapperValue(mapForRole.get("group"));
+						if (groupStr == null) groupStr = unwrapMapperValue(mapForRole.get("assignGroup"));
+						String endpointStr = unwrapMapperValue(mapForRole.get("endpoint"));
+
+						// 매퍼가 null/빈 값을 보낸 항목은 Lane 정의의 기본값으로 fallback
+						String[] defaults = readLaneDefaults(roleName);
+						if ((roleStr == null || roleStr.trim().isEmpty()) && defaults[0] != null) roleStr = defaults[0];
+						if ((groupStr == null || groupStr.trim().isEmpty()) && defaults[1] != null) groupStr = defaults[1];
+
+						if (roleStr != null && !roleStr.trim().isEmpty()) rm.setScope(roleStr);
+						if (groupStr != null && !groupStr.trim().isEmpty()) rm.setAssignGroup(groupStr);
+						if (endpointStr != null) rm.setEndpoint(endpointStr);
+						boolean hasRole = roleStr != null && !roleStr.trim().isEmpty();
+						boolean hasGroup = groupStr != null && !groupStr.trim().isEmpty();
+						if (hasRole && hasGroup) rm.setAssignType(org.uengine.kernel.Role.ASSIGNTYPE_GROUP_ROLE);
+						else if (hasRole) rm.setAssignType(org.uengine.kernel.Role.ASSIGNTYPE_ROLE);
+						else if (hasGroup) rm.setAssignType(org.uengine.kernel.Role.ASSIGNTYPE_GROUP);
+						putRoleMapping(roleName, rm);
+					} else if (value instanceof String) {
 						putRoleMapping(roleName, (String) value);
 					} else if (value instanceof RoleMapping) {
 						putRoleMapping(roleName, ((RoleMapping) value));

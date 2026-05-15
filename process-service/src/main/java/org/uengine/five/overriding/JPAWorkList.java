@@ -145,6 +145,9 @@ public class JPAWorkList implements WorkList {
                         Object scope = parameterMap.get("scope");
                         if (scope != null && !UEngineUtil.isNotEmpty(rm.getScope())) rm.setScope(String.valueOf(scope));
 
+                        Object assignGroupParam = parameterMap.get("assignGroup");
+                        if (assignGroupParam != null && !UEngineUtil.isNotEmpty(rm.getAssignGroup())) rm.setAssignGroup(String.valueOf(assignGroupParam));
+
                         Object assignType = parameterMap.get("assignType");
                         if (assignType != null && rm.getAssignType() == 0) {
                             try {
@@ -162,6 +165,8 @@ public class JPAWorkList implements WorkList {
             wl.setResName(resName);
             wl.setDefVerId(""+parameterMap.get(KeyedParameter.PROCESSDEFINITIONVERSION));
             wl.setScope(""+parameterMap.get("scope"));
+            Object assignGroupForWl = parameterMap.get("assignGroup");
+            wl.setAssignGroup(assignGroupForWl != null ? String.valueOf(assignGroupForWl) : null);
             wl.setAssignType(Integer.parseInt("" + parameterMap.get("assignType")));
 
             if(parameterMap.containsKey("actType")){

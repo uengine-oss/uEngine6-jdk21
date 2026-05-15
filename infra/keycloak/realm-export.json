@@ -15,7 +15,14 @@
       "realm": [
         {
           "name": "user",
-          "description": "일반 사용자 역할"
+          "description": "일반 사용자 역할",
+          "composite": true,
+          "composites": {
+            "client": {
+              "realm-management": ["view-realm", "view-users", "query-groups", "query-users"],
+              "account": ["view-groups"]
+            }
+          }
         },
         {
           "name": "admin",
@@ -65,6 +72,7 @@
           }
         ],
         "realmRoles": ["user"],
+        "groups": ["/IT부서"],
         "attributes": {
           "department": ["영업부서"]
         }
@@ -116,6 +124,20 @@
         "publicClient": true,
         "frontchannelLogout": false,
         "protocol": "openid-connect",
+        "protocolMappers": [
+          {
+            "name": "groups",
+            "protocol": "openid-connect",
+            "protocolMapper": "oidc-group-membership-mapper",
+            "config": {
+              "claim.name": "groups",
+              "full.path": "false",
+              "id.token.claim": "true",
+              "access.token.claim": "true",
+              "userinfo.token.claim": "true"
+            }
+          }
+        ],
         "attributes": {
           "access.token.lifespan": "1800",
           "saml.force.post.binding": "false",

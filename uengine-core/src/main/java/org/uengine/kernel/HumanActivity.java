@@ -701,6 +701,9 @@ public class HumanActivity extends ReceiveActivity {
 			if (UEngineUtil.isNotEmpty(roleMapping.getScope())) {
 				kpv.put("scope", roleMapping.getScope());
 			}
+			if (UEngineUtil.isNotEmpty(roleMapping.getAssignGroup())) {
+				kpv.put("assignGroup", roleMapping.getAssignGroup());
+			}
 			kpv.put("assignType", "" + roleMapping.getAssignType());
 
 			if (!kpv.get(KeyedParameter.DISPATCHINGOPTION).equals("7")) {

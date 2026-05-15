@@ -25,10 +25,11 @@ public class Role implements IElement, java.io.Serializable, Cloneable {
 	public static final int DISPATCHINGOPTION_RECEIVE 			= 6; //����ڿ� ���� ��d
 	public static final int DISPATCHINGOPTION_ANNOUNCEMENT 		= 7; //Notice Option - Direct
 	
-	public static final int ASSIGNTYPE_USER		 	= 0;	
-	public static final int ASSIGNTYPE_DEPT 		= 2;	
-	public static final int ASSIGNTYPE_GROUP 		= 3;	
+	public static final int ASSIGNTYPE_USER		 	= 0;
+	public static final int ASSIGNTYPE_DEPT 		= 2;
+	public static final int ASSIGNTYPE_GROUP 		= 3;
 	public static final int ASSIGNTYPE_ROLE 		= 4;
+	public static final int ASSIGNTYPE_GROUP_ROLE	= 5; // 그룹 + 권한 교집합
 
 	public static final String WHEN_ADD = "add";
 

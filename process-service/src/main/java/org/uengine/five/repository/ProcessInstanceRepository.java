@@ -29,6 +29,7 @@ public interface ProcessInstanceRepository
     @Query("select pi from ProcessInstanceEntity pi where exists (select 1 from WorklistEntity wl where wl.endpoint = ?#{loggedUserId})")
     List<ProcessInstanceEntity> findAllICanSee();
 
+
     @Query("select pi from ProcessInstanceEntity pi where pi.mainInstId is null")
     List<ProcessInstanceEntity> findMainInstICanSee();
 

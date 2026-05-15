@@ -37,9 +37,11 @@ public class GroupRoleResolutionContext extends RoleResolutionContext implements
         if (scope == null || scope.trim().isEmpty()) {
             throw new IllegalArgumentException("Group name is required for GroupRoleResolutionContext");
         }
-        
+
+        // 신규 데이터는 assignGroup 컬럼으로 저장하여 IAM 모드와 컬럼 일관성 유지.
+        // 기존 DB 의 scope=그룹명 행들도 TODO 쿼리 case ② (wl.scope in :groups) 로 계속 매칭됨.
         RoleMapping roleMapping = RoleMapping.create();
-        roleMapping.setScope(scope);
+        roleMapping.setAssignGroup(scope);
         roleMapping.setAssignType(Role.ASSIGNTYPE_GROUP);
 
         return roleMapping;

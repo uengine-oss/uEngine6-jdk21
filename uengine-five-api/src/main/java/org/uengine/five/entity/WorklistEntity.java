@@ -60,6 +60,7 @@ public class WorklistEntity {// implements WorkListDAO {
     String defId;
     String defVerId;
     String scope; // groupName or RoleScope
+    String assignGroup; // Lane 할당 대상 그룹 (scope=권한과 함께 지정 시 교집합 매칭)
     int assignType; // see org.uengine.kernel.Role#ASSIGNTYPE_*
 
     String defName;
@@ -181,6 +182,14 @@ public class WorklistEntity {// implements WorkListDAO {
 
     public void setScope(String scope) {
         this.scope = scope;
+    }
+
+    public String getAssignGroup() {
+        return assignGroup;
+    }
+
+    public void setAssignGroup(String assignGroup) {
+        this.assignGroup = assignGroup;
     }
 
     public int getAssignType() {
