@@ -26,6 +26,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.Collections;
 import java.util.Vector;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -53,6 +54,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.HandlerMapping;
+import org.uengine.five.lifecycle.BpmLifecycleService;
 import org.uengine.five.ProcessServiceApplication;
 import org.uengine.five.dto.InstanceResource;
 import org.uengine.five.dto.Message;
@@ -157,6 +159,9 @@ public class InstanceServiceImpl implements InstanceService {
 
     @Autowired
     WorklistRepository worklistRepository;
+
+    @Autowired(required = false)
+    BpmLifecycleService bpmLifecycleService;
 
     @Autowired
     EventMappingRepository eventMappingRepository;
@@ -2603,6 +2608,11 @@ public class InstanceServiceImpl implements InstanceService {
             applyActorToWorklistIfEmpty(worklistEntity, actorEndpoint);
             worklistRepository.save(worklistEntity);
 
+            // ── [HOOK] 업무 배정 확정 (경합 선점 claim) ──────────────
+            if (bpmLifecycleService != null) {
+                bpmLifecycleService.onTaskAssigned(worklistEntity);
+            }
+
             // 2) 동일 역할 + 동일 scope/assignGroup/assignType 그룹의 다른 workitem들도 함께 소유자 세팅
             if (rootInstId != null && roleName != null && assignType != null) {
                 List<WorklistEntity> siblings = worklistRepository.findSiblingsForClaimState(rootInstId, roleName, scope, assignGroup, assignType, null);
@@ -2614,6 +2624,7 @@ public class InstanceServiceImpl implements InstanceService {
                     }
                 }
             }
+
         }
     }
 
@@ -2808,6 +2819,19 @@ public class InstanceServiceImpl implements InstanceService {
 
         return getWorkItem(resultTaskId);
     }
+
+    /**
+     * 관리자 담당자 재배정 (USER/endpoint, GROUP/scope 등).
+    */
+    @RequestMapping(value = "/work-item/{taskId}/assignee-reassignment", method = RequestMethod.POST, produces = "application/json;charset=UTF-8")
+    @ProcessTransactional // important!
+    public WorkItemResource reassignWorkItemAssignee(
+        @PathVariable("taskId") String taskId,
+        @RequestBody RoleMappingCommand assignment) throws Exception {
+                        
+        return getWorkItem(taskId);
+    }
+
 
     /**
      * 태스크 반송 가능여부 + 후보 목록
