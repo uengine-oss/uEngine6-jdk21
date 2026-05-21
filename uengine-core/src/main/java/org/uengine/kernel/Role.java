@@ -18,7 +18,7 @@ public class Role implements IElement, java.io.Serializable, Cloneable {
 	
 	public static final int DISPATCHINGOPTION_AUTO				= -1; // ����
 	public static final int DISPATCHINGOPTION_RACING			= 1; // RACE(Claim)
-	public static final int DISPATCHINGOPTION_LOADBALANCED 		= 2; // �ε� ���
+	public static final int DISPATCHINGOPTION_LOADBALANCED 		= 2; // Round Robin
 	public static final int DISPATCHINGOPTION_ALL 				= 0; // ���
 	public static final int DISPATCHINGOPTION_SETBYRIGHTPERSON 	= 4; // ����ڿ� ���� ��d
 	public static final int DISPATCHINGOPTION_REFERENCE 		= 5; //����ڿ� ���� ��d

@@ -137,6 +137,14 @@ public interface InstanceService {
                         throws Exception;
 
         /**
+         * 관리자 기능: 태스크 담당자 재배정 (USER/endpoint, GROUP/scope 등).
+         */
+        @RequestMapping(value = "/work-item/{taskId}/assignee-reassignment", method = RequestMethod.POST, produces = "application/json;charset=UTF-8")
+        public WorkItemResource reassignWorkItemAssignee(
+                        @PathVariable("taskId") String taskId,
+                        @RequestBody RoleMappingCommand assignment) throws Exception;
+
+        /**
          * 태스크 반송 가능여부 및 후보 목록 조회
          * - 기본 응답: enabled + candidates
          */
