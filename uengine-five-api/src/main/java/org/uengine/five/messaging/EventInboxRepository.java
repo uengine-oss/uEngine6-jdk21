@@ -2,6 +2,7 @@ package org.uengine.five.messaging;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
@@ -27,6 +28,9 @@ public interface EventInboxRepository extends JpaRepository<EventInbox, Long> {
     @Modifying
     @Query("DELETE FROM EventInbox e WHERE e.processedAt IS NOT NULL AND e.processedAt < :olderThan")
     int deleteProcessedBefore(@Param("olderThan") Instant olderThan);
+
+    /** (corr_key, event_type) 멱등 충돌 시 기존 row 조회용. */
+    Optional<EventInbox> findFirstByCorrKeyAndEventType(String corrKey, String eventType);
 
     /** Spring Data REST 자동 노출 차단. */
     @Override

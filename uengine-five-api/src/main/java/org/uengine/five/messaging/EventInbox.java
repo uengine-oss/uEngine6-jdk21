@@ -2,14 +2,7 @@ package org.uengine.five.messaging;
 
 import java.time.Instant;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Index;
-import jakarta.persistence.Table;
-import jakarta.persistence.UniqueConstraint;
+import jakarta.persistence.*;
 
 /**
  * Polling 모드 외부 이벤트 인입 큐. Inbox 채널 (bpm-in-0) 로 들어오는 이벤트를 보관하고,
@@ -35,20 +28,19 @@ import jakarta.persistence.UniqueConstraint;
  */
 @Entity
 @Table(name = "BPM_EVENT_INBOX",
-       indexes = @Index(name = "idx_inbox_unprocessed", columnList = "processed_at"),
-       uniqueConstraints = @UniqueConstraint(name = "uk_inbox_corr_event",
-                                             columnNames = { "corr_key", "event_type" }))
+    indexes = @Index(name = "idx_inbox_unprocessed", columnList = "processed_at"),
+    uniqueConstraints = @UniqueConstraint(name = "uk_inbox_corr_event", columnNames = { "corr_key", "event_type" })
+)
+@SequenceGenerator(
+    name = "event_inbox_seq_gen",
+    sequenceName = "SEQ_BPM_EVENT_INBOX",
+    allocationSize = 1
+)
 public class EventInbox {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "event_inbox_seq_gen")
     private Long id;
-
-    @Column(name = "EVENT_TYPE", length = 128)
-    private String eventType;
-
-    @Column(name = "PAYLOAD", nullable = false, columnDefinition = "TEXT")
-    private String payload;
 
     /**
      * 비즈니스 식별자. 외부 발행자가 X-Corr-Key 헤더로 제공하거나 (Inbox 컨트롤러),
@@ -57,6 +49,12 @@ public class EventInbox {
      */
     @Column(name = "CORR_KEY", length = 64)
     private String corrKey;
+    
+    @Column(name = "EVENT_TYPE", length = 128)
+    private String eventType;
+
+    @Column(name = "PAYLOAD", nullable = false, columnDefinition = "TEXT")
+    private String payload;
 
     @Column(name = "CREATED_AT", nullable = false)
     private Instant createdAt = Instant.now();
