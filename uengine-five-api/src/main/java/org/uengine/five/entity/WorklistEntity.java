@@ -61,6 +61,7 @@ public class WorklistEntity {// implements WorkListDAO {
     String defVerId;
     String scope; // groupName or RoleScope
     String assignGroup; // Lane 할당 대상 그룹 (scope=권한과 함께 지정 시 교집합 매칭)
+    String group; // 진행 기관 코드
     int assignType; // see org.uengine.kernel.Role#ASSIGNTYPE_*
 
     String defName;
@@ -82,6 +83,13 @@ public class WorklistEntity {// implements WorkListDAO {
     Date dueDate;
 
     String status;
+
+    /**
+     * 결재 유형 분류값 (예: APPROVAL, REJECTION, REFERENCE 등 도메인별 정의).
+     * "내 결재함" 탭에서 endpoint = 로그인 사용자 의 업무 중 이 값으로 추가 필터링한다.
+     */
+    String approvalType;
+
     /**
      * decision: 사용자가 이 workitem을 어떤 의사결정으로 종료/처리했는지 기록
      * - 예: RETURN (반송), ADMIN_BACKTOHERE(관리자 강제이동) 등
@@ -190,6 +198,14 @@ public class WorklistEntity {// implements WorkListDAO {
 
     public void setAssignGroup(String assignGroup) {
         this.assignGroup = assignGroup;
+    }
+
+    public String getGroup() {
+        return group;
+    }
+
+    public void setGroup(String group) {
+        this.group = group;
     }
 
     public int getAssignType() {
@@ -434,6 +450,14 @@ public class WorklistEntity {// implements WorkListDAO {
 
     public void setPayload(String payload) {
         this.payload = payload;
+    }
+
+    public String getApprovalType() {
+        return approvalType;
+    }
+
+    public void setApprovalType(String approvalType) {
+        this.approvalType = approvalType;
     }
 
 }
