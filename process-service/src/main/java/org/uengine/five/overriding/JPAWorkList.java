@@ -2,6 +2,7 @@ package org.uengine.five.overriding;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.uengine.five.entity.WorklistEntity;
+import org.uengine.five.lifecycle.BpmLifecycleService;
 import org.uengine.five.repository.WorklistRepository;
 import org.uengine.kernel.KeyedParameter;
 import org.uengine.kernel.RoleMapping;
@@ -43,6 +44,9 @@ public class JPAWorkList implements WorkList {
 
     @Autowired
     WorklistRepository worklistRepository;
+
+    @Autowired(required = false)
+    BpmLifecycleService bpmLifecycleService;
 
     protected String addWorkItemImpl(String reservedTaskId, RoleMapping roleMapping, Map parameterMap, boolean isReservation, TransactionContext tc) throws RemoteException {
 
@@ -225,6 +229,12 @@ public class JPAWorkList implements WorkList {
 
             worklistRepository.save(wl);
 
+            // ── [HOOK] 업무 배정 (최초) ──────────────────────────────────
+            // endpoint 가 있으면 즉시 배정 확정. 경합(endpoint=null)은 claim 시 발행.
+            if (bpmLifecycleService != null) {
+                bpmLifecycleService.onTaskAssigned(wl);
+            }
+
             return ""+taskId;
 
         }catch(Exception e){
@@ -259,6 +269,11 @@ public class JPAWorkList implements WorkList {
 
             worklistRepository.save(wl);
 
+            // ── [HOOK] 업무 종료 (취소·스킵) ──────────────────────────────
+            if (bpmLifecycleService != null) {
+                bpmLifecycleService.onTaskTerminated(wl);
+            }
+
         }catch(Exception e){
             throw new RemoteException("ExtWorkList", e);
         }
@@ -288,6 +303,11 @@ public class JPAWorkList implements WorkList {
 
             worklistRepository.save(wl);
 
+            // ── [HOOK] 업무 종료 (보상) ────────────────────────────────────
+            if (bpmLifecycleService != null) {
+                bpmLifecycleService.onTaskTerminated(wl);
+            }
+
         }catch(Exception e){
             throw new RemoteException("ExtWorkList", e);
         }
@@ -305,6 +325,11 @@ public class JPAWorkList implements WorkList {
 
             worklistRepository.save(wl);
 
+            // ── [HOOK] 업무 종료 (정상 완료) ──────────────────────────────
+            if (bpmLifecycleService != null) {
+                bpmLifecycleService.onTaskTerminated(wl);
+            }
+
         }catch(Exception e){
             throw new RemoteException("ExtWorkList", e);
         }
@@ -321,9 +346,13 @@ public class JPAWorkList implements WorkList {
 
             WorklistEntity wlDAO = worklistRepository.findById(new Long(taskId)).get();
 
+            // 변경 전 endpoint 기억 (배정 변경 감지용)
+            String previousEndpoint = wlDAO.getEndpoint();
+
             if (roleMapping != null && UEngineUtil.isNotEmpty(roleMapping.getEndpoint()))
                 wlDAO.setEndpoint(roleMapping.getEndpoint());
 
+            String terminateStatus = null;
             for(int i=0; i<parameters.length; i++){
                 KeyedParameter parameter = parameters[i];
 
@@ -337,7 +366,8 @@ public class JPAWorkList implements WorkList {
                     wlDAO.setDueDate((Date)parameter.getValue());
                 }else
                 if(KeyedParameter.DEFAULT_STATUS.equals(parameter.getKey())){
-                    wlDAO.setStatus((String)parameter.getValue());
+                    terminateStatus = (String)parameter.getValue();
+                    wlDAO.setStatus(terminateStatus);
                 }else
                 if("endDate".equals(parameter.getKey())){
                     wlDAO.setEndDate((Date)parameter.getValue());
@@ -348,6 +378,22 @@ public class JPAWorkList implements WorkList {
             }
 
             worklistRepository.save(wlDAO);
+
+            // ── [HOOK] 업무 종료 (위임으로 인한 원 workitem 종료) ────────
+            if (bpmLifecycleService != null
+                    && DefaultWorkList.WORKITEM_STATUS_DELEGATED.equalsIgnoreCase(terminateStatus)) {
+                bpmLifecycleService.onTaskTerminated(wlDAO);
+            }
+
+            // ── [HOOK] 담당자 변경 ────────────────────────────────────────
+            // endpoint 가 바뀌었고, 종료(DELEGATED)가 아닌 단순 재배정인 경우
+            if (bpmLifecycleService != null
+                    && !DefaultWorkList.WORKITEM_STATUS_DELEGATED.equalsIgnoreCase(terminateStatus)) {
+                String newEndpoint = wlDAO.getEndpoint();
+                if (UEngineUtil.isNotEmpty(newEndpoint) && !newEndpoint.equals(previousEndpoint)) {
+                    bpmLifecycleService.onTaskAssignmentChanged(wlDAO, previousEndpoint);
+                }
+            }
 
         }catch(Exception e){
             throw new RemoteException("ExtWorkList", e);

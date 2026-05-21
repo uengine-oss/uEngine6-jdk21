@@ -35,6 +35,7 @@ import org.uengine.modeling.resource.DefaultResource;
 import org.uengine.modeling.resource.IResource;
 import org.uengine.modeling.resource.ResourceManager;
 import org.uengine.modeling.resource.Serializer;
+import org.uengine.five.lifecycle.BpmLifecycleService;
 import org.uengine.processmanager.EMailServiceLocal;
 import org.uengine.processmanager.TransactionContext;
 import org.uengine.webservices.worklist.WorkList;
@@ -67,6 +68,10 @@ public class JPAProcessInstance extends DefaultProcessInstance implements Transa
 
     @Autowired
     EMailServiceLocal emailService;
+
+    @Autowired(required = false)
+    BpmLifecycleService bpmLifecycleService;
+
 
     ProcessInstanceEntity processInstanceEntity;
 
@@ -459,6 +464,12 @@ public class JPAProcessInstance extends DefaultProcessInstance implements Transa
                 }
                 pi.setFinishedDate(new Date());
                 saveVariables();
+
+                // ── [HOOK] 메인 프로세스 인스턴스 종료 ───────────────────
+                // 서브프로세스 제외: isSubProcess=true 이면 BpmLifecycleService 내부에서 무시
+                if (bpmLifecycleService != null) {
+                    bpmLifecycleService.onProcessCompleted(pi);
+                }
             }
         }
 
