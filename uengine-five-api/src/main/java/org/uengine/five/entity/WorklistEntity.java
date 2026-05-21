@@ -61,7 +61,6 @@ public class WorklistEntity {// implements WorkListDAO {
     String defVerId;
     String scope; // groupName or RoleScope
     String assignGroup; // Lane 할당 대상 그룹 (scope=권한과 함께 지정 시 교집합 매칭)
-    String group; // 진행 기관 코드
     int assignType; // see org.uengine.kernel.Role#ASSIGNTYPE_*
 
     String defName;
