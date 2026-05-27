@@ -127,7 +127,7 @@ public class EventMappingDeployFilter implements DeployFilter {
                 if (event.getEventType() == null)
                     return;
 
-                // EventMappingEntity의 @Id(eventType)는 반드시 수동으로 채워야 함
+                // event_name 은 UNIQUE 업무 키 — 비어 있으면 매핑 식별 불가이므로 저장 스킵
                 if (isNullOrBlank(eventKey)) {
                     log.warn("Skip EventMappingEntity save: eventKey is null/blank. defId={}, tracingTag={}",
                             safe(definition != null ? definition.getId() : null),
@@ -136,8 +136,12 @@ public class EventMappingDeployFilter implements DeployFilter {
                 }
                 eventKey = eventKey.trim();
 
-                EventMappingEntity eventMappingEntity = new EventMappingEntity();
-                eventMappingEntity.setEventType(eventKey);
+                // event_name(UNIQUE) 기준 find-or-update — 재배포 시 멱등 upsert
+                EventMappingEntity eventMappingEntity = eventMappingRepository.findByEventName(eventKey);
+                if (eventMappingEntity == null) {
+                    eventMappingEntity = new EventMappingEntity();
+                    eventMappingEntity.setEventName(eventKey);
+                }
                 eventMappingEntity.setCorrelationKey(event.getEventType());
                 eventMappingEntity.setDefinitionId(
                         definition.getId());
@@ -186,8 +190,12 @@ public class EventMappingDeployFilter implements DeployFilter {
                 }
                 eventType = eventType.trim();
 
-                EventMappingEntity eventMappingEntity = new EventMappingEntity();
-                eventMappingEntity.setEventType(eventType);
+                // event_name(UNIQUE) 기준 find-or-update — 재배포 시 멱등 upsert
+                EventMappingEntity eventMappingEntity = eventMappingRepository.findByEventName(eventType);
+                if (eventMappingEntity == null) {
+                    eventMappingEntity = new EventMappingEntity();
+                    eventMappingEntity.setEventName(eventType);
+                }
                 eventMappingEntity.setDefinitionId(definition.getId());
                 eventMappingEntity.setCorrelationKey(corrKey);
                 eventMappingEntity.setTracingTag(activity.getTracingTag());
@@ -206,10 +214,10 @@ public class EventMappingDeployFilter implements DeployFilter {
             return;
         }
         log.info(
-                "Registered event mapping: source={}, definitionId={}, eventType={}, correlationKey={}, tracingTag={}, isStartEvent={}",
+                "Registered event mapping: source={}, definitionId={}, eventName={}, correlationKey={}, tracingTag={}, isStartEvent={}",
                 safe(source),
                 safe(eventMappingEntity.getDefinitionId()),
-                safe(eventMappingEntity.getEventType()),
+                safe(eventMappingEntity.getEventName()),
                 safe(eventMappingEntity.getCorrelationKey()),
                 safe(eventMappingEntity.getTracingTag()),
                 eventMappingEntity.isStartEvent());

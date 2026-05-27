@@ -62,7 +62,7 @@ public class InboxEventPublisher implements EventPublisher {
 
         // 엔진 내부 / 외부 인입: inbox 저장. (Inbox 단일 채널 가정)
         EventInbox ev = new EventInbox();
-        ev.setEventType(type);
+        ev.setEventName(type);
         ev.setPayload(payloadJson);
         ev.setCorrKey(headers != null && headers.get("corrKey") != null ? headers.get("corrKey").toString() : null);
         repo.save(ev);

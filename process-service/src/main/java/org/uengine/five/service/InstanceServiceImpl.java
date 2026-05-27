@@ -327,6 +327,18 @@ public class InstanceServiceImpl implements InstanceService {
                     }
                 }
 
+                // 시작이벤트가 외부 이벤트로 트리거된 경우 mappingContext 를 페이로드 대상으로 실행한다.
+                // execute() 이전에 처리해야 첫 활동(예: UserTask_1)의 lane 해석이 결과를 받아간다.
+                java.util.Map<String, Object> startEventPayload = command.getStartEventPayload();
+                log.info("[BPM] start(): startEventPayload null={} size={}", startEventPayload == null,
+                        startEventPayload == null ? 0 : startEventPayload.size());
+                if (startEventPayload != null && !startEventPayload.isEmpty()) {
+                    if (instance instanceof org.uengine.kernel.DefaultProcessInstance) {
+                        ((org.uengine.kernel.DefaultProcessInstance) instance).setEventInitiated(true);
+                    }
+                    applyStartEventMapping(instance, processDefinition, startEventPayload);
+                }
+
                 ((JPAProcessInstance) instance).getProcessInstanceEntity().setDefVerId(processDefinition.getVersion());
                 // instance.setDefinitionVersionId(processDefinition.getVersion());
                 instance.execute();
@@ -349,6 +361,78 @@ public class InstanceServiceImpl implements InstanceService {
             }
         }
         return null;
+    }
+
+    /**
+     * 시작이벤트의 eventSynchronization.mappingContext 를 페이로드 대상으로 실행해서
+     * 결과를 instance 의 bean property 로 설정한다. (예: [lanes].관리자 ← JsonBuild({group, role}))
+     * ReceiveActivity.mappingOut 과 동일한 동작을 시작 시점에 수행하는 것.
+     * instance.execute() 이전에 호출돼야 첫 활동의 lane 해석이 결과를 받아간다.
+     */
+    private org.uengine.kernel.Activity findStartEvent(org.uengine.kernel.Activity root) {
+        if (root instanceof org.uengine.kernel.bpmn.StartEvent
+                && !(root instanceof org.uengine.kernel.bpmn.EndEvent)) return root;
+        if (root instanceof org.uengine.kernel.ComplexActivity) {
+            java.util.List<org.uengine.kernel.Activity> children =
+                    ((org.uengine.kernel.ComplexActivity) root).getChildActivities();
+            if (children != null) {
+                for (org.uengine.kernel.Activity child : children) {
+                    org.uengine.kernel.Activity found = findStartEvent(child);
+                    if (found != null) return found;
+                }
+            }
+        }
+        return null;
+    }
+
+    private void applyStartEventMapping(org.uengine.kernel.ProcessInstance instance,
+            ProcessDefinition def, java.util.Map<String, Object> payload) {
+        try {
+            org.uengine.kernel.Activity startActivity = findStartEvent(def);
+            if (startActivity == null) {
+                log.warn("[BPM] applyStartEventMapping: no StartEvent found in definition");
+                return;
+            }
+            log.info("[BPM] applyStartEventMapping: startActivity={} tracingTag={}",
+                    startActivity.getClass().getName(), startActivity.getTracingTag());
+
+            org.uengine.contexts.EventSynchronization sync = startActivity.getEventSynchronization();
+            log.info("[BPM] applyStartEventMapping: sync null={}, mappingContext null={}, elements null={}",
+                    sync == null,
+                    sync == null || sync.getMappingContext() == null,
+                    sync == null || sync.getMappingContext() == null
+                            || sync.getMappingContext().getMappingElements() == null);
+            if (sync == null || sync.getMappingContext() == null
+                    || sync.getMappingContext().getMappingElements() == null) return;
+
+            org.uengine.kernel.ParameterContext[] elements = sync.getMappingContext().getMappingElements();
+            for (org.uengine.kernel.ParameterContext param : elements) {
+                if (param == null || param.getArgument() == null) continue;
+                String target = param.getArgument().getText();
+                if (target == null || target.isEmpty()) continue;
+
+                Object value = null;
+                if (param.getTransformerMapping() != null) {
+                    java.util.Map<String, Object> options = new java.util.HashMap<>();
+                    options.put(org.uengine.processdesigner.mapper.Transformer.OPTION_KEY_OUTPUT_ARGUMENT,
+                            param.getTransformerMapping().getLinkedArgumentName());
+                    options.put(org.uengine.processdesigner.mapper.Transformer.OPTION_KEY_FORM_FIELD_NAME, target);
+                    value = param.getTransformerMapping().getTransformer().letTransform(instance, options, payload);
+                } else if (param.getVariable() != null) {
+                    String src = param.getVariable().getName();
+                    if (src != null && src.startsWith("[Arguments].")) {
+                        value = payload.get(src.substring("[Arguments].".length()));
+                    }
+                }
+
+                if (value != null) {
+                    instance.setBeanProperty(target, (java.io.Serializable) value);
+                }
+            }
+            log.info("[BPM] Applied start event mappingContext (#{} elements)", elements.length);
+        } catch (Exception e) {
+            log.warn("[BPM] Failed to apply start event mapping: {}", e.getMessage());
+        }
     }
 
     private String findHighestNumberedFileName(String defPath) {

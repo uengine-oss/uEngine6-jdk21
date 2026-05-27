@@ -590,7 +590,9 @@ public class HumanActivity extends ReceiveActivity {
 
 				} else {
 					try {
-						if (!instance.isSubProcess() && getRole().getRoleResolutionContext() != null
+						boolean eventInitiated = (instance instanceof DefaultProcessInstance)
+								&& ((DefaultProcessInstance) instance).isEventInitiated();
+						if (!eventInitiated && !instance.isSubProcess() && getRole().getRoleResolutionContext() != null
 								&& !getRole().containsMapping(instance, currentLogin)) {
 							UEngineException ue = new UEngineException("You (" + currentLogin
 									+ ") are not permitted to initiate this process. The initiator group is '"
@@ -927,6 +929,17 @@ public class HumanActivity extends ReceiveActivity {
 	}
 
 	protected void onReceive(ProcessInstance instance, Object payload) throws Exception {
+		// 외부 inbox 이벤트(HashMap payload + eventSynchronization 선언) 인 경우
+		// worklist 완료 게이팅(onComplete)을 우회하고 ReceiveActivity.onReceive 로
+		// 직접 진입시켜 mappingContext 실행 + fireComplete 가 일어나게 한다.
+		boolean isExternalEventPayload = (payload instanceof java.util.Map)
+				&& !(payload instanceof ResultPayload)
+				&& getEventSynchronizations() != null
+				&& getEventSynchronizations().length > 0;
+		if (isExternalEventPayload) {
+			super.onReceive(instance, payload);
+			return;
+		}
 		if (onComplete(instance, payload) && !isNotificationWorkitem()) {// only when the completion logic is ok, fire
 																			// completion message
 			setCompletedRoleMapping(instance, getActualMapping(instance));

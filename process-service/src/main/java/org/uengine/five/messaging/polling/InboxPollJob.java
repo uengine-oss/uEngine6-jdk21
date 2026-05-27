@@ -89,16 +89,19 @@ public class InboxPollJob implements Job {
                 self.dispatchInNewTx(ev);             // REQUIRES_NEW 로 격리
                 ev.setProcessedAt(now);
                 ev.setLastError(null);
+                ev.setStatus("SUCCESS");
             } catch (Exception e) {
                 String msg = truncate(e.toString() + " | " + rootCauseMessage(e), 2000);
                 ev.setLastError(msg);
                 if (ev.getTryCnt() >= maxTryCnt) {
+                    ev.setStatus("FAILED");
                     ev.setProcessedAt(now);            // 한도 도달 → dead-letter
                     log.error("[inbox-poll] id={} type={} reached max try cnt ({}) → dead-letter",
-                              ev.getId(), ev.getEventType(), maxTryCnt, e);
+                              ev.getId(), ev.getEventName(), maxTryCnt, e);
                 } else {
+                    ev.setStatus("PENDING");
                     log.warn("[inbox-poll] id={} type={} try {}/{} failed, will retry",
-                             ev.getId(), ev.getEventType(), ev.getTryCnt(), maxTryCnt, e);
+                             ev.getId(), ev.getEventName(), ev.getTryCnt(), maxTryCnt, e);
                     // processed_at 비워둠 → 다음 틱에 재시도
                 }
             }
@@ -116,12 +119,12 @@ public class InboxPollJob implements Job {
     }
 
     /**
-     * inbox row 를 dispatcher 가 받는 Message 로 재구성. event_type 컬럼만으로 type 헤더 셋팅.
+     * inbox row 를 dispatcher 가 받는 Message 로 재구성. event_name 컬럼만으로 type 헤더 셋팅.
      */
     private Message<String> rebuildMessage(EventInbox ev) {
         MessageBuilder<String> builder = MessageBuilder.withPayload(ev.getPayload());
-        if (ev.getEventType() != null) {
-            builder.setHeader("type", ev.getEventType());
+        if (ev.getEventName() != null) {
+            builder.setHeader("type", ev.getEventName());
         }
         if (ev.getCorrKey() != null) {
             // payload 에 EventMapping.correlationKey 매칭 필드가 없을 때 fallback 으로 사용됨

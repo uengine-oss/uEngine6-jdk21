@@ -84,12 +84,12 @@ public class AsyncEventListener {
             objectMapper.setSerializationInclusion(JsonInclude.Include.NON_DEFAULT);
             HashMap<String, Object> eventContent = objectMapper.readValue(eventBody, HashMap.class);
 
-            EventMappingEntity eventMappingEntity = eventMappingRepository.findEventMappingByEventType(eventType);
+            EventMappingEntity eventMappingEntity = eventMappingRepository.findEventMappingByEventName(eventType);
             if (eventMappingEntity == null) {
                 String decoded = decodeNumericCsvIfNeeded(typeHeader);
                 if (!decoded.equals(typeHeader)) {
                     eventType = decoded;
-                    eventMappingEntity = eventMappingRepository.findEventMappingByEventType(eventType);
+                    eventMappingEntity = eventMappingRepository.findEventMappingByEventName(eventType);
                 }
             }
 
@@ -109,6 +109,7 @@ public class AsyncEventListener {
                     processExecutionCommand.setProcessDefinitionId(startDefId);
                     processExecutionCommand.setCorrelationKeyValue(coorKeyValue);
                     processExecutionCommand.setProcessVariableValues(toProcessVariables(eventContent, corrKey));
+                    processExecutionCommand.setStartEventPayload(eventContent);
 
                     instanceService.start(processExecutionCommand);
                 }
@@ -126,13 +127,17 @@ public class AsyncEventListener {
                     processExecutionCommand.setProcessDefinitionId(startDefId);
                     processExecutionCommand.setCorrelationKeyValue(coorKeyValue);
                     processExecutionCommand.setProcessVariableValues(toProcessVariables(eventContent, corrKey));
+                    processExecutionCommand.setStartEventPayload(eventContent);
 
                     instanceService.start(processExecutionCommand);
 
                     // NEXT (요청사항: START 이후에도 동일 NEXT 로직 실행)
                     triggerReceiveActivitiesByCorrKeyAndEventType(coorKeyValue, eventType, eventContent);
                 } else {
-                    // 시작 이벤트가 아닐 경우 모든 인스턴스에서 이벤트를 발생시킨다.
+                    // task 이벤트(receive activity / HumanActivity 매칭)도 inboxCorrKey 로 인스턴스 매칭해서 라우팅
+                    triggerReceiveActivitiesByCorrKeyAndEventType(coorKeyValue, eventType, eventContent);
+
+                    // 추가로, 인스턴스에 매달린 intermediate Event 활동에 onMessage 발화 (기존 동작 유지)
                     List<ProcessInstanceEntity> processInstanceList = processInstanceRepository
                             .findByStatus("Running");
                     for (ProcessInstanceEntity processInstanceEntity : processInstanceList) {

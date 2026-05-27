@@ -21,16 +21,17 @@ CREATE SEQUENCE IF NOT EXISTS bpm_event_inbox_seq
 -- 메인 테이블
 CREATE TABLE IF NOT EXISTS bpm_event_inbox (
     id            BIGINT                      NOT NULL DEFAULT nextval('bpm_event_inbox_seq'),
-    event_type    VARCHAR(128),                                                                        -- dispatcher 가 EventMapping 매칭에 사용
+    event_name    VARCHAR(128),                                                                        -- dispatcher 가 EventMapping 매칭에 사용
     payload       TEXT                        NOT NULL,                                                -- 이벤트 본문 JSON
     corr_key      VARCHAR(64)                          DEFAULT ('start_' || gen_random_uuid()::text), -- 비즈니스 식별자, 미지정 시 자동
     created_at    TIMESTAMP(6) WITH TIME ZONE NOT NULL DEFAULT now(),                                  -- 인입 시각
     processed_at  TIMESTAMP(6) WITH TIME ZONE,                                                         -- 처리 완료 시각 (NULL = 미처리)
     try_cnt       INTEGER                     NOT NULL DEFAULT 0,                                      -- 시도 횟수 (1=첫 시도)
+    status        VARCHAR(16)                 NOT NULL DEFAULT 'PENDING',                              -- PENDING/SUCCESS/FAILED
     last_error    TEXT,                                                                                -- 실패 시 메시지 (NULL=정상, 값=dead-letter)
 
     CONSTRAINT bpm_event_inbox_pkey PRIMARY KEY (id),
-    CONSTRAINT uk_inbox_corr_event  UNIQUE      (corr_key, event_type)
+    CONSTRAINT uk_inbox_corr_event  UNIQUE      (corr_key, event_name)
 );
 
 -- 미처리 row 빠른 조회용 (InboxPollJob 가 매초 사용)
@@ -44,15 +45,15 @@ ALTER SEQUENCE bpm_event_inbox_seq OWNED BY bpm_event_inbox.id;
 -- 사용 예시
 -- =====================================================================
 -- (1) 단순 INSERT — DEFAULT 가 알아서 채움
---     INSERT INTO bpm_event_inbox (event_type, payload)
+--     INSERT INTO bpm_event_inbox (event_name, payload)
 --     VALUES ('START_CREDIT_RATING', '{"자산": 5173, "신용도": 400}');
 --
 -- (2) 비즈니스 키 명시
---     INSERT INTO bpm_event_inbox (event_type, payload, corr_key)
+--     INSERT INTO bpm_event_inbox (event_name, payload, corr_key)
 --     VALUES ('START_CREDIT_RATING', '{...}', 'app-2026-001');
 --
 -- (3) 운영 모니터링
---     SELECT id, event_type, corr_key, try_cnt, processed_at, LEFT(last_error, 200) AS err
+--     SELECT id, event_name, corr_key, status, try_cnt, processed_at, LEFT(last_error, 200) AS err
 --       FROM bpm_event_inbox
 --      ORDER BY id DESC LIMIT 20;
 --

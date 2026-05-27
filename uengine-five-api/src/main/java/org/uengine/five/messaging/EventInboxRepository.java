@@ -29,8 +29,8 @@ public interface EventInboxRepository extends JpaRepository<EventInbox, Long> {
     @Query("DELETE FROM EventInbox e WHERE e.processedAt IS NOT NULL AND e.processedAt < :olderThan")
     int deleteProcessedBefore(@Param("olderThan") Instant olderThan);
 
-    /** (corr_key, event_type) 멱등 충돌 시 기존 row 조회용. */
-    Optional<EventInbox> findFirstByCorrKeyAndEventType(String corrKey, String eventType);
+    /** (corr_key, event_name) 멱등 충돌 시 기존 row 조회용. */
+    Optional<EventInbox> findFirstByCorrKeyAndEventName(String corrKey, String eventName);
 
     /** Spring Data REST 자동 노출 차단. */
     @Override

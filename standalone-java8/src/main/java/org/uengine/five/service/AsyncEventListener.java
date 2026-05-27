@@ -75,7 +75,7 @@ public class AsyncEventListener {
         try {
 
             HashMap<String,Object> eventContent = objectMapper.readValue(eventBody, HashMap.class);
-            EventMappingEntity eventMappingEntity = eventMappingRepository.findEventMappingByEventType(typeHeader);
+            EventMappingEntity eventMappingEntity = eventMappingRepository.findEventMappingByEventName(typeHeader);
             
             if(eventMappingEntity == null ) 
                 throw new Exception("EventMappingEntity is null"); 

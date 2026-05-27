@@ -3,12 +3,24 @@ package org.uengine.five.entity;
 import jakarta.persistence.*;
 
 @Entity
-@Table(name = "BPM_EVENT_MAPPING")
+@Table(name = "BPM_EVENT_MAPPING",
+    uniqueConstraints = @UniqueConstraint(name = "uk_event_mapping_event_name", columnNames = "event_name"))
+@SequenceGenerator(
+    name = "event_mapping_seq_gen",
+    sequenceName = "SEQ_BPM_EVENT_MAPPING",
+    allocationSize = 1
+)
 public class EventMappingEntity {
-    
+
+    /** 테이블 surrogate PK. 업무 식별은 {@link #eventName} (UNIQUE) 로 한다. */
     @Id
-    @Column(name = "event_type")
-    private String eventType;
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "event_mapping_seq_gen")
+    @Column(name = "id")
+    private Long id;
+
+    /** 외부/내부 이벤트 식별자(이벤트명). 매핑 조회의 업무 키 — UNIQUE. */
+    @Column(name = "event_name", nullable = false)
+    private String eventName;
 
     @Column(name = "definition_id")
     private String definitionId;
@@ -18,17 +30,24 @@ public class EventMappingEntity {
 
     @Column(name = "tracing_tag")
     private String tracingTag;
-    
+
     @Column(name = "is_start_event")
     private Boolean isStartEvent;
 
-   
-    public String getEventType() {
-        return eventType;
+    public Long getId() {
+        return id;
     }
 
-    public void setEventType(String eventType) {
-        this.eventType = eventType;
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public String getEventName() {
+        return eventName;
+    }
+
+    public void setEventName(String eventName) {
+        this.eventName = eventName;
     }
 
     public String getDefinitionId() {

@@ -32,10 +32,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  *   Body:   { "applicationId": "app-2026-001", "자산": 5173, "신용도": 400 }
  * </pre>
  *
- * <p>BPM_EVENT_OUTBOX 의 (corr_key, event_type) 복합 UNIQUE 제약으로:
+ * <p>BPM_EVENT_OUTBOX 의 (corr_key, event_name) 복합 UNIQUE 제약으로:
  * <ul>
- *   <li>같은 corr_key + 같은 event_type 재전송 → 멱등 차단 (중복 처리 방지)</li>
- *   <li>같은 corr_key + 다른 event_type → 허용 (트랜잭션의 시퀀스 이벤트)</li>
+ *   <li>같은 corr_key + 같은 event_name 재전송 → 멱등 차단 (중복 처리 방지)</li>
+ *   <li>같은 corr_key + 다른 event_name → 허용 (트랜잭션의 시퀀스 이벤트)</li>
  * </ul>
  *
  * <p>X-Corr-Key 헤더가 없으면 EventMapping 의 correlation_key 가 가리키는 payload 필드에서
@@ -93,14 +93,14 @@ public class ExternalEventInboxController {
         }
 
         EventInbox ev = new EventInbox();
-        ev.setEventType(type);
+        ev.setEventName(type);
         ev.setPayload(payloadJson);
         ev.setCorrKey(corrKey);
 
         try {
             repo.save(ev);
         } catch (DataIntegrityViolationException dup) {
-            // (corr_key, event_type) 복합 유니크 위반 = 동일 트랜잭션의 동일 이벤트 재전송 = 멱등.
+            // (corr_key, event_name) 복합 유니크 위반 = 동일 트랜잭션의 동일 이벤트 재전송 = 멱등.
             // 응답 timestamp 는 기존 row 의 createdAt 으로 (= 처음 큐에 들어간 시각).
             // 운영 추적을 위해 시퀀스 id 는 로그에만 남긴다.
             EventInbox existing = findExistingInboxForDuplicate(corrKey, type);
@@ -117,14 +117,14 @@ public class ExternalEventInboxController {
     }
 
     /**
-     * UNIQUE (corr_key, event_type) 위반 시 응답에 넣을 기존 row 를 조회한다.
+     * UNIQUE (corr_key, event_name) 위반 시 응답에 넣을 기존 row 를 조회한다.
      * 둘 중 하나라도 null 이면 복합 키로 조회할 수 없어 null.
      */
-    private EventInbox findExistingInboxForDuplicate(String corrKey, String eventType) {
-        if (corrKey == null || eventType == null) {
+    private EventInbox findExistingInboxForDuplicate(String corrKey, String eventName) {
+        if (corrKey == null || eventName == null) {
             return null;
         }
-        return repo.findFirstByCorrKeyAndEventType(corrKey, eventType).orElse(null);
+        return repo.findFirstByCorrKeyAndEventName(corrKey, eventName).orElse(null);
     }
 
     /**
@@ -133,7 +133,7 @@ public class ExternalEventInboxController {
      */
     private String extractCorrKeyFromPayload(String eventType, JsonNode body) {
         try {
-            EventMappingEntity mapping = eventMappingRepository.findEventMappingByEventType(eventType);
+            EventMappingEntity mapping = eventMappingRepository.findEventMappingByEventName(eventType);
             if (mapping == null || mapping.getCorrelationKey() == null) return null;
             JsonNode field = body.get(mapping.getCorrelationKey());
             return (field != null && !field.isNull()) ? field.asText() : null;

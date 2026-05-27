@@ -20,6 +20,21 @@ public class ProcessExecutionCommand implements Serializable {
 
     private String definitionXml;
 
+    /**
+     * 시작이벤트가 외부 inbox 이벤트로 트리거됐을 때 원본 페이로드.
+     * InstanceServiceImpl.start() 가 인스턴스 생성 직후·execute() 직전에
+     * 시작이벤트의 eventSynchronization.mappingContext 를 이 페이로드 대상으로 실행한다.
+     */
+    private java.util.Map<String, Object> startEventPayload;
+
+    public java.util.Map<String, Object> getStartEventPayload() {
+        return startEventPayload;
+    }
+
+    public void setStartEventPayload(java.util.Map<String, Object> startEventPayload) {
+        this.startEventPayload = startEventPayload;
+    }
+
     public String getDefinitionXml() {
         return definitionXml;
     }

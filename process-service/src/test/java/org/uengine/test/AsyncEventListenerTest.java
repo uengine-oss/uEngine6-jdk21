@@ -71,7 +71,7 @@ public class AsyncEventListenerTest {
 
         // 최소 테스트 세팅: 이벤트 타입 매핑이 없으면 AsyncEventListener가 예외를 던짐
         EventMappingEntity mapping = new EventMappingEntity();
-        mapping.setEventType("TroubleIssued");
+        mapping.setEventName("TroubleIssued");
         mapping.setCorrelationKey("id"); // TroubleIssued JSON에 존재
         mapping.setIsStartEvent(false);  // start 로직/인스턴스 생성은 테스트에서 스킵
         eventMappingRepository.save(mapping);
@@ -215,7 +215,7 @@ public class AsyncEventListenerTest {
         }
 
     }
-    
+
 }
 
 

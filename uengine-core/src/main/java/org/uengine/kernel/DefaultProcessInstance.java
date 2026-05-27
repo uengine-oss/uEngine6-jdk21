@@ -90,6 +90,16 @@ public class DefaultProcessInstance extends AbstractProcessInstance {
 		this.isSimulation = isSimulation;
 	}
 
+	transient boolean eventInitiated;
+
+	public boolean isEventInitiated() {
+		return eventInitiated;
+	}
+
+	public void setEventInitiated(boolean eventInitiated) {
+		this.eventInitiated = eventInitiated;
+	}
+
 	boolean subProcess;
 
 	@Override

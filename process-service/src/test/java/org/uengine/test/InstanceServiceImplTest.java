@@ -455,7 +455,7 @@ public class InstanceServiceImplTest {
 
                 org.mockito.Mockito.verify(eventMappingRepository).save(org.mockito.ArgumentMatchers.argThat(entity ->
                         "sales/order-process.bpmn".equals(entity.getDefinitionId())
-                                && "OrderCreated".equals(entity.getEventType())
+                                && "OrderCreated".equals(entity.getEventName())
                                 && "orderId".equals(entity.getCorrelationKey())
                                 && "Activity_receiveOrder".equals(entity.getTracingTag())));
 

@@ -19,10 +19,10 @@ import com.fasterxml.jackson.annotation.JsonInclude;
  *
  * <p>케이스별 채워지는 필드:
  * <ul>
- *   <li>신규 enqueue : status=SUCCESS, duplicate=false, eventType, corrKey, occurredAt(=신규 row.createdAt)</li>
- *   <li>멱등 중복   : status=SUCCESS, duplicate=true,  eventType, corrKey, occurredAt(=기존 row.createdAt)
- *       — (corrKey, eventType) 가 UNIQUE 라 두 키만으로 기존 row 식별 가능</li>
- *   <li>실패       : status=FAILED,  duplicate=false, reason, eventType, corrKey, occurredAt=null
+ *   <li>신규 enqueue : status=SUCCESS, duplicate=false, eventName, corrKey, occurredAt(=신규 row.createdAt)</li>
+ *   <li>멱등 중복   : status=SUCCESS, duplicate=true,  eventName, corrKey, occurredAt(=기존 row.createdAt)
+ *       — (corrKey, eventName) 가 UNIQUE 라 두 키만으로 기존 row 식별 가능</li>
+ *   <li>실패       : status=FAILED,  duplicate=false, reason, eventName, corrKey, occurredAt=null
  *       — inbox row 가 만들어지지 않았으므로 createdAt 없음</li>
  * </ul>
  * 비어있는 참조 필드는 {@code @JsonInclude(NON_NULL)} 로 직렬화에서 자동 제외된다.
@@ -40,7 +40,7 @@ public class EventInboxResponse {
 
     private boolean duplicate;
 
-    private String eventType;
+    private String eventName;
 
     private String corrKey;
 
@@ -57,37 +57,37 @@ public class EventInboxResponse {
     private Instant occurredAt;
 
     /** 신규 INSERT 성공. {@code createdAt} 은 INSERT 된 row 의 createdAt. */
-    public static EventInboxResponse success(String eventType, String corrKey, Instant createdAt) {
+    public static EventInboxResponse success(String eventName, String corrKey, Instant createdAt) {
         EventInboxResponse r = new EventInboxResponse();
         r.status = STATUS_SUCCESS;
         r.duplicate = false;
-        r.eventType = eventType;
+        r.eventName = eventName;
         r.corrKey = corrKey;
         r.occurredAt = createdAt;
         return r;
     }
 
     /**
-     * 멱등 중복으로 무시됨. (corrKey, eventType) 가 UNIQUE 라
+     * 멱등 중복으로 무시됨. (corrKey, eventName) 가 UNIQUE 라
      * 클라이언트가 두 키만으로 기존 row 를 식별할 수 있다.
      * {@code existingCreatedAt} 은 충돌한 기존 row 의 createdAt.
      */
-    public static EventInboxResponse duplicate(String eventType, String corrKey, Instant existingCreatedAt) {
+    public static EventInboxResponse duplicate(String eventName, String corrKey, Instant existingCreatedAt) {
         EventInboxResponse r = new EventInboxResponse();
         r.status = STATUS_SUCCESS;
         r.duplicate = true;
-        r.eventType = eventType;
+        r.eventName = eventName;
         r.corrKey = corrKey;
         r.occurredAt = existingCreatedAt;
         return r;
     }
 
     /** 잘못된 payload 등 처리 실패. inbox row 가 만들어지지 않았으므로 occurredAt 은 null. */
-    public static EventInboxResponse failed(String eventType, String corrKey, String reason) {
+    public static EventInboxResponse failed(String eventName, String corrKey, String reason) {
         EventInboxResponse r = new EventInboxResponse();
         r.status = STATUS_FAILED;
         r.duplicate = false;
-        r.eventType = eventType;
+        r.eventName = eventName;
         r.corrKey = corrKey;
         r.reason = reason;
         return r;
@@ -99,8 +99,8 @@ public class EventInboxResponse {
     public boolean isDuplicate() { return duplicate; }
     public void setDuplicate(boolean duplicate) { this.duplicate = duplicate; }
 
-    public String getEventType() { return eventType; }
-    public void setEventType(String eventType) { this.eventType = eventType; }
+    public String getEventName() { return eventName; }
+    public void setEventName(String eventName) { this.eventName = eventName; }
 
     public String getCorrKey() { return corrKey; }
     public void setCorrKey(String corrKey) { this.corrKey = corrKey; }

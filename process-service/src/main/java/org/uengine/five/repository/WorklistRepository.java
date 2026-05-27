@@ -123,7 +123,7 @@ public interface WorklistRepository extends JpaRepository<WorklistEntity, Long> 
     Page<WorklistEntity> findMyApproval(
             @Param("endpoint") String endpoint,
             @Param("defId") String defId,
-            @Param("activityId") String absTrcTag,
+            @Param("absTrcTag") String absTrcTag,
             @Param("status") String status,
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) @Param("startDate") Date startDate,
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) @Param("endDate") Date endDate,
@@ -134,14 +134,14 @@ public interface WorklistRepository extends JpaRepository<WorklistEntity, Long> 
      *
      * <ul>
      *   <li>{@code requestYn = 'Y'} — 요청기관 {@code pi.initComCd}</li>
-     *   <li>{@code requestYn != 'Y'} — 진행기관 {@code wl.group}</li>
+     *   <li>{@code requestYn != 'Y'} — 진행기관 {@code wl.assignGroup}</li>
      *   <li>{@code defId} — 업무구분 (null 이면 무시)</li>
      * </ul>
      */
     @Query("select wl from WorklistEntity wl join wl.processInstance pi " +
             "where (:groupCode is null " +
             "   or ((:requestYn = 'Y' and pi.initComCd = :groupCode) " +
-            "       or (:requestYn <> 'Y' and wl.group = :groupCode))) " +
+            "       or (:requestYn <> 'Y' and wl.assignGroup = :groupCode))) " +
             "and (:defId is null or wl.defId = :defId) " +
             "order by wl.startDate desc")
     Page<WorklistEntity> findByGroupCode(
