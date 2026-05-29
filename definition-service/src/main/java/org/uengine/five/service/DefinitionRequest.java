@@ -20,9 +20,14 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class DefinitionRequest {
 
-    
+
     String definition;
     String version;
+    /**
+     * 표시명. 정의의 사람이 읽는 이름(예: "한화 신용평가 프로세스").
+     * 비어 있으면 서버는 표시명 사이드카를 갱신하지 않는다.
+     */
+    String name;
     public String getDefinition() {
         return definition;
     }
@@ -34,6 +39,12 @@ public class DefinitionRequest {
     }
     public void setVersion(String version) {
         this.version = version;
+    }
+    public String getName() {
+        return name;
+    }
+    public void setName(String name) {
+        this.name = name;
     }
 
     

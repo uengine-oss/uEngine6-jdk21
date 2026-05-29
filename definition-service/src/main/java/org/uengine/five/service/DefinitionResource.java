@@ -102,4 +102,20 @@ public class DefinitionResource extends RepresentationModel {
         this.version = version;
     }
 
+    /**
+     * 사용자가 지정한 표시명.
+     * {@code name}은 파일명/경로 기반 식별자라 클라이언트의 파일 필터(확장자 매칭)와
+     * 라우팅에 그대로 쓰여야 해서, 표시명은 별도 키로 노출한다.
+     * (definition-service가 {@code definitions/{path}.meta.json} 사이드카에서 읽어 채움)
+     */
+    private String definitionName;
+
+    public String getDefinitionName() {
+        return definitionName;
+    }
+
+    public void setDefinitionName(String definitionName) {
+        this.definitionName = definitionName;
+    }
+
 }

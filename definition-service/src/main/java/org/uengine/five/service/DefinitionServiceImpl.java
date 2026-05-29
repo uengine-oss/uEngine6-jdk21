@@ -81,6 +81,10 @@ public class DefinitionServiceImpl implements DefinitionService, DefinitionXMLSe
 
     static protected final String RESOURCE_ROOT = "definitions";
     static protected final String ARCHIVE_ROOT = "archive";
+    /** 표시명 사이드카 접미. 예: definitions/default/foo.bpmn → definitions/default/foo.bpmn.meta.json */
+    static protected final String META_SUFFIX = ".meta.json";
+
+    static final ObjectMapper META_OBJECT_MAPPER = new ObjectMapper();
 
     @Autowired
     ResourceManager resourceManager;
@@ -175,12 +179,110 @@ public class DefinitionServiceImpl implements DefinitionService, DefinitionXMLSe
 
         List<DefinitionResource> definitions = new ArrayList<DefinitionResource>();
         for (IResource resource1 : resources) {
+            // 표시명 사이드카(.meta.json)·map.json·metrics.json 등 메타데이터는 트리에 노출하지 않는다.
+            if (shouldHideFromDefinitionTree(resource1)) {
+                continue;
+            }
             DefinitionResource definition = new DefinitionResource(resource1);
+            // 표시명 사이드카가 있으면 definitionName 으로 채워 클라이언트가 파일명 대신 보여줄 수 있게.
+            enrichDefinitionNameFromSidecar(definition, resource1);
             definitions.add(definition);
             definition.path = definition.path.replace("definitions/", "");
         }
 
         return CollectionModel.of(definitions);
+    }
+
+    /**
+     * 사이드바·정의체계도 트리에 표시하지 않을 파일 판별.
+     * - {@code *.meta.json} : 표시명 사이드카
+     * - 루트의 {@code map.json}/{@code metrics.json} 등 .json 일반 메타
+     */
+    private boolean shouldHideFromDefinitionTree(IResource resource) {
+        if (resource instanceof IContainer) {
+            return false;
+        }
+        String name = resource.getName();
+        if (name == null) {
+            return false;
+        }
+        String lower = name.toLowerCase();
+        return lower.endsWith(META_SUFFIX) || lower.endsWith(".json");
+    }
+
+    /**
+     * BPMN/form/rule 등 정의 파일의 사이드카에서 표시명을 읽어 {@link DefinitionResource#setDefinitionName}.
+     * 사이드카가 없거나 파싱 실패해도 목록 조회 자체는 실패하지 않는다.
+     */
+    private void enrichDefinitionNameFromSidecar(DefinitionResource definition, IResource resource1) {
+        String displayName = readDisplayNameFromSidecar(resource1.getPath());
+        if (displayName != null && !displayName.isBlank()) {
+            definition.setDefinitionName(displayName);
+        }
+    }
+
+    /**
+     * 주어진 정의 파일 경로(예: {@code definitions/default/foo.bpmn})에 대응하는
+     * {@code definitions/default/foo.bpmn.meta.json} 사이드카에서 {@code name} 필드를 읽어 반환.
+     * 파일이 없거나 JSON 파싱 실패 시 {@code null}.
+     */
+    private String readDisplayNameFromSidecar(String definitionResourcePath) {
+        if (definitionResourcePath == null || definitionResourcePath.isBlank()) {
+            return null;
+        }
+        String metaPath = definitionResourcePath + META_SUFFIX;
+        try {
+            IResource meta = new DefaultResource(metaPath);
+            if (!resourceManager.exists(meta)) {
+                return null;
+            }
+            String body;
+            try (InputStream in = resourceManager.getInputStream(meta)) {
+                if (in == null) {
+                    return null;
+                }
+                body = new String(IOUtils.toByteArray(in), StandardCharsets.UTF_8);
+            }
+            if (body == null || body.isBlank()) {
+                return null;
+            }
+            java.util.Map<?, ?> map = META_OBJECT_MAPPER.readValue(body, java.util.Map.class);
+            Object n = map.get("name");
+            return n == null ? null : String.valueOf(n).trim();
+        } catch (Exception ignore) {
+            return null;
+        }
+    }
+
+    /**
+     * 정의 저장 시 {@link DefinitionRequest#getName()} 가 있으면 사이드카({@code .meta.json})에 표시명 기록.
+     * - 사이드카 경로: {@code definitions/{path}.meta.json}
+     * - 입력이 비어 있거나 공백뿐이면 기록하지 않는다(기존 사이드카는 그대로 유지).
+     * - 255자 초과 시 자른다(클라이언트와 일관).
+     */
+    private void writeDisplayNameSidecar(String definitionResourcePath, String displayName) {
+        if (definitionResourcePath == null || definitionResourcePath.isBlank()) {
+            return;
+        }
+        if (displayName == null) {
+            return;
+        }
+        String trimmed = displayName.trim();
+        if (trimmed.isEmpty()) {
+            return;
+        }
+        if (trimmed.length() > 255) {
+            trimmed = trimmed.substring(0, 255);
+        }
+        try {
+            java.util.Map<String, String> payload = new java.util.LinkedHashMap<>();
+            payload.put("name", trimmed);
+            String json = META_OBJECT_MAPPER.writeValueAsString(payload);
+            DefaultResource meta = new DefaultResource(definitionResourcePath + META_SUFFIX);
+            resourceManager.save(meta, json);
+        } catch (Exception ignore) {
+            // 사이드카 실패가 본체 저장을 실패시키지 않도록 swallow.
+        }
     }
 
     @RequestMapping(value = "/version/{version}" + DEFINITION + "/", method = RequestMethod.GET)
@@ -284,6 +386,8 @@ public class DefinitionServiceImpl implements DefinitionService, DefinitionXMLSe
         }
 
         DefinitionResource halDefinition = new DefinitionResource(resource);
+        // 단건 조회도 사이드카 표시명을 반영해야 클라이언트가 헤더/타이틀에 일관되게 노출 가능.
+        enrichDefinitionNameFromSidecar(halDefinition, resource);
 
         return halDefinition;
 
@@ -321,6 +425,14 @@ public class DefinitionServiceImpl implements DefinitionService, DefinitionXMLSe
         if (!definition.getPath().equals(definitionPath)) {
             String newPath = RESOURCE_ROOT + "/" + definition.getPath();
             resourceManager.rename(resource, newPath);
+            // 본체 rename 후 사이드카도 같이 이동. 실패해도 본체는 이미 이동했으니 swallow.
+            try {
+                IResource oldMeta = new DefaultResource(resource.getPath() + META_SUFFIX);
+                if (resourceManager.exists(oldMeta)) {
+                    resourceManager.rename(oldMeta, newPath + META_SUFFIX);
+                }
+            } catch (Exception ignore) {
+            }
             return new DefinitionResource(new ContainerResource(newPath));
         }
 
@@ -373,6 +485,16 @@ public class DefinitionServiceImpl implements DefinitionService, DefinitionXMLSe
 
         IResource resource = new DefaultResource(RESOURCE_ROOT + definitionPath);
         resourceManager.delete(resource);
+
+        // 본체 삭제와 함께 표시명 사이드카도 정리 — 잔여 메타 파일이 다음 listDefinition 에서 떠다니지 않게.
+        try {
+            IResource meta = new DefaultResource(resource.getPath() + META_SUFFIX);
+            if (resourceManager.exists(meta)) {
+                resourceManager.delete(meta);
+            }
+        } catch (Exception ignore) {
+            // 본체 삭제는 이미 성공했으므로 사이드카 삭제 실패는 swallow.
+        }
 
     }
 
@@ -494,6 +616,9 @@ public class DefinitionServiceImpl implements DefinitionService, DefinitionXMLSe
 
         DefaultResource resource = new DefaultResource(RESOURCE_ROOT + "/" + dp);
         resourceManager.save(resource, definitionRequest.getDefinition());
+
+        // 표시명 사이드카 저장 — 본체 저장 직후 동기 기록(사이드바·체계도 다음 조회에 즉시 반영).
+        writeDisplayNameSidecar(resource.getPath(), definitionRequest.getName());
 
         // BPMN만 process-service 배포 파이프라인 호출 (중복 호출 제거)
         if ("bpmn".equalsIgnoreCase(fileExt)) {
