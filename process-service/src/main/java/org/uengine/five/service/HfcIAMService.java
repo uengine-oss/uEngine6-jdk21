@@ -6,12 +6,14 @@ import java.util.Optional;
 
 import org.springframework.stereotype.Service;
 import org.uengine.contexts.UserContext;
-import org.uengine.five.dto.CompetencyUserInfoDto;
 import org.uengine.five.dto.GroupInfoDto;
 import org.uengine.five.dto.RoleInfoDto;
 
 /**
- * HFC(ESB) 조직·역할·담당자 조회 및 IAM 연동을 담당하는 서비스.
+ * HFC(ESB) 조직·권한·담당자 조회 및 IAM 연동을 담당하는 서비스.
+ *
+ * <p>그룹과 권한은 서로 종속되지 않으며, UI에서 각각 독립적으로 선택합니다.
+ * 담당자 조회 시 전달된 파라미터 조합에 따라 결과가 결정됩니다.</p>
  *
  * <p>ESB 호출이 확정되면 본 클래스에서 매핑을 채웁니다.</p>
  */
@@ -26,44 +28,25 @@ public class HfcIAMService {
     }
 
     /**
-     * 그룹 코드에 매핑된 역할 정보 목록. {@link RoleInfoDto}는 공통 응답 형태로 재사용합니다.
+     * 권한 정보 목록 (코드·이름). 그룹과 무관하게 전체 권한을 조회합니다.
+     * {@link RoleInfoDto}는 공통 응답 형태로 재사용합니다.
      */
-    public List<RoleInfoDto> getRolesByGroupCode(String groupCode) {
+    public List<RoleInfoDto> getPermissions() {
         return new ArrayList<>();
     }
 
     /**
-     * 그룹 + 역할 코드에 해당하는 담당자 목록.
+     * 그룹·권한 조건에 따른 담당자 목록.
+     *
+     * <ul>
+     *   <li>{@code groupCode}만 있으면 해당 그룹 담당자</li>
+     *   <li>{@code permissionCode}만 있으면 해당 권한 담당자</li>
+     *   <li>둘 다 있으면 두 조건을 모두 만족하는 담당자</li>
+     *   <li>둘 다 없으면 빈 목록</li>
+     * </ul>
      */
-    public List<UserContext> getAssigneesByGroupAndRole(String groupCode, String roleCode) {
-        return new ArrayList<>();
-    }
-
-    /**
-     * 그룹에 해당하는 담당자 목록 (역할 코드 미지정).
-     */
-    public List<UserContext> getAssigneesByGroup(String groupCode) {
-        return new ArrayList<>();
-    }
-
-    /**
-     * 그룹 코드에 해당하는 사용자 목록(역량 기준정보 포함).
-     * 외부 연동 시 응답을 {@link CompetencyUserInfoDto}로 매핑합니다.
-     */
-    public List<CompetencyUserInfoDto> listUsersWithCompetencyByGroupCode(String groupCode) {
-        if (!hasText(groupCode)) {
-            return List.of();
-        }
-        return new ArrayList<>();
-    }
-
-    /**
-     * 그룹 코드 + 권한 코드에 해당하는 사용자 목록(역량 기준정보 포함).
-     * 외부 연동 시 응답을 {@link CompetencyUserInfoDto}로 매핑합니다.
-     */
-    public List<CompetencyUserInfoDto> listUsersWithCompetencyByGroupCodeAndPermissionCode(
-            String groupCode, String permissionCode) {
-        if (!hasText(groupCode) || !hasText(permissionCode)) {
+    public List<UserContext> getAssignees(String groupCode, String permissionCode) {
+        if (!hasText(groupCode) && !hasText(permissionCode)) {
             return List.of();
         }
         return new ArrayList<>();
