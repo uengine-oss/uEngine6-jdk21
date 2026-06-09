@@ -13,7 +13,7 @@ import org.uengine.five.dto.AbsenceResponse;
 /**
  * 부재자/대결자 설정 REST API.
  */
-@FeignClient(name = "bpm", url = "http://process-service:9094")
+@FeignClient(name = "absence", url = "http://process-service:9094")
 public interface AbsenceService {
 
     @RequestMapping(value = "/absences", method = RequestMethod.POST)
