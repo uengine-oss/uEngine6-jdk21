@@ -2907,7 +2907,7 @@ public class InstanceServiceImpl implements InstanceService {
     /**
      * 관리자 담당자 재배정 (USER/endpoint, GROUP/scope 등).
     */
-    @RequestMapping(value = "/work-item/{taskId}/assignee-reassignment", method = RequestMethod.POST, produces = "application/json;charset=UTF-8")
+    @RequestMapping(value = "/work-item/{taskId}/reassignment", method = RequestMethod.POST, produces = "application/json;charset=UTF-8")
     @ProcessTransactional // important!
     public WorkItemResource reassignWorkItemAssignee(
         @PathVariable("taskId") String taskId,
