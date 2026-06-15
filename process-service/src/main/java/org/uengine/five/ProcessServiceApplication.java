@@ -6,10 +6,12 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 // import org.springframework.boot.builder.SpringApplicationBuilder; // WAR
 // import org.springframework.boot.web.servlet.support.SpringBootServletInitializer; // WAR
+import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.cloud.openfeign.EnableFeignClients;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
+import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.Scope;
 import org.springframework.scheduling.annotation.EnableAsync;
@@ -33,7 +35,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 @SpringBootApplication
 @EnableAsync
 @EnableFeignClients
-@ComponentScan(basePackages = { "org.uengine.kernel.bpmn", "org.uengine.five" })
+@ComponentScan(basePackages = { "org.uengine.kernel.bpmn", "org.uengine.five", "org.uengine.hwlife" })
+// 기본 entity/repository 스캔(메인 패키지 org.uengine.five)에 회사 패키지(org.uengine.hwlife)를 추가.
+@EntityScan(basePackages = { "org.uengine.five", "org.uengine.hwlife" })
+@EnableJpaRepositories(basePackages = { "org.uengine.five", "org.uengine.hwlife" })
 // WAR 배포 시: 아래처럼 SpringBootServletInitializer 상속 후 configure() 오버라이드 (import: SpringApplicationBuilder, SpringBootServletInitializer)
 // public class ProcessServiceApplication extends SpringBootServletInitializer {
 //     @Override

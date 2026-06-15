@@ -33,7 +33,8 @@ import org.uengine.webservices.worklist.WorkList;
 @Configuration
 @ComponentScan(basePackages = {
         "org.uengine.five",
-        "org.uengine.kernel"
+        "org.uengine.kernel",
+        "org.uengine.hwlife"
 })
 public class ProcessServiceWebConfig {
 
