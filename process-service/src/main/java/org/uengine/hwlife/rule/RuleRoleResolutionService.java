@@ -18,8 +18,8 @@ import jakarta.persistence.PersistenceContext;
 /**
  * 규칙 기반 담당자 배정의 I/O 담당 서비스.
  *
- * <p>{@code RuleBasedResolutionContext}(POJO)는 순수 알고리즘만 갖고, DB 조회는 이 빈에 위임한다.
- * 기동 시 {@link RuleResolutionSupport} 에 자기 자신을 등록해 POJO 에서 정적 접근 가능하게 한다.</p>
+ * <p>{@code RuleBasedRoleResolutionContext}(POJO)는 순수 알고리즘만 갖고, DB 조회는 이 빈에 위임한다.
+ * 기동 시 {@link RuleRoleResolutionSupport} 에 자기 자신을 등록해 POJO 에서 정적 접근 가능하게 한다.</p>
  *
  * <ul>
  *   <li>{@link #loadRules(String, String)} : BPM_ROLE_ASSIGN_RULE 조회</li>
@@ -27,7 +27,7 @@ import jakarta.persistence.PersistenceContext;
  * </ul>
  */
 @Service
-public class RuleResolutionService {
+public class RuleRoleResolutionService {
 
     private static final String USE_Y = "Y";
     /** WorklistEntity 의 완료 상태값(대문자 컨벤션). 이외는 '진행중'으로 집계. */
@@ -38,13 +38,13 @@ public class RuleResolutionService {
     @PersistenceContext
     private EntityManager entityManager;
 
-    public RuleResolutionService(BpmRoleAssignRuleRepository ruleRepository) {
+    public RuleRoleResolutionService(BpmRoleAssignRuleRepository ruleRepository) {
         this.ruleRepository = ruleRepository;
     }
 
     @PostConstruct
     public void register() {
-        RuleResolutionSupport.register(this);
+        RuleRoleResolutionSupport.register(this);
     }
 
     /**

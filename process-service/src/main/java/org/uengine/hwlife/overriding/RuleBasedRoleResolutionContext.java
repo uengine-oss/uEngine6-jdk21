@@ -5,8 +5,8 @@ import java.util.List;
 import java.util.Map;
 
 import org.uengine.hwlife.rule.RuleCandidate;
-import org.uengine.hwlife.rule.RuleResolutionService;
-import org.uengine.hwlife.rule.RuleResolutionSupport;
+import org.uengine.hwlife.rule.RuleRoleResolutionService;
+import org.uengine.hwlife.rule.RuleRoleResolutionSupport;
 import org.uengine.kernel.GlobalContext;
 import org.uengine.kernel.ProcessDefinition;
 import org.uengine.kernel.ProcessInstance;
@@ -25,7 +25,7 @@ import org.uengine.kernel.RoleResolutionContext;
  *   <li>RoleMapping 생성 + {@link #saveMapping} 메타 적재</li>
  * </ol>
  */
-public class RuleBasedResolutionContext extends RoleResolutionContext {
+public class RuleBasedRoleResolutionContext extends RoleResolutionContext {
 
     private static final long serialVersionUID = GlobalContext.SERIALIZATION_UID;
 
@@ -55,15 +55,15 @@ public class RuleBasedResolutionContext extends RoleResolutionContext {
 
         if (!isNotEmpty(resolvedPolicyId)) {
             throw new IllegalStateException(
-                    "RuleBasedResolutionContext: POLICY_ID 가 필요합니다 (context.policyId 또는 인스턴스 변수 POLICY_ID).");
+                    "RuleBasedRoleResolutionContext: POLICY_ID 가 필요합니다 (context.policyId 또는 인스턴스 변수 POLICY_ID).");
         }
 
-        RuleResolutionService service = RuleResolutionSupport.get();
+        RuleRoleResolutionService service = RuleRoleResolutionSupport.get();
 
         // 2) 배정 규칙 조회 (없으면 외부 기준정보에서 적재 후 재조회)
         List<RuleCandidate> rules = loadRules(resolvedPolicyId, difficulty);
         if (rules.isEmpty()) {
-            throw new IllegalStateException("RuleBasedResolutionContext: 정책 " + resolvedPolicyId
+            throw new IllegalStateException("RuleBasedRoleResolutionContext: 정책 " + resolvedPolicyId
                     + " / 난이도 " + difficulty + " 에 대한 배정 규칙이 없습니다.");
         }
 
@@ -89,7 +89,7 @@ public class RuleBasedResolutionContext extends RoleResolutionContext {
 
     /** 배정 규칙 조회 — 실제 DB/외부 호출은 서비스가 담당. */
     List<RuleCandidate> loadRules(String policyId, String difficulty) {
-        return RuleResolutionSupport.get().loadRules(policyId, difficulty);
+        return RuleRoleResolutionSupport.get().loadRules(policyId, difficulty);
     }
 
     /**
@@ -134,7 +134,7 @@ public class RuleBasedResolutionContext extends RoleResolutionContext {
         }
 
         if (best == null) {
-            throw new IllegalStateException("RuleBasedResolutionContext: 배정 가능한 담당자를 결정하지 못했습니다.");
+            throw new IllegalStateException("RuleBasedRoleResolutionContext: 배정 가능한 담당자를 결정하지 못했습니다.");
         }
         return best;
     }
