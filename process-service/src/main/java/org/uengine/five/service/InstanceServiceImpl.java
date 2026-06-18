@@ -59,6 +59,8 @@ import org.uengine.five.ProcessServiceApplication;
 import org.uengine.five.dto.InstanceResource;
 import org.uengine.five.dto.Message;
 import org.uengine.five.dto.ProcessExecutionCommand;
+import org.uengine.five.dto.BulkDelegateWorkItemCommand;
+import org.uengine.five.dto.BulkDelegateWorkItemResult;
 import org.uengine.five.dto.StartAndCompleteCommand;
 import org.uengine.five.dto.TaskReturnAvailability;
 import org.uengine.five.dto.TaskReturnCandidate;
@@ -75,6 +77,7 @@ import org.uengine.five.entity.ServiceEndpointEntity;
 import org.uengine.five.entity.WorklistEntity;
 import org.uengine.five.framework.ProcessTransactionContext;
 import org.uengine.five.framework.ProcessTransactional;
+import org.uengine.five.overriding.IAMRoleResolutionContext;
 import org.uengine.five.overriding.JPAProcessInstance;
 import org.uengine.five.repository.EventMappingRepository;
 import org.uengine.five.repository.ProcessInstanceRepository;
@@ -100,6 +103,7 @@ import org.uengine.kernel.ProcessDefinition;
 import org.uengine.kernel.ProcessInstance;
 import org.uengine.kernel.ProcessVariable;
 import org.uengine.kernel.ReceiveActivity;
+import org.uengine.kernel.Role;
 import org.uengine.kernel.RoleMapping;
 import org.uengine.kernel.TaskSkipAnalyzer;
 import org.uengine.kernel.UEngineException;
@@ -2736,6 +2740,141 @@ public class InstanceServiceImpl implements InstanceService {
         }
     }
 
+    private String normalizeDelegateTargetType(RoleMappingCommand command) {
+        String targetType = command != null ? command.getTargetType() : null;
+        if (targetType == null || targetType.trim().isEmpty()) {
+            return "USER";
+        }
+        return targetType.trim().toUpperCase().replace("-", "_");
+    }
+
+    private boolean hasText(String value) {
+        return value != null && !value.trim().isEmpty();
+    }
+
+    private void validateDelegateRoleMapping(RoleMappingCommand command) {
+        if (command == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "delegatedRoleMapping is required");
+        }
+
+        String targetType = normalizeDelegateTargetType(command);
+        if ("USER".equals(targetType)) {
+            if (!hasText(command.getEndpoint())) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "delegatedRoleMapping.endpoint is required");
+            }
+            return;
+        }
+        if ("GROUP".equals(targetType)) {
+            if (!hasText(command.getAssignGroup())) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "delegatedRoleMapping.assignGroup is required");
+            }
+            return;
+        }
+        if ("ROLE".equals(targetType)) {
+            if (!hasText(command.getScope())) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "delegatedRoleMapping.scope is required");
+            }
+            return;
+        }
+        if ("GROUP_ROLE".equals(targetType) || "GROUPROLE".equals(targetType)) {
+            if (!hasText(command.getAssignGroup()) || !hasText(command.getScope())) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "delegatedRoleMapping.assignGroup and scope are required");
+            }
+            return;
+        }
+
+        throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unsupported delegatedRoleMapping.targetType: " + command.getTargetType());
+    }
+
+    private RoleMapping createDelegateRoleMapping(
+            RoleMappingCommand command,
+            ProcessInstance instance,
+            HumanActivity humanActivity,
+            String laneScope,
+            String laneAssignGroup,
+            int laneAssignType) throws Exception {
+        String targetType = normalizeDelegateTargetType(command);
+
+        if ("USER".equals(targetType)) {
+            RoleMapping delegated = RoleMapping.create();
+            String targetEndpoint = command.getEndpoint() != null ? command.getEndpoint().trim() : null;
+            delegated.setEndpoint(targetEndpoint);
+
+            if (command.getScope() != null) {
+                delegated.setScope(command.getScope());
+            } else if (UEngineUtil.isNotEmpty(laneScope) && !"null".equalsIgnoreCase(laneScope)) {
+                delegated.setScope(laneScope);
+            }
+
+            if (command.getAssignGroup() != null) {
+                delegated.setAssignGroup(command.getAssignGroup());
+            } else if (UEngineUtil.isNotEmpty(laneAssignGroup) && !"null".equalsIgnoreCase(laneAssignGroup)) {
+                delegated.setAssignGroup(laneAssignGroup);
+            }
+
+            if (command.getAssignType() != null) {
+                delegated.setAssignType(command.getAssignType());
+            } else {
+                delegated.setAssignType(laneAssignType);
+            }
+
+            if (command.getResourceName() != null) {
+                delegated.setResourceName(command.getResourceName());
+            }
+
+            try {
+                delegated.fill();
+            } catch (Exception ignore) {
+            }
+            return delegated;
+        }
+
+        String targetAssignGroup = command.getAssignGroup();
+        if (!hasText(targetAssignGroup) && "ROLE".equals(targetType)
+                && UEngineUtil.isNotEmpty(laneAssignGroup) && !"null".equalsIgnoreCase(laneAssignGroup)) {
+            targetAssignGroup = laneAssignGroup;
+        }
+
+        String targetScope = command.getScope();
+        if (!hasText(targetScope) && "GROUP".equals(targetType)
+                && UEngineUtil.isNotEmpty(laneScope) && !"null".equalsIgnoreCase(laneScope)) {
+            targetScope = laneScope;
+        }
+
+        IAMRoleResolutionContext resolutionContext = new IAMRoleResolutionContext();
+        if (hasText(targetAssignGroup)) {
+            resolutionContext.setGroupName(targetAssignGroup.trim());
+        }
+        if (hasText(targetScope)) {
+            resolutionContext.setScope(targetScope.trim());
+        }
+
+        RoleMapping delegated = resolutionContext.getActualMapping(
+                instance.getProcessDefinition(),
+                instance,
+                humanActivity != null ? humanActivity.getTracingTag() : null,
+                new HashMap());
+
+        boolean hasTargetAssignGroup = hasText(targetAssignGroup);
+        boolean hasTargetScope = hasText(targetScope);
+        if (command.getAssignType() != null) {
+            delegated.setAssignType(command.getAssignType());
+        } else if (hasTargetAssignGroup && hasTargetScope) {
+            delegated.setAssignType(Role.ASSIGNTYPE_GROUP_ROLE);
+        } else if (hasTargetAssignGroup) {
+            delegated.setAssignType(Role.ASSIGNTYPE_GROUP);
+        } else if (hasTargetScope) {
+            delegated.setAssignType(Role.ASSIGNTYPE_ROLE);
+        } else {
+            delegated.setAssignType(laneAssignType);
+        }
+
+        if (command.getResourceName() != null) {
+            delegated.setResourceName(command.getResourceName());
+        }
+        return delegated;
+    }
+
     /**
      * WorkItem 위임(Delegation)
      *
@@ -2757,10 +2896,7 @@ public class InstanceServiceImpl implements InstanceService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "taskId is required");
         }
 
-        if (delegatedRoleMapping == null || delegatedRoleMapping.getEndpoint() == null
-                || delegatedRoleMapping.getEndpoint().trim().isEmpty()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "delegatedRoleMapping.endpoint is required");
-        }
+        validateDelegateRoleMapping(delegatedRoleMapping);
 
         // 로그인 사용자 컨텍스트(권한/로깅/RoleResolution 등) 설정
         String userId = SecurityAwareServletFilter.getUserId();
@@ -2808,41 +2944,13 @@ public class InstanceServiceImpl implements InstanceService {
         String laneAssignGroup = worklistEntity.getAssignGroup();
         int laneAssignType = worklistEntity.getAssignType();
 
-        RoleMapping delegated = RoleMapping.create();
-        if (delegated != null) {
-            String targetEndpoint = delegatedRoleMapping.getEndpoint() != null ? delegatedRoleMapping.getEndpoint().trim() : null;
-            delegated.setEndpoint(targetEndpoint);
-
-            // delegate 요청에 scope/assignGroup/assignType이 없더라도, Lane(=roleName) 기반 태스크는 기존 worklist의 값을 유지해야 함
-            // 그래야 위임 후 새로 생성되는 workitem(재실행)이 기존 Lane 정책(scope/assignGroup/assignType)을 그대로 가진다.
-            if (delegatedRoleMapping.getScope() != null) {
-                delegated.setScope(delegatedRoleMapping.getScope());
-            } else if (UEngineUtil.isNotEmpty(laneScope) && !"null".equalsIgnoreCase(laneScope)) {
-                delegated.setScope(laneScope);
-            }
-
-            if (delegatedRoleMapping.getAssignGroup() != null) {
-                delegated.setAssignGroup(delegatedRoleMapping.getAssignGroup());
-            } else if (UEngineUtil.isNotEmpty(laneAssignGroup) && !"null".equalsIgnoreCase(laneAssignGroup)) {
-                delegated.setAssignGroup(laneAssignGroup);
-            }
-
-            if (delegatedRoleMapping.getAssignType() != null) {
-                delegated.setAssignType(delegatedRoleMapping.getAssignType());
-            } else {
-                delegated.setAssignType(laneAssignType);
-            }
-
-            if (delegatedRoleMapping.getResourceName() != null) {
-                delegated.setResourceName(delegatedRoleMapping.getResourceName());
-            }
-
-            // resName이 없으면 IAM 기반으로 채움 (Flyweight + isFilled로 중복 최소화)
-            try {
-                delegated.fill();
-            } catch (Exception ignore) {
-            }
-        }
+        RoleMapping delegated = createDelegateRoleMapping(
+                delegatedRoleMapping,
+                instance,
+                humanActivity,
+                laneScope,
+                laneAssignGroup,
+                laneAssignType);
         humanActivity.delegate(instance, delegated, delegateOnlyForWorkitem);
 
         // 같은 Lane(roleName)의 병렬 태스크들도 동일 사용자로 재할당(NEW/RUNNING만)
@@ -2854,28 +2962,41 @@ public class InstanceServiceImpl implements InstanceService {
                     String laneRoleName = worklistEntity.getRoleName();
                     String targetEndpoint = delegated != null ? delegated.getEndpoint() : null;
                     String targetResName = delegated != null ? delegated.getResourceName() : null;
+                    String targetScope = delegated != null ? delegated.getScope() : null;
+                    String targetAssignGroup = delegated != null ? delegated.getAssignGroup() : null;
+                    int targetAssignType = delegated != null ? delegated.getAssignType() : 0;
 
                     for (WorklistEntity wl : currents) {
                         if (wl == null) continue;
                         if (laneRoleName == null || !laneRoleName.equals(wl.getRoleName())) continue;
-                        if (!UEngineUtil.isNotEmpty(targetEndpoint)) continue;
 
                         // 기존 Lane 속성 유지(위임 후 생성된 신규 workitem이 scope/assignGroup/assignType을 잃는 문제 보정 포함)
-                        if (!UEngineUtil.isNotEmpty(wl.getScope()) || "null".equalsIgnoreCase(wl.getScope())) {
+                        if (UEngineUtil.isNotEmpty(targetScope) && !"null".equalsIgnoreCase(targetScope)) {
+                            wl.setScope(targetScope);
+                        } else if (!UEngineUtil.isNotEmpty(wl.getScope()) || "null".equalsIgnoreCase(wl.getScope())) {
                             if (UEngineUtil.isNotEmpty(laneScope) && !"null".equalsIgnoreCase(laneScope)) wl.setScope(laneScope);
                         }
-                        if (!UEngineUtil.isNotEmpty(wl.getAssignGroup()) || "null".equalsIgnoreCase(wl.getAssignGroup())) {
+                        if (UEngineUtil.isNotEmpty(targetAssignGroup) && !"null".equalsIgnoreCase(targetAssignGroup)) {
+                            wl.setAssignGroup(targetAssignGroup);
+                        } else if (!UEngineUtil.isNotEmpty(wl.getAssignGroup()) || "null".equalsIgnoreCase(wl.getAssignGroup())) {
                             if (UEngineUtil.isNotEmpty(laneAssignGroup) && !"null".equalsIgnoreCase(laneAssignGroup)) wl.setAssignGroup(laneAssignGroup);
                         }
-                        if (wl.getAssignType() == 0 && laneAssignType != 0) {
+                        if (targetAssignType != 0) {
+                            wl.setAssignType(targetAssignType);
+                        } else if (wl.getAssignType() == 0 && laneAssignType != 0) {
                             wl.setAssignType(laneAssignType);
                         }
 
-                        wl.setEndpoint(targetEndpoint);
-                        if (UEngineUtil.isNotEmpty(targetResName)) wl.setResName(targetResName);
+                        if (UEngineUtil.isNotEmpty(targetEndpoint)) {
+                            wl.setEndpoint(targetEndpoint);
+                            if (UEngineUtil.isNotEmpty(targetResName)) wl.setResName(targetResName);
 
-                        // 혹시 resName이 비어있으면 endpoint 기반 fill로 보강
-                        applyActorToWorklistIfEmpty(wl, targetEndpoint);
+                            // 혹시 resName이 비어있으면 endpoint 기반 fill로 보강
+                            applyActorToWorklistIfEmpty(wl, targetEndpoint);
+                        } else {
+                            wl.setEndpoint(null);
+                            wl.setResName(null);
+                        }
                         worklistRepository.save(wl);
                     }
                 }
@@ -2902,6 +3023,63 @@ public class InstanceServiceImpl implements InstanceService {
         // }
 
         return getWorkItem(resultTaskId);
+    }
+
+    @RequestMapping(value = "/work-items/delegate", method = RequestMethod.POST, produces = "application/json;charset=UTF-8")
+    public BulkDelegateWorkItemResult delegateWorkItems(@RequestBody BulkDelegateWorkItemCommand command)
+            throws Exception {
+        if (command == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Request body is required");
+        }
+        if (command.getTaskIds() == null || command.getTaskIds().isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "taskIds is required");
+        }
+        validateDelegateRoleMapping(command.getDelegatedRoleMapping());
+
+        BulkDelegateWorkItemResult result = new BulkDelegateWorkItemResult();
+        result.setTotal(command.getTaskIds().size());
+
+        InstanceService service = context.getBean(InstanceService.class);
+        boolean delegateOnlyForWorkitem = Boolean.TRUE.equals(command.getDelegateOnlyForWorkitem());
+        Set<String> processed = new LinkedHashSet<>();
+
+        for (String taskId : command.getTaskIds()) {
+            if (taskId == null || taskId.trim().isEmpty()) {
+                result.addFailure(taskId, "taskId is required");
+                continue;
+            }
+
+            String normalizedTaskId = taskId.trim();
+            if (!processed.add(normalizedTaskId)) {
+                result.addFailure(normalizedTaskId, "Duplicated taskId");
+                continue;
+            }
+
+            try {
+                WorkItemResource workItem = service.delegateWorkItem(
+                        normalizedTaskId,
+                        command.getDelegatedRoleMapping(),
+                        delegateOnlyForWorkitem);
+                result.addSuccess(normalizedTaskId, workItem);
+            } catch (Exception e) {
+                result.addFailure(normalizedTaskId, resolveFailureReason(e));
+            }
+        }
+
+        return result;
+    }
+
+    private String resolveFailureReason(Exception e) {
+        Throwable cursor = e;
+        while (cursor != null) {
+            if (cursor instanceof ResponseStatusException) {
+                ResponseStatusException responseStatusException = (ResponseStatusException) cursor;
+                String reason = responseStatusException.getReason();
+                return reason != null ? reason : responseStatusException.getMessage();
+            }
+            cursor = cursor.getCause();
+        }
+        return e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName();
     }
 
     /**

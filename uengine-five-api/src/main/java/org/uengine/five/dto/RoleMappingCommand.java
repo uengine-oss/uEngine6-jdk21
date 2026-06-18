@@ -13,6 +13,7 @@ public class RoleMappingCommand {
     private String scope;
     private String assignGroup;
     private Integer assignType;
+    private String targetType;
 
     public RoleMappingCommand() {
     }
@@ -55,6 +56,14 @@ public class RoleMappingCommand {
 
     public void setAssignType(Integer assignType) {
         this.assignType = assignType;
+    }
+
+    public String getTargetType() {
+        return targetType;
+    }
+
+    public void setTargetType(String targetType) {
+        this.targetType = targetType;
     }
 }
 
