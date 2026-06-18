@@ -14,6 +14,7 @@ public class ProcessExecutionCommand implements Serializable {
     private RoleMapping[] roleMappings;
     private ProcessVariableValue[] processVariableValues;
 
+    private String group;
     private String groups;
 
     private String correlationKeyValue;
@@ -97,6 +98,14 @@ public class ProcessExecutionCommand implements Serializable {
 
     public void setGroups(String groups) {
         this.groups = groups;
+    }
+
+    public String getGroup() {
+        return group;
+    }
+
+    public void setGroup(String group) {
+        this.group = group;
     }
 
 }

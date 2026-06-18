@@ -261,7 +261,7 @@ public class InstanceServiceImpl implements InstanceService {
         boolean simulation = command.getSimulation();
         String filePath = command.getProcessDefinitionId();
         String corrKeyValue = command.getCorrelationKeyValue();
-        String groups = command.getGroups();
+        String group = firstNotEmpty(command.getGroup(), command.getGroups());
         String definitionXml = command.getDefinitionXml();
 
         Object definition;
@@ -310,13 +310,15 @@ public class InstanceServiceImpl implements InstanceService {
                         instance.putRoleMapping(roleMapping.getName(), roleMapping.toKernelRoleMapping());
                     }
                 }
+                if (group != null) {
+                    RoleMapping groupRoleMapping = RoleMapping.create();
+                    groupRoleMapping.setName("group");
+                    groupRoleMapping.setAssignGroup(group);
+                    instance.putRoleMapping("group", groupRoleMapping);
+                }
 
                 if (corrKeyValue != null) {
                     ((JPAProcessInstance) instance).getProcessInstanceEntity().setCorrKey(corrKeyValue);
-                }
-
-                if (groups != null) {
-                    instance.setGroups(groups);
                 }
 
                 org.uengine.five.dto.ProcessVariableValue[] processVariableValues = command.getProcessVariableValues();
@@ -2750,6 +2752,16 @@ public class InstanceServiceImpl implements InstanceService {
 
     private boolean hasText(String value) {
         return value != null && !value.trim().isEmpty();
+    }
+
+    private String firstNotEmpty(String... values) {
+        if (values == null) return null;
+        for (String value : values) {
+            if (hasText(value)) {
+                return value.trim();
+            }
+        }
+        return null;
     }
 
     private void validateDelegateRoleMapping(RoleMappingCommand command) {
