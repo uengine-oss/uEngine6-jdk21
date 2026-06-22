@@ -1,8 +1,7 @@
-package org.uengine.five.service;
+package org.uengine.hwlife.absence;
 
 import java.util.Date;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -16,13 +15,11 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
-import org.uengine.five.dto.AbsenceCreateRequest;
-import org.uengine.five.dto.AbsenceResponse;
-import org.uengine.five.entity.AbsenceEntity;
-import org.uengine.five.repository.AbsenceRepository;
+import org.uengine.hwlife.absence.entity.AbsenceEntity;
+import org.uengine.hwlife.absence.repository.AbsenceRepository;
 
 /**
- * 부재자/대결자 설정 REST API 구현.
+ * 한화생명 융자차세대 - 부재자/대결자 설정 REST API 구현.
  */
 @RestController
 @CrossOrigin(origins = "*")
@@ -40,72 +37,69 @@ public class AbsenceServiceImpl implements AbsenceService {
     @RequestMapping(value = "/absences", method = RequestMethod.POST)
     @ResponseStatus(HttpStatus.CREATED)
     @Transactional
-    public AbsenceResponse register(@RequestBody AbsenceCreateRequest request) throws Exception {
+    public AbsenceEntity register(@RequestBody AbsenceEntity request) throws Exception {
         if (request == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Request body is required");
         }
 
         AbsenceEntity entity = new AbsenceEntity();
         entity.setUserId(request.getUserId());
-        entity.setUserName(request.getUserName());
+        entity.setUserNm(request.getUserNm());
         entity.setAgentUserId(request.getAgentUserId());
         entity.setAgentUserNm(request.getAgentUserNm());
-        entity.setStartDate(request.getStartDate());
-        entity.setEndDate(request.getEndDate());
+        entity.setAbscStarDttm(request.getAbscStarDttm());
+        entity.setAbscEndDttm(request.getAbscEndDttm());
         entity.setStatus(AbsenceEntity.STATUS_ACTIVE);
         entity.setCreatedDate(new Date());
 
         validate(entity);
-        ensureNoOverlap(entity, -1L);
+        ensureNoOverlap(entity, null);
 
-        AbsenceEntity saved = absenceRepository.save(entity);
-        return AbsenceResponse.from(saved);
+        return absenceRepository.save(entity);
     }
 
     @Override
     @RequestMapping(value = "/absences/user/{userId}", method = RequestMethod.GET)
     @Transactional(readOnly = true)
-    public List<AbsenceResponse> findHistory(@PathVariable("userId") String userId) throws Exception {
-        return absenceRepository.findByUserId(userId).stream()
-                .map(AbsenceResponse::from)
-                .collect(Collectors.toList());
+    public List<AbsenceEntity> findHistory(@PathVariable("userId") String userId) throws Exception {
+        return absenceRepository.findByUserId(userId);
     }
 
     @Override
-    @RequestMapping(value = "/absences/{id}/release", method = RequestMethod.POST)
+    @RequestMapping(value = "/absences/{abseId}/release", method = RequestMethod.POST)
     @Transactional
-    public AbsenceResponse release(@PathVariable("id") Long absenceId) throws Exception {
-        AbsenceEntity entity = mustGet(absenceId);
-        if (entity.getTerminationDate() != null) {
+    public AbsenceEntity release(@PathVariable("abseId") Long abseId) throws Exception {
+        AbsenceEntity entity = mustGet(abseId);
+        if (entity.getCnceDttm() != null) {
             throw new ResponseStatusException(HttpStatus.CONFLICT,
-                    "Already released absence: " + absenceId);
+                    "Already released absence: " + abseId);
         }
-        entity.setTerminationDate(new Date());
+        entity.setCnceDttm(new Date());
         entity.setStatus(AbsenceEntity.STATUS_TERMINATED);
-        return AbsenceResponse.from(absenceRepository.save(entity));
+        return absenceRepository.save(entity);
     }
 
-    private AbsenceEntity mustGet(Long absenceId) {
-        return absenceRepository.findById(absenceId)
+    private AbsenceEntity mustGet(Long abseId) {
+        return absenceRepository.findById(abseId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
-                        "Absence not found: " + absenceId));
+                        "Absence not found: " + abseId));
     }
 
     private void validate(AbsenceEntity e) {
         require(e.getUserId(), "userId");
-        require(e.getUserName(), "userName");
+        require(e.getUserNm(), "userNm");
         require(e.getAgentUserId(), "agentUserId");
         require(e.getAgentUserNm(), "agentUserNm");
-        if (e.getStartDate() == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "startDate is required");
+        if (e.getAbscStarDttm() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "abscStarDttm is required");
         }
         if (e.getUserId().equals(e.getAgentUserId())) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                     "userId and agentUserId must be different");
         }
-        if (e.getEndDate() != null && e.getEndDate().before(e.getStartDate())) {
+        if (e.getAbscEndDttm() != null && e.getAbscEndDttm().before(e.getAbscStarDttm())) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "endDate must be after startDate");
+                    "abscEndDttm must be after abscStarDttm");
         }
     }
 
@@ -115,16 +109,16 @@ public class AbsenceServiceImpl implements AbsenceService {
         }
     }
 
-    private void ensureNoOverlap(AbsenceEntity target, Long excludeId) {
+    private void ensureNoOverlap(AbsenceEntity target, Long excludeAbseId) {
         List<AbsenceEntity> overlapping = absenceRepository.findOverlappingActive(
                 target.getUserId(),
-                target.getStartDate(),
-                target.getEndDate(),
-                excludeId == null ? -1L : excludeId);
+                target.getAbscStarDttm(),
+                target.getAbscEndDttm(),
+                excludeAbseId == null ? -1L : excludeAbseId);
         if (!overlapping.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.CONFLICT,
                     "Overlapping active absence already exists for userId=" + target.getUserId()
-                            + " (conflict id=" + overlapping.get(0).getAbsenceId() + ")");
+                            + " (conflict id=" + overlapping.get(0).getAbseId() + ")");
         }
     }
 }

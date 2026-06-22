@@ -1,4 +1,4 @@
-package org.uengine.five.repository;
+package org.uengine.hwlife.absence.repository;
 
 import java.util.Date;
 import java.util.List;
@@ -6,7 +6,7 @@ import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
-import org.uengine.five.entity.AbsenceEntity;
+import org.uengine.hwlife.absence.entity.AbsenceEntity;
 
 /**
  * 부재자/대결자 설정 저장소.
@@ -24,19 +24,19 @@ public interface AbsenceRepository extends JpaRepository<AbsenceEntity, Long> {
     /**
      * 동일 userId 로 기간이 겹치는 활성 부재가 존재하는지 검사 (등록 시 중복 방지용).
      *
-     * @param userId    부재자
-     * @param newStart  새로 등록할 시작일
-     * @param newEnd    새로 등록할 종료일 (null 이면 무한대로 간주 → 어떤 활성이든 충돌)
-     * @param excludeId 예약 필드 (등록 시 -1L 전달)
+     * @param userId       부재자
+     * @param newAbscStarDttm 새로 등록할 시작일시
+     * @param newAbscEndDttm  새로 등록할 종료일시 (null 이면 무한대로 간주 → 어떤 활성이든 충돌)
+     * @param excludeAbseId   제외할 abseId (등록 시 -1L 전달)
      */
     @Query("select a from AbsenceEntity a " +
             "where a.userId = :userId " +
             "  and a.status = 'ACTIVE' " +
-            "  and a.absenceId <> :excludeId " +
-            "  and ( :newEnd is null or a.startDate <= :newEnd ) " +
-            "  and ( a.endDate is null or a.endDate >= :newStart )")
+            "  and a.abseId <> :excludeAbseId " +
+            "  and ( :newAbscEndDttm is null or a.abscStarDttm <= :newAbscEndDttm ) " +
+            "  and ( a.abscEndDttm is null or a.abscEndDttm >= :newAbscStarDttm )")
     List<AbsenceEntity> findOverlappingActive(@Param("userId") String userId,
-                                               @Param("newStart") Date newStart,
-                                               @Param("newEnd") Date newEnd,
-                                               @Param("excludeId") Long excludeId);
+                                               @Param("newAbscStarDttm") Date newAbscStarDttm,
+                                               @Param("newAbscEndDttm") Date newAbscEndDttm,
+                                               @Param("excludeAbseId") Long excludeAbseId);
 }

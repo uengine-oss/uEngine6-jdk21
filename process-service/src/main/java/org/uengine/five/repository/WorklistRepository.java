@@ -84,36 +84,8 @@ public interface WorklistRepository extends JpaRepository<WorklistEntity, Long> 
             @Param("assignType") Integer assignType,
             @Param("endpoint") String endpoint);
 
-    /**
-     * 나의 결재함(My Approval) 동적 검색.
-     *
-     * <p>"결재함" 의 정의: {@code approvalType} 컬럼이 채워진 워크아이템.
-     * (= 결재 액션이 매핑된 task 만 노출)</p>
-     *
-     * <ul>
-     *   <li>정렬: 시작일 내림차순 (최근이 1번째).</li>
-     *   <li>고정 필터:
-     *     <ul>
-     *       <li>{@code wl.approvalType IS NOT NULL} — 결재함 정의</li>
-     *     </ul>
-     *   </li>
-     *   <li>옵션 파라미터 (모두 nullable, null 이면 해당 조건 무시):
-     *     <ul>
-     *       <li>endpoint   : 담당자 (자기 결재함 한정)</li>
-     *       <li>defId      : 업무구분 (프로세스 정의 ID)</li>
-     *       <li>absTrcTag  : 단위업무 태그</li>
-     *       <li>status     : 업무 상태</li>
-     *       <li>startDate  : 시작일자 (이 날짜 이후, inclusive)</li>
-     *       <li>endDate    : 종료일자 (이 날짜 이전, inclusive — NULL 종료일은 제외)</li>
-     *     </ul>
-     *   </li>
-     * </ul>
-     *
-     * 선점/그룹/롤 기반 노출 조건은 추후 OR 분기로 확장 예정.
-     */
     @Query("select wl from WorklistEntity wl " +
-            "where wl.approvalType is not null " +
-            "and (:endpoint is null or wl.endpoint = :endpoint) " +
+            "where (:endpoint is null or wl.endpoint = :endpoint) " +
             "and (:defId is null or wl.defId = :defId) " +
             "and (:absTrcTag is null or wl.absTrcTag = :absTrcTag) " +
             "and (:status is null or wl.status = :status) " +
@@ -130,7 +102,7 @@ public interface WorklistRepository extends JpaRepository<WorklistEntity, Long> 
             Pageable pageable);
 
     /**
-     * 기관(조직) 코드·요청 타입·업무구분으로 워크리스트 검색. 결재함({@code approvalType}) 구분 없이 전체 워크아이템 대상.
+     * 기관(조직) 코드·요청 타입·업무구분으로 워크리스트 검색. 결재함 구분 없이 전체 워크아이템 대상.
      *
      * <ul>
      *   <li>{@code requestYn = 'Y'} — 요청기관 {@code pi.initComCd}</li>
