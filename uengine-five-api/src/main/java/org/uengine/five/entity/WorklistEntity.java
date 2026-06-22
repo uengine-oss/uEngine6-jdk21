@@ -53,41 +53,35 @@ public class WorklistEntity {// implements WorkListDAO {
 
     String title;
     String description;
-    String endpoint;
-    String roleName;
-    String refRoleName;
-    String resName;
-    String defId;
-    String defVerId;
+    String endpoint; // 현재 담당자 아이디
+    String roleName; // 현재 권한 정보
+    String refRoleName; 
+    String resName; // 현재 담당자 명
+    String defId; // 정의 아이디
+    String defVerId; // 정의 버전
     String scope; // groupName or RoleScope
     String assignGroup; // Lane 할당 대상 그룹 (scope=권한과 함께 지정 시 교집합 매칭)
     int assignType; // see org.uengine.kernel.Role#ASSIGNTYPE_*
 
-    String defName;
-    String trcTag;
+    String defName; // 정의 명
+    String trcTag; // 추척 태그
     String tool;
     String parameter;
     Number priority;
 
     @Temporal(TemporalType.DATE)
-    Date startDate;
+    Date startDate; //업무 시작 시각(배정받은 시각)
 
     @Temporal(TemporalType.DATE)
-    Date endDate;
+    Date endDate; // 업무 종료 시각
 
     @Temporal(TemporalType.DATE)
-    Date saveDate;
+    Date saveDate; 
 
     @Temporal(TemporalType.DATE)
-    Date dueDate;
+    Date dueDate; // 마감 기한
 
     String status;
-
-    /**
-     * 결재 유형 분류값 (예: APPROVAL, REJECTION, REFERENCE 등 도메인별 정의).
-     * "내 결재함" 탭에서 endpoint = 로그인 사용자 의 업무 중 이 값으로 추가 필터링한다.
-     */
-    String approvalType;
 
     /**
      * decision: 사용자가 이 workitem을 어떤 의사결정으로 종료/처리했는지 기록
@@ -102,7 +96,9 @@ public class WorklistEntity {// implements WorkListDAO {
     String reason;
     int dispatchOption;
     String dispatchParam1;
-    String prevUserName;
+    String prevUserName; // 현재 단위업무 이전처리자(위임자) 명
+    String prevEndpoint; // 현재 단위업무 이전처리자(위임자) 아이디
+    String prevGroupCd; // 현재 단위업무 이전처리자(위임자) 그룹 코드
     Long rootInstId;
 
     @Temporal(TemporalType.DATE)
@@ -336,6 +332,14 @@ public class WorklistEntity {// implements WorkListDAO {
         this.prevUserName = prevUserName;
     }
 
+    public String getPrevEndpoint() {
+        return prevEndpoint;
+    }
+
+    public void setPrevEndpoint(String prevEndpoint) {
+        this.prevEndpoint = prevEndpoint;
+    }
+
     public Long getRootInstId() {
         return rootInstId;
     }
@@ -442,14 +446,6 @@ public class WorklistEntity {// implements WorkListDAO {
 
     public void setPayload(String payload) {
         this.payload = payload;
-    }
-
-    public String getApprovalType() {
-        return approvalType;
-    }
-
-    public void setApprovalType(String approvalType) {
-        this.approvalType = approvalType;
     }
 
 }
