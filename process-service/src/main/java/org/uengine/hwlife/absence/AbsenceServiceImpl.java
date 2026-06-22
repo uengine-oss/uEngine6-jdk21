@@ -44,13 +44,12 @@ public class AbsenceServiceImpl implements AbsenceService {
 
         AbsenceEntity entity = new AbsenceEntity();
         entity.setUserId(request.getUserId());
-        entity.setUserNm(request.getUserNm());
+        entity.setUserName(request.getUserName());
         entity.setAgentUserId(request.getAgentUserId());
-        entity.setAgentUserNm(request.getAgentUserNm());
+        entity.setAgentUserName(request.getAgentUserName());
+        entity.setAgentGroupCd(request.getAgentGroupCd());
         entity.setAbscStarDttm(request.getAbscStarDttm());
         entity.setAbscEndDttm(request.getAbscEndDttm());
-        entity.setStatus(AbsenceEntity.STATUS_ACTIVE);
-        entity.setCreatedDate(new Date());
 
         validate(entity);
         ensureNoOverlap(entity, null);
@@ -70,12 +69,11 @@ public class AbsenceServiceImpl implements AbsenceService {
     @Transactional
     public AbsenceEntity release(@PathVariable("abseId") Long abseId) throws Exception {
         AbsenceEntity entity = mustGet(abseId);
-        if (entity.getCnceDttm() != null) {
+        if (entity.getAbscTerminateDttm() != null) {
             throw new ResponseStatusException(HttpStatus.CONFLICT,
                     "Already released absence: " + abseId);
         }
-        entity.setCnceDttm(new Date());
-        entity.setStatus(AbsenceEntity.STATUS_TERMINATED);
+        entity.setAbscTerminateDttm(new Date());
         return absenceRepository.save(entity);
     }
 
@@ -87,9 +85,9 @@ public class AbsenceServiceImpl implements AbsenceService {
 
     private void validate(AbsenceEntity e) {
         require(e.getUserId(), "userId");
-        require(e.getUserNm(), "userNm");
+        require(e.getUserName(), "userName");
         require(e.getAgentUserId(), "agentUserId");
-        require(e.getAgentUserNm(), "agentUserNm");
+        require(e.getAgentUserName(), "agentUserName");
         if (e.getAbscStarDttm() == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "abscStarDttm is required");
         }

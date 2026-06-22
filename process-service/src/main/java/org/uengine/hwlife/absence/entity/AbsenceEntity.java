@@ -8,7 +8,7 @@ import java.util.Date;
  * 한화생명 융자차세대 - 부재자(Absence) / 대결자(Agent) 설정 엔티티.
  *
  * <p>특정 사용자(USER_ID)가 부재중일 때, 그 사용자의 업무를 대신 수행할
- * 대결자(AGENT_USER_ID)를 기간 단위로 매핑합니다. STATUS = ACTIVE 이고
+ * 대결자(AGENT_USER_ID)를 기간 단위로 매핑합니다. ABSC_TERMINATE_DTTM 이 NULL 이고
  * 현재 시각이 ABSC_STAR_DTTM ~ ABSC_END_DTTM 사이인 row 가 실제 라우팅에 사용됩니다.</p>
  */
 @Entity
@@ -19,13 +19,6 @@ import java.util.Date;
         allocationSize = 1
 )
 public class AbsenceEntity {
-
-    /** STATUS: 등록되어 라우팅 대상이 되는 활성 상태 */
-    public static final String STATUS_ACTIVE = "ACTIVE";
-    /** STATUS: 운영자/사용자 요청으로 조기 종료된 상태 (soft delete) */
-    public static final String STATUS_TERMINATED = "TERMINATED";
-    /** STATUS: ABSC_END_DTTM 가 지나 자연 만료된 상태 (배치/스케줄러 갱신용) */
-    public static final String STATUS_EXPIRED = "EXPIRED";
 
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "absence_seq_gen")
@@ -38,15 +31,19 @@ public class AbsenceEntity {
 
     /** 부재자 표시명 (UI 표시용 스냅샷) */
     @Column(name = "USER_NAME", nullable = false, length = 100)
-    private String userNm;
+    private String userName;
 
     /** 대결자(Agent) 사용자 ID */
     @Column(name = "AGENT_USER_ID", nullable = false, length = 255)
     private String agentUserId;
 
     /** 대결자 표시명 (UI 표시용 스냅샷) */
-    @Column(name = "AGENT_USER_NM", nullable = false, length = 100)
-    private String agentUserNm;
+    @Column(name = "AGENT_USER_NAME", nullable = false, length = 100)
+    private String agentUserName;
+
+    /** 대결자 그룹 코드 */
+    @Column(name = "AGENT_GROUP_CD", length = 50)
+    private String agentGroupCd;
 
     @Temporal(TemporalType.TIMESTAMP)
     @Column(name = "ABSC_STAR_DTTM", nullable = false)
@@ -57,28 +54,10 @@ public class AbsenceEntity {
     @Column(name = "ABSC_END_DTTM")
     private Date abscEndDttm;
 
-    /** {@link #STATUS_ACTIVE}, {@link #STATUS_TERMINATED}, {@link #STATUS_EXPIRED} */
-    @Column(name = "STATUS", nullable = false, length = 20)
-    private String status;
-
+    /** 조기 종료(해제) 시각. NULL 이면 활성 부재 */
     @Temporal(TemporalType.TIMESTAMP)
-    @Column(name = "CREATED_DATE", nullable = false, updatable = false)
-    private Date createdDate;
-
-    /** soft delete 시각 (STATUS = TERMINATED/EXPIRED 와 함께 세팅) */
-    @Temporal(TemporalType.TIMESTAMP)
-    @Column(name = "CNCE_DTTM")
-    private Date cnceDttm;
-
-    @PrePersist
-    void onCreate() {
-        if (createdDate == null) {
-            createdDate = new Date();
-        }
-        if (status == null || status.isEmpty()) {
-            status = STATUS_ACTIVE;
-        }
-    }
+    @Column(name = "ABSC_TERMINATE_DTTM")
+    private Date abscTerminateDttm;
 
     public Long getAbseId() {
         return abseId;
@@ -96,12 +75,12 @@ public class AbsenceEntity {
         this.userId = userId;
     }
 
-    public String getUserNm() {
-        return userNm;
+    public String getUserName() {
+        return userName;
     }
 
-    public void setUserNm(String userNm) {
-        this.userNm = userNm;
+    public void setUserName(String userName) {
+        this.userName = userName;
     }
 
     public String getAgentUserId() {
@@ -112,12 +91,20 @@ public class AbsenceEntity {
         this.agentUserId = agentUserId;
     }
 
-    public String getAgentUserNm() {
-        return agentUserNm;
+    public String getAgentUserName() {
+        return agentUserName;
     }
 
-    public void setAgentUserNm(String agentUserNm) {
-        this.agentUserNm = agentUserNm;
+    public void setAgentUserName(String agentUserName) {
+        this.agentUserName = agentUserName;
+    }
+
+    public String getAgentGroupCd() {
+        return agentGroupCd;
+    }
+
+    public void setAgentGroupCd(String agentGroupCd) {
+        this.agentGroupCd = agentGroupCd;
     }
 
     public Date getAbscStarDttm() {
@@ -136,27 +123,11 @@ public class AbsenceEntity {
         this.abscEndDttm = abscEndDttm;
     }
 
-    public String getStatus() {
-        return status;
+    public Date getAbscTerminateDttm() {
+        return abscTerminateDttm;
     }
 
-    public void setStatus(String status) {
-        this.status = status;
-    }
-
-    public Date getCreatedDate() {
-        return createdDate;
-    }
-
-    public void setCreatedDate(Date createdDate) {
-        this.createdDate = createdDate;
-    }
-
-    public Date getCnceDttm() {
-        return cnceDttm;
-    }
-
-    public void setCnceDttm(Date cnceDttm) {
-        this.cnceDttm = cnceDttm;
+    public void setAbscTerminateDttm(Date abscTerminateDttm) {
+        this.abscTerminateDttm = abscTerminateDttm;
     }
 }
