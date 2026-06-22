@@ -616,17 +616,17 @@ public class JPAProcessInstance extends DefaultProcessInstance implements Transa
     }
 
     @Override
-    public String getGroups() {
+    public String getGroup() {
         if (getProcessInstanceEntity() != null)
-            return getProcessInstanceEntity().getGroups();
+            return getProcessInstanceEntity().getGroup();
         else
             return null;
     }
 
     @Override
-    public void setGroups(String value) {
+    public void setGroup(String value) {
         if (getProcessInstanceEntity() != null)
-            getProcessInstanceEntity().setGroups(value);
+            getProcessInstanceEntity().setGroup(value);
     }
 
     public Date getDueDate2() {

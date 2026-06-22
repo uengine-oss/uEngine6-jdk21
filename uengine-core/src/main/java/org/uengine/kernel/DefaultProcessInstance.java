@@ -1176,11 +1176,11 @@ public class DefaultProcessInstance extends AbstractProcessInstance {
 	}
 
 	@Override
-	public String getGroups() {
+	public String getGroup() {
 		return null;
 	}
 
 	@Override
-	public void setGroups(String value) {
+	public void setGroup(String value) {
 	}
 }

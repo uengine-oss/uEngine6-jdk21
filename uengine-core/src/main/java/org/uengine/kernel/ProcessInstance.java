@@ -23,9 +23,9 @@ public interface ProcessInstance extends BeanPropertyResolver {
 
         abstract public void setName(String value);
 
-        abstract public String getGroups();
+        abstract public String getGroup();
 
-        abstract public void setGroups(String value);
+        abstract public void setGroup(String value);
 
         abstract public ProcessDefinition getProcessDefinition() throws Exception;
 

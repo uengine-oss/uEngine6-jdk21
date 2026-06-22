@@ -15,7 +15,6 @@ public class ProcessExecutionCommand implements Serializable {
     private ProcessVariableValue[] processVariableValues;
 
     private String group;
-    private String groups;
 
     private String correlationKeyValue;
 
@@ -90,14 +89,6 @@ public class ProcessExecutionCommand implements Serializable {
 
     public void setSimulation(boolean simulation) {
         this.simulation = simulation;
-    }
-
-    public String getGroups() {
-        return groups;
-    }
-
-    public void setGroups(String groups) {
-        this.groups = groups;
     }
 
     public String getGroup() {
