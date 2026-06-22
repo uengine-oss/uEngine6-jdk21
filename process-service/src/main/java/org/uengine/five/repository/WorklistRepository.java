@@ -1,6 +1,5 @@
 package org.uengine.five.repository;
 
-import java.util.Date;
 import java.util.List;
 
 import org.springframework.data.domain.Page;
@@ -10,7 +9,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.data.rest.core.annotation.RepositoryRestResource;
-import org.springframework.format.annotation.DateTimeFormat;
 import org.uengine.five.entity.WorklistEntity;
 
 /**
@@ -83,23 +81,6 @@ public interface WorklistRepository extends JpaRepository<WorklistEntity, Long> 
             @Param("assignGroup") String assignGroup,
             @Param("assignType") Integer assignType,
             @Param("endpoint") String endpoint);
-
-    @Query("select wl from WorklistEntity wl " +
-            "where (:endpoint is null or wl.endpoint = :endpoint) " +
-            "and (:defId is null or wl.defId = :defId) " +
-            "and (:absTrcTag is null or wl.absTrcTag = :absTrcTag) " +
-            "and (:status is null or wl.status = :status) " +
-            "and (:startDate is null or wl.startDate >= :startDate) " +
-            "and (:endDate is null or :endDate >= wl.endDate) " +
-            "order by wl.startDate desc")
-    Page<WorklistEntity> findMyApproval(
-            @Param("endpoint") String endpoint,
-            @Param("defId") String defId,
-            @Param("absTrcTag") String absTrcTag,
-            @Param("status") String status,
-            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) @Param("startDate") Date startDate,
-            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) @Param("endDate") Date endDate,
-            Pageable pageable);
 
     /**
      * 기관(조직) 코드·요청 타입·업무구분으로 워크리스트 검색. 결재함 구분 없이 전체 워크아이템 대상.
