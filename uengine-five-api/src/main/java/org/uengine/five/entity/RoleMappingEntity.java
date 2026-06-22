@@ -19,12 +19,6 @@ public class RoleMappingEntity {//implements RoleMappingDAO {
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "rolemapping_seq_gen")
     Long roleMappingId;
 
-//    @ManyToOne(targetEntity = ProcessInstanceEntity.class)
-//    Long instId;
-//
-//    @ManyToOne(targetEntity = ProcessInstanceEntity.class)
-//    Long rootInstId;
-
     @ManyToOne
     @JoinColumn(name="instId")
     ProcessInstanceEntity processInstance;
@@ -33,6 +27,16 @@ public class RoleMappingEntity {//implements RoleMappingDAO {
     }
     public void setProcessInstance(ProcessInstanceEntity processInstance) {
         this.processInstance = processInstance;
+    }
+
+    @ManyToOne
+    @JoinColumn(name="rootInstId")
+    ProcessInstanceEntity rootProcessInstance;
+    public ProcessInstanceEntity getRootProcessInstance() {
+        return rootProcessInstance;
+    }
+    public void setRootProcessInstance(ProcessInstanceEntity rootProcessInstance) {
+        this.rootProcessInstance = rootProcessInstance;
     }
 
     String roleName;
@@ -53,6 +57,28 @@ public class RoleMappingEntity {//implements RoleMappingDAO {
 
     Number dispatchOption;
 
+    String policyId;
+    String difficulty;
+    String refId;
+
+    public String getPolicyId() {
+        return policyId;
+    }
+    public void setPolicyId(String policyId) {
+        this.policyId = policyId;
+    }
+    public String getDifficulty() {
+        return difficulty;
+    }
+    public void setDifficulty(String difficulty) {
+        this.difficulty = difficulty;
+    }
+    public String getRefId() {
+        return refId;
+    }
+    public void setRefId(String refId) {
+        this.refId = refId;
+    }
 
     public Long getRoleMappingId() {
         return roleMappingId;

@@ -13,7 +13,7 @@ import jakarta.persistence.Temporal;
 import jakarta.persistence.TemporalType;
 
 /**
- * 한화생명 융자차세대 - 규칙 기반 담당자 배정 규칙.
+ * 규칙 기반 담당자 배정 규칙.
  *
  * <p>정책(POLICY_ID) + 난이도(DIFFICULTY) 별로 배정 후보 담당자(ENDPOINT)와
  * 목표 부하 비중(WEIGHT)을 정의한다. 외부 기준정보({@code ExternalPolicyApi})에서

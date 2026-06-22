@@ -42,24 +42,14 @@ public class EventInbox {
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "event_inbox_seq_gen")
     private Long id;
 
-    /**
-     * 비즈니스 식별자. 외부 발행자가 X-Corr-Key 헤더로 제공하거나 (Inbox 컨트롤러),
-     * 엔진 내부 발행 시 headers map 의 "corrKey" 키로 전달.
-     * (event_name) 과 함께 복합 UNIQUE.
-     */
-    @Column(name = "CORR_KEY", length = 64)
     private String corrKey;
 
-    @Column(name = "EVENT_NAME", length = 128)
     private String eventName;
 
-    @Column(name = "PAYLOAD", nullable = false, columnDefinition = "TEXT")
     private String payload;
 
-    @Column(name = "CREATED_AT", nullable = false)
     private Instant createdAt = Instant.now();
 
-    @Column(name = "PROCESSED_AT")
     private Instant processedAt;
 
     /** 총 시도 횟수 (1 = 첫 시도, 2 이상 = 재시도). 모니터링/진단용. */
@@ -74,7 +64,7 @@ public class EventInbox {
      * 처리 상태. processed_at / last_error 로 추론하던 상태를 운영자가 바로 조회할 수 있게 둔다.
      * PENDING: 미처리 또는 재시도 대기, SUCCESS: 처리 성공, FAILED: dead-letter.
      */
-    @Column(name = "STATUS", length = 16, nullable = false)
+    @Column(name = "STATUS", nullable = false)
     private String status = "PENDING";
 
     public Long getId() { return id; }
