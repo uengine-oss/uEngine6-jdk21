@@ -55,6 +55,7 @@ public class WorklistEntity {// implements WorkListDAO {
     String description;
     String endpoint; // 현재 담당자 아이디
     String roleName; // 현재 권한 정보
+    String groupCd;
     String refRoleName; 
     String resName; // 현재 담당자 명
     String defId; // 정의 아이디
