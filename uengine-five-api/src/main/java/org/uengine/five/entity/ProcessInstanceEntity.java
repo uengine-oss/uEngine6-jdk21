@@ -53,11 +53,27 @@ public class ProcessInstanceEntity {// implements ProcessInstanceDAO {
     private List<DummyWorkList> dummyWorkLists;
     private String initEp;
     private String initRsNm;
+    private String initGroupCd; // 최초 담당 그룹 코드
     private String prevCurrEp;
     private String prevCurrRsNm;
+    private String prevCurrGroupCd; // 이전 담당 그룹 코드
     private String currEp;
     private String currRsNm;
+    private String currGroupCd; // 현재 담당 그룹 코드
+
     private String groups;
+    
+    /* custom information */
+    private String custNo;  // 고객번호
+    private String fncgBswrDvsnCode; // 융자업무구분코드
+    private String loanCntcNo; // 대출계약번호
+    private String fncgSuptTrgtDvsnCode; // 융자지원대상구분코드
+    private String loanSubjDvsnCode; // 융자과목구분코드
+    @Temporal(TemporalType.DATE) 
+    private Date laonHopeDate; // 대출희망일자 (날짜 타입)
+    private String fncgMneyUsagClsfCode; // 자금사용구분코드
+    private String bsnsClsf;    // 사업분류
+
 
     public List<DummyWorkList> getDummyWorkLists() {
         return dummyWorkLists;
