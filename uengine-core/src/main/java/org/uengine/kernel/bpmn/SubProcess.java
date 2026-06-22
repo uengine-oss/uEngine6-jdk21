@@ -397,7 +397,7 @@ public class SubProcess extends ScopeActivity {
         if (!isConnectedMultipleSubProcesses)
             for (int i = 0; i < subprocessInstances.size(); i++) {
                 ProcessInstance thePI = ((ProcessInstance) subprocessInstances.elementAt(i));
-                thePI.setGroups(instance.getGroups());
+                thePI.setGroup(instance.getGroup());
                 thePI.execute();
             }
 

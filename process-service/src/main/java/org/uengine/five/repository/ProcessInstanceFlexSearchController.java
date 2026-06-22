@@ -25,7 +25,7 @@ import org.uengine.five.entity.ProcessInstanceEntity;
  * - 경로: GET /instances/search/findByAny
  * - 모든 파라미터 optional. 아무것도 안 주면 전체 조회.
  * - 하나만 줘도 동작하며, 여러 개를 동시에 주면 AND 조건으로 합산.
- * - 문자열: 완전 일치 (eq). 부분 일치가 필요하면 `XxxLike` 파라미터 사용(name/defId/defName/groups/info 지원).
+ * - 문자열: 완전 일치 (eq). 부분 일치가 필요하면 `XxxLike` 파라미터 사용(name/defId/defName/group/info 지원).
  * - 날짜: `XxxFrom`/`XxxTo` 로 범위 조회 (ISO yyyy-MM-dd).
  * - 정렬/페이징은 Spring Pageable 표준 파라미터 사용: page, size, sort=필드명,desc
  *
@@ -70,7 +70,7 @@ public class ProcessInstanceFlexSearchController {
             @RequestParam(required = false) String prevCurrRsNm,
             @RequestParam(required = false) String currEp,
             @RequestParam(required = false) String currRsNm,
-            @RequestParam(required = false) String groups,
+            @RequestParam(required = false) String group,
 
             // 확장/기타 (exact)
             @RequestParam(required = false) String initComCd,
@@ -93,7 +93,7 @@ public class ProcessInstanceFlexSearchController {
             @RequestParam(required = false) String defIdLike,
             @RequestParam(required = false) String defNameLike,
             @RequestParam(required = false) String infoLike,
-            @RequestParam(required = false) String groupsLike,
+            @RequestParam(required = false) String groupLike,
 
             // 날짜 범위 (ISO yyyy-MM-dd 또는 yyyy-MM-dd'T'HH:mm:ss)
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Date startedDateFrom,
@@ -137,7 +137,7 @@ public class ProcessInstanceFlexSearchController {
             addEq(predicates, cb, root.get("prevCurrRsNm"), prevCurrRsNm);
             addEq(predicates, cb, root.get("currEp"), currEp);
             addEq(predicates, cb, root.get("currRsNm"), currRsNm);
-            addEq(predicates, cb, root.get("groups"), groups);
+            addEq(predicates, cb, root.get("group"), group);
 
             addEq(predicates, cb, root.get("initComCd"), initComCd);
             addEq(predicates, cb, root.get("ext1"), ext1);
@@ -159,7 +159,7 @@ public class ProcessInstanceFlexSearchController {
             addLike(predicates, cb, root.get("defId"), defIdLike);
             addLike(predicates, cb, root.get("defName"), defNameLike);
             addLike(predicates, cb, root.get("info"), infoLike);
-            addLike(predicates, cb, root.get("groups"), groupsLike);
+            addLike(predicates, cb, root.get("group"), groupLike);
 
             // ----- date ranges -----
             addDateRange(predicates, cb, root.get("startedDate"), startedDateFrom, startedDateTo);

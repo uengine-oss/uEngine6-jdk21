@@ -5,6 +5,7 @@ import java.util.Date;
 import java.util.List;
 
 import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
 import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -61,7 +62,8 @@ public class ProcessInstanceEntity {// implements ProcessInstanceDAO {
     private String currRsNm;
     private String currGroupCd; // 현재 담당 그룹 코드
 
-    private String groups;
+    @Column(name = "GROUPS")
+    private String group;
     
     /* custom information */
     private String custNo;  // 고객번호
@@ -575,12 +577,12 @@ public class ProcessInstanceEntity {// implements ProcessInstanceDAO {
         this.currRsNm = currRsNm;
     }
 
-    public String getGroups() {
-        return groups;
+    public String getGroup() {
+        return group;
     }
 
-    public void setGroups(String groups) {
-        this.groups = groups;
+    public void setGroup(String group) {
+        this.group = group;
     }
 
     public String getCorrKey() {

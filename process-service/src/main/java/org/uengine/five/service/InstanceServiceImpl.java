@@ -261,7 +261,7 @@ public class InstanceServiceImpl implements InstanceService {
         boolean simulation = command.getSimulation();
         String filePath = command.getProcessDefinitionId();
         String corrKeyValue = command.getCorrelationKeyValue();
-        String group = firstNotEmpty(command.getGroup(), command.getGroups());
+        String group = command.getGroup();
         String definitionXml = command.getDefinitionXml();
 
         Object definition;
