@@ -1,6 +1,8 @@
-package org.uengine.five.dto;
+package org.uengine.hwlife.worklist.dto;
 
 import java.util.List;
+
+import org.uengine.five.dto.RoleMappingCommand;
 
 public class BulkDelegateWorkItemCommand {
 

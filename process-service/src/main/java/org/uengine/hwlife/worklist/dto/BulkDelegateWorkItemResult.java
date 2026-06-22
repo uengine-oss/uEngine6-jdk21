@@ -1,7 +1,9 @@
-package org.uengine.five.dto;
+package org.uengine.hwlife.worklist.dto;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import org.uengine.five.dto.WorkItemResource;
 
 public class BulkDelegateWorkItemResult {
 

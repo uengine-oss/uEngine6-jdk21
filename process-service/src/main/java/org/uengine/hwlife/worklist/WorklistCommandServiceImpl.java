@@ -9,8 +9,8 @@ import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
-import org.uengine.five.dto.BulkDelegateWorkItemCommand;
-import org.uengine.five.dto.BulkDelegateWorkItemResult;
+import org.uengine.hwlife.worklist.dto.BulkDelegateWorkItemCommand;
+import org.uengine.hwlife.worklist.dto.BulkDelegateWorkItemResult;
 import org.uengine.five.service.InstanceServiceImpl;
 
 /**
