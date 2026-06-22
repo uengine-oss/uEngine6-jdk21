@@ -69,11 +69,11 @@ public class AbsenceServiceImpl implements AbsenceService {
     @Transactional
     public AbsenceEntity release(@PathVariable("abseId") Long abseId) throws Exception {
         AbsenceEntity entity = mustGet(abseId);
-        if (entity.getAbscTerminateDttm() != null) {
+        if (entity.getAbscCnceDttm() != null) {
             throw new ResponseStatusException(HttpStatus.CONFLICT,
                     "Already released absence: " + abseId);
         }
-        entity.setAbscTerminateDttm(new Date());
+        entity.setAbscCnceDttm(new Date());
         return absenceRepository.save(entity);
     }
 

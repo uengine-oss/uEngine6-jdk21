@@ -8,7 +8,7 @@ import java.util.Date;
  * 한화생명 융자차세대 - 부재자(Absence) / 대결자(Agent) 설정 엔티티.
  *
  * <p>특정 사용자(USER_ID)가 부재중일 때, 그 사용자의 업무를 대신 수행할
- * 대결자(AGENT_USER_ID)를 기간 단위로 매핑합니다. ABSC_TERMINATE_DTTM 이 NULL 이고
+ * 대결자(AGENT_USER_ID)를 기간 단위로 매핑합니다. ABSC_CNCE_DTTM 이 NULL 이고
  * 현재 시각이 ABSC_STAR_DTTM ~ ABSC_END_DTTM 사이인 row 가 실제 라우팅에 사용됩니다.</p>
  */
 @Entity
@@ -56,8 +56,19 @@ public class AbsenceEntity {
 
     /** 조기 종료(해제) 시각. NULL 이면 활성 부재 */
     @Temporal(TemporalType.TIMESTAMP)
-    @Column(name = "ABSC_TERMINATE_DTTM")
-    private Date abscTerminateDttm;
+    @Column(name = "ABSC_CNCE_DTTM")
+    private Date abscCnceDttm;
+
+    @Temporal(TemporalType.TIMESTAMP)
+    @Column(name = "ABSC_CRET_DTTM", nullable = false, updatable = false)
+    private Date abscCretDttm;
+
+    @PrePersist
+    void onCreate() {
+        if (abscCretDttm == null) {
+            abscCretDttm = new Date();
+        }
+    }
 
     public Long getAbseId() {
         return abseId;
@@ -123,11 +134,19 @@ public class AbsenceEntity {
         this.abscEndDttm = abscEndDttm;
     }
 
-    public Date getAbscTerminateDttm() {
-        return abscTerminateDttm;
+    public Date getAbscCnceDttm() {
+        return abscCnceDttm;
     }
 
-    public void setAbscTerminateDttm(Date abscTerminateDttm) {
-        this.abscTerminateDttm = abscTerminateDttm;
+    public void setAbscCnceDttm(Date abscCnceDttm) {
+        this.abscCnceDttm = abscCnceDttm;
+    }
+
+    public Date getAbscCretDttm() {
+        return abscCretDttm;
+    }
+
+    public void setAbscCretDttm(Date abscCretDttm) {
+        this.abscCretDttm = abscCretDttm;
     }
 }
