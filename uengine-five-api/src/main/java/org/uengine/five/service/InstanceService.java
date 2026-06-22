@@ -16,8 +16,6 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.uengine.five.dto.InstanceResource;
 import org.uengine.five.dto.Message;
 import org.uengine.five.dto.ProcessExecutionCommand;
-import org.uengine.five.dto.BulkDelegateWorkItemCommand;
-import org.uengine.five.dto.BulkDelegateWorkItemResult;
 import org.uengine.five.dto.RoleMappingCommand;
 import org.uengine.five.dto.StartAndCompleteCommand;
 import org.uengine.five.dto.TaskReturnAvailability;
@@ -138,10 +136,6 @@ public interface InstanceService {
                         @org.springframework.web.bind.annotation.RequestParam(value = "delegateOnlyForWorkitem", required = false, defaultValue = "false") boolean delegateOnlyForWorkitem)
                         throws Exception;
 
-        @RequestMapping(value = "/work-items/delegate", method = RequestMethod.POST, produces = "application/json;charset=UTF-8")
-        public BulkDelegateWorkItemResult delegateWorkItems(
-                        @RequestBody BulkDelegateWorkItemCommand command)
-                        throws Exception;
 
         /**
          * 관리자 기능: 태스크 담당자 재배정 (USER/endpoint, GROUP/scope 등).
