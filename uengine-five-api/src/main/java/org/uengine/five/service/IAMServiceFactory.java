@@ -40,7 +40,7 @@ public final class IAMServiceFactory {
      * IAMService 구현체를 등록합니다.
      * 애플리케이션 기동 시점(main() 등)에 호출해야 합니다.
      *
-     * @param providerId 공급자 식별자 (예: "keycloak", "hfc")
+     * @param providerId 공급자 식별자 (예: "keycloak", "external")
      * @param service    IAMService 구현체
      */
     public static void register(String providerId, IAMService service) {

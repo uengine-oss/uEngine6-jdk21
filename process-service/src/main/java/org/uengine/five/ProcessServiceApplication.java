@@ -17,7 +17,7 @@ import org.springframework.context.annotation.Scope;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.uengine.five.overriding.ActivityQueue;
 import org.uengine.five.overriding.EventMappingDeployFilter;
-// import org.uengine.five.service.HfcIAMService;
+// import org.uengine.hwlife.iam.ExternalIAMService;
 import org.uengine.five.service.IAMCompanyRoleMapping;
 import org.uengine.five.service.IAMServiceFactory;
 import org.uengine.five.service.KeycloakIAMService;
@@ -60,7 +60,7 @@ public class ProcessServiceApplication {
         // Spring 빈 초기화 중 IAMServiceFactory.getDefault()가 호출될 수 있으므로
         // SpringApplication.run() 보다 먼저 실행해야 합니다.
         IAMServiceFactory.register("keycloak", KeycloakIAMService.getDefault());
-        // IAMServiceFactory.register("hfc", HfcIAMService.getDefault());
+        // IAMServiceFactory.register("external", ExternalIAMService.getDefault());
 
         applicationContext = SpringApplication.run(ProcessServiceApplication.class, args);
         GlobalContext.setComponentFactory(new SpringComponentFactory());
