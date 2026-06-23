@@ -61,9 +61,6 @@ public class ProcessInstanceEntity {// implements ProcessInstanceDAO {
     private String currEp;
     private String currRsNm;
     private String currGroupCd; // 현재 담당 그룹 코드
-
-    @Column(name = "GROUPS")
-    private String group;
     
     /* custom information */
     private String custNo;  // 고객번호
