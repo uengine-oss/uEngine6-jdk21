@@ -8,13 +8,14 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
+import org.uengine.hwlife.absence.dto.AbsenceHistoryRequest;
+import org.uengine.hwlife.absence.dto.AbsenceReleaseRequest;
 import org.uengine.hwlife.absence.entity.AbsenceEntity;
 import org.uengine.hwlife.absence.repository.AbsenceRepository;
 
@@ -58,20 +59,27 @@ public class AbsenceServiceImpl implements AbsenceService {
     }
 
     @Override
-    @RequestMapping(value = "/absences/user/{userId}", method = RequestMethod.GET)
+    @RequestMapping(value = "/absences/history", method = RequestMethod.POST)
     @Transactional(readOnly = true)
-    public List<AbsenceEntity> findHistory(@PathVariable("userId") String userId) throws Exception {
-        return absenceRepository.findByUserId(userId);
+    public List<AbsenceEntity> findHistory(@RequestBody AbsenceHistoryRequest request) throws Exception {
+        if (request == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Request body is required");
+        }
+        require(request.getUserId(), "userId");
+        return absenceRepository.findByUserId(request.getUserId());
     }
 
     @Override
-    @RequestMapping(value = "/absences/{abseId}/release", method = RequestMethod.POST)
+    @RequestMapping(value = "/absences/release", method = RequestMethod.POST)
     @Transactional
-    public AbsenceEntity release(@PathVariable("abseId") Long abseId) throws Exception {
-        AbsenceEntity entity = mustGet(abseId);
+    public AbsenceEntity release(@RequestBody AbsenceReleaseRequest request) throws Exception {
+        if (request == null || request.getAbseId() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "abseId is required");
+        }
+        AbsenceEntity entity = mustGet(request.getAbseId());
         if (entity.getAbscCnceDttm() != null) {
             throw new ResponseStatusException(HttpStatus.CONFLICT,
-                    "Already released absence: " + abseId);
+                    "Already released absence: " + request.getAbseId());
         }
         entity.setAbscCnceDttm(new Date());
         return absenceRepository.save(entity);

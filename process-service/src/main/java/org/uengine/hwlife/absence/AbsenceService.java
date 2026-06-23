@@ -2,10 +2,11 @@ package org.uengine.hwlife.absence;
 
 import java.util.List;
 
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
+import org.uengine.hwlife.absence.dto.AbsenceHistoryRequest;
+import org.uengine.hwlife.absence.dto.AbsenceReleaseRequest;
 import org.uengine.hwlife.absence.entity.AbsenceEntity;
 
 /**
@@ -18,9 +19,9 @@ public interface AbsenceService {
     @RequestMapping(value = "/absences", method = RequestMethod.POST)
     AbsenceEntity register(@RequestBody AbsenceEntity body) throws Exception;
 
-    @RequestMapping(value = "/absences/user/{userId}", method = RequestMethod.GET)
-    List<AbsenceEntity> findHistory(@PathVariable("userId") String userId) throws Exception;
+    @RequestMapping(value = "/absences/history", method = RequestMethod.POST)
+    List<AbsenceEntity> findHistory(@RequestBody AbsenceHistoryRequest request) throws Exception;
 
-    @RequestMapping(value = "/absences/{abseId}/release", method = RequestMethod.POST)
-    AbsenceEntity release(@PathVariable("abseId") Long abseId) throws Exception;
+    @RequestMapping(value = "/absences/release", method = RequestMethod.POST)
+    AbsenceEntity release(@RequestBody AbsenceReleaseRequest request) throws Exception;
 }

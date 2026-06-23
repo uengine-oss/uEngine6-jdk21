@@ -574,14 +574,6 @@ public class ProcessInstanceEntity {// implements ProcessInstanceDAO {
         this.currRsNm = currRsNm;
     }
 
-    public String getGroup() {
-        return group;
-    }
-
-    public void setGroup(String group) {
-        this.group = group;
-    }
-
     public String getCorrKey() {
         return corrKey;
     }
