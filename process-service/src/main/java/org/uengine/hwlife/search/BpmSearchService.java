@@ -1,11 +1,15 @@
 package org.uengine.hwlife.search;
 
+import java.util.List;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.uengine.five.entity.ProcessInstanceEntity;
 import org.uengine.five.entity.WorklistEntity;
+import org.uengine.hwlife.search.dto.RunningTasksByKeyRequest;
 
 /**
  * 한화생명 융자차세대 — BPM 통합 검색 REST API.
@@ -18,6 +22,7 @@ import org.uengine.five.entity.WorklistEntity;
  *   GET /search/org-running?page=0&amp;size=20
  *   GET /search/org-completed?page=0&amp;size=20
  *   GET /search/org-batch?page=0&amp;size=20
+ *   POST /search/running-by-corr-key  body: { "corrKey": "..." }
  * </pre>
  */
 @RequestMapping("/search")
@@ -37,4 +42,10 @@ public interface BpmSearchService {
 
   @RequestMapping(value = "/org-batch", method = RequestMethod.GET)
   Page<WorklistEntity> searchOrgBatch(Pageable pageable) throws Exception;
+
+  // @RequestMapping(value = "/worklist-by-inst-id", method = RequestMethod.POST, consumes = "application/json;charset=UTF-8")
+  // Page<WorklistEntity> searchWorklistByInstId(Pageable pageable) throws Exception;
+
+  @RequestMapping(value = "/running-by-key", method = RequestMethod.POST, consumes = "application/json;charset=UTF-8")
+  List<WorklistEntity> searchRunningWorkByCorrKey(@RequestBody RunningTasksByKeyRequest request) throws Exception;
 }
