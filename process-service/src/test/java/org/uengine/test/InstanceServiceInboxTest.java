@@ -7,64 +7,58 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.util.List;
-
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
-import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.http.ResponseEntity;
-import org.springframework.test.util.ReflectionTestUtils;
 import org.uengine.five.messaging.EventInbox;
 import org.uengine.five.messaging.EventInboxRepository;
-import org.uengine.five.service.InstanceServiceImpl;
+import org.uengine.five.messaging.polling.ExternalEventInboxServiceImpl;
+import org.uengine.five.messaging.polling.dto.EventInboxBulkResponse;
+import org.uengine.five.repository.EventMappingRepository;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 
 public class InstanceServiceInboxTest {
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Test
-    public void receiveInboxEvents_countsFailedRowsWhenInsertFails() throws Exception {
-        InstanceServiceImpl service = new InstanceServiceImpl();
+    public void receiveInboxEvents_countsFailedRowsIndependently() {
         EventInboxRepository eventInboxRepository = Mockito.mock(EventInboxRepository.class);
-        ReflectionTestUtils.setField(service, "eventInboxRepository", eventInboxRepository);
+        EventMappingRepository eventMappingRepository = Mockito.mock(EventMappingRepository.class);
+        ExternalEventInboxServiceImpl service = new ExternalEventInboxServiceImpl(eventInboxRepository, eventMappingRepository);
 
-        when(eventInboxRepository.save(any(EventInbox.class)))
-                .thenAnswer(invocation -> invocation.getArgument(0))
-                .thenThrow(new DataIntegrityViolationException("duplicate inbox event"));
+        when(eventInboxRepository.save(any(EventInbox.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        InstanceServiceImpl.EventInboxRequest success = new InstanceServiceImpl.EventInboxRequest();
-        success.setCorrKey("corrkey1");
-        success.setEventName("eventname1");
-        success.setPayload(objectMapper.readTree("{\"value\":1}"));
+        ArrayNode events = objectMapper.createArrayNode();
+        events.addNull();
 
-        InstanceServiceImpl.EventInboxRequest failure = new InstanceServiceImpl.EventInboxRequest();
-        failure.setCorrKey("corrkey2");
-        failure.setEventName("eventname2");
-        failure.setPayload(objectMapper.readTree("{\"value\":2}"));
+        ObjectNode success = objectMapper.createObjectNode();
+        success.put("corrkey", "corrkey1");
+        success.put("eventname", "eventname1");
+        success.set("payload", objectMapper.createObjectNode().put("value", 1));
+        events.add(success);
 
-        ResponseEntity<InstanceServiceImpl.EventInboxBulkResponse> responseEntity =
-                service.receiveInboxEvents(null, null, List.of(success, failure));
-        InstanceServiceImpl.EventInboxBulkResponse response = responseEntity.getBody();
+        EventInboxBulkResponse response = service.receiveEvents(null, null, events);
 
-        assertEquals(202, responseEntity.getStatusCode().value());
         assertEquals("FAIL", response.getStatus());
         assertEquals(1, response.getSuccessCount());
         assertEquals(1, response.getFailCount());
         assertEquals(1, response.getFailedList().size());
-        assertEquals("corrkey2", response.getFailedList().get(0).getCorrKey());
-        assertEquals("eventname2", response.getFailedList().get(0).getEventName());
         assertEquals("0", response.getFailedList().get(0).getReasonCode());
-        assertTrue(response.getFailedList().get(0).getReason().contains("duplicate inbox event"));
+        assertTrue(response.getFailedList().get(0).getReason().contains("event must not be null"));
 
-        String responseJson = objectMapper.writeValueAsString(response);
+        String responseJson;
+        try {
+            responseJson = objectMapper.writeValueAsString(response);
+        } catch (Exception e) {
+            throw new AssertionError(e);
+        }
         assertTrue(responseJson.contains("\"failedList\""));
-        assertTrue(responseJson.contains("\"corrkey\":\"corrkey2\""));
-        assertTrue(responseJson.contains("\"eventname\":\"eventname2\""));
         assertTrue(responseJson.contains("\"reasonCode\":\"0\""));
-        assertTrue(responseJson.contains("\"reason\":\"data integrity violation: duplicate inbox event\""));
+        assertTrue(responseJson.contains("\"reason\":\"event must not be null\""));
 
-        verify(eventInboxRepository, times(2)).save(any(EventInbox.class));
+        verify(eventInboxRepository, times(1)).save(any(EventInbox.class));
     }
 }
