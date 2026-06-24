@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 import org.uengine.hwlife.absence.dto.AbsenceHistoryRequest;
-import org.uengine.hwlife.absence.dto.AbsenceReleaseRequest;
+import org.uengine.hwlife.absence.dto.AbsenceRequest;
 import org.uengine.hwlife.absence.entity.AbsenceEntity;
 import org.uengine.hwlife.absence.repository.AbsenceRepository;
 
@@ -38,11 +38,23 @@ public class AbsenceServiceImpl implements AbsenceService {
     @RequestMapping(value = "/absences", method = RequestMethod.POST)
     @ResponseStatus(HttpStatus.CREATED)
     @Transactional
-    public AbsenceEntity register(@RequestBody AbsenceEntity request) throws Exception {
+    public AbsenceEntity process(@RequestBody AbsenceRequest request) throws Exception {
         if (request == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Request body is required");
         }
 
+        String bswrDvsnVal = require(request.getBswrDvsnVal(), "bswrDvsnVal");
+        if (AbsenceRequest.BSWR_DVSN_RLS.equalsIgnoreCase(bswrDvsnVal)) {
+            return release(request);
+        }
+        if (AbsenceRequest.BSWR_DVSN_REG.equalsIgnoreCase(bswrDvsnVal)) {
+            return register(request);
+        }
+        throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                "bswrDvsnVal must be 0 (register) or 1 (release): " + bswrDvsnVal);
+    }
+
+    private AbsenceEntity register(AbsenceRequest request) {
         AbsenceEntity entity = new AbsenceEntity();
         entity.setUserId(request.getUserId());
         entity.setUserName(request.getUserName());
@@ -58,6 +70,19 @@ public class AbsenceServiceImpl implements AbsenceService {
         return absenceRepository.save(entity);
     }
 
+    private AbsenceEntity release(AbsenceRequest request) {
+        if (request.getAbseId() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "abseId is required for release");
+        }
+        AbsenceEntity entity = mustGet(request.getAbseId());
+        if (entity.getAbscCnceDttm() != null) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "Already released absence: " + request.getAbseId());
+        }
+        entity.setAbscCnceDttm(new Date());
+        return absenceRepository.save(entity);
+    }
+
     @Override
     @RequestMapping(value = "/absences/history", method = RequestMethod.POST)
     @Transactional(readOnly = true)
@@ -67,22 +92,6 @@ public class AbsenceServiceImpl implements AbsenceService {
         }
         require(request.getUserId(), "userId");
         return absenceRepository.findByUserId(request.getUserId());
-    }
-
-    @Override
-    @RequestMapping(value = "/absences/release", method = RequestMethod.POST)
-    @Transactional
-    public AbsenceEntity release(@RequestBody AbsenceReleaseRequest request) throws Exception {
-        if (request == null || request.getAbseId() == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "abseId is required");
-        }
-        AbsenceEntity entity = mustGet(request.getAbseId());
-        if (entity.getAbscCnceDttm() != null) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT,
-                    "Already released absence: " + request.getAbseId());
-        }
-        entity.setAbscCnceDttm(new Date());
-        return absenceRepository.save(entity);
     }
 
     private AbsenceEntity mustGet(Long abseId) {
@@ -109,10 +118,11 @@ public class AbsenceServiceImpl implements AbsenceService {
         }
     }
 
-    private void require(String v, String field) {
+    private String require(String v, String field) {
         if (v == null || v.trim().isEmpty()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, field + " is required");
         }
+        return v.trim();
     }
 
     private void ensureNoOverlap(AbsenceEntity target, Long excludeAbseId) {
