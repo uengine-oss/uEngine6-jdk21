@@ -3267,7 +3267,7 @@ public class InstanceServiceImpl implements InstanceService {
     */
     @RequestMapping(value = "/work-item/{taskId}/reassignment", method = RequestMethod.POST, produces = "application/json;charset=UTF-8")
     @ProcessTransactional // important!
-    public WorkItemResource reassignWorkItemAssignee(
+    public WorkItemResource reassignWorkItem(
         @PathVariable("taskId") String taskId,
         @RequestBody RoleMappingCommand assignment) throws Exception {
                         

@@ -615,20 +615,6 @@ public class JPAProcessInstance extends DefaultProcessInstance implements Transa
             getProcessInstanceEntity().setInitEp(value);
     }
 
-    @Override
-    public String getGroup() {
-        if (getProcessInstanceEntity() != null)
-            return getProcessInstanceEntity().getGroup();
-        else
-            return null;
-    }
-
-    @Override
-    public void setGroup(String value) {
-        if (getProcessInstanceEntity() != null)
-            getProcessInstanceEntity().setGroup(value);
-    }
-
     public Date getDueDate2() {
         if (getProcessInstanceEntity() != null)
             return getProcessInstanceEntity().getDueDate();
