@@ -1,11 +1,11 @@
-package org.uengine.hwlife.worklist.dto;
+package org.uengine.hwlife.instance.dto;
 
 import java.util.ArrayList;
 import java.util.List;
 
 import org.uengine.five.dto.WorkItemResource;
 
-public class BulkDelegateWorkItemResult {
+public class DelegateWorkItemResponse {
 
     private int total;
     private int successCount;

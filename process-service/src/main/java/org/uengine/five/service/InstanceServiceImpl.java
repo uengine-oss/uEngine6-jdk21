@@ -60,8 +60,6 @@ import org.uengine.five.ProcessServiceApplication;
 import org.uengine.five.dto.InstanceResource;
 import org.uengine.five.dto.Message;
 import org.uengine.five.dto.ProcessExecutionCommand;
-import org.uengine.hwlife.worklist.dto.BulkDelegateWorkItemCommand;
-import org.uengine.hwlife.worklist.dto.BulkDelegateWorkItemResult;
 import org.uengine.five.dto.StartAndCompleteCommand;
 import org.uengine.five.dto.TaskReturnAvailability;
 import org.uengine.five.dto.TaskReturnCandidate;
@@ -3203,63 +3201,6 @@ public class InstanceServiceImpl implements InstanceService {
         // }
 
         return getWorkItem(resultTaskId);
-    }
-
-    @RequestMapping(value = "/work-items/delegate", method = RequestMethod.POST, produces = "application/json;charset=UTF-8")
-    public BulkDelegateWorkItemResult delegateWorkItems(@RequestBody BulkDelegateWorkItemCommand command)
-            throws Exception {
-        if (command == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Request body is required");
-        }
-        if (command.getTaskIds() == null || command.getTaskIds().isEmpty()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "taskIds is required");
-        }
-        validateDelegateRoleMapping(command.getDelegatedRoleMapping());
-
-        BulkDelegateWorkItemResult result = new BulkDelegateWorkItemResult();
-        result.setTotal(command.getTaskIds().size());
-
-        InstanceService service = context.getBean(InstanceService.class);
-        boolean delegateOnlyForWorkitem = Boolean.TRUE.equals(command.getDelegateOnlyForWorkitem());
-        Set<String> processed = new LinkedHashSet<>();
-
-        for (String taskId : command.getTaskIds()) {
-            if (taskId == null || taskId.trim().isEmpty()) {
-                result.addFailure(taskId, "taskId is required");
-                continue;
-            }
-
-            String normalizedTaskId = taskId.trim();
-            if (!processed.add(normalizedTaskId)) {
-                result.addFailure(normalizedTaskId, "Duplicated taskId");
-                continue;
-            }
-
-            try {
-                WorkItemResource workItem = service.delegateWorkItem(
-                        normalizedTaskId,
-                        command.getDelegatedRoleMapping(),
-                        delegateOnlyForWorkitem);
-                result.addSuccess(normalizedTaskId, workItem);
-            } catch (Exception e) {
-                result.addFailure(normalizedTaskId, resolveFailureReason(e));
-            }
-        }
-
-        return result;
-    }
-
-    private String resolveFailureReason(Exception e) {
-        Throwable cursor = e;
-        while (cursor != null) {
-            if (cursor instanceof ResponseStatusException) {
-                ResponseStatusException responseStatusException = (ResponseStatusException) cursor;
-                String reason = responseStatusException.getReason();
-                return reason != null ? reason : responseStatusException.getMessage();
-            }
-            cursor = cursor.getCause();
-        }
-        return e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName();
     }
 
     /**

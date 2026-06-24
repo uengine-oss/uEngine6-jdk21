@@ -1,4 +1,4 @@
-package org.uengine.hwlife.worklist;
+package org.uengine.hwlife.instance;
 
 import java.util.Map;
 
@@ -8,37 +8,39 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseStatus;
-import org.uengine.hwlife.worklist.dto.BulkDelegateWorkItemCommand;
-import org.uengine.hwlife.worklist.dto.BulkDelegateWorkItemResult;
+import org.uengine.hwlife.instance.dto.DelegateWorkItemRequest;
+import org.uengine.hwlife.instance.dto.DelegateWorkItemResponse;
 
 /**
- * 워크리스트 일괄 처리 REST API.
+ * 인스턴스 명령 REST API — {@link org.uengine.five.service.InstanceService} 커스텀 영역.
  *
- * <p>구현: {@link WorklistCommandServiceImpl}. 전용 DTO는 추후 확장.</p>
+ * <p>구현: {@link InstanceCommandServiceImpl}.</p>
  */
-@RequestMapping("/worklist")
-public interface WorklistCommandService {
+@RequestMapping("/instance")
+public interface InstanceCommandService {
 
   /**
    * 다중 선점 / 선점 해제 (모든 사용자).
    *
-   * <pre>POST /worklist/claim</pre>
+   * <pre>POST /instance/claim</pre>
    */
-  @RequestMapping(value = "/claim", method = RequestMethod.POST, produces = "application/json;charset=UTF-8")
-  Map<String, Object> claimWorkItems(@RequestBody(required = false) Map<String, Object> body) throws Exception;
+  @RequestMapping(value = "/multi-claim", method = RequestMethod.POST, produces = "application/json;charset=UTF-8")
+  Map<String, Object> multiClaimWorkItems(@RequestBody(required = false) Map<String, Object> body) throws Exception;
 
   /**
    * 다중 업무 위임 — 본인 담당 업무만 (모든 사용자).
    *
-   * <pre>POST /worklist/delegate</pre>
+   * <p>단일 위임은 {@code POST /work-item/{taskId}/delegate}.</p>
+   *
+   * <pre>POST /instance/multi-delegate</pre>
    */
-  @RequestMapping(value = "/delegate", method = RequestMethod.POST, produces = "application/json;charset=UTF-8")
-  BulkDelegateWorkItemResult delegateWorkItems(@RequestBody BulkDelegateWorkItemCommand command) throws Exception;
+  @RequestMapping(value = "/multi-delegate", method = RequestMethod.POST, produces = "application/json;charset=UTF-8")
+  DelegateWorkItemResponse multiDelegateWorkItems(@RequestBody DelegateWorkItemRequest request) throws Exception;
 
   /**
    * 일괄배정 업무 담당자 설정 (권한자).
    *
-   * <pre>PUT /worklist/org-batch/assignee</pre>
+   * <pre>PUT /instance/org-batch/assignee</pre>
    */
   @PutMapping("/org-batch/assignee")
   @ResponseStatus(HttpStatus.NO_CONTENT)
@@ -47,7 +49,7 @@ public interface WorklistCommandService {
   /**
    * 다중 업무 담당자 변경 — 본인 업무 조건 없음 (권한자).
    *
-   * <pre>POST /worklist/reassign</pre>
+   * <pre>POST /instance/reassign</pre>
    */
   @RequestMapping(value = "/reassign", method = RequestMethod.POST, produces = "application/json;charset=UTF-8")
   Map<String, Object> reassignWorkItems(@RequestBody(required = false) Map<String, Object> body) throws Exception;

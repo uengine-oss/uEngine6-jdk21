@@ -15,6 +15,10 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 import org.uengine.five.entity.ProcessInstanceEntity;
 import org.uengine.five.entity.WorklistEntity;
+import org.uengine.hwlife.search.dto.MyProgressRequest;
+import org.uengine.hwlife.search.dto.MyProgressResponse;
+import org.uengine.hwlife.search.dto.MyTodoRequest;
+import org.uengine.hwlife.search.dto.MyTodoResponse;
 import org.uengine.hwlife.search.dto.RunningTasksByKeyRequest;
 
 /**
@@ -27,15 +31,13 @@ public class BpmSearchServiceImpl implements BpmSearchService {
 
   @Override
   @Transactional(readOnly = true)
-  public Page<WorklistEntity> searchMyTodo(
-      @PageableDefault(size = 20, sort = "startDate", direction = Sort.Direction.DESC) Pageable pageable) {
+  public MyTodoResponse searchMyTodo(@RequestBody MyTodoRequest request) {
     throw notImplemented("searchMyTodo");
   }
 
   @Override
   @Transactional(readOnly = true)
-  public Page<ProcessInstanceEntity> searchMyProgress(
-      @PageableDefault(size = 20, sort = "startedDate", direction = Sort.Direction.DESC) Pageable pageable) {
+  public MyProgressResponse searchMyProgress(@RequestBody MyProgressRequest request) {
     throw notImplemented("searchMyProgress");
   }
 
