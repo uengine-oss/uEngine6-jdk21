@@ -83,8 +83,8 @@ public class InstanceServiceExtensionImpl implements InstanceServiceExtension {
 
   @Override
   @Transactional
-  public void assignOrgBatchAssignee(@RequestBody(required = false) Map<String, Object> body) throws Exception {
-    throw notImplemented("assignOrgBatchAssignee");
+  public void forceClaimWorkItems(@RequestBody(required = false) Map<String, Object> body) throws Exception {
+    throw notImplemented("forceClaimWorkItems");
   }
 
   @Override

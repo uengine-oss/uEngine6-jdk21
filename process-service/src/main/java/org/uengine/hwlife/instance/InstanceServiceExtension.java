@@ -40,13 +40,15 @@ public interface InstanceServiceExtension {
   DelegateResponse delegateWorkItems(@RequestBody DelegateRequest request) throws Exception;
 
   /**
-   * 일괄배정 업무 담당자 설정 (권한자).
+   * 권한자 강제 다중 선점 — 그룹/선점 규칙 업무를 업무별 지정 담당자에게 배정 (권한자).
+   *
+   * <p>본인 선점은 {@link #claimWorkItems}. 결과는 같으나 권한·검증 로직이 다르다.</p>
    *
    * <pre>PUT /instance/org-batch/assignee</pre>
    */
   @PutMapping("/org-batch/assignee")
   @ResponseStatus(HttpStatus.NO_CONTENT)
-  void assignOrgBatchAssignee(@RequestBody(required = false) Map<String, Object> body) throws Exception;
+  void forceClaimWorkItems(@RequestBody(required = false) Map<String, Object> body) throws Exception;
 
   /**
    * 다중 업무 담당자 변경 — 본인 업무 조건 없음 (권한자).
