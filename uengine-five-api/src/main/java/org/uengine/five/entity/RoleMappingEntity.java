@@ -10,7 +10,7 @@ import jakarta.persistence.*;
 @SequenceGenerator(
     name = "rolemapping_seq_gen",
     sequenceName = "SEQ_BPM_ROLEMAPPING",
-    allocationSize = 1
+    allocationSize = 50
 )
 public class RoleMappingEntity {//implements RoleMappingDAO {
 

@@ -46,7 +46,7 @@ class DummyRoleMapping extends RoleMappingEntity {
 @SequenceGenerator(
     name = "procinst_seq_gen",
     sequenceName = "SEQ_BPM_PROCINST",
-    allocationSize = 1
+    allocationSize = 50
 )
 public class ProcessInstanceEntity {// implements ProcessInstanceDAO {
 

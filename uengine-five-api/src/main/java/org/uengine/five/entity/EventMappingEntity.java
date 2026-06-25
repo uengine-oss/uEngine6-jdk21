@@ -8,7 +8,7 @@ import jakarta.persistence.*;
 @SequenceGenerator(
     name = "event_mapping_seq_gen",
     sequenceName = "SEQ_BPM_EVENT_MAPPING",
-    allocationSize = 1
+    allocationSize = 50
 )
 public class EventMappingEntity {
 

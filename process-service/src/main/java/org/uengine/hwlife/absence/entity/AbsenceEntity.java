@@ -16,7 +16,7 @@ import java.util.Date;
 @SequenceGenerator(
         name = "absence_seq_gen",
         sequenceName = "SEQ_BPM_ABSENCE",
-        allocationSize = 1
+        allocationSize = 50
 )
 public class AbsenceEntity {
 

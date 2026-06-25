@@ -24,7 +24,7 @@ import jakarta.persistence.TemporalType;
 @SequenceGenerator(
         name = "role_assign_rule_seq_gen",
         sequenceName = "SEQ_BPM_ROLE_ASSIGN_RULE",
-        allocationSize = 1
+        allocationSize = 50
 )
 public class BpmRoleAssignRule {
 

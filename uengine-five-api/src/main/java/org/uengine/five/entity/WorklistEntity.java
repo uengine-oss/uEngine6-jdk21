@@ -14,7 +14,7 @@ import java.util.Date;
 @SequenceGenerator(
     name = "worklist_seq_gen",
     sequenceName = "SEQ_BPM_WORKLIST",
-    allocationSize = 1
+    allocationSize = 50
 )
 public class WorklistEntity {// implements WorkListDAO {
 
