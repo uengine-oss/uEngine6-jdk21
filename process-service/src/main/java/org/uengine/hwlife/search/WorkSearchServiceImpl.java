@@ -1,7 +1,5 @@
 package org.uengine.hwlife.search;
 
-import java.util.List;
-
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -20,6 +18,7 @@ import org.uengine.hwlife.search.dto.MyProgressResponse;
 import org.uengine.hwlife.search.dto.MyTodoRequest;
 import org.uengine.hwlife.search.dto.MyTodoResponse;
 import org.uengine.hwlife.search.dto.RunningTasksByKeyRequest;
+import org.uengine.hwlife.search.dto.RunningTasksByKeyResponse;
 
 /**
  * BPM 통합 검색 REST API 구현. Repository 연동은 추후 구현.
@@ -70,8 +69,13 @@ public class WorkSearchServiceImpl implements WorkSearchService {
 
   @Override
   @Transactional(readOnly = true)
-  public List<WorklistEntity> searchRunningWorkByCorrKey(@RequestBody RunningTasksByKeyRequest request) {
-    throw notImplemented("searchRunningWorkByCorrKey");
+  public RunningTasksByKeyResponse searchRunningWorkByCorrKey(@RequestBody RunningTasksByKeyRequest request) {
+    RunningTasksByKeyResponse response = new RunningTasksByKeyResponse();
+    response.setLoanPcesMgmtNo("LOAN-2026-0001");
+    response.setTrcTag("T01");
+    response.setStatus("RUNNING");
+    response.setRsltMsgeCntn("정상 처리중(TEST)");
+    return response;
   }
 
   private static ResponseStatusException notImplemented(String operation) {
