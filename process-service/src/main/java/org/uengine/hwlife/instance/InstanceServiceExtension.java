@@ -16,10 +16,10 @@ import org.uengine.hwlife.instance.dto.DelegateResponse;
 /**
  * 인스턴스 명령 REST API — {@link org.uengine.five.service.InstanceService} 커스텀 영역.
  *
- * <p>구현: {@link InstanceCommandServiceImpl}.</p>
+ * <p>구현: {@link InstanceServiceExtensionImpl}.</p>
  */
 @RequestMapping("/instance")
-public interface InstanceCommandService {
+public interface InstanceServiceExtension {
 
   /**
    * 다중 선점 / 선점 해제 (모든 사용자).
@@ -53,6 +53,6 @@ public interface InstanceCommandService {
    *
    * <pre>POST /instance/reassign</pre>
    */
-  @RequestMapping(value = "/reassign", method = RequestMethod.POST, produces = "application/json;charset=UTF-8")
+  @RequestMapping(value = "/multi-reassign", method = RequestMethod.POST, produces = "application/json;charset=UTF-8")
   Map<String, Object> reassignWorkItems(@RequestBody(required = false) Map<String, Object> body) throws Exception;
 }

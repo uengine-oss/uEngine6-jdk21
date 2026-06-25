@@ -15,8 +15,8 @@ import org.uengine.five.dto.WorkItemResource;
 import org.uengine.five.service.InstanceServiceImpl;
 import org.uengine.hwlife.instance.dto.ClaimRequest;
 import org.uengine.hwlife.instance.dto.ClaimResponse;
-import org.uengine.hwlife.instance.dto.DelegateWorkItemRequest;
-import org.uengine.hwlife.instance.dto.DelegateWorkItemResponse;
+import org.uengine.hwlife.instance.dto.DelegateRequest;
+import org.uengine.hwlife.instance.dto.DelegateResponse;
 
 /**
  * 인스턴스 명령 REST API 구현.
@@ -24,11 +24,11 @@ import org.uengine.hwlife.instance.dto.DelegateWorkItemResponse;
 @RestController
 @CrossOrigin(origins = "*")
 @Service
-public class InstanceCommandServiceImpl implements InstanceCommandService {
+public class InstanceServiceExtensionImpl implements InstanceServiceExtension {
 
   private final InstanceServiceImpl instanceService;
 
-  public InstanceCommandServiceImpl(InstanceServiceImpl instanceService) {
+  public InstanceServiceExtensionImpl(InstanceServiceImpl instanceService) {
     this.instanceService = instanceService;
   }
 
@@ -40,7 +40,7 @@ public class InstanceCommandServiceImpl implements InstanceCommandService {
 
   @Override
   @Transactional
-  public DelegateWorkItemResponse delegateWorkItems(@RequestBody DelegateWorkItemRequest request)
+  public DelegateResponse delegateWorkItems(@RequestBody DelegateRequest request)
       throws Exception {
     if (request == null) {
       throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Request body is required");
@@ -49,7 +49,7 @@ public class InstanceCommandServiceImpl implements InstanceCommandService {
       throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "taskIds is required");
     }
 
-    DelegateWorkItemResponse result = new DelegateWorkItemResponse();
+    DelegateResponse result = new DelegateResponse();
     result.setTotal(request.getTaskIds().size());
 
     boolean delegateOnlyForWorkitem = Boolean.TRUE.equals(request.getDelegateOnlyForWorkitem());

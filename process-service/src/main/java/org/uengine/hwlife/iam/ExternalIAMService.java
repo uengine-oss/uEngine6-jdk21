@@ -7,6 +7,8 @@ import java.util.Optional;
 
 import org.uengine.contexts.UserContext;
 import org.uengine.five.service.IAMService;
+import org.uengine.hwlife.iam.dto.GroupInfoDto;
+import org.uengine.hwlife.iam.dto.RoleInfoDto;
 
 /**
  * 외부 IAM(ESB·사내 디렉터리 등) 연동 구현체.

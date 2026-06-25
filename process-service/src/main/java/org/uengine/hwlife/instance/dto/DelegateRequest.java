@@ -4,7 +4,7 @@ import java.util.List;
 
 import org.uengine.five.dto.RoleMappingCommand;
 
-public class DelegateWorkItemRequest {
+public class DelegateRequest {
 
     private List<String> taskIds;
     private RoleMappingCommand delegatedRoleMapping;

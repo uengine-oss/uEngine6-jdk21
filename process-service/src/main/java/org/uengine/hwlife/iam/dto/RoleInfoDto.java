@@ -1,4 +1,4 @@
-package org.uengine.hwlife.iam;
+package org.uengine.hwlife.iam.dto;
 
 /**
  * 권한(역할) 정보를 담는 공통 DTO.

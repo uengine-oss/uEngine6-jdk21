@@ -27,7 +27,7 @@ import org.uengine.hwlife.search.dto.RunningTasksByKeyRequest;
 @RestController
 @CrossOrigin(origins = "*")
 @Service
-public class BpmSearchServiceImpl implements BpmSearchService {
+public class WorkSearchServiceImpl implements WorkSearchService {
 
   @Override
   @Transactional(readOnly = true)

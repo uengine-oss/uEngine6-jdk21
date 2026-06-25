@@ -4,8 +4,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import org.uengine.hwlife.rule.RuleCandidate;
 import org.uengine.hwlife.rule.RuleRoleResolutionService;
+import org.uengine.hwlife.rule.dto.RuleCandidate;
 import org.uengine.hwlife.rule.RuleRoleResolutionSupport;
 import org.uengine.kernel.GlobalContext;
 import org.uengine.kernel.ProcessDefinition;

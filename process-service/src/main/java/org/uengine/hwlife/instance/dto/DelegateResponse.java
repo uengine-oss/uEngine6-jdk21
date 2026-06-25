@@ -5,7 +5,7 @@ import java.util.List;
 
 import org.uengine.five.dto.WorkItemResource;
 
-public class DelegateWorkItemResponse {
+public class DelegateResponse {
 
     private int total;
     private int successCount;

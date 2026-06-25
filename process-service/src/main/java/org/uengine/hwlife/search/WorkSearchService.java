@@ -14,7 +14,7 @@ import org.uengine.hwlife.search.dto.*;
 /**
  * 한화생명 융자차세대 — BPM 통합 검색 REST API.
  *
- * <p>구현: {@link BpmSearchServiceImpl}. 필터·응답 DTO는 추후 확장.</p>
+ * <p>구현: {@link WorkSearchServiceImpl}. 필터·응답 DTO는 추후 확장.</p>
  *
  * <pre>
  *   POST /search/my-todo  body: { "custNo": "...", "pageNo": "1" }
@@ -26,7 +26,7 @@ import org.uengine.hwlife.search.dto.*;
  * </pre>
  */
 @RequestMapping("/search")
-public interface BpmSearchService {
+public interface WorkSearchService {
 
   @RequestMapping(value = "/my-todo", method = RequestMethod.POST, consumes = "application/json;charset=UTF-8")
   MyTodoResponse searchMyTodo(@RequestBody MyTodoRequest request) throws Exception;

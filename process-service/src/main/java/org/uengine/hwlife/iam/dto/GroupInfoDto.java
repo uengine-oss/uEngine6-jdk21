@@ -1,4 +1,4 @@
-package org.uengine.hwlife.iam;
+package org.uengine.hwlife.iam.dto;
 
 /**
  * 그룹 정보(코드·이름 등)를 담는 공통 DTO.

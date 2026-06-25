@@ -1,4 +1,4 @@
-package org.uengine.hwlife.rule;
+package org.uengine.hwlife.rule.dto;
 
 /**
  * 배정 규칙 1건의 후보 담당자 정보 (BPM_ROLE_ASSIGN_RULE 의 런타임 표현).

@@ -8,6 +8,7 @@ import java.util.Map;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.uengine.hwlife.rule.dto.RuleCandidate;
 import org.uengine.hwlife.rule.entity.BpmRoleAssignRule;
 import org.uengine.hwlife.rule.repository.BpmRoleAssignRuleRepository;
 
