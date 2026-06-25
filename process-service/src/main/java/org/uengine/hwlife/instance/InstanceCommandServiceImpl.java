@@ -13,6 +13,8 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 import org.uengine.five.dto.WorkItemResource;
 import org.uengine.five.service.InstanceServiceImpl;
+import org.uengine.hwlife.instance.dto.ClaimRequest;
+import org.uengine.hwlife.instance.dto.ClaimResponse;
 import org.uengine.hwlife.instance.dto.DelegateWorkItemRequest;
 import org.uengine.hwlife.instance.dto.DelegateWorkItemResponse;
 
@@ -32,13 +34,13 @@ public class InstanceCommandServiceImpl implements InstanceCommandService {
 
   @Override
   @Transactional
-  public Map<String, Object> multiClaimWorkItems(@RequestBody(required = false) Map<String, Object> body) throws Exception {
+  public ClaimResponse claimWorkItems(@RequestBody ClaimRequest request) throws Exception {
     throw notImplemented("claimWorkItems");
   }
 
   @Override
   @Transactional
-  public DelegateWorkItemResponse multiDelegateWorkItems(@RequestBody DelegateWorkItemRequest request)
+  public DelegateWorkItemResponse delegateWorkItems(@RequestBody DelegateWorkItemRequest request)
       throws Exception {
     if (request == null) {
       throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Request body is required");
