@@ -8,93 +8,73 @@ import java.util.Date;
  * <p>{@code bswrDvsnVal}: {@link #BSWR_DVSN_REG} 설정, {@link #BSWR_DVSN_RLS} 해제.</p>
  */
 public class AbsenceRequest {
+    private Long fncgBpmAbstSqno; // 부재 설정 ID
 
-    public static final String BSWR_DVSN_REG = "0";
-    public static final String BSWR_DVSN_RLS = "1";
+    private String abscEmnb; // 부재자 사용자 ID
 
-    /** 업무구분값 — 0(설정) / 1(해제) */
-    private String bswrDvsnVal;
+    private String agntEmnb; // 대리인 사용자 ID
+    private String agntFncgOrgnCd; // 대리인 조직 코드
 
-    /** 해제 시 필수, 설정 시 미사용 */
-    private Long abseId;
+    private String abscStrDttm; // 부재 시작일시
+    private String abscEndDttm; // 부재 종료일시
+    private String abscRscsDttm; // 조기 종료(해제) 시각
+    private String abscStupDttm; // 등록 시각
 
-    private String userId;
-    private String userName;
-    private String agentUserId;
-    private String agentUserName;
-    private String agentGroupCd;
-    private Date abscStarDttm;
-    private Date abscEndDttm;
+    private String bswrClsfCode;  /** 업무구분값 — 0(설정) / 1(해제) */
 
-    public String getBswrDvsnVal() {
-        return bswrDvsnVal;
+    public Long getFncgBpmAbstSqno() {
+        return fncgBpmAbstSqno;
     }
-
-    public void setBswrDvsnVal(String bswrDvsnVal) {
-        this.bswrDvsnVal = bswrDvsnVal;
+    public void setFncgBpmAbstSqno(Long fncgBpmAbstSqno) {
+        this.fncgBpmAbstSqno = fncgBpmAbstSqno;
     }
-
-    public Long getAbseId() {
-        return abseId;
+    public String getAbscEmnb() {
+        return abscEmnb;
     }
-
-    public void setAbseId(Long abseId) {
-        this.abseId = abseId;
+    public void setAbscEmnb(String abscEmnb) {
+        this.abscEmnb = abscEmnb;
     }
-
-    public String getUserId() {
-        return userId;
+    public String getAgntEmnb() {
+        return agntEmnb;
     }
-
-    public void setUserId(String userId) {
-        this.userId = userId;
+    public void setAgntEmnb(String agntEmnb) {
+        this.agntEmnb = agntEmnb;
     }
-
-    public String getUserName() {
-        return userName;
+    public String getAgntFncgOrgnCd() {
+        return agntFncgOrgnCd;
     }
-
-    public void setUserName(String userName) {
-        this.userName = userName;
+    public void setAgntFncgOrgnCd(String agntFncgOrgnCd) {
+        this.agntFncgOrgnCd = agntFncgOrgnCd;
     }
-
-    public String getAgentUserId() {
-        return agentUserId;
+    public String getAbscStrDttm() {
+        return abscStrDttm;
     }
-
-    public void setAgentUserId(String agentUserId) {
-        this.agentUserId = agentUserId;
+    public void setAbscStrDttm(String abscStrDttm) {
+        this.abscStrDttm = abscStrDttm;
     }
-
-    public String getAgentUserName() {
-        return agentUserName;
-    }
-
-    public void setAgentUserName(String agentUserName) {
-        this.agentUserName = agentUserName;
-    }
-
-    public String getAgentGroupCd() {
-        return agentGroupCd;
-    }
-
-    public void setAgentGroupCd(String agentGroupCd) {
-        this.agentGroupCd = agentGroupCd;
-    }
-
-    public Date getAbscStarDttm() {
-        return abscStarDttm;
-    }
-
-    public void setAbscStarDttm(Date abscStarDttm) {
-        this.abscStarDttm = abscStarDttm;
-    }
-
-    public Date getAbscEndDttm() {
+    public String getAbscEndDttm() {
         return abscEndDttm;
     }
-
-    public void setAbscEndDttm(Date abscEndDttm) {
+    public void setAbscEndDttm(String abscEndDttm) {
         this.abscEndDttm = abscEndDttm;
     }
+    public String getAbscRscsDttm() {
+        return abscRscsDttm;
+    }
+    public void setAbscRscsDttm(String abscRscsDttm) {
+        this.abscRscsDttm = abscRscsDttm;
+    }
+    public String getAbscStupDttm() {
+        return abscStupDttm;
+    }
+    public void setAbscStupDttm(String abscStupDttm) {
+        this.abscStupDttm = abscStupDttm;
+    }
+    public String getBswrClsfCode() {
+        return bswrClsfCode;
+    }
+    public void setBswrClsfCode(String bswrClsfCode) {
+        this.bswrClsfCode = bswrClsfCode;
+    }
+
 }

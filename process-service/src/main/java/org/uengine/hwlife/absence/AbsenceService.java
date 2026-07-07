@@ -17,8 +17,8 @@ import org.uengine.hwlife.absence.entity.AbsenceEntity;
 public interface AbsenceService {
 
     @RequestMapping(value = "/absences", method = RequestMethod.POST)
-    AbsenceEntity process(@RequestBody AbsenceRequest request) throws Exception;
+    AbsenceEntity executeAbsence(@RequestBody AbsenceRequest request) throws Exception;
 
     @RequestMapping(value = "/absences/history", method = RequestMethod.POST)
-    List<AbsenceEntity> findHistory(@RequestBody AbsenceHistoryRequest request) throws Exception;
+    List<AbsenceEntity> searchAbsenceHistory(@RequestBody AbsenceHistoryRequest request) throws Exception;
 }

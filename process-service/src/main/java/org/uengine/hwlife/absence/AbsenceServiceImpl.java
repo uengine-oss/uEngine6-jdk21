@@ -38,16 +38,16 @@ public class AbsenceServiceImpl implements AbsenceService {
     @RequestMapping(value = "/absences", method = RequestMethod.POST)
     @ResponseStatus(HttpStatus.CREATED)
     @Transactional
-    public AbsenceEntity process(@RequestBody AbsenceRequest request) throws Exception {
+    public AbsenceEntity executeAbsence(@RequestBody AbsenceRequest request) throws Exception {
         if (request == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Request body is required");
         }
 
-        String bswrDvsnVal = require(request.getBswrDvsnVal(), "bswrDvsnVal");
-        if (AbsenceRequest.BSWR_DVSN_RLS.equalsIgnoreCase(bswrDvsnVal)) {
+        String bswrDvsnVal = require(request.getBswrClsfCode(), "bswrClsfCode");
+        if ("1".equalsIgnoreCase(bswrDvsnVal)) {
             return release(request);
         }
-        if (AbsenceRequest.BSWR_DVSN_REG.equalsIgnoreCase(bswrDvsnVal)) {
+        if ("0".equalsIgnoreCase(bswrDvsnVal)) {
             return register(request);
         }
         throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
@@ -56,13 +56,10 @@ public class AbsenceServiceImpl implements AbsenceService {
 
     private AbsenceEntity register(AbsenceRequest request) {
         AbsenceEntity entity = new AbsenceEntity();
-        entity.setUserId(request.getUserId());
-        entity.setUserName(request.getUserName());
-        entity.setAgentUserId(request.getAgentUserId());
-        entity.setAgentUserName(request.getAgentUserName());
-        entity.setAgentGroupCd(request.getAgentGroupCd());
-        entity.setAbscStarDttm(request.getAbscStarDttm());
-        entity.setAbscEndDttm(request.getAbscEndDttm());
+        entity.setUserId(request.getAbscEmnb());
+        entity.setAgentUserId(request.getAgntEmnb());
+        entity.setAgentGroupCd(request.getAgntFncgOrgnCd());
+    
 
         validate(entity);
         ensureNoOverlap(entity, null);
@@ -71,22 +68,22 @@ public class AbsenceServiceImpl implements AbsenceService {
     }
 
     private AbsenceEntity release(AbsenceRequest request) {
-        if (request.getAbseId() == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "abseId is required for release");
+        if (request.getFncgBpmAbstSqno() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "fncgBpmAbstSqno is required for release");
         }
-        AbsenceEntity entity = mustGet(request.getAbseId());
-        if (entity.getAbscCnceDttm() != null) {
+        AbsenceEntity entity = mustGet(request.getFncgBpmAbstSqno());
+        if (entity.getAbscRscsDttm() != null) {
             throw new ResponseStatusException(HttpStatus.CONFLICT,
-                    "Already released absence: " + request.getAbseId());
+                    "Already released absence: " + request.getFncgBpmAbstSqno());
         }
-        entity.setAbscCnceDttm(new Date());
+        entity.setAbscRscsDttm(new Date());
         return absenceRepository.save(entity);
     }
 
     @Override
     @RequestMapping(value = "/absences/history", method = RequestMethod.POST)
     @Transactional(readOnly = true)
-    public List<AbsenceEntity> findHistory(@RequestBody AbsenceHistoryRequest request) throws Exception {
+    public List<AbsenceEntity> searchAbsenceHistory(@RequestBody AbsenceHistoryRequest request) throws Exception {
         if (request == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Request body is required");
         }
@@ -102,9 +99,7 @@ public class AbsenceServiceImpl implements AbsenceService {
 
     private void validate(AbsenceEntity e) {
         require(e.getUserId(), "userId");
-        require(e.getUserName(), "userName");
         require(e.getAgentUserId(), "agentUserId");
-        require(e.getAgentUserName(), "agentUserName");
         if (e.getAbscStarDttm() == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "abscStarDttm is required");
         }

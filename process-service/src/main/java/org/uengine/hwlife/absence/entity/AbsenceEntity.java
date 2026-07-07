@@ -12,7 +12,7 @@ import java.util.Date;
  * 현재 시각이 ABSC_STAR_DTTM ~ ABSC_END_DTTM 사이인 row 가 실제 라우팅에 사용됩니다.</p>
  */
 @Entity
-@Table(name = "BPM_ABSENCE_TB")
+@Table(name = "BPM_ABSENCE")
 @SequenceGenerator(
         name = "absence_seq_gen",
         sequenceName = "SEQ_BPM_ABSENCE",
@@ -28,19 +28,9 @@ public class AbsenceEntity {
     /** 부재자 사용자 ID (Keycloak/IAM principal.userId 와 동일한 형식) */
     @Column(name = "USER_ID", nullable = false, length = 255)
     private String userId;
-
-    /** 부재자 표시명 (UI 표시용 스냅샷) */
-    @Column(name = "USER_NAME", nullable = false, length = 100)
-    private String userName;
-
     /** 대결자(Agent) 사용자 ID */
     @Column(name = "AGENT_USER_ID", nullable = false, length = 255)
     private String agentUserId;
-
-    /** 대결자 표시명 (UI 표시용 스냅샷) */
-    @Column(name = "AGENT_USER_NAME", nullable = false, length = 100)
-    private String agentUserName;
-
     /** 대결자 그룹 코드 */
     @Column(name = "AGENT_GROUP_CD", length = 50)
     private String agentGroupCd;
@@ -57,16 +47,16 @@ public class AbsenceEntity {
     /** 조기 종료(해제) 시각. NULL 이면 활성 부재 */
     @Temporal(TemporalType.TIMESTAMP)
     @Column(name = "ABSC_CNCE_DTTM")
-    private Date abscCnceDttm;
+    private Date abscRscsDttm;
 
     @Temporal(TemporalType.TIMESTAMP)
     @Column(name = "ABSC_CRET_DTTM", nullable = false, updatable = false)
-    private Date abscCretDttm;
+    private Date abscStupDttm;
 
     @PrePersist
     void onCreate() {
-        if (abscCretDttm == null) {
-            abscCretDttm = new Date();
+        if (abscStupDttm == null) {
+            abscStupDttm = new Date();
         }
     }
 
@@ -86,28 +76,12 @@ public class AbsenceEntity {
         this.userId = userId;
     }
 
-    public String getUserName() {
-        return userName;
-    }
-
-    public void setUserName(String userName) {
-        this.userName = userName;
-    }
-
     public String getAgentUserId() {
         return agentUserId;
     }
 
     public void setAgentUserId(String agentUserId) {
         this.agentUserId = agentUserId;
-    }
-
-    public String getAgentUserName() {
-        return agentUserName;
-    }
-
-    public void setAgentUserName(String agentUserName) {
-        this.agentUserName = agentUserName;
     }
 
     public String getAgentGroupCd() {
@@ -134,19 +108,19 @@ public class AbsenceEntity {
         this.abscEndDttm = abscEndDttm;
     }
 
-    public Date getAbscCnceDttm() {
-        return abscCnceDttm;
+    public Date getAbscRscsDttm() {
+        return abscRscsDttm;
     }
 
-    public void setAbscCnceDttm(Date abscCnceDttm) {
-        this.abscCnceDttm = abscCnceDttm;
+    public void setAbscRscsDttm(Date abscRscsDttm) {
+        this.abscRscsDttm = abscRscsDttm;
     }
 
     public Date getAbscCretDttm() {
-        return abscCretDttm;
+        return abscStupDttm;
     }
 
-    public void setAbscCretDttm(Date abscCretDttm) {
-        this.abscCretDttm = abscCretDttm;
+    public void setAbscStupDttm(Date abscStupDttm) {
+        this.abscStupDttm = abscStupDttm;
     }
 }
