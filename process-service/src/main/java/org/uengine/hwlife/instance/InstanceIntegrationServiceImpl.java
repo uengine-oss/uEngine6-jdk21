@@ -11,25 +11,28 @@ import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
-import org.uengine.five.dto.WorkItemResource;
+import org.uengine.five.dto.*;
+import org.uengine.five.entity.WorklistEntity;
+import org.uengine.five.repository.WorklistRepository;
 import org.uengine.five.service.InstanceServiceImpl;
-import org.uengine.hwlife.instance.dto.ClaimRequest;
-import org.uengine.hwlife.instance.dto.ClaimResponse;
-import org.uengine.hwlife.instance.dto.DelegateRequest;
-import org.uengine.hwlife.instance.dto.DelegateResponse;
+import org.uengine.hwlife.instance.dto.*;
 
 /**
- * 인스턴스 명령 REST API 구현.
+ * {@link InstanceIntegrationService} REST 구현.
  */
 @RestController
 @CrossOrigin(origins = "*")
 @Service
-public class InstanceServiceExtensionImpl implements InstanceServiceExtension {
+public class InstanceIntegrationServiceImpl implements InstanceIntegrationService {
 
   private final InstanceServiceImpl instanceService;
+  private final WorklistRepository worklistRepository;
 
-  public InstanceServiceExtensionImpl(InstanceServiceImpl instanceService) {
+  public InstanceIntegrationServiceImpl(
+      InstanceServiceImpl instanceService,
+      WorklistRepository worklistRepository) {
     this.instanceService = instanceService;
+    this.worklistRepository = worklistRepository;
   }
 
   @Override
@@ -83,8 +86,8 @@ public class InstanceServiceExtensionImpl implements InstanceServiceExtension {
 
   @Override
   @Transactional
-  public void forceClaimWorkItems(@RequestBody(required = false) Map<String, Object> body) throws Exception {
-    throw notImplemented("forceClaimWorkItems");
+  public void assignBulk(@RequestBody(required = false) Map<String, Object> body) throws Exception {
+    throw notImplemented("assignBulk");
   }
 
   @Override
@@ -92,6 +95,46 @@ public class InstanceServiceExtensionImpl implements InstanceServiceExtension {
   public Map<String, Object> reassignWorkItems(@RequestBody(required = false) Map<String, Object> body)
       throws Exception {
     throw notImplemented("reassignWorkItems");
+  }
+
+  @Override
+  @Transactional(rollbackFor = { Exception.class })
+  public TaskSkipResponse skipWorklist(@RequestBody TaskSkipRequest request) throws Exception {
+    TaskSkipCommand command = new TaskSkipCommand();
+    command.setReason(request.getReason());
+    TaskSkipResult engine = instanceService.skipWorkItem(request.getTaskId(), command);
+    return TaskSkipResponse.from(engine);
+  }
+
+  @Override
+  @Transactional(rollbackFor = { Exception.class })
+  public TaskReturnResponse returnToPrevious(@RequestBody TaskReturnRequest request) throws Exception {
+    TaskReturnCommand command = new TaskReturnCommand();
+    command.setTaskId(request.getTargetTaskId());
+    command.setTracingTag(request.getTracingTag());
+    command.setExecScope(request.getExecScope());
+    command.setReason(request.getReason());
+    TaskReturnResult engine = instanceService.returnWorkItem(request.getTaskId(), command);
+    return TaskReturnResponse.from(engine);
+  }
+
+  @Override
+  @Transactional(rollbackFor = { Exception.class })
+  public TaskJumpResponse jumpToForward(@RequestBody TaskJumpRequest request) throws Exception {
+    WorklistEntity worklist = worklistRepository.findById(Long.parseLong(request.getTaskId())).orElse(null);
+    if (worklist == null) {
+      throw new ResponseStatusException(HttpStatus.NOT_FOUND,
+          "No such work item where taskId = " + request.getTaskId());
+    }
+    InstanceResource instance = instanceService.backToHere(
+        String.valueOf(worklist.getInstId()), request.getTargetTracingTag());
+    return TaskJumpResponse.from(instance, request);
+  }
+
+  @Override
+  @Transactional
+  public InstanceSyncResponse syncInstances(@RequestBody InstanceSyncRequest request) throws Exception {
+    return new InstanceSyncResponse();
   }
 
   private static String resolveFailureReason(Exception e) {

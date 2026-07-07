@@ -18,7 +18,7 @@ import org.uengine.kernel.RoleResolutionContext;
  * <p>흐름(시퀀스 다이어그램 대응):</p>
  * <ol>
  *   <li>인스턴스에서 POLICY_ID / DIFFICULTY / REF_ID 확보</li>
- *   <li>{@link #loadRules} : 규칙 조회(없으면 외부 적재 후 재조회)</li>
+ *   <li>{@link #syncRoleAssignRules} : 규칙 동기화(없으면 외부 적재 후 재조회)</li>
  *   <li>{@link #selectByAssignee} : REF_ID 기준 후보 담당자 선별</li>
  *   <li>queryWorkload : 후보별 진행중 업무량 조회</li>
  *   <li>{@link #selectByGap} : GAP 계산 후 담당자 결정</li>
@@ -60,8 +60,8 @@ public class RuleBasedRoleResolutionContext extends RoleResolutionContext {
 
         RuleRoleResolutionService service = RuleRoleResolutionSupport.get();
 
-        // 2) 배정 규칙 조회 (없으면 외부 기준정보에서 적재 후 재조회)
-        List<RuleCandidate> rules = loadRules(resolvedPolicyId, difficulty);
+        // 2) 배정 규칙 동기화 (없으면 외부 기준정보에서 적재 후 재조회)
+        List<RuleCandidate> rules = syncRoleAssignRules(resolvedPolicyId, difficulty);
         if (rules.isEmpty()) {
             throw new IllegalStateException("RuleBasedRoleResolutionContext: 정책 " + resolvedPolicyId
                     + " / 난이도 " + difficulty + " 에 대한 배정 규칙이 없습니다.");
@@ -87,9 +87,9 @@ public class RuleBasedRoleResolutionContext extends RoleResolutionContext {
         return mapping;
     }
 
-    /** 배정 규칙 조회 — 실제 DB/외부 호출은 서비스가 담당. */
-    List<RuleCandidate> loadRules(String policyId, String difficulty) {
-        return RuleRoleResolutionSupport.get().loadRules(policyId, difficulty);
+    /** 배정 규칙 동기화 — 실제 DB/외부 호출은 서비스가 담당. */
+    List<RuleCandidate> syncRoleAssignRules(String policyId, String difficulty) {
+        return RuleRoleResolutionSupport.get().syncRoleAssignRules(policyId, difficulty);
     }
 
     /**

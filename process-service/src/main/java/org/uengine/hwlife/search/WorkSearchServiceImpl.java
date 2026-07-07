@@ -56,9 +56,9 @@ public class WorkSearchServiceImpl implements WorkSearchService {
 
   @Override
   @Transactional(readOnly = true)
-  public Page<WorklistEntity> searchOrgBatch(
+  public Page<WorklistEntity> searchBulkAssign(
       @PageableDefault(size = 20, sort = "startDate", direction = Sort.Direction.DESC) Pageable pageable) {
-    throw notImplemented("searchOrgBatch");
+    throw notImplemented("searchBulkAssign");
   }
 
   // @Override

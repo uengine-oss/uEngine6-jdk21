@@ -7,8 +7,8 @@ import java.util.Optional;
 
 import org.uengine.contexts.UserContext;
 import org.uengine.five.service.IAMService;
-import org.uengine.hwlife.iam.dto.GroupInfoDto;
-import org.uengine.hwlife.iam.dto.RoleInfoDto;
+import org.uengine.hwlife.iam.dto.FncgOrgInfo;
+import org.uengine.hwlife.iam.dto.FncgRoleInfo;
 
 /**
  * 외부 IAM(ESB·사내 디렉터리 등) 연동 구현체.
@@ -47,14 +47,16 @@ public class ExternalIAMService implements IAMService {
                 .orElse(null);
     }
 
+
+
     @Override
     public List<String> getUsersByGroup(String groupName) throws Exception {
-        return toUserIds(getAssignees(groupName, null));
+        return new ArrayList<>();
     }
 
     @Override
     public List<String> getUsersByRole(String roleName) throws Exception {
-        return toUserIds(getAssignees(null, roleName));
+        return new ArrayList<>();
     }
 
     @Override
@@ -68,34 +70,17 @@ public class ExternalIAMService implements IAMService {
     }
 
     /**
-     * 그룹 정보 목록 (코드·이름). {@link GroupInfoDto}는 공통 응답 형태로 재사용합니다.
+     * 그룹 정보 목록 (코드·이름). {@link FncgOrgInfo}는 공통 응답 형태로 재사용합니다.
      */
-    public List<GroupInfoDto> getGroups() {
+    public List<FncgOrgInfo> getGroups() {
         return new ArrayList<>();
     }
 
     /**
      * 권한 정보 목록 (코드·이름). 그룹과 무관하게 전체 권한을 조회합니다.
-     * {@link RoleInfoDto}는 공통 응답 형태로 재사용합니다.
+     * {@link FncgRoleInfo}는 공통 응답 형태로 재사용합니다.
      */
-    public List<RoleInfoDto> getPermissions() {
-        return new ArrayList<>();
-    }
-
-    /**
-     * 그룹·권한 조건에 따른 담당자 목록.
-     *
-     * <ul>
-     *   <li>{@code groupCode}만 있으면 해당 그룹 담당자</li>
-     *   <li>{@code permissionCode}만 있으면 해당 권한 담당자</li>
-     *   <li>둘 다 있으면 두 조건을 모두 만족하는 담당자</li>
-     *   <li>둘 다 없으면 빈 목록</li>
-     * </ul>
-     */
-    public List<UserContext> getAssignees(String groupCode, String permissionCode) {
-        if (!hasText(groupCode) && !hasText(permissionCode)) {
-            return List.of();
-        }
+    public List<FncgRoleInfo> getRoles() {
         return new ArrayList<>();
     }
 

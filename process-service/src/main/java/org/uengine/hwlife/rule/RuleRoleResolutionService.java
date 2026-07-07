@@ -23,7 +23,7 @@ import jakarta.persistence.PersistenceContext;
  * 기동 시 {@link RuleRoleResolutionSupport} 에 자기 자신을 등록해 POJO 에서 정적 접근 가능하게 한다.</p>
  *
  * <ul>
- *   <li>{@link #loadRules(String, String)} : BPM_ROLE_ASSIGN_RULE 조회</li>
+ *   <li>{@link #syncRoleAssignRules(String, String)} : 역량 기준정보 동기화 및 BPM_ROLE_ASSIGN_RULE 조회</li>
  *   <li>{@link #queryWorkload(String, Collection)} : 후보 담당자별 진행중 업무량</li>
  * </ul>
  */
@@ -49,13 +49,12 @@ public class RuleRoleResolutionService {
     }
 
     /**
-     * 정책/난이도 기준 배정 규칙(BPM_ROLE_ASSIGN_RULE) 조회.
+     * 역량 기준정보를 외부에서 조회·적재하고 배정 규칙(BPM_ROLE_ASSIGN_RULE)을 반환한다.
      *
-     * <p>확장 포인트: 규칙이 비어 있을 때 외부 기준정보에서 적재하는 등의 동기화가 필요하면
-     * 이 메서드에서 분기하면 된다. (현재는 로컬 테이블 조회만)</p>
+     * <p>로컬 규칙이 없으면 외부 기준정보에서 동기화 후 재조회한다. (현재는 로컬 테이블 조회만)</p>
      */
-    @Transactional(readOnly = true)
-    public List<RuleCandidate> loadRules(String policyId, String difficulty) {
+    @Transactional
+    public List<RuleCandidate> syncRoleAssignRules(String policyId, String difficulty) {
         List<BpmRoleAssignRule> rules = query(policyId, difficulty);
 
         List<RuleCandidate> result = new ArrayList<>();

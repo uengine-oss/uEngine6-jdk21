@@ -1,3 +1,10 @@
+spring:
+  application:
+    name: process
+  main:
+    allow-bean-definition-overriding: true
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:dev}
 
 server:
   port: 9094
@@ -8,17 +15,7 @@ server:
     include-stacktrace: on_param
     include-exception: false
 
-spring:
-  application:
-    name: process
-
-  main:
-    allow-bean-definition-overriding: true
----
 uengine:
-  # Messaging 전략 선택. kafka | polling
-  # - kafka  : 기존 동작 유지 (Spring Cloud Stream + Kafka)
-  # - polling: Outbox 테이블 + pg_notify/SSE 로 전환 (Kafka 브로커 불필요)
   messaging:
     mode: ${UENGINE_MESSAGING_MODE:polling}
     polling:
@@ -28,67 +25,82 @@ uengine:
       inbox-ttl-hours: 24
       inbox-ttl-cron: "0 0 3 * * ?"
   definition:
-    # definition-service와 동일한 경로 사용 (같은 definitions 폴더 참조). 불일치 시 "Error when to load definition" 발생.
-    basePath: ${UENGINE_BASEPATH:D:\uEngineProject\uEngine6-jdk21}
-    # 기동 완료(ApplicationReady) 직후 비동기로 /definition-changes/sync-all 과 동일한 전체 동기화 1회
     sync-on-startup:
       enabled: true
-      # BPM_EVENT_MAPPING 전체 삭제 후 재구축이 필요할 때만 true
       clear-all-event-mappings: false
-  # 감사 로그: 저장소 유연 구성 (jpa | file | composite | none)
-  audit:
-    sink: none     # Method 0: None (기본)
-    # sink: jpa      # Method 1: DB 
-    # sink: file       # Method 2: File (경로는 file.basePath만 사용, definition과 별도)
-    # file:
-    #   basePath: ${UENGINE_AUDIT_BASEPATH:/Users/heon/Documents/workspace/uEngine6-bpm/bpm-audit-log}
-    #   format: json
-    # sink: composite # Method 3: Composite
-    # sinkNames: jpa,file
 
+logging:
+  charset:
+    console: UTF-8
+    file: UTF-8
+  level:
+    org.uengine: debug
+  file:
+    name: /hli_app/log/was/domains/LBM_PROCESS_11/applog/bpm-process.log
+  pattern:
+    console: "[%d{yyyy-MM-dd HH:mm:ss.SSS}] [%thread] [%level] [%logger] - %msg%n"
+
+filter:
+  payload:
+    enabled: false
+---
+# 개발 환경 (기본 프로파일)
+# WAS(Tomcat 등)에 DataSource JNDI를 등록한 뒤 실행: SPRING_PROFILES_ACTIVE=dev
 spring:
-  profiles:
-    # active: ${SPRING_PROFILES_ACTIVE:default}
-    active: ${SPRING_PROFILES_ACTIVE:postgres}
+  config:
+    activate:
+      on-profile: dev
+  # cloud:
+  #   function:
+  #     definition: bpm
+  #   stream:
+  #     kafka:
+  #       binder:
+  #         brokers: ${KAFKA_BROKERS:localhost:9092}
+  #       streams:
+  #         binder:
+  #           configuration:
+  #             default:
+  #               key:
+  #                 serde: org.apache.kafka.common.serialization.Serdes$StringSerde
+  #               value:
+  #                 serde: org.apache.kafka.common.serialization.Serdes$StringSerde
+  #     bindings:
+  #       bpm-in-0:
+  #         group: bpm
+  #         destination: bpm-topic
+  #         contentType: application/json
+  #       bpm-out:
+  #         destination: bpm-topic
+  #         contentType: application/json
+  #       bpm-brodcast:
+  #         destination: bpm-brodcast
+  #         contentType: application/json
   datasource:
-    url: jdbc:h2:mem:testdb
-    driver-class-name: org.h2.Driver
-    # platform: h2
-    # # H2 전용: HIBERNATE_SEQUENCE 생성 (GenerationType.AUTO 시퀀스 오류 방지)
-    # schema: classpath:schema-h2.sql
+    jndi-name: ${DATASOURCE_JNDI_NAME:java:comp/env/jdbc/uengine}
   jpa:
+    database-platform: org.uengine.five.config.Oracle12cDialectWithRegexp
     hibernate:
       ddl-auto: update
     properties:
       hibernate:
         show_sql: true
         format_sql: true
+      hibernate.metadata_builder_contributor: org.uengine.five.config.OracleHibernateMetadataContributor
 
-logging:
-  # Windows 콘솔이 MS949일 때 SLF4J 출력이 깨지지 않도록 명시 (한글 definition 경로 등)
-  charset:
-    console: UTF-8
-    file: UTF-8
-  level:
-    org.hibernate.type: trace
-    org.springframework.cloud: debug
-
-filter:
-  payload:
-    enabled: true
-
-mail:
-  enabled: true
-  smtp:
-    host: smtp.gmail.com
-    port: 587
-    auth: true
-    starttls:
-      enable: true
-    ssl:
-      trust: smtp.gmail.com
-    username: lee #${MAIL_USERNAME}
-    password: 123 #${MAIL_PASSWORD}
+uengine:
+  definition:
+    basePath: ${UENGINE_BASEPATH:D:\uEngineProject\uEngine6-jdk21}
+  # 감사 로그: 저장소 유연 구성 (jpa | file | composite | none)
+  audit:
+    sink: none     # Method 0: None (기본)
+    # sink: jpa      # Method 1: DB
+    # sink: file       # Method 2: File (경로는 file.basePath만 사용, definition과 별도)
+    # file:
+    #   basePath: ${UENGINE_AUDIT_BASEPATH:/Users/heon/Documents/workspace/uEngine6-bpm/bpm-audit-log}
+    #   format: json
+    # sink: composite # Method 3: Composite
+    # sinkNames: jpa,file
 
 keycloak:
   url: ${KEYCLOAK_URI:http://localhost:8080}
@@ -97,95 +109,154 @@ keycloak:
   username: ${KEYCLOAK_ADMIN_USERNAME:${KEYCLOAK_USERNAME:admin}}
   password: ${KEYCLOAK_ADMIN_PASSWORD:${KEYCLOAK_PASSWORD:admin}}
 
+external:
+  iam:
+    base-url: ${EXTERNAL_IAM_BASE_URL:}
 
+logging:
+  level:
+    org.hibernate.type: trace
+    org.springframework.cloud: debug
 
 ---
-
-server:
-  port: 8080
+# QA 환경
+# WAS에 QA용 DataSource JNDI 등록 후 실행: SPRING_PROFILES_ACTIVE=qa
 spring:
   config:
     activate:
-      on-profile: docker
-# docker 환경의 Kafka 브로커 주소는 messaging-kafka 프로파일에서 KAFKA_BROKERS 환경변수로 주입.
-# 예: SPRING_PROFILES_ACTIVE=docker,messaging-kafka KAFKA_BROKERS=my-kafka:9092
-
----
-# DB: Oracle (oracle 폴더 Docker 실행 후 SPRING_PROFILES_ACTIVE=oracle)
-# Oracle 컨테이너가 완전히 뜬 뒤(2~3분) 앱 실행. system/oracle = docker-compose ORACLE_PASSWORD.
-# (APP_USER uengine는 첫 기동 시에만 생성되므로, 크래시 후 재기동한 DB는 system 사용)
-spring:
-  config:
-    activate:
-      on-profile: oracle
+      on-profile: qa
+  # cloud:
+  #   function:
+  #     definition: bpm
+  #   stream:
+  #     kafka:
+  #       binder:
+  #         brokers: ${KAFKA_BROKERS:localhost:9092}
+  #       streams:
+  #         binder:
+  #           configuration:
+  #             default:
+  #               key:
+  #                 serde: org.apache.kafka.common.serialization.Serdes$StringSerde
+  #               value:
+  #                 serde: org.apache.kafka.common.serialization.Serdes$StringSerde
+  #     bindings:
+  #       bpm-in-0:
+  #         group: bpm
+  #         destination: bpm-topic
+  #         contentType: application/json
+  #       bpm-out:
+  #         destination: bpm-topic
+  #         contentType: application/json
+  #       bpm-brodcast:
+  #         destination: bpm-brodcast
+  #         contentType: application/json
   datasource:
-    url: jdbc:oracle:thin:@${ORACLE_HOST:localhost}:${ORACLE_PORT:1521}:XE
-    username: ${ORACLE_USER:system}
-    password: ${ORACLE_PASSWORD:oracle}
-    driver-class-name: oracle.jdbc.OracleDriver
-    hikari:
-      connection-timeout: 30000
-      initialization-fail-timeout: 30000
+    jndi-name: ${DATASOURCE_JNDI_NAME:java:comp/env/jdbc/uengine}
   jpa:
     database-platform: org.uengine.five.config.Oracle12cDialectWithRegexp
     hibernate:
-      ddl-auto: update
-
----
-# DB: PostgreSQL (infra/docker-compose.postgres.yml 기동 후 SPRING_PROFILES_ACTIVE=postgres)
-# 호스트에서 앱 실행 시: POSTGRES_HOST=localhost (기본값). Docker 네트워크 내에서는 postgres.
-spring:
-  config:
-    activate:
-      on-profile: postgres
-  datasource:
-    url: jdbc:postgresql://${POSTGRES_HOST:localhost}:${POSTGRES_PORT:5432}/${POSTGRES_DB:uengine}
-    username: ${POSTGRES_USER:uengine}
-    password: ${POSTGRES_PASSWORD:uengine}
-    driver-class-name: org.postgresql.Driver
-    hikari:
-      connection-timeout: 30000
-      initialization-fail-timeout: 30000
-  jpa:
-    database-platform: org.hibernate.dialect.PostgreSQLDialect
-    hibernate:
-      ddl-auto: update
+      ddl-auto: validate
     properties:
-      # ProcessInstanceRepositoryH2 의 JPQL `regexp_like(...)` 를 SQL 로 변환.
-      # 미등록 시 /instances/search/findFilterICanSee 가 500 으로 실패한다.
       hibernate.metadata_builder_contributor: org.uengine.five.config.OracleHibernateMetadataContributor
 
+uengine:
+  definition:
+    basePath: ${UENGINE_BASEPATH:/data/uengine/qa}
+  audit:
+    sink: ${UENGINE_AUDIT_SINK:none}
+    # sink: jpa
+    # sink: file
+    # file:
+    #   basePath: ${UENGINE_AUDIT_BASEPATH:/data/uengine/qa/audit}
+    #   format: json
+    # sink: composite
+    # sinkNames: jpa,file
+
+keycloak:
+  url: ${KEYCLOAK_URI:http://keycloak-qa.example.com}
+  realm: ${KEYCLOAK_ADMIN_REALM:master}
+  clientId: ${KEYCLOAK_ADMIN_CLIENT_ID:admin-cli}
+  username: ${KEYCLOAK_ADMIN_USERNAME:${KEYCLOAK_USERNAME:admin}}
+  password: ${KEYCLOAK_ADMIN_PASSWORD:${KEYCLOAK_PASSWORD:}}
+
+external:
+  iam:
+    base-url: ${EXTERNAL_IAM_BASE_URL:}
+
+logging:
+  level:
+    org.hibernate.type: info
+    org.springframework.cloud: info
+
 ---
-# Spring Cloud Stream + Kafka 설정. uengine.messaging.mode=kafka 일 때 ProcessServiceApplication 의
-# ApplicationContextInitializer 가 이 프로파일을 자동 활성화한다.
-# 폴링 모드에서는 활성화되지 않아 Kafka 바인더가 아예 로드되지 않음 (StreamBridge bean 없음, 연결 시도 없음).
+# 운영 환경
+# WAS에 운영용 DataSource JNDI 등록 후 실행: SPRING_PROFILES_ACTIVE=prod
 spring:
   config:
     activate:
-      on-profile: messaging-kafka
-  cloud:
-    function:
-      definition: bpm
-    stream:
-      kafka:
-        binder:
-          brokers: ${KAFKA_BROKERS:localhost:9092}
-        streams:
-          binder:
-            configuration:
-              default:
-                key:
-                  serde: org.apache.kafka.common.serialization.Serdes$StringSerde
-                value:
-                  serde: org.apache.kafka.common.serialization.Serdes$StringSerde
-      bindings:
-        bpm-in-0:
-          group: bpm
-          destination: bpm-topic
-          contentType: application/json
-        bpm-out:
-          destination: bpm-topic
-          contentType: application/json
-        bpm-brodcast:
-          destination: bpm-brodcast
-          contentType: application/json
+      on-profile: prod
+  # cloud:
+  #   function:
+  #     definition: bpm
+  #   stream:
+  #     kafka:
+  #       binder:
+  #         brokers: ${KAFKA_BROKERS:localhost:9092}
+  #       streams:
+  #         binder:
+  #           configuration:
+  #             default:
+  #               key:
+  #                 serde: org.apache.kafka.common.serialization.Serdes$StringSerde
+  #               value:
+  #                 serde: org.apache.kafka.common.serialization.Serdes$StringSerde
+  #     bindings:
+  #       bpm-in-0:
+  #         group: bpm
+  #         destination: bpm-topic
+  #         contentType: application/json
+  #       bpm-out:
+  #         destination: bpm-topic
+  #         contentType: application/json
+  #       bpm-brodcast:
+  #         destination: bpm-brodcast
+  #         contentType: application/json
+
+  datasource:
+    jndi-name: ${DATASOURCE_JNDI_NAME:java:comp/env/jdbc/uengine}
+  jpa:
+    database-platform: org.uengine.five.config.Oracle12cDialectWithRegexp
+    hibernate:
+      ddl-auto: none
+    properties:
+      hibernate.metadata_builder_contributor: org.uengine.five.config.OracleHibernateMetadataContributor
+
+uengine:
+  definition:
+    basePath: ${UENGINE_BASEPATH:/data/uengine/prod}
+  audit:
+    sink: ${UENGINE_AUDIT_SINK:none}
+    # sink: jpa
+    # sink: file
+    # file:
+    #   basePath: ${UENGINE_AUDIT_BASEPATH:/data/uengine/prod/audit}
+    #   format: json
+    # sink: composite
+    # sinkNames: jpa,file
+
+keycloak:
+  url: ${KEYCLOAK_URI:http://keycloak.example.com}
+  realm: ${KEYCLOAK_ADMIN_REALM:master}
+  clientId: ${KEYCLOAK_ADMIN_CLIENT_ID:admin-cli}
+  username: ${KEYCLOAK_ADMIN_USERNAME:${KEYCLOAK_USERNAME:}}
+  password: ${KEYCLOAK_ADMIN_PASSWORD:${KEYCLOAK_PASSWORD:}}
+
+external:
+  iam:
+    base-url: ${EXTERNAL_IAM_BASE_URL:}
+
+logging:
+  level:
+    org.hibernate.type: warn
+    org.springframework.cloud: warn

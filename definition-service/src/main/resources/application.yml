@@ -1,34 +1,65 @@
+spring:
+  application:
+    name: definition
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:dev}
+
 server:
-  port: 8080
+  port: 9093
   error:
     include-message: always
     include-binding-errors: always
     include-stacktrace: on_param
     include-exception: false
-spring:
-  application:
-    name: definition
----
 
 uengine:
-  # Messaging 전략 선택. kafka | polling (process-service 의 값과 일치시킬 것).
   messaging:
     mode: ${UENGINE_MESSAGING_MODE:polling}
     polling:
       consumer-id: definition-service
-  definition:
-    basePath: ${UENGINE_BASEPATH:D:\uEngineProject\uEngine6-jdk21}
-    
-    
-        
+
+logging:
+  charset:
+    console: UTF-8
+    file: UTF-8
+  level:
+    org.uengine: debug
+  file:
+    name: /hli_app/log/was/domains/LBM_DEFINITION_11/applog/bpm-definition.log
+  pattern:
+    console: "[%d{yyyy-MM-dd HH:mm:ss.SSS}] [%thread] [%level] [%logger] - %msg%n"
+---
+# 개발 환경 (기본 프로파일)
+# WAS(Tomcat 등)에 DataSource JNDI를 등록한 뒤 실행: SPRING_PROFILES_ACTIVE=dev
 spring:
-  profiles:
-    # active: ${SPRING_PROFILES_ACTIVE:default}
-    active: ${SPRING_PROFILES_ACTIVE:postgres}
+  config:
+    activate:
+      on-profile: dev
+  # cloud:
+  #   stream:
+  #     kafka:
+  #       binder:
+  #         brokers: ${KAFKA_BROKERS:localhost:9092}
+  #       streams:
+  #         binder:
+  #           configuration:
+  #             default:
+  #               key:
+  #                 serde: org.apache.kafka.common.serialization.Serdes$StringSerde
+  #               value:
+  #                 serde: org.apache.kafka.common.serialization.Serdes$StringSerde
+  #     bindings:
+  #       bpm-in-0:
+  #         group: definition
+  #         destination: bpm-topic
+  #         contentType: application/json
+  #       bpm-out:
+  #         destination: bpm-topic
+  #         contentType: application/json
   datasource:
-    url: jdbc:h2:mem:testdb
-    driver-class-name: org.h2.Driver
+    jndi-name: ${DATASOURCE_JNDI_NAME:java:comp/env/jdbc/uengine}
   jpa:
+    database-platform: org.hibernate.dialect.Oracle12cDialect
     hibernate:
       ddl-auto: update
     properties:
@@ -36,87 +67,96 @@ spring:
         show_sql: true
         format_sql: true
 
+uengine:
+  definition:
+    basePath: ${UENGINE_BASEPATH:D:\uEngineProject\uEngine6-jdk21}
+
 logging:
   level:
     org.hibernate.type: trace
     org.springframework.cloud: debug
 
-
-server:
-  port: 9093
-
 ---
+# QA 환경
+# WAS에 QA용 DataSource JNDI 등록 후 실행: SPRING_PROFILES_ACTIVE=qa
 spring:
   config:
     activate:
-      on-profile: docker
-# docker 환경의 Kafka 브로커는 messaging-kafka 프로파일 + KAFKA_BROKERS 로 주입.
-
----
-# DB: Oracle (oracle 폴더 Docker 실행 후 SPRING_PROFILES_ACTIVE=oracle)
-# Oracle 컨테이너가 완전히 뜬 뒤(2~3분) 앱 실행. system/oracle = docker-compose ORACLE_PASSWORD.
-# (APP_USER uengine는 첫 기동 시에만 생성되므로, 크래시 후 재기동한 DB는 system 사용)
-spring:
-  config:
-    activate:
-      on-profile: oracle
+      on-profile: qa
+  # cloud:
+  #   stream:
+  #     kafka:
+  #       binder:
+  #         brokers: ${KAFKA_BROKERS:localhost:9092}
+  #       streams:
+  #         binder:
+  #           configuration:
+  #             default:
+  #               key:
+  #                 serde: org.apache.kafka.common.serialization.Serdes$StringSerde
+  #               value:
+  #                 serde: org.apache.kafka.common.serialization.Serdes$StringSerde
+  #     bindings:
+  #       bpm-in-0:
+  #         group: definition
+  #         destination: bpm-topic
+  #         contentType: application/json
+  #       bpm-out:
+  #         destination: bpm-topic
+  #         contentType: application/json
   datasource:
-    url: jdbc:oracle:thin:@${ORACLE_HOST:localhost}:${ORACLE_PORT:1521}:XE
-    username: ${ORACLE_USER:system}
-    password: ${ORACLE_PASSWORD:oracle}
-    driver-class-name: oracle.jdbc.OracleDriver
-    hikari:
-      connection-timeout: 30000
-      initialization-fail-timeout: 30000
+    jndi-name: ${DATASOURCE_JNDI_NAME:java:comp/env/jdbc/uengine}
   jpa:
     database-platform: org.hibernate.dialect.Oracle12cDialect
     hibernate:
-      ddl-auto: update
+      ddl-auto: validate
+
+uengine:
+  definition:
+    basePath: ${UENGINE_BASEPATH:/data/uengine/qa}
+
+logging:
+  level:
+    org.hibernate.type: info
+    org.springframework.cloud: info
 
 ---
-# DB: PostgreSQL (infra/docker-compose.postgres.yml 기동 후 SPRING_PROFILES_ACTIVE=postgres)
-# 호스트에서 앱 실행 시: POSTGRES_HOST=localhost (기본값). Docker 네트워크 내에서는 postgres.
+# 운영 환경
+# WAS에 운영용 DataSource JNDI 등록 후 실행: SPRING_PROFILES_ACTIVE=prod
 spring:
   config:
     activate:
-      on-profile: postgres
+      on-profile: prod
+  # cloud:
+  #   stream:
+  #     kafka:
+  #       binder:
+  #         brokers: ${KAFKA_BROKERS:localhost:9092}
+  #       streams:
+  #         binder:
+  #           configuration:
+  #             default:
+  #               key:
+  #                 serde: org.apache.kafka.common.serialization.Serdes$StringSerde
+  #               value:
+  #                 serde: org.apache.kafka.common.serialization.Serdes$StringSerde
+  #     bindings:
+  #       bpm-in-0:
+  #         group: definition
+  #         destination: bpm-topic
+  #         contentType: application/json
+  #       bpm-out:
+  #         destination: bpm-topic
+  #         contentType: application/json
   datasource:
-    url: jdbc:postgresql://${POSTGRES_HOST:localhost}:${POSTGRES_PORT:5432}/${POSTGRES_DB:uengine}
-    username: ${POSTGRES_USER:uengine}
-    password: ${POSTGRES_PASSWORD:uengine}
-    driver-class-name: org.postgresql.Driver
-    hikari:
-      connection-timeout: 30000
-      initialization-fail-timeout: 30000
+    jndi-name: ${DATASOURCE_JNDI_NAME:java:comp/env/jdbc/uengine}
   jpa:
-    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    database-platform: org.hibernate.dialect.Oracle12cDialect
     hibernate:
-      ddl-auto: update
+      ddl-auto: none
 
----
-# Spring Cloud Stream + Kafka. uengine.messaging.mode=kafka 일 때만 자동 활성화 (DefinitionServiceApplication 의 ContextInitializer).
-spring:
-  config:
-    activate:
-      on-profile: messaging-kafka
-  cloud:
-    stream:
-      kafka:
-        binder:
-          brokers: ${KAFKA_BROKERS:localhost:9092}
-        streams:
-          binder:
-            configuration:
-              default:
-                key:
-                  serde: org.apache.kafka.common.serialization.Serdes$StringSerde
-                value:
-                  serde: org.apache.kafka.common.serialization.Serdes$StringSerde
-      bindings:
-        bpm-in-0:
-          group: definition
-          destination: bpm-topic
-          contentType: application/json
-        bpm-out:
-          destination: bpm-topic
-          contentType: application/json
+uengine:
+  definition:
+    basePath: ${UENGINE_BASEPATH:/data/uengine/prod}
+
+

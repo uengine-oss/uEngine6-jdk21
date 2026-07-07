@@ -1,7 +1,5 @@
 package org.uengine.hwlife.search;
 
-import java.util.List;
-
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -21,8 +19,8 @@ import org.uengine.hwlife.search.dto.*;
  *   POST /search/my-progress  body: { "custNo": "...", "pageNo": "1" }
  *   GET /search/org-running?page=0&amp;size=20
  *   GET /search/org-completed?page=0&amp;size=20
- *   GET /search/org-batch?page=0&amp;size=20
- *   POST /search/running-by-corr-key  body: { "corrKey": "..." }
+ *   GET /search/bulk-assign?page=0&amp;size=20
+ *   POST /search/running-by-key  body: { "corrKey": "..." }
  * </pre>
  */
 @RequestMapping("/search")
@@ -40,12 +38,12 @@ public interface WorkSearchService {
   @RequestMapping(value = "/org-completed", method = RequestMethod.GET)
   Page<ProcessInstanceEntity> searchOrgCompleted(Pageable pageable) throws Exception;
 
-  @RequestMapping(value = "/org-batch", method = RequestMethod.GET)
-  Page<WorklistEntity> searchOrgBatch(Pageable pageable) throws Exception;
+  @RequestMapping(value = "/bulk-assign", method = RequestMethod.GET)
+  Page<WorklistEntity> searchBulkAssign(Pageable pageable) throws Exception;
 
   // @RequestMapping(value = "/worklist-by-inst-id", method = RequestMethod.POST, consumes = "application/json;charset=UTF-8")
   // Page<WorklistEntity> searchWorklistByInstId(Pageable pageable) throws Exception;
 
   @RequestMapping(value = "/running-by-key", method = RequestMethod.POST, consumes = "application/json;charset=UTF-8")
-  List<WorklistEntity> searchRunningWorkByCorrKey(@RequestBody RunningTasksByKeyRequest request) throws Exception;
+  RunningTasksByKeyResponse searchRunningWorkByCorrKey(@RequestBody RunningTasksByKeyRequest request) throws Exception;
 }
