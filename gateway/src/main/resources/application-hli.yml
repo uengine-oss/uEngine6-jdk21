@@ -1,0 +1,50 @@
+# HLI 모드 전용 게이트웨이 설정. --spring.profiles.active=hli 로 활성화.
+# 기존 application.yml 의 default 프로파일은 건드리지 않는다.
+# 차이점: server.port 8088 -> 8188, frontend 라우트 5173 -> 5273.
+
+server:
+  port: 8188
+
+spring:
+  cloud:
+    gateway:
+      httpclient:
+        connect-timeout: 3000
+        response-timeout: 3600000
+      routes:
+        - id: execution
+          uri: http://localhost:8000
+          predicates:
+            - Path=/complete/**, /vision-complete/**, /execution/**
+          filters:
+            - RewritePath=/execution/?(?<segment>.*), /$\{segment}
+        - id: events
+          uri: http://localhost:9094
+          predicates:
+            - Path=/events/**
+        - id: definition-servicce
+          uri: http://localhost:9093
+          predicates:
+            - Path=/definition/**, /version/**, /versions/**
+        - id: instance-servicce
+          uri: http://localhost:9094
+          predicates:
+            - Path=/worklist/**, /test/**, /instance/**, /work-item/** , /instances/**, /dry-run/**, /validate/**, /start-and-complete, /business-rules, /business-rules/**, /inbox, /role-assign-rules
+        - id: inventory-service
+          uri: http://localhost:8080
+          predicates:
+            - Path=/inventories/**, /url-test/**
+        - id: frontend
+          uri: http://localhost:5273
+          predicates:
+            - Path=/**
+      globalcors:
+        corsConfigurations:
+          '[/**]':
+            allowedOriginPatterns:
+              - "*"
+            allowedMethods:
+              - "*"
+            allowedHeaders:
+              - "*"
+            allowCredentials: true

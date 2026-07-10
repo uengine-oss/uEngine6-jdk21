@@ -8,6 +8,8 @@ server:
 spring:
   application:
     name: definition
+  main:
+    allow-bean-definition-overriding: true
 ---
 
 uengine:

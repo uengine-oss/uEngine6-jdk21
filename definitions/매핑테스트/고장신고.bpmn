@@ -16,13 +16,22 @@
           <uengine:json>{"defaultValue":""}</uengine:json>
         </uengine:variable>
         <uengine:variable name="처리내용" type="Text" />
+        <uengine:variable name="POLICY_ID" type="Text">
+          <uengine:json>{"defaultValue":"PLN01"}</uengine:json>
+        </uengine:variable>
+        <uengine:variable name="DIFFICULTY" type="Text">
+          <uengine:json>{"defaultValue":"HIGH"}</uengine:json>
+        </uengine:variable>
+        <uengine:variable name="REF_ID" type="Text">
+          <uengine:json>{"defaultValue":"고장신고-TEST"}</uengine:json>
+        </uengine:variable>
       </uengine:properties>
     </bpmn:extensionElements>
     <bpmn:laneSet id="LaneSet_0jvx63h">
       <bpmn:lane id="Lane_0412ek3" name="작업자">
         <bpmn:extensionElements>
           <uengine:properties>
-            <uengine:json>{"roleResolutionContext":{"_type":"org.uengine.five.overriding.IAMRoleResolutionContext","scope":"manager"}}</uengine:json>
+            <uengine:json>{"roleResolutionContext":{"_type":"org.uengine.hwlife.overriding.RuleBasedRoleResolutionContext","policyId":"PLN01","difficulty":"HIGH"}}</uengine:json>
           </uengine:properties>
         </bpmn:extensionElements>
         <bpmn:flowNodeRef>Activity_1kzqm5b</bpmn:flowNodeRef>
