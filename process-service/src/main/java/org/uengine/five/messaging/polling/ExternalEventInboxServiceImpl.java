@@ -41,7 +41,7 @@ public class ExternalEventInboxServiceImpl implements ExternalEventInboxService 
         if (body != null && body.isArray()) {
             return receiveEvents(defaultType, defaultCorrKey, body);
         }
-        if (isEventRequestWrapper(body)) {
+        if (isEventRequestWrapper(defaultType, defaultCorrKey, body)) {
             EventInboxRequest request;
             try {
                 request = objectMapper.treeToValue(body, EventInboxRequest.class);
@@ -55,11 +55,12 @@ public class ExternalEventInboxServiceImpl implements ExternalEventInboxService 
         return receiveEvent(defaultType, defaultCorrKey, body);
     }
 
-    private boolean isEventRequestWrapper(JsonNode body) {
+    private boolean isEventRequestWrapper(String defaultType, String defaultCorrKey, JsonNode body) {
         if (body == null || !body.isObject() || !body.has("payload")) {
             return false;
         }
-        return body.has("eventName") || body.has("eventname") || body.has("corrKey") || body.has("corrkey");
+        return body.has("eventName") || body.has("eventname") || body.has("corrKey") || body.has("corrkey")
+                || defaultType != null || defaultCorrKey != null;
     }
 
     @Override

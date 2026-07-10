@@ -4,6 +4,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.uengine.five.entity.WorklistEntity;
 import org.uengine.five.lifecycle.BpmLifecycleService;
 import org.uengine.five.repository.WorklistRepository;
+import org.uengine.five.service.GroupCodeResolver;
 import org.uengine.kernel.KeyedParameter;
 import org.uengine.kernel.RoleMapping;
 import org.uengine.kernel.Role;
@@ -171,6 +172,7 @@ public class JPAWorkList implements WorkList {
             wl.setScope(""+parameterMap.get("scope"));
             Object assignGroupForWl = parameterMap.get("assignGroup");
             wl.setAssignGroup(assignGroupForWl != null ? String.valueOf(assignGroupForWl) : null);
+            wl.setGroupCd(GroupCodeResolver.resolveFromRoleMapping(roleMapping, wl.getAssignGroup()));
             wl.setAssignType(Integer.parseInt("" + parameterMap.get("assignType")));
 
             if(parameterMap.containsKey("actType")){

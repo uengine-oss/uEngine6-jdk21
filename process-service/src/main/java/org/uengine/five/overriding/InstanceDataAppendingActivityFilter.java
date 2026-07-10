@@ -3,6 +3,7 @@
  */
 package org.uengine.five.overriding;
 
+import org.uengine.five.service.GroupCodeResolver;
 import org.uengine.kernel.*;
 import org.uengine.kernel.bpmn.ServiceTask;
 import org.uengine.webservices.worklist.WorkList;
@@ -84,6 +85,11 @@ public class InstanceDataAppendingActivityFilter implements ActivityFilter, Seri
 					jpaProcessInstance.getProcessInstanceEntity().setInitEp(rm.getEndpoint());
 					jpaProcessInstance.getProcessInstanceEntity().setInitRsNm(rm.getResourceName());
 					jpaProcessInstance.getProcessInstanceEntity().setInitComCd(rm.getCompanyId());
+					if (jpaProcessInstance.getProcessInstanceEntity().getInitGroupCd() == null) {
+						String initGroupCd = GroupCodeResolver.resolveFromRoleMapping(rm, rm.getAssignGroup());
+						jpaProcessInstance.getProcessInstanceEntity().setInitGroupCd(initGroupCd);
+						jpaProcessInstance.getProcessInstanceEntity().setCurrGroupCd(initGroupCd);
+					}
 
 					jpaProcessInstance.getProcessInstanceEntity()
 							.setPrevCurrEp("");
@@ -222,6 +228,11 @@ public class InstanceDataAppendingActivityFilter implements ActivityFilter, Seri
 					processInstance.getProcessInstanceEntity().setInitEp(rm.getEndpoint());
 					processInstance.getProcessInstanceEntity().setInitRsNm(rm.getResourceName());
 					processInstance.getProcessInstanceEntity().setInitComCd(rm.getCompanyId());
+					if (processInstance.getProcessInstanceEntity().getInitGroupCd() == null) {
+						String initGroupCd = GroupCodeResolver.resolveFromRoleMapping(rm, rm.getAssignGroup());
+						processInstance.getProcessInstanceEntity().setInitGroupCd(initGroupCd);
+						processInstance.getProcessInstanceEntity().setCurrGroupCd(initGroupCd);
+					}
 
 					processInstance.getProcessInstanceEntity().setCurrEp(rm.getEndpoint());
 					processInstance.getProcessInstanceEntity().setCurrRsNm(rm.getResourceName());
@@ -255,9 +266,11 @@ public class InstanceDataAppendingActivityFilter implements ActivityFilter, Seri
 				processInstance.getProcessInstanceEntity().setInitEp(initEp);
 				processInstance.getProcessInstanceEntity().setInitRsNm(initRSNM);
 				processInstance.getProcessInstanceEntity().setInitComCd(initComcode);
+				processInstance.getProcessInstanceEntity().setInitGroupCd(rootProcessInstance.getProcessInstanceEntity().getInitGroupCd());
 
 				processInstance.getProcessInstanceEntity().setCurrEp(initEp);
 				processInstance.getProcessInstanceEntity().setCurrRsNm(initRSNM);
+				processInstance.getProcessInstanceEntity().setCurrGroupCd(rootProcessInstance.getProcessInstanceEntity().getCurrGroupCd());
 			}
 		}
 	}

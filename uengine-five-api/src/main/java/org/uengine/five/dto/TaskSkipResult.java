@@ -15,6 +15,7 @@ public class TaskSkipResult {
     Long rootInstId;
     String skippedTracingTag;
     List<Long> currentTaskIds;
+    String source;
 
     public String getInstanceId() {
         return instanceId;
@@ -46,6 +47,14 @@ public class TaskSkipResult {
 
     public void setCurrentTaskIds(List<Long> currentTaskIds) {
         this.currentTaskIds = currentTaskIds;
+    }
+
+    public String getSource() {
+        return source;
+    }
+
+    public void setSource(String source) {
+        this.source = source;
     }
 }
 

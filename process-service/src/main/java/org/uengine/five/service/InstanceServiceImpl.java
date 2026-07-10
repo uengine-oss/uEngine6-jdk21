@@ -26,7 +26,6 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.Collections;
 import java.util.Vector;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -320,6 +319,12 @@ public class InstanceServiceImpl implements InstanceService {
                 if (corrKeyValue != null) {
                     ((JPAProcessInstance) instance).getProcessInstanceEntity().setCorrKey(corrKeyValue);
                 }
+
+                ProcessInstanceEntity processInstanceEntity = ((JPAProcessInstance) instance).getProcessInstanceEntity();
+                ProcessInstanceGroupMetadata.applyStartGroup(
+                        processInstanceEntity,
+                        UserContext.getThreadLocalInstance().getGroups());
+                HliBusinessFieldMapper.copy(command, processInstanceEntity);
 
                 org.uengine.five.dto.ProcessVariableValue[] processVariableValues = command.getProcessVariableValues();
                 if (processVariableValues != null) {
@@ -1562,8 +1567,7 @@ public class InstanceServiceImpl implements InstanceService {
         }
 
         String defId = worklistEntity.getDefId();
-        ProcessDefinition definition = (ProcessDefinition) definitionService.getDefinition(defId,
-                worklistEntity.getDefVerId());
+        ProcessDefinition definition = loadDefinitionForWorkItem(defId, worklistEntity.getDefVerId(), taskId);
         HumanActivity activity = (HumanActivity) definition.getActivity(worklistEntity.getTrcTag());
 
         WorkItemResource workItem = new WorkItemResource();
@@ -1617,6 +1621,27 @@ public class InstanceServiceImpl implements InstanceService {
         return workItem;
     }
 
+    private ProcessDefinition loadDefinitionForWorkItem(String defId, String defVerId, String taskId) throws Exception {
+        try {
+            return (ProcessDefinition) definitionService.getDefinition(defId, defVerId);
+        } catch (Exception exactVersionError) {
+            log.warn("[BPM] Failed to load work-item definition. taskId={}, defId={}, defVerId={}. Trying fallback definition.",
+                    taskId, defId, defVerId, exactVersionError);
+
+            String latestArchiveVersion = findHighestNumberedFileName(defId);
+            if (latestArchiveVersion != null && !latestArchiveVersion.equals(defVerId)) {
+                try {
+                    return (ProcessDefinition) definitionService.getDefinition(defId, latestArchiveVersion);
+                } catch (Exception latestArchiveError) {
+                    log.warn("[BPM] Failed to load latest archived definition. taskId={}, defId={}, latestVersion={}",
+                            taskId, defId, latestArchiveVersion, latestArchiveError);
+                }
+            }
+
+            return (ProcessDefinition) definitionService.getDefinition(defId, null);
+        }
+    }
+
     private Map<String, Object> getPayloadValues(JPAProcessInstance instance, Activity activity) throws Exception {
         Date date = instance.getProcessInstanceEntity().getStartedDate();
         String currentYear = String.valueOf(date.getYear() + 1900);
@@ -1654,8 +1679,17 @@ public class InstanceServiceImpl implements InstanceService {
                 .getActivity(worklistEntity.getTrcTag()));
 
         if (!instance.isRunning(humanActivity.getTracingTag()) && !humanActivity.isNotificationWorkitem()) {
+            String activityStatus = humanActivity.getStatus(instance);
+            if (Activity.STATUS_COMPLETED.equals(activityStatus)
+                    || DefaultWorkList.WORKITEM_STATUS_COMPLETED.equalsIgnoreCase(activityStatus)
+                    || "Completed".equalsIgnoreCase(activityStatus)) {
+                worklistEntity.setStatus(DefaultWorkList.WORKITEM_STATUS_COMPLETED);
+                worklistEntity.setEndDate(new Date());
+                worklistRepository.save(worklistEntity);
+                return;
+            }
             throw new UEngineException("Illegal completion for workitem [" + humanActivity + ":"
-                    + humanActivity.getStatus(instance) + "]: Already closed or illegal status.");
+                    + activityStatus + "]: Already closed or illegal status.");
         }
 
         // map the argument list to variables change list
@@ -1919,8 +1953,17 @@ public class InstanceServiceImpl implements InstanceService {
                 .getActivity(worklistEntity.getTrcTag()));
 
         if (!instance.isRunning(humanActivity.getTracingTag()) && !humanActivity.isNotificationWorkitem()) {
+            String activityStatus = humanActivity.getStatus(instance);
+            if (Activity.STATUS_COMPLETED.equals(activityStatus)
+                    || DefaultWorkList.WORKITEM_STATUS_COMPLETED.equalsIgnoreCase(activityStatus)
+                    || "Completed".equalsIgnoreCase(activityStatus)) {
+                worklistEntity.setStatus(DefaultWorkList.WORKITEM_STATUS_COMPLETED);
+                worklistEntity.setEndDate(new Date());
+                worklistRepository.save(worklistEntity);
+                return;
+            }
             throw new UEngineException("Illegal completion for workitem [" + humanActivity + ":"
-                    + humanActivity.getStatus(instance) + "]: Already closed or illegal status.");
+                    + activityStatus + "]: Already closed or illegal status.");
         }
         // ObjectMapper objectMapper = new ObjectMapper();
         // String workItemJson = objectMapper.writeValueAsString(workItem);
@@ -2641,7 +2684,6 @@ public class InstanceServiceImpl implements InstanceService {
         if (taskId == null || taskId.equals("null")) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "taskId is required");
         }
-
         WorklistEntity worklistEntity = worklistRepository.findById(new Long(taskId)).orElse(null);
         if (worklistEntity == null) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "No such work item where taskId = " + taskId);
@@ -2820,8 +2862,6 @@ public class InstanceServiceImpl implements InstanceService {
 
             if (command.getAssignGroup() != null) {
                 delegated.setAssignGroup(command.getAssignGroup());
-            } else if (UEngineUtil.isNotEmpty(laneAssignGroup) && !"null".equalsIgnoreCase(laneAssignGroup)) {
-                delegated.setAssignGroup(laneAssignGroup);
             }
 
             if (command.getAssignType() != null) {
@@ -2842,10 +2882,6 @@ public class InstanceServiceImpl implements InstanceService {
         }
 
         String targetAssignGroup = command.getAssignGroup();
-        if (!hasText(targetAssignGroup) && "ROLE".equals(targetType)
-                && UEngineUtil.isNotEmpty(laneAssignGroup) && !"null".equalsIgnoreCase(laneAssignGroup)) {
-            targetAssignGroup = laneAssignGroup;
-        }
 
         String targetScope = command.getScope();
         if (!hasText(targetScope) && "GROUP".equals(targetType)
@@ -2887,6 +2923,22 @@ public class InstanceServiceImpl implements InstanceService {
         return delegated;
     }
 
+    private String resolveDelegatedGroupCd(RoleMappingCommand command, RoleMapping delegated) {
+        String targetType = normalizeDelegateTargetType(command);
+
+        if ("USER".equals(targetType)) {
+            String endpoint = delegated != null ? delegated.getEndpoint() : command.getEndpoint();
+            return GroupCodeResolver.resolveFromEndpoint(endpoint, null);
+        }
+
+        if ("GROUP".equals(targetType) || "GROUP_ROLE".equals(targetType) || "GROUPROLE".equals(targetType)) {
+            String assignGroup = delegated != null ? delegated.getAssignGroup() : command.getAssignGroup();
+            return hasText(assignGroup) ? assignGroup.trim() : null;
+        }
+
+        return GroupCodeResolver.resolveFromRoleMapping(delegated, null);
+    }
+
     /**
      * WorkItem 위임(Delegation)
      *
@@ -2920,6 +2972,9 @@ public class InstanceServiceImpl implements InstanceService {
         if (worklistEntity == null) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "No such work item where taskId = " + taskId);
         }
+        String previousEndpoint = worklistEntity.getEndpoint();
+        String previousUserName = worklistEntity.getResName();
+        String previousGroupCd = worklistEntity.getGroupCd();
 
         String instanceId = worklistEntity.getInstId().toString();
         ProcessInstance instance = getProcessInstanceLocal(instanceId);
@@ -2964,6 +3019,8 @@ public class InstanceServiceImpl implements InstanceService {
                 laneAssignGroup,
                 laneAssignType);
         humanActivity.delegate(instance, delegated, delegateOnlyForWorkitem);
+        String delegatedGroupCd = resolveDelegatedGroupCd(delegatedRoleMapping, delegated);
+        syncDelegatedGroupCd(instance, delegatedGroupCd);
 
         // 같은 Lane(roleName)의 병렬 태스크들도 동일 사용자로 재할당(NEW/RUNNING만)
         try {
@@ -2977,6 +3034,7 @@ public class InstanceServiceImpl implements InstanceService {
                     String targetScope = delegated != null ? delegated.getScope() : null;
                     String targetAssignGroup = delegated != null ? delegated.getAssignGroup() : null;
                     int targetAssignType = delegated != null ? delegated.getAssignType() : 0;
+                    String targetGroupCd = delegatedGroupCd;
 
                     for (WorklistEntity wl : currents) {
                         if (wl == null) continue;
@@ -2990,14 +3048,16 @@ public class InstanceServiceImpl implements InstanceService {
                         }
                         if (UEngineUtil.isNotEmpty(targetAssignGroup) && !"null".equalsIgnoreCase(targetAssignGroup)) {
                             wl.setAssignGroup(targetAssignGroup);
-                        } else if (!UEngineUtil.isNotEmpty(wl.getAssignGroup()) || "null".equalsIgnoreCase(wl.getAssignGroup())) {
-                            if (UEngineUtil.isNotEmpty(laneAssignGroup) && !"null".equalsIgnoreCase(laneAssignGroup)) wl.setAssignGroup(laneAssignGroup);
                         }
                         if (targetAssignType != 0) {
                             wl.setAssignType(targetAssignType);
                         } else if (wl.getAssignType() == 0 && laneAssignType != 0) {
                             wl.setAssignType(laneAssignType);
                         }
+
+                        wl.setPrevEndpoint(previousEndpoint);
+                        wl.setPrevUserName(previousUserName);
+                        wl.setPrevGroupCd(previousGroupCd);
 
                         if (UEngineUtil.isNotEmpty(targetEndpoint)) {
                             wl.setEndpoint(targetEndpoint);
@@ -3009,6 +3069,7 @@ public class InstanceServiceImpl implements InstanceService {
                             wl.setEndpoint(null);
                             wl.setResName(null);
                         }
+                        wl.setGroupCd(targetGroupCd);
                         worklistRepository.save(wl);
                     }
                 }
@@ -3035,6 +3096,18 @@ public class InstanceServiceImpl implements InstanceService {
         // }
 
         return getWorkItem(resultTaskId);
+    }
+
+    private void syncDelegatedGroupCd(ProcessInstance instance, String delegatedGroupCd) {
+        if (!(instance instanceof JPAProcessInstance)) {
+            return;
+        }
+        ProcessInstanceEntity entity = ((JPAProcessInstance) instance).getProcessInstanceEntity();
+        if (entity == null) {
+            return;
+        }
+        entity.setPrevCurrGroupCd(entity.getCurrGroupCd());
+        entity.setCurrGroupCd(delegatedGroupCd);
     }
 
     @RequestMapping(value = "/work-items/delegate", method = RequestMethod.POST, produces = "application/json;charset=UTF-8")
@@ -3635,6 +3708,11 @@ public class InstanceServiceImpl implements InstanceService {
             return TaskSkipAvailability.disabled("Cannot analyze variable mapping usage: " + e.getMessage());
         }
 
+        if (TaskSkipAnalyzer.hasReachableBranch(instance, humanActivity)) {
+            return TaskSkipAvailability.enabledWithWarnings(Collections.singletonList(
+                    "A later branch exists. Existing process variables will decide the route after this task is skipped."));
+        }
+
         return TaskSkipAvailability.enabled();
     }
 
@@ -3653,6 +3731,12 @@ public class InstanceServiceImpl implements InstanceService {
         if (taskId == null || taskId.equals("null")) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "taskId is required");
         }
+        String skipReason = command != null ? command.getReason() : null;
+        if (skipReason == null || skipReason.trim().isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Skip reason is required.");
+        }
+        skipReason = skipReason.trim();
+        String skipSource = command != null ? command.normalizedSource() : "WORKITEM";
 
         // 요청 사용자 컨텍스트
         String requestUserId = UserContext.getThreadLocalInstance().getUserId();
@@ -3692,8 +3776,10 @@ public class InstanceServiceImpl implements InstanceService {
         } catch (Exception ignore) {
         }
         if (requestUserId != null && currentOwner != null && !requestUserId.equals(currentOwner)) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
-                    "No permission to skip this task. currentOwner=" + currentOwner + ", userId=" + requestUserId);
+            if (!"ADMIN".equals(skipSource) || !isSkipAdminAuthorized()) {
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                        "No permission to skip this task. currentOwner=" + currentOwner + ", userId=" + requestUserId);
+            }
         }
 
         // 가능여부 재검증(TOCTOU 방지)
@@ -3723,13 +3809,11 @@ public class InstanceServiceImpl implements InstanceService {
                 } catch (Exception ignore) {
                 }
 
-                // after.setDecision("SKIP");
-                if (command != null && command.getReason() != null && command.getReason().trim().length() > 0) {
-                    if (after.getReason() == null || after.getReason().trim().isEmpty()) {
-                        after.setReason(command.getReason()); // 그대로 저장
-                    }
+                after.setDecision("SKIP");
+                if (skipReason.length() > 0) {
+                    after.setReason(skipReason);
                     String existing = after.getDescription();
-                    String msg = "[SKIP] reason=" + command.getReason().trim();
+                    String msg = "[SKIP] source=" + skipSource + ", actor=" + requestUserId + ", reason=" + skipReason;
                     after.setDescription(existing == null || existing.trim().isEmpty() ? msg : (existing + "\n" + msg));
                 }
                 // 엔진(JPAWorkList.cancelWorkItem)에서 status를 SKIPPED로 세팅하지만, 혹시 모르니 한 번 더 보장
@@ -3756,7 +3840,27 @@ public class InstanceServiceImpl implements InstanceService {
         result.setRootInstId(rootInstId);
         result.setSkippedTracingTag(humanActivity.getTracingTag());
         result.setCurrentTaskIds(currentTaskIds);
+        result.setSource(skipSource);
         return result;
+    }
+
+    private boolean isSkipAdminAuthorized() {
+        List<String> scopes = UserContext.getThreadLocalInstance().getScopes();
+        if (containsAdminAuthority(scopes)) return true;
+
+        List<String> groups = UserContext.getThreadLocalInstance().getGroups();
+        return containsAdminAuthority(groups);
+    }
+
+    private boolean containsAdminAuthority(List<String> values) {
+        if (values == null) return false;
+        for (String value : values) {
+            String normalized = value == null ? "" : value.trim().toUpperCase();
+            if ("ADMIN".equals(normalized) || "ROLE_ADMIN".equals(normalized) || normalized.endsWith("/ADMIN")) {
+                return true;
+            }
+        }
+        return false;
     }
 
     // ----------------- scenario API (delegates to ScenarioController) -------------------- //

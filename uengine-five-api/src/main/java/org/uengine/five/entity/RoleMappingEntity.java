@@ -1,6 +1,7 @@
 package org.uengine.five.entity;
 
 import jakarta.persistence.*;
+import java.util.Date;
 
 /**
  * Created by uengine on 2017. 8. 1..
@@ -52,6 +53,19 @@ public class RoleMappingEntity {//implements RoleMappingDAO {
     String dispatchParam1;
 
     Number dispatchOption;
+
+    @Column(name = "POLICY_ID")
+    String policyId;
+
+    @Column(name = "DIFFICULTY")
+    String difficulty;
+
+    @Column(name = "REF_ID")
+    String refId;
+
+    @Column(name = "ASSIGNED_AT")
+    @Temporal(TemporalType.TIMESTAMP)
+    Date assignedAt;
 
 
     public Long getRoleMappingId() {
@@ -132,5 +146,37 @@ public class RoleMappingEntity {//implements RoleMappingDAO {
 
     public void setDispatchOption(Number dispatchOption) {
         this.dispatchOption = dispatchOption;
+    }
+
+    public String getPolicyId() {
+        return policyId;
+    }
+
+    public void setPolicyId(String policyId) {
+        this.policyId = policyId;
+    }
+
+    public String getDifficulty() {
+        return difficulty;
+    }
+
+    public void setDifficulty(String difficulty) {
+        this.difficulty = difficulty;
+    }
+
+    public String getRefId() {
+        return refId;
+    }
+
+    public void setRefId(String refId) {
+        this.refId = refId;
+    }
+
+    public Date getAssignedAt() {
+        return assignedAt;
+    }
+
+    public void setAssignedAt(Date assignedAt) {
+        this.assignedAt = assignedAt;
     }
 }

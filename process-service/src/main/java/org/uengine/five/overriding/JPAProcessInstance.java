@@ -1,7 +1,9 @@
 package org.uengine.five.overriding;
 
+import java.io.File;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.Map;
 import java.util.UUID;
@@ -36,6 +38,7 @@ import org.uengine.modeling.resource.IResource;
 import org.uengine.modeling.resource.ResourceManager;
 import org.uengine.modeling.resource.Serializer;
 import org.uengine.five.lifecycle.BpmLifecycleService;
+import org.uengine.hwlife.rule.RuleRoleResolutionService;
 import org.uengine.processmanager.EMailServiceLocal;
 import org.uengine.processmanager.TransactionContext;
 import org.uengine.webservices.worklist.WorkList;
@@ -71,6 +74,9 @@ public class JPAProcessInstance extends DefaultProcessInstance implements Transa
 
     @Autowired(required = false)
     BpmLifecycleService bpmLifecycleService;
+
+    @Autowired(required = false)
+    RuleRoleResolutionService ruleRoleResolutionService;
 
 
     ProcessInstanceEntity processInstanceEntity;
@@ -239,11 +245,74 @@ public class JPAProcessInstance extends DefaultProcessInstance implements Transa
             if (fromRegistry != null) {
                 setProcessDefinition(fromRegistry);
             } else {
-                setProcessDefinition((ProcessDefinition) definitionService.getDefinition(processInstanceEntity.getDefId(),
+                setProcessDefinition(loadProcessDefinitionWithFallback(processInstanceEntity.getDefId(),
                         processInstanceEntity.getDefVerId()));
             }
         }
         return super.getProcessDefinition();
+    }
+
+    private ProcessDefinition loadProcessDefinitionWithFallback(String defId, String defVerId) throws Exception {
+        try {
+            return (ProcessDefinition) definitionService.getDefinition(defId, defVerId);
+        } catch (Exception exactVersionError) {
+            String latestArchiveVersion = findHighestNumberedFileName(defId);
+            if (latestArchiveVersion != null && !latestArchiveVersion.equals(defVerId)) {
+                try {
+                    return (ProcessDefinition) definitionService.getDefinition(defId, latestArchiveVersion);
+                } catch (Exception latestArchiveError) {
+                    // Fall through to the current definition below.
+                }
+            }
+            return (ProcessDefinition) definitionService.getDefinition(defId, null);
+        }
+    }
+
+    private String findHighestNumberedFileName(String defPath) {
+        if (defPath == null || defPath.trim().isEmpty()) {
+            return null;
+        }
+        if (!defPath.endsWith(".bpmn")) {
+            defPath = defPath + ".bpmn";
+        }
+        File dir = new File("archive/" + defPath);
+        if (!dir.exists() || !dir.isDirectory()) {
+            return null;
+        }
+
+        File[] files = dir.listFiles();
+        if (files == null || files.length == 0) {
+            return null;
+        }
+
+        Arrays.sort(files, (f1, f2) -> {
+            String name1 = f1.getName().replaceFirst("\\.bpmn$", "");
+            String name2 = f2.getName().replaceFirst("\\.bpmn$", "");
+            if (isDotSeparatedNumericVersion(name1) && isDotSeparatedNumericVersion(name2)) {
+                return compareDotSeparatedNumericVersions(name2, name1);
+            }
+            return name2.compareTo(name1);
+        });
+
+        return files[0].getName().replaceFirst("\\.bpmn$", "");
+    }
+
+    private boolean isDotSeparatedNumericVersion(String value) {
+        return value != null && value.matches("\\d+(\\.\\d+)*");
+    }
+
+    private int compareDotSeparatedNumericVersions(String left, String right) {
+        String[] leftParts = left.split("\\.");
+        String[] rightParts = right.split("\\.");
+        int len = Math.max(leftParts.length, rightParts.length);
+        for (int i = 0; i < len; i++) {
+            int leftValue = i < leftParts.length ? Integer.parseInt(leftParts[i]) : 0;
+            int rightValue = i < rightParts.length ? Integer.parseInt(rightParts[i]) : 0;
+            if (leftValue != rightValue) {
+                return Integer.compare(leftValue, rightValue);
+            }
+        }
+        return 0;
     }
 
     @Override
@@ -300,6 +369,19 @@ public class JPAProcessInstance extends DefaultProcessInstance implements Transa
     @Override
     public void putRoleMapping(RoleMapping roleMap) throws Exception {
         super.putRoleMapping(roleMap);
+    }
+
+    @Override
+    public void putRoleMapping(String name, RoleMapping roleMap) throws Exception {
+        super.putRoleMapping(name, roleMap);
+        recordRuleRoleAssignment(name, roleMap);
+    }
+
+    private void recordRuleRoleAssignment(String roleName, RoleMapping roleMap) {
+        if (ruleRoleResolutionService == null || roleMap == null) {
+            return;
+        }
+        ruleRoleResolutionService.recordRoleAssignment(this, roleName, roleMap);
     }
 
     ProcessInstance mainProcessInstance;

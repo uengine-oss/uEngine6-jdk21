@@ -36,6 +36,7 @@ public class RuleBasedRoleResolutionContext extends RoleResolutionContext {
 
     /** 모델러에서 직접 지정하는 정책 ID. 비어 있으면 인스턴스 변수 POLICY_ID 로 대체. */
     private String policyId;
+    private String difficulty;
 
     public String getPolicyId() {
         return policyId;
@@ -45,12 +46,21 @@ public class RuleBasedRoleResolutionContext extends RoleResolutionContext {
         this.policyId = policyId;
     }
 
+    public String getDifficulty() {
+        return difficulty;
+    }
+
+    public void setDifficulty(String difficulty) {
+        this.difficulty = difficulty;
+    }
+
     @Override
     public RoleMapping getActualMapping(ProcessDefinition pd, ProcessInstance instance,
                                         String tracingTag, Map options) throws Exception {
         // 1) 기준정보 확보 (POLICY_ID 는 context 우선, 없으면 인스턴스 변수)
         String resolvedPolicyId = isNotEmpty(policyId) ? policyId : readVar(instance, tracingTag, VAR_POLICY_ID);
-        String difficulty = readVar(instance, tracingTag, VAR_DIFFICULTY);
+        String variableDifficulty = readVar(instance, tracingTag, VAR_DIFFICULTY);
+        String resolvedDifficulty = isNotEmpty(variableDifficulty) ? variableDifficulty : difficulty;
         String refId = readVar(instance, tracingTag, VAR_REF_ID);
 
         if (!isNotEmpty(resolvedPolicyId)) {
@@ -61,17 +71,17 @@ public class RuleBasedRoleResolutionContext extends RoleResolutionContext {
         RuleRoleResolutionService service = RuleRoleResolutionSupport.get();
 
         // 2) 배정 규칙 조회 (없으면 외부 기준정보에서 적재 후 재조회)
-        List<RuleCandidate> rules = loadRules(resolvedPolicyId, difficulty);
+        List<RuleCandidate> rules = loadRules(resolvedPolicyId, resolvedDifficulty);
         if (rules.isEmpty()) {
             throw new IllegalStateException("RuleBasedRoleResolutionContext: 정책 " + resolvedPolicyId
-                    + " / 난이도 " + difficulty + " 에 대한 배정 규칙이 없습니다.");
+                    + " / 난이도 " + resolvedDifficulty + " 에 대한 배정 규칙이 없습니다.");
         }
 
         // 3) REF_ID 기준 후보 담당자 선별
         List<String> candidates = selectByAssignee(rules, refId);
 
         // 4) 후보별 진행중 업무량 조회
-        Map<String, Integer> remaining = service.queryWorkload(refId, candidates);
+        Map<String, Integer> remaining = service.queryWorkload(resolvedPolicyId, resolvedDifficulty, refId, candidates);
 
         // 5) GAP 계산으로 담당자 결정
         String chosen = selectByGap(rules, remaining);
@@ -82,7 +92,7 @@ public class RuleBasedRoleResolutionContext extends RoleResolutionContext {
         mapping.setAssignType(Role.ASSIGNTYPE_USER);
 
         // 7) 배정 메타(정책/난이도/REF_ID) 적재 → 코어가 BPM_ROLEMAPPING 저장 시 함께 보존
-        saveMapping(mapping, resolvedPolicyId, difficulty, refId);
+        saveMapping(mapping, resolvedPolicyId, resolvedDifficulty, refId);
 
         return mapping;
     }
@@ -118,6 +128,17 @@ public class RuleBasedRoleResolutionContext extends RoleResolutionContext {
         String best = null;
         double bestGap = -Double.MAX_VALUE;
         int bestLoad = Integer.MAX_VALUE;
+        double bestWeight = -Double.MAX_VALUE;
+        double totalWeight = 0d;
+        int totalLoad = 0;
+
+        for (RuleCandidate r : rules) {
+            if (!isNotEmpty(r.getEndpoint())) {
+                continue;
+            }
+            totalWeight += effectiveWeight(r);
+            totalLoad += Math.max(0, remaining.getOrDefault(r.getEndpoint(), 0));
+        }
 
         for (RuleCandidate r : rules) {
             String ep = r.getEndpoint();
@@ -125,11 +146,17 @@ public class RuleBasedRoleResolutionContext extends RoleResolutionContext {
                 continue;
             }
             int load = remaining.getOrDefault(ep, 0);
-            double gap = r.getWeight() - load;
-            if (gap > bestGap || (gap == bestGap && load < bestLoad)) {
+            double weight = effectiveWeight(r);
+            double targetRatio = totalWeight > 0d ? weight / totalWeight : 0d;
+            double actualRatio = totalLoad > 0 ? (double) Math.max(0, load) / totalLoad : 0d;
+            double gap = targetRatio - actualRatio;
+            if (gap > bestGap
+                    || (gap == bestGap && load < bestLoad)
+                    || (gap == bestGap && load == bestLoad && weight > bestWeight)) {
                 best = ep;
                 bestGap = gap;
                 bestLoad = load;
+                bestWeight = weight;
             }
         }
 
@@ -137,6 +164,10 @@ public class RuleBasedRoleResolutionContext extends RoleResolutionContext {
             throw new IllegalStateException("RuleBasedRoleResolutionContext: 배정 가능한 담당자를 결정하지 못했습니다.");
         }
         return best;
+    }
+
+    private static double effectiveWeight(RuleCandidate candidate) {
+        return candidate.getWeight() < 1d ? 1d : candidate.getWeight();
     }
 
     /**
@@ -166,7 +197,10 @@ public class RuleBasedRoleResolutionContext extends RoleResolutionContext {
         if (instance == null) {
             return null;
         }
-        Object v = instance.getProperty(tracingTag, key);
+        Object v = instance.get("", key);
+        if (v == null && isNotEmpty(tracingTag)) {
+            v = instance.get(tracingTag, key);
+        }
         return v != null ? String.valueOf(v) : null;
     }
 

@@ -7,6 +7,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 
+import org.uengine.contexts.EventSynchronization;
+import org.uengine.contexts.MappingContext;
 import org.uengine.kernel.bpmn.FlowActivity;
 import org.uengine.kernel.bpmn.Gateway;
 import org.uengine.kernel.bpmn.SequenceFlow;
@@ -63,6 +65,18 @@ public final class TaskSkipAnalyzer {
         if (reachable.isEmpty()) return null;
 
         return findFirstVariableReferenceInFuture(def, reachable, writtenVars, resolver, new HashSet<>());
+    }
+
+    public static boolean hasReachableBranch(ProcessInstance instance, Activity currentActivity) {
+        if (instance == null || currentActivity == null) return false;
+        List<Activity> reachable = collectReachableActivities(currentActivity);
+        for (Activity activity : reachable) {
+            if (activity == null) continue;
+            List<SequenceFlow> outs = activity.getOutgoingSequenceFlows();
+            if (activity instanceof Gateway) return true;
+            if (outs != null && outs.size() > 1) return true;
+        }
+        return false;
     }
 
     /** current 이후 도달 가능한 노드(Activity/Gateway/Event) 수집 */
@@ -160,7 +174,7 @@ public final class TaskSkipAnalyzer {
         Set<String> vars = new LinkedHashSet<>();
         if (activity == null || def == null) return vars;
 
-        ParameterContext[] params = activity.getParameters();
+        ParameterContext[] params = getMappingParameters(activity);
         if (params == null) return vars;
 
         for (ParameterContext pc : params) {
@@ -180,7 +194,7 @@ public final class TaskSkipAnalyzer {
         Set<String> vars = new LinkedHashSet<>();
         if (activity == null || def == null) return vars;
 
-        ParameterContext[] params = activity.getParameters();
+        ParameterContext[] params = getMappingParameters(activity);
         if (params == null) return vars;
 
         for (ParameterContext pc : params) {
@@ -399,9 +413,35 @@ public final class TaskSkipAnalyzer {
         String pvName = normalizeProcessVariableName(candidateName);
         if (pvName == null) return;
         ProcessVariable pv = def.getProcessVariable(pvName);
-        if (pv == null) return;
+        if (pv == null) {
+            if (!pvName.startsWith("[")) out.add(pvName);
+            return;
+        }
         // "a.b" 같은 입력이라도 실제 PV는 "a"로 반환될 수 있으니 최종 PV명을 넣는다.
         if (pv.getName() != null) out.add(pv.getName());
+    }
+
+    private static ParameterContext[] getMappingParameters(ReceiveActivity activity) {
+        if (activity == null) return null;
+
+        EventSynchronization sync = activity.getEventSynchronization();
+        if (sync != null) {
+            MappingContext mappingContext = sync.getMappingContext();
+            if (mappingContext != null && mappingContext.getMappingElements() != null) {
+                return mappingContext.getMappingElements();
+            }
+        }
+
+        EventSynchronization[] syncs = activity.getEventSynchronizations();
+        if (syncs != null) {
+            for (EventSynchronization item : syncs) {
+                if (item == null || item.getMappingContext() == null) continue;
+                ParameterContext[] mappings = item.getMappingContext().getMappingElements();
+                if (mappings != null && mappings.length > 0) return mappings;
+            }
+        }
+
+        return activity.getParameters();
     }
 
     private static String normalizeProcessVariableName(String name) {

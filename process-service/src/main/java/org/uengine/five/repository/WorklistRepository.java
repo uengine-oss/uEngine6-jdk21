@@ -31,6 +31,7 @@ public interface WorklistRepository extends JpaRepository<WorklistEntity, Long> 
     @Query("select wl from WorklistEntity wl " +
             "where (" +
             "   (wl.endpoint = ?#{principal.userId} or wl.endpoint in ?#{principal.scopes})" +
+            "   or (wl.endpoint is null and (wl.scope in ?#{principal.groups} or wl.scope in ?#{principal.scopes}))" +
             "   or (wl.dispatchOption = 1 and wl.endpoint is null and (wl.assignGroup is null or wl.assignGroup = 'null') and wl.scope in ?#{principal.groups})" +
             "   or (wl.dispatchOption = 1 and wl.endpoint is null and (wl.assignGroup is null or wl.assignGroup = 'null') and wl.scope in ?#{principal.scopes})" +
             "   or (wl.dispatchOption = 1 and wl.endpoint is null and wl.assignGroup in ?#{principal.groups} and (wl.scope is null or wl.scope = 'null' or wl.scope in ?#{principal.scopes}))" +

@@ -156,6 +156,14 @@ public class WorklistEntity {// implements WorkListDAO {
         this.roleName = roleName;
     }
 
+    public String getGroupCd() {
+        return groupCd;
+    }
+
+    public void setGroupCd(String groupCd) {
+        this.groupCd = groupCd;
+    }
+
     public String getRefRoleName() {
         return refRoleName;
     }
@@ -339,6 +347,14 @@ public class WorklistEntity {// implements WorkListDAO {
 
     public void setPrevEndpoint(String prevEndpoint) {
         this.prevEndpoint = prevEndpoint;
+    }
+
+    public String getPrevGroupCd() {
+        return prevGroupCd;
+    }
+
+    public void setPrevGroupCd(String prevGroupCd) {
+        this.prevGroupCd = prevGroupCd;
     }
 
     public Long getRootInstId() {

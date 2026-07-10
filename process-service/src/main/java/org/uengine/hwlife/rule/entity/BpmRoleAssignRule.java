@@ -11,6 +11,7 @@ import jakarta.persistence.SequenceGenerator;
 import jakarta.persistence.Table;
 import jakarta.persistence.Temporal;
 import jakarta.persistence.TemporalType;
+import jakarta.persistence.UniqueConstraint;
 
 /**
  * 한화생명 융자차세대 - 규칙 기반 담당자 배정 규칙.
@@ -20,7 +21,13 @@ import jakarta.persistence.TemporalType;
  * 동기화되며 SYNCED_AT 으로 적재 시각을 추적한다.</p>
  */
 @Entity
-@Table(name = "BPM_ROLE_ASSIGN_RULE")
+@Table(
+        name = "BPM_ROLE_ASSIGN_RULE",
+        uniqueConstraints = {
+                @UniqueConstraint(
+                        name = "UK_BPM_ROLE_ASSIGN_RULE_01",
+                        columnNames = {"POLICY_ID", "DIFFICULTY", "ENDPOINT"})
+        })
 @SequenceGenerator(
         name = "role_assign_rule_seq_gen",
         sequenceName = "SEQ_BPM_ROLE_ASSIGN_RULE",

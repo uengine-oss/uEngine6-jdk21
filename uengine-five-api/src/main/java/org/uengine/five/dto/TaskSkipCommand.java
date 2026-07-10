@@ -10,6 +10,7 @@ package org.uengine.five.dto;
 public class TaskSkipCommand {
 
     String reason;
+    String source;
 
     public String getReason() {
         return reason;
@@ -17,6 +18,22 @@ public class TaskSkipCommand {
 
     public void setReason(String reason) {
         this.reason = reason;
+    }
+
+    public String getSource() {
+        return source;
+    }
+
+    public void setSource(String source) {
+        this.source = source;
+    }
+
+    public String normalizedSource() {
+        if (source == null || source.trim().isEmpty()) {
+            return "WORKITEM";
+        }
+        String normalized = source.trim().toUpperCase();
+        return "ADMIN".equals(normalized) ? "ADMIN" : "WORKITEM";
     }
 }
 

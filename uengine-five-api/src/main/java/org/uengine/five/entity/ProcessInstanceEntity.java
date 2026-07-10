@@ -561,6 +561,14 @@ public class ProcessInstanceEntity {// implements ProcessInstanceDAO {
         this.initRsNm = initRsNm;
     }
 
+    public String getInitGroupCd() {
+        return initGroupCd;
+    }
+
+    public void setInitGroupCd(String initGroupCd) {
+        this.initGroupCd = initGroupCd;
+    }
+
     public String getPrevCurrRsNm() {
         return prevCurrRsNm;
     }
@@ -569,12 +577,28 @@ public class ProcessInstanceEntity {// implements ProcessInstanceDAO {
         this.prevCurrRsNm = prevCurrRsNm;
     }
 
+    public String getPrevCurrGroupCd() {
+        return prevCurrGroupCd;
+    }
+
+    public void setPrevCurrGroupCd(String prevCurrGroupCd) {
+        this.prevCurrGroupCd = prevCurrGroupCd;
+    }
+
     public String getCurrRsNm() {
         return currRsNm;
     }
 
     public void setCurrRsNm(String currRsNm) {
         this.currRsNm = currRsNm;
+    }
+
+    public String getCurrGroupCd() {
+        return currGroupCd;
+    }
+
+    public void setCurrGroupCd(String currGroupCd) {
+        this.currGroupCd = currGroupCd;
     }
 
     public String getGroup() {
@@ -599,6 +623,70 @@ public class ProcessInstanceEntity {// implements ProcessInstanceDAO {
 
     public void setVariablesPath(String variablesPath) {
         this.variablesPath = variablesPath;
+    }
+
+    public String getCustNo() {
+        return custNo;
+    }
+
+    public void setCustNo(String custNo) {
+        this.custNo = custNo;
+    }
+
+    public String getFncgBswrDvsnCode() {
+        return fncgBswrDvsnCode;
+    }
+
+    public void setFncgBswrDvsnCode(String fncgBswrDvsnCode) {
+        this.fncgBswrDvsnCode = fncgBswrDvsnCode;
+    }
+
+    public String getLoanCntcNo() {
+        return loanCntcNo;
+    }
+
+    public void setLoanCntcNo(String loanCntcNo) {
+        this.loanCntcNo = loanCntcNo;
+    }
+
+    public String getFncgSuptTrgtDvsnCode() {
+        return fncgSuptTrgtDvsnCode;
+    }
+
+    public void setFncgSuptTrgtDvsnCode(String fncgSuptTrgtDvsnCode) {
+        this.fncgSuptTrgtDvsnCode = fncgSuptTrgtDvsnCode;
+    }
+
+    public String getLoanSubjDvsnCode() {
+        return loanSubjDvsnCode;
+    }
+
+    public void setLoanSubjDvsnCode(String loanSubjDvsnCode) {
+        this.loanSubjDvsnCode = loanSubjDvsnCode;
+    }
+
+    public Date getLaonHopeDate() {
+        return laonHopeDate;
+    }
+
+    public void setLaonHopeDate(Date laonHopeDate) {
+        this.laonHopeDate = laonHopeDate;
+    }
+
+    public String getFncgMneyUsagClsfCode() {
+        return fncgMneyUsagClsfCode;
+    }
+
+    public void setFncgMneyUsagClsfCode(String fncgMneyUsagClsfCode) {
+        this.fncgMneyUsagClsfCode = fncgMneyUsagClsfCode;
+    }
+
+    public String getBsnsClsf() {
+        return bsnsClsf;
+    }
+
+    public void setBsnsClsf(String bsnsClsf) {
+        this.bsnsClsf = bsnsClsf;
     }
 
 }
