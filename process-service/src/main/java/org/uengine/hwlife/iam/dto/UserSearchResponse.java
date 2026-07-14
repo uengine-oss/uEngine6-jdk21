@@ -8,12 +8,11 @@ import java.util.List;
  */
 public class UserSearchResponse {
 
-    /** 사번 */
-    private String hndrEmnb;
-    /** 소속 기관(그룹) 코드 목록 */
-    private List<FncgOrgInfo> fncgWndwCodeList = new ArrayList<>();
-    /** 보유 권한 코드 목록 */
-    private List<FncgRoleInfo> fncgCoreAtrtList = new ArrayList<>();
+    private String hndrEmnb; // 사원번호
+    private String hndrNm; // 사원명
+
+    private List<FncgOrgInfo> fncgWndwCodeList = new ArrayList<>();    /** 보유 기관 코드 목록 */
+    private List<FncgRoleInfo> fncgCoreAtrtList = new ArrayList<>();     /** 보유 권한 코드 목록 */
 
     public String getHndrEmnb() {
         return hndrEmnb;
@@ -21,6 +20,14 @@ public class UserSearchResponse {
 
     public void setHndrEmnb(String hndrEmnb) {
         this.hndrEmnb = hndrEmnb;
+    }
+
+    public String getHndrNm() {
+        return hndrNm;
+    }
+
+    public void setHndrNm(String hndrNm) {
+        this.hndrNm = hndrNm;
     }
 
     public List<FncgOrgInfo> getFncgWndwCodeList() {
