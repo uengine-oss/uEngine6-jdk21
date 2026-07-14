@@ -1,13 +1,8 @@
 package org.uengine.hwlife.instance;
 
-import java.util.Map;
-
-import org.springframework.http.HttpStatus;
-import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.ResponseStatus;
 import org.uengine.hwlife.instance.dto.*;
 
 /**
@@ -50,9 +45,8 @@ public interface InstanceIntegrationService {
    *
    * <pre>PUT /instance/bulk-assign</pre>
    */
-  @PutMapping("/bulk-assign")
-  @ResponseStatus(HttpStatus.NO_CONTENT)
-  void assignBulk(@RequestBody(required = false) Map<String, Object> body) throws Exception;
+  @RequestMapping(value = "/bulk-assign", method = RequestMethod.PUT, produces = "application/json;charset=UTF-8")
+  BulkAssignResponse assignBulk(@RequestBody BulkAssignRequest request) throws Exception;
 
   /**
    * 다중 업무 담당자 변경 — 본인 업무 조건 없음 (권한자).
@@ -60,7 +54,7 @@ public interface InstanceIntegrationService {
    * <pre>POST /instance/reassign</pre>
    */
   @RequestMapping(value = "/multi-reassign", method = RequestMethod.POST, produces = "application/json;charset=UTF-8")
-  Map<String, Object> reassignWorkItems(@RequestBody(required = false) Map<String, Object> body) throws Exception;
+  ReassignResponse reassignWorkItems(@RequestBody ReassignRequest request) throws Exception;
 
   /**
    * 단위업무 SKIP — 엔진 {@code POST /work-item/{taskId}/skip} 위임.

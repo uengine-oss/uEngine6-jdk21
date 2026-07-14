@@ -2,35 +2,36 @@ package org.uengine.hwlife.instance.dto;
 
 import java.util.List;
 
-import org.uengine.five.dto.RoleMappingCommand;
-
+/**
+ * 다중 업무 위임 요청 — POST /instance/multi-delegate JSON body.
+ */
 public class DelegateRequest {
 
-    private List<String> taskIds;
-    private RoleMappingCommand delegatedRoleMapping;
-    private Boolean delegateOnlyForWorkitem;
+    private String mnorEmnb;
+    private String hndrEmnb;
+    private List<DelegateRequestItem> bswrList;
 
-    public List<String> getTaskIds() {
-        return taskIds;
+    public String getMnorEmnb() {
+        return mnorEmnb;
     }
 
-    public void setTaskIds(List<String> taskIds) {
-        this.taskIds = taskIds;
+    public void setMnorEmnb(String mnorEmnb) {
+        this.mnorEmnb = mnorEmnb;
     }
 
-    public RoleMappingCommand getDelegatedRoleMapping() {
-        return delegatedRoleMapping;
+    public String getHndrEmnb() {
+        return hndrEmnb;
     }
 
-    public void setDelegatedRoleMapping(RoleMappingCommand delegatedRoleMapping) {
-        this.delegatedRoleMapping = delegatedRoleMapping;
+    public void setHndrEmnb(String hndrEmnb) {
+        this.hndrEmnb = hndrEmnb;
     }
 
-    public Boolean getDelegateOnlyForWorkitem() {
-        return delegateOnlyForWorkitem;
+    public List<DelegateRequestItem> getBswrList() {
+        return bswrList;
     }
 
-    public void setDelegateOnlyForWorkitem(Boolean delegateOnlyForWorkitem) {
-        this.delegateOnlyForWorkitem = delegateOnlyForWorkitem;
+    public void setBswrList(List<DelegateRequestItem> bswrList) {
+        this.bswrList = bswrList;
     }
 }

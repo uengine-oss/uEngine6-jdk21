@@ -3,103 +3,45 @@ package org.uengine.hwlife.instance.dto;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.uengine.five.dto.WorkItemResource;
-
+/**
+ * 다중 업무 위임 응답 — POST /instance/multi-delegate.
+ */
 public class DelegateResponse {
 
-    private int total;
-    private int successCount;
-    private int failureCount;
-    private List<Item> results = new ArrayList<>();
+    private String prcsRsltCodeNm;
+    private Integer sucsCont;
+    private Integer failCont;
+    private List<DelegateResponseItem> failList = new ArrayList<>();
 
-    public int getTotal() {
-        return total;
+    public String getPrcsRsltCodeNm() {
+        return prcsRsltCodeNm;
     }
 
-    public void setTotal(int total) {
-        this.total = total;
+    public void setPrcsRsltCodeNm(String prcsRsltCodeNm) {
+        this.prcsRsltCodeNm = prcsRsltCodeNm;
     }
 
-    public int getSuccessCount() {
-        return successCount;
+    public Integer getSucsCont() {
+        return sucsCont;
     }
 
-    public void setSuccessCount(int successCount) {
-        this.successCount = successCount;
+    public void setSucsCont(Integer sucsCont) {
+        this.sucsCont = sucsCont;
     }
 
-    public int getFailureCount() {
-        return failureCount;
+    public Integer getFailCont() {
+        return failCont;
     }
 
-    public void setFailureCount(int failureCount) {
-        this.failureCount = failureCount;
+    public void setFailCont(Integer failCont) {
+        this.failCont = failCont;
     }
 
-    public List<Item> getResults() {
-        return results;
+    public List<DelegateResponseItem> getFailList() {
+        return failList;
     }
 
-    public void setResults(List<Item> results) {
-        this.results = results;
-    }
-
-    public void addSuccess(String taskId, WorkItemResource workItem) {
-        successCount++;
-        results.add(new Item(taskId, true, null, workItem));
-    }
-
-    public void addFailure(String taskId, String reason) {
-        failureCount++;
-        results.add(new Item(taskId, false, reason, null));
-    }
-
-    public static class Item {
-        private String taskId;
-        private boolean success;
-        private String reason;
-        private WorkItemResource workItem;
-
-        public Item() {
-        }
-
-        public Item(String taskId, boolean success, String reason, WorkItemResource workItem) {
-            this.taskId = taskId;
-            this.success = success;
-            this.reason = reason;
-            this.workItem = workItem;
-        }
-
-        public String getTaskId() {
-            return taskId;
-        }
-
-        public void setTaskId(String taskId) {
-            this.taskId = taskId;
-        }
-
-        public boolean isSuccess() {
-            return success;
-        }
-
-        public void setSuccess(boolean success) {
-            this.success = success;
-        }
-
-        public String getReason() {
-            return reason;
-        }
-
-        public void setReason(String reason) {
-            this.reason = reason;
-        }
-
-        public WorkItemResource getWorkItem() {
-            return workItem;
-        }
-
-        public void setWorkItem(WorkItemResource workItem) {
-            this.workItem = workItem;
-        }
+    public void setFailList(List<DelegateResponseItem> failList) {
+        this.failList = failList;
     }
 }

@@ -4,14 +4,14 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * 다중 선점/선점 해제 응답 — POST /instance/multi-claim.
+ * 일괄 배정 응답 — PUT /instance/bulk-assign.
  */
-public class ClaimResponse {
+public class BulkAssignResponse {
 
     private String prcsRsltCodeNm;
     private Integer sucsCont;
     private Integer failCont;
-    private List<ClaimResponseItem> failList = new ArrayList<>();
+    private List<BulkAssignResponseItem> failList = new ArrayList<>();
 
     public String getPrcsRsltCodeNm() {
         return prcsRsltCodeNm;
@@ -37,11 +37,11 @@ public class ClaimResponse {
         this.failCont = failCont;
     }
 
-    public List<ClaimResponseItem> getFailList() {
+    public List<BulkAssignResponseItem> getFailList() {
         return failList;
     }
 
-    public void setFailList(List<ClaimResponseItem> failList) {
+    public void setFailList(List<BulkAssignResponseItem> failList) {
         this.failList = failList;
     }
 }

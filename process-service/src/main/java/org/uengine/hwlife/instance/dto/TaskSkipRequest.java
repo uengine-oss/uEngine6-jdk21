@@ -5,22 +5,22 @@ package org.uengine.hwlife.instance.dto;
  */
 public class TaskSkipRequest {
 
-    private String taskId;
-    private String reason;
+    private String hndrEmnb;
+    private String fncgBpmTaskLstId;
 
-    public String getTaskId() {
-        return taskId;
+    public String getHndrEmnb() {
+        return hndrEmnb;
     }
 
-    public void setTaskId(String taskId) {
-        this.taskId = taskId;
+    public void setHndrEmnb(String hndrEmnb) {
+        this.hndrEmnb = hndrEmnb;
     }
 
-    public String getReason() {
-        return reason;
+    public String getFncgBpmTaskLstId() {
+        return fncgBpmTaskLstId;
     }
 
-    public void setReason(String reason) {
-        this.reason = reason;
+    public void setFncgBpmTaskLstId(String fncgBpmTaskLstId) {
+        this.fncgBpmTaskLstId = fncgBpmTaskLstId;
     }
 }

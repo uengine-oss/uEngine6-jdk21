@@ -2,31 +2,36 @@ package org.uengine.hwlife.instance.dto;
 
 import java.util.List;
 
-import org.uengine.five.dto.RoleMappingCommand;
-
 /**
  * 다중 선점/선점 해제 요청 — POST /instance/multi-claim JSON body.
- *
- * <p>{@code roleMapping.endpoint} 가 비어 있으면 선점 해제(unclaim)로 처리한다.</p>
  */
 public class ClaimRequest {
 
-    private List<String> taskIds;
-    private RoleMappingCommand roleMapping;
+    private String hndrEmnb;
+    private String bswrClsfCode;
+    private List<ClaimRequestItem> bswrList;
 
-    public List<String> getTaskIds() {
-        return taskIds;
+    public String getHndrEmnb() {
+        return hndrEmnb;
     }
 
-    public void setTaskIds(List<String> taskIds) {
-        this.taskIds = taskIds;
+    public void setHndrEmnb(String hndrEmnb) {
+        this.hndrEmnb = hndrEmnb;
     }
 
-    public RoleMappingCommand getRoleMapping() {
-        return roleMapping;
+    public String getBswrClsfCode() {
+        return bswrClsfCode;
     }
 
-    public void setRoleMapping(RoleMappingCommand roleMapping) {
-        this.roleMapping = roleMapping;
+    public void setBswrClsfCode(String bswrClsfCode) {
+        this.bswrClsfCode = bswrClsfCode;
+    }
+
+    public List<ClaimRequestItem> getBswrList() {
+        return bswrList;
+    }
+
+    public void setBswrList(List<ClaimRequestItem> bswrList) {
+        this.bswrList = bswrList;
     }
 }

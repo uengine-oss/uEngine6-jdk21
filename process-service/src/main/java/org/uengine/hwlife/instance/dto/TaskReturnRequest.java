@@ -5,49 +5,31 @@ package org.uengine.hwlife.instance.dto;
  */
 public class TaskReturnRequest {
 
-    private String taskId;
-    private Long targetTaskId;
-    private String tracingTag;
-    private String execScope;
-    private String reason;
+    private String hndrEmnb;
+    private String fncgBpmPcesIntcId;
+    private String fncgBpmTaskTrcgNm;
 
-    public String getTaskId() {
-        return taskId;
+    public String getHndrEmnb() {
+        return hndrEmnb;
     }
 
-    public void setTaskId(String taskId) {
-        this.taskId = taskId;
+    public void setHndrEmnb(String hndrEmnb) {
+        this.hndrEmnb = hndrEmnb;
     }
 
-    public Long getTargetTaskId() {
-        return targetTaskId;
+    public String getFncgBpmPcesIntcId() {
+        return fncgBpmPcesIntcId;
     }
 
-    public void setTargetTaskId(Long targetTaskId) {
-        this.targetTaskId = targetTaskId;
+    public void setFncgBpmPcesIntcId(String fncgBpmPcesIntcId) {
+        this.fncgBpmPcesIntcId = fncgBpmPcesIntcId;
     }
 
-    public String getTracingTag() {
-        return tracingTag;
+    public String getFncgBpmTaskTrcgNm() {
+        return fncgBpmTaskTrcgNm;
     }
 
-    public void setTracingTag(String tracingTag) {
-        this.tracingTag = tracingTag;
-    }
-
-    public String getExecScope() {
-        return execScope;
-    }
-
-    public void setExecScope(String execScope) {
-        this.execScope = execScope;
-    }
-
-    public String getReason() {
-        return reason;
-    }
-
-    public void setReason(String reason) {
-        this.reason = reason;
+    public void setFncgBpmTaskTrcgNm(String fncgBpmTaskTrcgNm) {
+        this.fncgBpmTaskTrcgNm = fncgBpmTaskTrcgNm;
     }
 }
