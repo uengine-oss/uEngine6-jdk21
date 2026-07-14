@@ -3,9 +3,9 @@ package org.uengine.hwlife.absence.dto;
 import java.time.LocalDateTime;
 
 /**
- * 부재 설정/해제 요청 — POST /absences JSON body.
+ * 부재 이력 항목 — {@link AbsenceHistoryResponse#getAbscList()} 요소.
  */
-public class AbsenceRequest {
+public class AbsenceHistoryItem {
 
     private String fncgBpmAbstSqno;
     private String abscEmnb;
@@ -13,6 +13,8 @@ public class AbsenceRequest {
     private String agntFncgOrgnCode;
     private LocalDateTime abscStarDttm;
     private LocalDateTime abscEndDttm;
+    private LocalDateTime abscRscsDttm;
+    private LocalDateTime abscStupDttm;
 
     public String getFncgBpmAbstSqno() {
         return fncgBpmAbstSqno;
@@ -60,5 +62,21 @@ public class AbsenceRequest {
 
     public void setAbscEndDttm(LocalDateTime abscEndDttm) {
         this.abscEndDttm = abscEndDttm;
+    }
+
+    public LocalDateTime getAbscRscsDttm() {
+        return abscRscsDttm;
+    }
+
+    public void setAbscRscsDttm(LocalDateTime abscRscsDttm) {
+        this.abscRscsDttm = abscRscsDttm;
+    }
+
+    public LocalDateTime getAbscStupDttm() {
+        return abscStupDttm;
+    }
+
+    public void setAbscStupDttm(LocalDateTime abscStupDttm) {
+        this.abscStupDttm = abscStupDttm;
     }
 }

@@ -1,14 +1,27 @@
 package org.uengine.hwlife.absence.dto;
 
+/**
+ * 부재 이력 조회 요청 — POST /absences/history JSON body.
+ */
 public class AbsenceHistoryRequest {
 
-    private String userId;
+    private String abscEmnb;
+    
+    private Integer pageNo;
 
-    public String getUserId() {
-        return userId;
+    public String getAbscEmnb() {
+        return abscEmnb;
     }
 
-    public void setUserId(String userId) {
-        this.userId = userId;
+    public void setAbscEmnb(String abscEmnb) {
+        this.abscEmnb = abscEmnb;
+    }
+
+    public Integer getPageNo() {
+        return pageNo;
+    }
+
+    public void setPageNo(Integer pageNo) {
+        this.pageNo = pageNo;
     }
 }

@@ -3,9 +3,9 @@ package org.uengine.hwlife.absence.dto;
 import java.time.LocalDateTime;
 
 /**
- * 부재 설정/해제 요청 — POST /absences JSON body.
+ * 부재 설정/해제 응답 — POST /absences.
  */
-public class AbsenceRequest {
+public class AbsenceResponse {
 
     private String fncgBpmAbstSqno;
     private String abscEmnb;

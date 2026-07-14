@@ -1,5 +1,7 @@
 package org.uengine.hwlife.absence;
 
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.Date;
 import java.util.List;
 
@@ -14,8 +16,11 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
+import org.uengine.hwlife.absence.dto.AbsenceHistoryItem;
 import org.uengine.hwlife.absence.dto.AbsenceHistoryRequest;
+import org.uengine.hwlife.absence.dto.AbsenceHistoryResponse;
 import org.uengine.hwlife.absence.dto.AbsenceRequest;
+import org.uengine.hwlife.absence.dto.AbsenceResponse;
 import org.uengine.hwlife.absence.entity.AbsenceEntity;
 import org.uengine.hwlife.absence.repository.AbsenceRepository;
 
@@ -38,28 +43,25 @@ public class AbsenceServiceImpl implements AbsenceService {
     @RequestMapping(value = "/absences", method = RequestMethod.POST)
     @ResponseStatus(HttpStatus.CREATED)
     @Transactional
-    public AbsenceEntity executeAbsence(@RequestBody AbsenceRequest request) throws Exception {
+    public AbsenceResponse executeAbsence(@RequestBody AbsenceRequest request) throws Exception {
         if (request == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Request body is required");
         }
 
-        String bswrDvsnVal = require(request.getBswrClsfCode(), "bswrClsfCode");
-        if ("1".equalsIgnoreCase(bswrDvsnVal)) {
-            return release(request);
+        // fncgBpmAbstSqno 가 있으면 해제, 없으면 설정
+        if (request.getFncgBpmAbstSqno() != null && !request.getFncgBpmAbstSqno().trim().isEmpty()) {
+            return toResponse(release(request));
         }
-        if ("0".equalsIgnoreCase(bswrDvsnVal)) {
-            return register(request);
-        }
-        throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                "bswrDvsnVal must be 0 (register) or 1 (release): " + bswrDvsnVal);
+        return toResponse(register(request));
     }
 
     private AbsenceEntity register(AbsenceRequest request) {
         AbsenceEntity entity = new AbsenceEntity();
         entity.setUserId(request.getAbscEmnb());
         entity.setAgentUserId(request.getAgntEmnb());
-        entity.setAgentGroupCd(request.getAgntFncgOrgnCd());
-    
+        entity.setAgentGroupCd(request.getAgntFncgOrgnCode());
+        entity.setAbscStarDttm(toDate(request.getAbscStarDttm()));
+        entity.setAbscEndDttm(toDate(request.getAbscEndDttm()));
 
         validate(entity);
         ensureNoOverlap(entity, null);
@@ -68,10 +70,8 @@ public class AbsenceServiceImpl implements AbsenceService {
     }
 
     private AbsenceEntity release(AbsenceRequest request) {
-        if (request.getFncgBpmAbstSqno() == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "fncgBpmAbstSqno is required for release");
-        }
-        AbsenceEntity entity = mustGet(request.getFncgBpmAbstSqno());
+        Long sqno = parseSqno(request.getFncgBpmAbstSqno());
+        AbsenceEntity entity = mustGet(sqno);
         if (entity.getAbscRscsDttm() != null) {
             throw new ResponseStatusException(HttpStatus.CONFLICT,
                     "Already released absence: " + request.getFncgBpmAbstSqno());
@@ -83,12 +83,57 @@ public class AbsenceServiceImpl implements AbsenceService {
     @Override
     @RequestMapping(value = "/absences/history", method = RequestMethod.POST)
     @Transactional(readOnly = true)
-    public List<AbsenceEntity> searchAbsenceHistory(@RequestBody AbsenceHistoryRequest request) throws Exception {
+    public AbsenceHistoryResponse searchAbsenceHistory(@RequestBody AbsenceHistoryRequest request) throws Exception {
         if (request == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Request body is required");
         }
-        require(request.getUserId(), "userId");
-        return absenceRepository.findByUserId(request.getUserId());
+        require(request.getAbscEmnb(), "abscEmnb");
+
+        List<AbsenceEntity> all = absenceRepository.findByUserId(request.getAbscEmnb().trim());
+        AbsenceHistoryResponse response = new AbsenceHistoryResponse();
+        response.setTotCont(all.size());
+
+        int pageSize = 20;
+        int pageNo = request.getPageNo() == null || request.getPageNo() < 1 ? 1 : request.getPageNo();
+        int from = (pageNo - 1) * pageSize;
+        if (from >= all.size()) {
+            response.setAbscList(List.of());
+            return response;
+        }
+        int to = Math.min(from + pageSize, all.size());
+        List<AbsenceHistoryItem> page = all.subList(from, to).stream()
+                .map(this::toHistoryItem)
+                .toList();
+        response.setAbscList(page);
+        return response;
+    }
+
+    private AbsenceHistoryItem toHistoryItem(AbsenceEntity entity) {
+        AbsenceHistoryItem item = new AbsenceHistoryItem();
+        if (entity.getAbseId() != null) {
+            item.setFncgBpmAbstSqno(String.valueOf(entity.getAbseId()));
+        }
+        item.setAbscEmnb(entity.getUserId());
+        item.setAgntEmnb(entity.getAgentUserId());
+        item.setAgntFncgOrgnCode(entity.getAgentGroupCd());
+        item.setAbscStarDttm(toLocalDateTime(entity.getAbscStarDttm()));
+        item.setAbscEndDttm(toLocalDateTime(entity.getAbscEndDttm()));
+        item.setAbscRscsDttm(toLocalDateTime(entity.getAbscRscsDttm()));
+        item.setAbscStupDttm(toLocalDateTime(entity.getAbscCretDttm()));
+        return item;
+    }
+
+    private AbsenceResponse toResponse(AbsenceEntity entity) {
+        AbsenceResponse response = new AbsenceResponse();
+        if (entity.getAbseId() != null) {
+            response.setFncgBpmAbstSqno(String.valueOf(entity.getAbseId()));
+        }
+        response.setAbscEmnb(entity.getUserId());
+        response.setAgntEmnb(entity.getAgentUserId());
+        response.setAgntFncgOrgnCode(entity.getAgentGroupCd());
+        response.setAbscStarDttm(toLocalDateTime(entity.getAbscStarDttm()));
+        response.setAbscEndDttm(toLocalDateTime(entity.getAbscEndDttm()));
+        return response;
     }
 
     private AbsenceEntity mustGet(Long abseId) {
@@ -98,14 +143,14 @@ public class AbsenceServiceImpl implements AbsenceService {
     }
 
     private void validate(AbsenceEntity e) {
-        require(e.getUserId(), "userId");
-        require(e.getAgentUserId(), "agentUserId");
+        require(e.getUserId(), "abscEmnb");
+        require(e.getAgentUserId(), "agntEmnb");
         if (e.getAbscStarDttm() == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "abscStarDttm is required");
         }
         if (e.getUserId().equals(e.getAgentUserId())) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "userId and agentUserId must be different");
+                    "abscEmnb and agntEmnb must be different");
         }
         if (e.getAbscEndDttm() != null && e.getAbscEndDttm().before(e.getAbscStarDttm())) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
@@ -118,6 +163,29 @@ public class AbsenceServiceImpl implements AbsenceService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, field + " is required");
         }
         return v.trim();
+    }
+
+    private Long parseSqno(String sqno) {
+        try {
+            return Long.valueOf(sqno.trim());
+        } catch (NumberFormatException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "fncgBpmAbstSqno must be numeric: " + sqno);
+        }
+    }
+
+    private static Date toDate(LocalDateTime value) {
+        if (value == null) {
+            return null;
+        }
+        return Date.from(value.atZone(ZoneId.systemDefault()).toInstant());
+    }
+
+    private static LocalDateTime toLocalDateTime(Date value) {
+        if (value == null) {
+            return null;
+        }
+        return LocalDateTime.ofInstant(value.toInstant(), ZoneId.systemDefault());
     }
 
     private void ensureNoOverlap(AbsenceEntity target, Long excludeAbseId) {
