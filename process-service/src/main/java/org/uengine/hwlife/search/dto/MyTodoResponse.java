@@ -9,7 +9,7 @@ import java.util.List;
 public class MyTodoResponse {
 
     private List<MyTodoItem> todoList = new ArrayList<>();
-    private long totCont;
+    private Integer totCont;
 
     public List<MyTodoItem> getTodoList() {
         return todoList;
@@ -19,11 +19,11 @@ public class MyTodoResponse {
         this.todoList = todoList;
     }
 
-    public long getTotCont() {
+    public Integer getTotCont() {
         return totCont;
     }
 
-    public void setTotCont(long totCont) {
+    public void setTotCont(Integer totCont) {
         this.totCont = totCont;
     }
 }

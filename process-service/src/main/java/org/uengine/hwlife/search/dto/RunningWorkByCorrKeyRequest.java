@@ -1,6 +1,9 @@
 package org.uengine.hwlife.search.dto;
 
-public class RunningTasksByKeyRequest {
+/**
+ * loanPcesMgmtNo 기준 진행 업무 조회 요청 — POST /search/worklist-by-inst-id JSON body.
+ */
+public class RunningWorkByCorrKeyRequest {
 
     private String loanPcesMgmtNo;
 

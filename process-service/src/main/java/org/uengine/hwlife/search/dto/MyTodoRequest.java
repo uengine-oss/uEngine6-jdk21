@@ -33,7 +33,7 @@ public class MyTodoRequest {
     private String group;
     private String sortOrdrVal;
     private String endpoint;
-    private String pageNo;
+    private Integer pageNo;
 
     public String getBswrClsfCode() {
         return bswrClsfCode;
@@ -155,11 +155,11 @@ public class MyTodoRequest {
         this.endpoint = endpoint;
     }
 
-    public String getPageNo() {
+    public Integer getPageNo() {
         return pageNo;
     }
 
-    public void setPageNo(String pageNo) {
+    public void setPageNo(Integer pageNo) {
         this.pageNo = pageNo;
     }
 }

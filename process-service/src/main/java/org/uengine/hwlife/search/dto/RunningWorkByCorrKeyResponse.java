@@ -1,15 +1,15 @@
 package org.uengine.hwlife.search.dto;
 
 /**
- * loanPcesMgmtNo 기준 진행 중 업무 검색 응답 (단건).
+ * loanPcesMgmtNo 기준 진행 업무 조회 응답 (단건).
  */
-public class RunningTasksByKeyResponse {
+public class RunningWorkByCorrKeyResponse {
 
     private String loanPcesMgmtNo;
     private String fncgBpmTaskTrcgNm;
     private String fncgBpmUworSttsCntn;
     private String prgsSttsNm;
-    private String prcsrsltCntn;
+    private String prcsRsltCntn;
 
     public String getLoanPcesMgmtNo() {
         return loanPcesMgmtNo;
@@ -43,11 +43,11 @@ public class RunningTasksByKeyResponse {
         this.prgsSttsNm = prgsSttsNm;
     }
 
-    public String getPrcsrsltCntn() {
-        return prcsrsltCntn;
+    public String getPrcsRsltCntn() {
+        return prcsRsltCntn;
     }
 
-    public void setPrcsrsltCntn(String prcsrsltCntn) {
-        this.prcsrsltCntn = prcsrsltCntn;
+    public void setPrcsRsltCntn(String prcsRsltCntn) {
+        this.prcsRsltCntn = prcsRsltCntn;
     }
 }

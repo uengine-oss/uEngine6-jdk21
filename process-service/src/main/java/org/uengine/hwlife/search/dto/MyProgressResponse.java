@@ -9,7 +9,7 @@ import java.util.List;
 public class MyProgressResponse {
 
     private List<MyProgressItem> todoPrgsList = new ArrayList<>();
-    private long totCont;
+    private Integer totCont;
 
     public List<MyProgressItem> getTodoPrgsList() {
         return todoPrgsList;
@@ -19,11 +19,11 @@ public class MyProgressResponse {
         this.todoPrgsList = todoPrgsList;
     }
 
-    public long getTotCont() {
+    public Integer getTotCont() {
         return totCont;
     }
 
-    public void setTotCont(long totCont) {
+    public void setTotCont(Integer totCont) {
         this.totCont = totCont;
     }
 }

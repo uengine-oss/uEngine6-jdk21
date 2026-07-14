@@ -1,27 +1,25 @@
 package org.uengine.hwlife.search.dto;
 
-import java.util.Date;
-
-import org.springframework.format.annotation.DateTimeFormat;
+import java.time.LocalDateTime;
 
 /**
- * 나의 진행 검색 요청 — POST /search/my-progress JSON body.
+ * 조직 진행 건 검색 요청 — POST /search/org-running JSON body.
  */
-public class MyProgressRequest {
+public class OrgRunningRequest {
 
     private String bswrClsfCode;
-    private String fncgBswrDvsnCode;
-    private String trcTag;
-    private Date rqstStarDate;
-    private Date rqstEndDate;
+    private String fncgVswrDvsnCode;
+    private String fncgBpmTaskTrcgNm;
+    private LocalDateTime rqstStarDttm;
+    private LocalDateTime rqstEndDttm;
     private String fncgSuptTrgtDvsnCode;
     private String loanSubjDvsnCode;
     private String fncgMneyUsagClsfCode;
-    private String custNo;
     private String loanCntcNo;
-    private String group;
+    private String custNo;
+    private String fncgWndwOrgnCode;
+    private String rqstDvsnCode;
     private String sortOrdrVal;
-    private String endpoint;
 
     private Integer pageNo;
 
@@ -33,36 +31,36 @@ public class MyProgressRequest {
         this.bswrClsfCode = bswrClsfCode;
     }
 
-    public String getFncgBswrDvsnCode() {
-        return fncgBswrDvsnCode;
+    public String getFncgVswrDvsnCode() {
+        return fncgVswrDvsnCode;
     }
 
-    public void setFncgBswrDvsnCode(String fncgBswrDvsnCode) {
-        this.fncgBswrDvsnCode = fncgBswrDvsnCode;
+    public void setFncgVswrDvsnCode(String fncgVswrDvsnCode) {
+        this.fncgVswrDvsnCode = fncgVswrDvsnCode;
     }
 
-    public String getTrcTag() {
-        return trcTag;
+    public String getFncgBpmTaskTrcgNm() {
+        return fncgBpmTaskTrcgNm;
     }
 
-    public void setTrcTag(String trcTag) {
-        this.trcTag = trcTag;
+    public void setFncgBpmTaskTrcgNm(String fncgBpmTaskTrcgNm) {
+        this.fncgBpmTaskTrcgNm = fncgBpmTaskTrcgNm;
     }
 
-    public Date getRqstStarDate() {
-        return rqstStarDate;
+    public LocalDateTime getRqstStarDttm() {
+        return rqstStarDttm;
     }
 
-    public void setRqstStarDate(Date rqstStarDate) {
-        this.rqstStarDate = rqstStarDate;
+    public void setRqstStarDttm(LocalDateTime rqstStarDttm) {
+        this.rqstStarDttm = rqstStarDttm;
     }
 
-    public Date getRqstEndDate() {
-        return rqstEndDate;
+    public LocalDateTime getRqstEndDttm() {
+        return rqstEndDttm;
     }
 
-    public void setRqstEndDate(Date rqstEndDate) {
-        this.rqstEndDate = rqstEndDate;
+    public void setRqstEndDttm(LocalDateTime rqstEndDttm) {
+        this.rqstEndDttm = rqstEndDttm;
     }
 
     public String getFncgSuptTrgtDvsnCode() {
@@ -89,14 +87,6 @@ public class MyProgressRequest {
         this.fncgMneyUsagClsfCode = fncgMneyUsagClsfCode;
     }
 
-    public String getCustNo() {
-        return custNo;
-    }
-
-    public void setCustNo(String custNo) {
-        this.custNo = custNo;
-    }
-
     public String getLoanCntcNo() {
         return loanCntcNo;
     }
@@ -105,12 +95,28 @@ public class MyProgressRequest {
         this.loanCntcNo = loanCntcNo;
     }
 
-    public String getGroup() {
-        return group;
+    public String getCustNo() {
+        return custNo;
     }
 
-    public void setGroup(String group) {
-        this.group = group;
+    public void setCustNo(String custNo) {
+        this.custNo = custNo;
+    }
+
+    public String getFncgWndwOrgnCode() {
+        return fncgWndwOrgnCode;
+    }
+
+    public void setFncgWndwOrgnCode(String fncgWndwOrgnCode) {
+        this.fncgWndwOrgnCode = fncgWndwOrgnCode;
+    }
+
+    public String getRqstDvsnCode() {
+        return rqstDvsnCode;
+    }
+
+    public void setRqstDvsnCode(String rqstDvsnCode) {
+        this.rqstDvsnCode = rqstDvsnCode;
     }
 
     public String getSortOrdrVal() {
@@ -119,14 +125,6 @@ public class MyProgressRequest {
 
     public void setSortOrdrVal(String sortOrdrVal) {
         this.sortOrdrVal = sortOrdrVal;
-    }
-
-    public String getEndpoint() {
-        return endpoint;
-    }
-
-    public void setEndpoint(String endpoint) {
-        this.endpoint = endpoint;
     }
 
     public Integer getPageNo() {
