@@ -34,7 +34,7 @@ public class InboxTtlCleanupQuartzJob implements Job {
     @Override
     public void execute(JobExecutionContext context) throws JobExecutionException {
         try {
-            GlobalContext.getComponent(InboxTtlCleanupQuartzJob.class).cleanup();
+            GlobalContext.getComponent(InboxTtlCleanupService.class).cleanup();
         } catch (Exception e) {
             throw new JobExecutionException(e);
         }
@@ -42,6 +42,10 @@ public class InboxTtlCleanupQuartzJob implements Job {
 
     @Transactional
     public void cleanup() {
+        if (GlobalContext.class != null) {
+            GlobalContext.getComponent(InboxTtlCleanupService.class).cleanup();
+            return;
+        }
         Instant olderThan = Instant.now().minus(ttlHours, ChronoUnit.HOURS);
         int deleted = repo.deleteProcessedBefore(olderThan);
         if (deleted > 0) {

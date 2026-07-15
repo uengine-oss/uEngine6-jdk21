@@ -60,7 +60,7 @@ public class InboxPollJob implements Job {
     @Override
     public void execute(JobExecutionContext context) throws JobExecutionException {
         try {
-            GlobalContext.getComponent(InboxPollJob.class).runBatch();
+            GlobalContext.getComponent(InboxPollService.class).runBatch();
         } catch (Exception e) {
             throw new JobExecutionException(e);
         }
@@ -73,6 +73,10 @@ public class InboxPollJob implements Job {
      */
     @Transactional
     public void runBatch() {
+        if (GlobalContext.class != null) {
+            GlobalContext.getComponent(InboxPollService.class).runBatch();
+            return;
+        }
         List<EventInbox> batch = repo.lockUnprocessed(batchSize);
         if (batch.isEmpty()) return;
 
