@@ -18,7 +18,7 @@ import org.uengine.hwlife.absence.entity.AbsenceEntity;
 public interface AbsenceRepository extends JpaRepository<AbsenceEntity, Long> {
 
     /** 특정 사용자(사번)의 모든 부재 이력 (최근순) */
-    @Query("select a from AbsenceEntity a where a.userId = :userId order by a.abscCretDttm desc")
+    @Query("select a from AbsenceEntity a where a.userId = :userId order by a.abscStupDttm desc")
     List<AbsenceEntity> findByUserId(@Param("userId") String userId);
 
     /**
@@ -31,7 +31,7 @@ public interface AbsenceRepository extends JpaRepository<AbsenceEntity, Long> {
      */
     @Query("select a from AbsenceEntity a " +
             "where a.userId = :userId " +
-            "  and a.abscCnceDttm is null " +
+            "  and a.abscRscsDttm is null " +
             "  and a.abseId <> :excludeAbseId " +
             "  and ( :newAbscEndDttm is null or a.abscStarDttm <= :newAbscEndDttm ) " +
             "  and ( a.abscEndDttm is null or a.abscEndDttm >= :newAbscStarDttm )")
