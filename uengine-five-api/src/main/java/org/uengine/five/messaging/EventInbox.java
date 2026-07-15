@@ -56,6 +56,12 @@ public class EventInbox {
     @Column(name = "PAYLOAD", nullable = false, columnDefinition = "TEXT")
     private String payload;
 
+    @Column(name = "PRCR_RSLT_CODE_NM", length = 128)
+    private String prcrRsltCodeNm;
+
+    @Column(name = "PRCS_RSLT_CNTN", columnDefinition = "TEXT")
+    private String prcsRsltCntn;
+
     @Column(name = "CREATED_AT", nullable = false)
     private Instant createdAt = Instant.now();
 
@@ -85,6 +91,12 @@ public class EventInbox {
 
     public String getPayload() { return payload; }
     public void setPayload(String payload) { this.payload = payload; }
+
+    public String getPrcrRsltCodeNm() { return prcrRsltCodeNm; }
+    public void setPrcrRsltCodeNm(String prcrRsltCodeNm) { this.prcrRsltCodeNm = prcrRsltCodeNm; }
+
+    public String getPrcsRsltCntn() { return prcsRsltCntn; }
+    public void setPrcsRsltCntn(String prcsRsltCntn) { this.prcsRsltCntn = prcsRsltCntn; }
 
     public String getCorrKey() { return corrKey; }
     public void setCorrKey(String corrKey) { this.corrKey = corrKey; }

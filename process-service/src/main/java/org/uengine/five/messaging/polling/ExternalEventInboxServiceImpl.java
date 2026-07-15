@@ -50,16 +50,19 @@ public class ExternalEventInboxServiceImpl implements ExternalEventInboxService 
             }
             String type = request.getEventName() != null ? request.getEventName() : defaultType;
             String corrKey = request.getCorrKey() != null ? request.getCorrKey() : defaultCorrKey;
-            return receiveEvent(type, corrKey, request.getPayload());
+            JsonNode correlationBody = request.getPayload() != null ? request.getPayload() : body;
+            return receiveEvent(type, corrKey, body, correlationBody,
+                    request.getPrcrRsltCodeNm(), request.getPrcsRsltCntn());
         }
         return receiveEvent(defaultType, defaultCorrKey, body);
     }
 
     private boolean isEventRequestWrapper(String defaultType, String defaultCorrKey, JsonNode body) {
-        if (body == null || !body.isObject() || !body.has("payload")) {
+        if (body == null || !body.isObject()) {
             return false;
         }
-        return body.has("eventName") || body.has("eventname") || body.has("corrKey") || body.has("corrkey")
+        return body.has("eventName") || body.has("eventname") || body.has("eventNm") || body.has("evntNm")
+                || body.has("corrKey") || body.has("corrkey") || body.has("loanPcesMgmtNo")
                 || defaultType != null || defaultCorrKey != null;
     }
 
@@ -87,7 +90,8 @@ public class ExternalEventInboxServiceImpl implements ExternalEventInboxService 
 
             String type = event.getEventName() != null ? event.getEventName() : defaultType;
             String corrKey = event.getCorrKey() != null ? event.getCorrKey() : defaultCorrKey;
-            EventInboxResponse item = receiveEvent(type, corrKey, event.getPayload());
+            EventInboxResponse item = receiveEvent(type, corrKey, node, event.getPayload(),
+                    event.getPrcrRsltCodeNm(), event.getPrcsRsltCntn());
             if (EventInboxResponse.STATUS_SUCCESS.equals(item.getStatus())) {
                 response.incrementSuccessCount();
             } else {
@@ -101,25 +105,32 @@ public class ExternalEventInboxServiceImpl implements ExternalEventInboxService 
 
     @Override
     public EventInboxResponse receiveEvent(String type, String corrKey, JsonNode body) {
+        return receiveEvent(type, corrKey, body, body, null, null);
+    }
+
+    private EventInboxResponse receiveEvent(String type, String corrKey, JsonNode storedBody, JsonNode correlationBody,
+                                            String prcrRsltCodeNm, String prcsRsltCntn) {
         String payloadJson;
-        if (body == null || body.isMissingNode() || body.isNull()) {
+        if (storedBody == null || storedBody.isMissingNode() || storedBody.isNull()) {
             payloadJson = "{}";
         } else {
             try {
-                payloadJson = objectMapper.writeValueAsString(body);
+                payloadJson = objectMapper.writeValueAsString(storedBody);
             } catch (Exception e) {
                 return EventInboxResponse.failed(type, corrKey, "invalid payload: " + e.getMessage());
             }
         }
 
-        if (corrKey == null && type != null && body != null && !body.isMissingNode() && !body.isNull()) {
-            corrKey = extractCorrKeyFromPayload(type, body);
+        if (corrKey == null && type != null && correlationBody != null && !correlationBody.isMissingNode() && !correlationBody.isNull()) {
+            corrKey = extractCorrKeyFromPayload(type, correlationBody);
         }
 
         EventInbox ev = new EventInbox();
         ev.setEventName(type);
         ev.setPayload(payloadJson);
         ev.setCorrKey(corrKey);
+        ev.setPrcrRsltCodeNm(prcrRsltCodeNm);
+        ev.setPrcsRsltCntn(prcsRsltCntn);
 
         try {
             repo.save(ev);
@@ -129,10 +140,20 @@ public class ExternalEventInboxServiceImpl implements ExternalEventInboxService 
             Long existingId = existing != null ? existing.getId() : null;
             log.info("[inbox] duplicate (corrKey={}, type={}, existingId={}), treated as idempotent success",
                     corrKey, type, existingId);
-            return EventInboxResponse.duplicate(type, corrKey, existingCreatedAt);
+            EventInboxResponse response = EventInboxResponse.duplicate(type, corrKey, existingCreatedAt);
+            if (existing != null) {
+                response.setInboxId(existing.getId());
+                response.setPrcrRsltCodeNm(existing.getPrcrRsltCodeNm());
+                response.setPrcsRsltCntn(existing.getPrcsRsltCntn());
+            }
+            return response;
         }
 
-        return EventInboxResponse.success(type, corrKey, ev.getCreatedAt());
+        EventInboxResponse response = EventInboxResponse.success(type, corrKey, ev.getCreatedAt());
+        response.setInboxId(ev.getId());
+        response.setPrcrRsltCodeNm(ev.getPrcrRsltCodeNm());
+        response.setPrcsRsltCntn(ev.getPrcsRsltCntn());
+        return response;
     }
 
     private EventInbox findExistingInboxForDuplicate(String corrKey, String eventName) {

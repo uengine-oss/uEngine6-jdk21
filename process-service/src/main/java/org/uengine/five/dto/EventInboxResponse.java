@@ -40,11 +40,17 @@ public class EventInboxResponse {
 
     private boolean duplicate;
 
+    private Long inboxId;
+
     private String eventName;
 
     private String corrKey;
 
     private String reason;
+
+    private String prcrRsltCodeNm;
+
+    private String prcsRsltCntn;
 
     /**
      * 이벤트가 inbox 에 들어간 시각 (= BPM_EVENT_INBOX.created_at, UTC).
@@ -99,6 +105,9 @@ public class EventInboxResponse {
     public boolean isDuplicate() { return duplicate; }
     public void setDuplicate(boolean duplicate) { this.duplicate = duplicate; }
 
+    public Long getInboxId() { return inboxId; }
+    public void setInboxId(Long inboxId) { this.inboxId = inboxId; }
+
     public String getEventName() { return eventName; }
     public void setEventName(String eventName) { this.eventName = eventName; }
 
@@ -107,6 +116,12 @@ public class EventInboxResponse {
 
     public String getReason() { return reason; }
     public void setReason(String reason) { this.reason = reason; }
+
+    public String getPrcrRsltCodeNm() { return prcrRsltCodeNm; }
+    public void setPrcrRsltCodeNm(String prcrRsltCodeNm) { this.prcrRsltCodeNm = prcrRsltCodeNm; }
+
+    public String getPrcsRsltCntn() { return prcsRsltCntn; }
+    public void setPrcsRsltCntn(String prcsRsltCntn) { this.prcsRsltCntn = prcsRsltCntn; }
 
     public Instant getOccurredAt() { return occurredAt; }
     public void setOccurredAt(Instant occurredAt) { this.occurredAt = occurredAt; }

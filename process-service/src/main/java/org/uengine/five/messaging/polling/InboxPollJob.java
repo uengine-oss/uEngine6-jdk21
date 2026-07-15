@@ -17,10 +17,14 @@ import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.uengine.five.ProcessServiceApplication;
 import org.uengine.five.messaging.EventInbox;
 import org.uengine.five.messaging.EventInboxRepository;
 import org.uengine.five.stream.BpmMessageDispatcher;
 import org.uengine.kernel.GlobalContext;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
  * Quartz 기반 Inbox 폴링 잡. 고정 간격으로 BPM_EVENT_INBOX 의 미처리 row 를 꺼내
@@ -56,6 +60,8 @@ public class InboxPollJob implements Job {
 
     @Value("${uengine.messaging.polling.max-try-cnt:3}")
     private int maxTryCnt;
+
+    private final ObjectMapper objectMapper = ProcessServiceApplication.createTypedJsonObjectMapper();
 
     @Override
     public void execute(JobExecutionContext context) throws JobExecutionException {
@@ -126,7 +132,7 @@ public class InboxPollJob implements Job {
      * inbox row 를 dispatcher 가 받는 Message 로 재구성. event_name 컬럼만으로 type 헤더 셋팅.
      */
     private Message<String> rebuildMessage(EventInbox ev) {
-        MessageBuilder<String> builder = MessageBuilder.withPayload(ev.getPayload());
+        MessageBuilder<String> builder = MessageBuilder.withPayload(dispatchPayload(ev.getPayload()));
         if (ev.getEventName() != null) {
             builder.setHeader("type", ev.getEventName());
         }
@@ -135,6 +141,32 @@ public class InboxPollJob implements Job {
             builder.setHeader("corrKey", ev.getCorrKey());
         }
         return builder.build();
+    }
+
+    private String dispatchPayload(String storedPayload) {
+        if (storedPayload == null || storedPayload.isBlank()) {
+            return "{}";
+        }
+        try {
+            JsonNode root = objectMapper.readTree(storedPayload);
+            if (isEventRequestWrapper(root)) {
+                JsonNode payload = root.get("payload");
+                return payload == null || payload.isNull() ? storedPayload : objectMapper.writeValueAsString(payload);
+            }
+        } catch (Exception ignored) {
+            return storedPayload;
+        }
+        return storedPayload;
+    }
+
+    private boolean isEventRequestWrapper(JsonNode root) {
+        if (root == null || !root.isObject()) {
+            return false;
+        }
+        return root.has("eventName") || root.has("eventname") || root.has("eventNm") || root.has("evntNm")
+                || root.has("corrKey") || root.has("corrkey") || root.has("loanPcesMgmtNo")
+                || root.has("prcrRsltCodeNm") || root.has("prcsRsltCodeNm") || root.has("prcsRsltCntn")
+                || root.size() == 1;
     }
 
     private static String truncate(String s, int max) {

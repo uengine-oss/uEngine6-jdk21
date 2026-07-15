@@ -4,13 +4,18 @@ import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.databind.JsonNode;
 
 public class EventInboxRequest {
-    @JsonAlias({ "eventname", "eventName" })
+    @JsonAlias({ "eventname", "eventName", "eventNm", "evntNm" })
     private String eventName;
 
-    @JsonAlias({ "corrkey", "corrKey" })
+    @JsonAlias({ "corrkey", "corrKey", "loanPcesMgmtNo" })
     private String corrKey;
 
     private JsonNode payload;
+
+    @JsonAlias({ "prcsRsltCodeNm" })
+    private String prcrRsltCodeNm;
+
+    private String prcsRsltCntn;
 
     public String getEventName() {
         return eventName;
@@ -34,5 +39,21 @@ public class EventInboxRequest {
 
     public void setPayload(JsonNode payload) {
         this.payload = payload;
+    }
+
+    public String getPrcrRsltCodeNm() {
+        return prcrRsltCodeNm;
+    }
+
+    public void setPrcrRsltCodeNm(String prcrRsltCodeNm) {
+        this.prcrRsltCodeNm = prcrRsltCodeNm;
+    }
+
+    public String getPrcsRsltCntn() {
+        return prcsRsltCntn;
+    }
+
+    public void setPrcsRsltCntn(String prcsRsltCntn) {
+        this.prcsRsltCntn = prcsRsltCntn;
     }
 }
