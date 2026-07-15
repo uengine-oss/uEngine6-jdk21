@@ -113,6 +113,11 @@ external:
   iam:
     base-url: ${EXTERNAL_IAM_BASE_URL:}
 
+esb:
+  base-url: ${ESB_BASE_URL:http://dev-esb.company.com/esb}
+  connect-timeout-ms: ${ESB_CONNECT_TIMEOUT_MS:5000}
+  read-timeout-ms: ${ESB_READ_TIMEOUT_MS:10000}
+
 logging:
   level:
     org.hibernate.type: trace
@@ -183,6 +188,11 @@ keycloak:
 external:
   iam:
     base-url: ${EXTERNAL_IAM_BASE_URL:}
+
+esb:
+  base-url: ${ESB_BASE_URL:http://qa-esb.company.com/esb}
+  connect-timeout-ms: ${ESB_CONNECT_TIMEOUT_MS:5000}
+  read-timeout-ms: ${ESB_READ_TIMEOUT_MS:10000}
 
 logging:
   level:
@@ -255,6 +265,11 @@ keycloak:
 external:
   iam:
     base-url: ${EXTERNAL_IAM_BASE_URL:}
+
+esb:
+  base-url: ${ESB_BASE_URL:https://esb.company.com/esb}
+  connect-timeout-ms: ${ESB_CONNECT_TIMEOUT_MS:5000}
+  read-timeout-ms: ${ESB_READ_TIMEOUT_MS:15000}
 
 logging:
   level:
