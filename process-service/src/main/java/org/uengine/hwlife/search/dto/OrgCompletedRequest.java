@@ -14,7 +14,7 @@ public class OrgCompletedRequest {
     private String fncgSuptTrgtDvsnCode;
     private String loanSubjDvsnCode;
     private String loanCntcNo;
-    private String custNo;
+    private String custId;
     private String fncgWndwOrgnCode;
     private String sortOrdrVal;
 
@@ -76,12 +76,12 @@ public class OrgCompletedRequest {
         this.loanCntcNo = loanCntcNo;
     }
 
-    public String getCustNo() {
-        return custNo;
+    public String getCustId() {
+        return custId;
     }
 
-    public void setCustNo(String custNo) {
-        this.custNo = custNo;
+    public void setCustId(String custId) {
+        this.custId = custId;
     }
 
     public String getFncgWndwOrgnCode() {

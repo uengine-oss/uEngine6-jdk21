@@ -17,7 +17,7 @@ public class MyProgressRequest {
     private String fncgSuptTrgtDvsnCode;
     private String loanSubjDvsnCode;
     private String fncgMneyUsagClsfCode;
-    private String custNo;
+    private String custId;
     private String loanCntcNo;
     private String group;
     private String sortOrdrVal;
@@ -89,12 +89,12 @@ public class MyProgressRequest {
         this.fncgMneyUsagClsfCode = fncgMneyUsagClsfCode;
     }
 
-    public String getCustNo() {
-        return custNo;
+    public String getCustId() {
+        return custId;
     }
 
-    public void setCustNo(String custNo) {
-        this.custNo = custNo;
+    public void setCustId(String custId) {
+        this.custId = custId;
     }
 
     public String getLoanCntcNo() {

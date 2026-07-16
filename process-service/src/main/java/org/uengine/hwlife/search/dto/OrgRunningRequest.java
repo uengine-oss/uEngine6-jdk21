@@ -16,7 +16,7 @@ public class OrgRunningRequest {
     private String loanSubjDvsnCode;
     private String fncgMneyUsagClsfCode;
     private String loanCntcNo;
-    private String custNo;
+    private String custId;
     private String fncgWndwOrgnCode;
     private String rqstDvsnCode;
     private String sortOrdrVal;
@@ -95,12 +95,12 @@ public class OrgRunningRequest {
         this.loanCntcNo = loanCntcNo;
     }
 
-    public String getCustNo() {
-        return custNo;
+    public String getCustId() {
+        return custId;
     }
 
-    public void setCustNo(String custNo) {
-        this.custNo = custNo;
+    public void setCustId(String custId) {
+        this.custId = custId;
     }
 
     public String getFncgWndwOrgnCode() {

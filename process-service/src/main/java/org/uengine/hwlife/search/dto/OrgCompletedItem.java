@@ -13,7 +13,7 @@ public class OrgCompletedItem {
     private String loanCntcNo;
     private String fncgSuptTrgtDvsnCode;
     private String loanSubjDvsnCode;
-    private String custNo;
+    private String custId;
     private String fncgMneyUsagClsfCode;
     private Date loanHopeDate;
     private String loanPcesMgmtNo;
@@ -63,12 +63,12 @@ public class OrgCompletedItem {
         this.loanSubjDvsnCode = loanSubjDvsnCode;
     }
 
-    public String getCustNo() {
-        return custNo;
+    public String getCustId() {
+        return custId;
     }
 
-    public void setCustNo(String custNo) {
-        this.custNo = custNo;
+    public void setCustId(String custId) {
+        this.custId = custId;
     }
 
     public String getFncgMneyUsagClsfCode() {

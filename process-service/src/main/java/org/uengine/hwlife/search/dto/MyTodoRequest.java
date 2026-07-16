@@ -10,7 +10,7 @@ import org.springframework.format.annotation.DateTimeFormat;
 public class MyTodoRequest {
 
     private String bswrClsfCode;
-    private String custNo;
+    private String custId;
     private String fncgBswrDvsnCode;
     private String loanCntcNo;
     private String fncgSuptTrgtDvsnCode;
@@ -43,12 +43,12 @@ public class MyTodoRequest {
         this.bswrClsfCode = bswrClsfCode;
     }
 
-    public String getCustNo() {
-        return custNo;
+    public String getCustId() {
+        return custId;
     }
 
-    public void setCustNo(String custNo) {
-        this.custNo = custNo;
+    public void setCustId(String custId) {
+        this.custId = custId;
     }
 
     public String getFncgBswrDvsnCode() {

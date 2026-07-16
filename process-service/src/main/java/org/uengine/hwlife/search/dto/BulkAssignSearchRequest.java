@@ -8,7 +8,7 @@ import java.util.Date;
 public class BulkAssignSearchRequest {
 
     private String bswrClsfCode;
-    private String custNo;
+    private String custId;
     private String fncgBswrDvsnCode;
     private String loanSubjDvsnCode;
     private String fncgMneyUsagClsfCode;
@@ -28,12 +28,12 @@ public class BulkAssignSearchRequest {
         this.bswrClsfCode = bswrClsfCode;
     }
 
-    public String getCustNo() {
-        return custNo;
+    public String getCustId() {
+        return custId;
     }
 
-    public void setCustNo(String custNo) {
-        this.custNo = custNo;
+    public void setCustId(String custId) {
+        this.custId = custId;
     }
 
     public String getFncgBswrDvsnCode() {

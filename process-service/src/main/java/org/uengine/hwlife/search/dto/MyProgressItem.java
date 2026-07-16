@@ -13,7 +13,7 @@ public class MyProgressItem {
     private String loanSubjDvsnCode;
     private String fncgMneyUsagClsfCode;
     private Date loanHopeDate;
-    private String custNo;
+    private String custId;
     private String corrKey;
     private String title;
     private String trcTag;
@@ -74,12 +74,12 @@ public class MyProgressItem {
         this.loanHopeDate = loanHopeDate;
     }
 
-    public String getCustNo() {
-        return custNo;
+    public String getCustId() {
+        return custId;
     }
 
-    public void setCustNo(String custNo) {
-        this.custNo = custNo;
+    public void setCustId(String custId) {
+        this.custId = custId;
     }
 
     public String getCorrKey() {
