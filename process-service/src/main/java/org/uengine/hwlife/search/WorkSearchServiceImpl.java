@@ -1,5 +1,7 @@
 package org.uengine.hwlife.search;
 
+import java.util.Arrays;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -7,20 +9,7 @@ import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
-import org.uengine.hwlife.search.dto.BulkAssignSearchRequest;
-import org.uengine.hwlife.search.dto.BulkAssignSearchResponse;
-import org.uengine.hwlife.search.dto.MyProgressRequest;
-import org.uengine.hwlife.search.dto.MyProgressResponse;
-import org.uengine.hwlife.search.dto.MyTodoRequest;
-import org.uengine.hwlife.search.dto.MyTodoResponse;
-import org.uengine.hwlife.search.dto.OrgCompletedRequest;
-import org.uengine.hwlife.search.dto.OrgCompletedResponse;
-import org.uengine.hwlife.search.dto.OrgRunningRequest;
-import org.uengine.hwlife.search.dto.OrgRunningResponse;
-import org.uengine.hwlife.search.dto.RunningTasksByKeyRequest;
-import org.uengine.hwlife.search.dto.RunningTasksByKeyResponse;
-import org.uengine.hwlife.search.dto.RunningWorkByCorrKeyRequest;
-import org.uengine.hwlife.search.dto.RunningWorkByCorrKeyResponse;
+import org.uengine.hwlife.search.dto.*;
 
 /**
  * BPM 통합 검색 REST API 구현. Repository 연동은 추후 구현.
@@ -70,11 +59,15 @@ public class WorkSearchServiceImpl implements WorkSearchService {
   @Transactional(readOnly = true)
   public RunningTasksByKeyResponse searchRunningWorkByCorrKey(@RequestBody RunningTasksByKeyRequest request) {
     RunningTasksByKeyResponse response = new RunningTasksByKeyResponse();
-    response.setLoanPcesMgmtNo("LOAN-2026-0001");
-    response.setFncgBpmTaskTrcgNm("FN013_S03_402");
-    response.setFncgBpmUworSttsCntn("NEW");
-    response.setPrgsSttsNm("RUNNING");
-    response.setPrcsrsltCntn("정상(인스턴스: RUNNING, 단위업무상태: NEW)");
+
+    RunningTasksByKeyResponseItem item = new RunningTasksByKeyResponseItem();
+    item.setLoanPcesMgmtNo("LOAN-2026-0001");
+    item.setFncgBpmTaskTrcgNm("FN013_S03_402");
+    item.setFncgBpmUworSttsCntn("NEW");
+    item.setPrgsSttsNm("RUNNING");
+    item.setPrcsrsltCntn("정상(인스턴스: RUNNING, 단위업무상태: NEW)");
+  
+    response.setBswrList(Arrays.asList(item));
     return response;
   }
 

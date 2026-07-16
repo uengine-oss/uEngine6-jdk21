@@ -1,14 +1,16 @@
 package org.uengine.hwlife.search.dto;
 
+import java.util.List;
+
 public class RunningTasksByKeyRequest {
 
-    private String loanPcesMgmtNo;
+    private List<RunningTasksByKeyRequestItem> bswrList;
 
-    public String getLoanPcesMgmtNo() {
-        return loanPcesMgmtNo;
+    public List<RunningTasksByKeyRequestItem> getBswrList() {
+        return bswrList;
     }
 
-    public void setLoanPcesMgmtNo(String loanPcesMgmtNo) {
-        this.loanPcesMgmtNo = loanPcesMgmtNo;
+    public void setBswrList(List<RunningTasksByKeyRequestItem> bswrList) {
+        this.bswrList = bswrList;
     }
 }
