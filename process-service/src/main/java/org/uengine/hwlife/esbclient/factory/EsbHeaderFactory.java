@@ -14,13 +14,13 @@ import org.uengine.hwlife.esbclient.dto.EsbCommonHeader;
  * ESB 요청용 {@link EsbCommonHeader} 생성 팩토리.
  *
  * <p>호출자(업무 코드)가 매번 공통 헤더 필드를 채우지 않도록,
- * 인터페이스 ID({@code itfcId})만 넘기면 요청에 필요한
+ * {@code itfcId}, {@code rcveSrvcId}만 넘기면 요청에 필요한
  * <b>고정값·자동생성값</b>이 세팅된 헤더를 만들어 준다.</p>
  *
  * <ul>
  *   <li>고정: trnmSysCode, prsnInfoIncsYn, rspnDvsnCode, baseLang/Cnty/Crny …</li>
  *   <li>자동: tlgrCretDttm, rqstDttm, rndmNo, hsno, ipAddr, ogtsTrnnNo …</li>
- *   <li>가변(인자): itfcId — 그 외 emnb, rcveSysCode 등은 호출 후 setter로 추가</li>
+ *   <li>가변(인자): itfcId, rcveSrvcId — 그 외 emnb 등은 호출 후 setter로 추가</li>
  * </ul>
  */
 @Component
@@ -32,15 +32,18 @@ public class EsbHeaderFactory {
     private static final AtomicInteger HSNO = new AtomicInteger(1);
 
     /**
+     * @param itfcId     인터페이스 아이디
+     * @param rcveSrvcId 수신 서비스 아이디 (호출 측에서 전달)
      * @return 요청용 ESB 공통 헤더
      */
-    public EsbCommonHeader create(String itfcId) {
+    public EsbCommonHeader create(String itfcId, String rcveSrvcId) {
         String now = now();
         String hostIp = localIp();
         // ESB ipAddr: 10.20.30.40 → 010020030040 (길이 12)
         String ipAddr = toEsbIpAddr(hostIp);
         return EsbCommonHeader.builder()
                 .itfcId(itfcId)
+                .rcveSrvcId(rcveSrvcId)
                 .trnmSysCode("BPM_CODE")
                 .ipAddr(ipAddr)
                 .tlgrCretDttm(now)

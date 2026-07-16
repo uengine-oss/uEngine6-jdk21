@@ -47,8 +47,8 @@ public class EsbClientImpl implements EsbClient {
     }
 
     @Override
-    public <T, R> R send(String itfcId, T payload, Class<R> responseType) {
-        EsbCommonHeader header = headerFactory.create(itfcId);
+    public <T, R> R send(String itfcId, String rcveSrvcId, T payload, Class<R> responseType) {
+        EsbCommonHeader header = headerFactory.create(itfcId, rcveSrvcId);
         EsbRequest<T> request = EsbRequest.<T>builder()
                 .header(header)
                 .payload(payload)
@@ -56,12 +56,6 @@ public class EsbClientImpl implements EsbClient {
 
         EsbResponse<R> response = exchange(requireBaseUrl(), request, responseType);
         return response != null ? response.getPayload() : null;
-    }
-
-    @Override
-    public <T, R> EsbResponse<R> send(String uri, EsbRequest<T> request, Class<R> responseType) {
-        String url = requireBaseUrl() + (uri != null ? uri : "");
-        return exchange(url, request, responseType);
     }
 
     private String requireBaseUrl() {

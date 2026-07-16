@@ -1,17 +1,14 @@
 package org.uengine.hwlife.esbclient.client;
 
-import org.uengine.hwlife.esbclient.dto.EsbRequest;
-import org.uengine.hwlife.esbclient.dto.EsbResponse;
-
 public interface EsbClient {
 
     /**
-     * itfcId + payload 로 ESB 호출. 응답 payload 만 반환.
+     * itfcId + rcveSrvcId + payload 로 ESB 호출. 응답 payload 만 반환.
+     *
+     * @param itfcId       인터페이스 아이디
+     * @param rcveSrvcId   수신 서비스 아이디 (호출 측에서 전달)
+     * @param payload      업무 페이로드
+     * @param responseType 응답 payload 타입
      */
-    <T, R> R send(String itfcId, T payload, Class<R> responseType);
-
-    /**
-     * uri 지정 호출. 응답 전체({@link EsbResponse}) 반환.
-     */
-    <T, R> EsbResponse<R> send(String uri, EsbRequest<T> request, Class<R> responseType);
+    <T, R> R send(String itfcId, String rcveSrvcId, T payload, Class<R> responseType);
 }
