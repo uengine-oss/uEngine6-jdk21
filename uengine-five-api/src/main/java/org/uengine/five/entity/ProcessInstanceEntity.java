@@ -63,7 +63,7 @@ public class ProcessInstanceEntity {// implements ProcessInstanceDAO {
     private String currGroupCd; // 현재 담당 그룹 코드
     
     /* custom information */
-    private String custNo;  // 고객번호
+    private String custId;  // 고객번호
     private String fncgBswrDvsnCode; // 융자업무구분코드
     private String loanCntcNo; // 대출계약번호
     private String fncgSuptTrgtDvsnCode; // 융자지원대상구분코드
