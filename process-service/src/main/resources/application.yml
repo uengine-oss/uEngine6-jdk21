@@ -122,6 +122,7 @@ esb:
   base-url: ${ESB_BASE_URL:http://dev-esb.company.com/esb}
   connect-timeout-ms: ${ESB_CONNECT_TIMEOUT_MS:5000}
   read-timeout-ms: ${ESB_READ_TIMEOUT_MS:10000}
+  server-type: ${ESB_SERVER_TYPE:D}
 
 logging:
   level:
@@ -198,6 +199,7 @@ esb:
   base-url: ${ESB_BASE_URL:http://qa-esb.company.com/esb}
   connect-timeout-ms: ${ESB_CONNECT_TIMEOUT_MS:5000}
   read-timeout-ms: ${ESB_READ_TIMEOUT_MS:10000}
+  server-type: ${ESB_SERVER_TYPE:Q}
 
 logging:
   level:
@@ -275,6 +277,7 @@ esb:
   base-url: ${ESB_BASE_URL:https://esb.company.com/esb}
   connect-timeout-ms: ${ESB_CONNECT_TIMEOUT_MS:5000}
   read-timeout-ms: ${ESB_READ_TIMEOUT_MS:15000}
+  server-type: ${ESB_SERVER_TYPE:P}
 
 logging:
   level:
