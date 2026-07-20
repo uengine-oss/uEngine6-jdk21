@@ -18,6 +18,10 @@ import org.springframework.scheduling.annotation.EnableAsync;
 import org.uengine.five.overriding.ActivityQueue;
 import org.uengine.five.overriding.EventMappingDeployFilter;
 // import org.uengine.hwlife.iam.ExternalIAMService;
+import org.springframework.beans.factory.NoSuchBeanDefinitionException;
+import org.uengine.five.messaging.EventInboxProviderFactory;
+import org.uengine.five.messaging.EventInboxService;
+import org.uengine.hwlife.events.ExternalEventInboxService;
 import org.uengine.five.service.IAMCompanyRoleMapping;
 import org.uengine.five.service.IAMServiceFactory;
 import org.uengine.five.service.KeycloakIAMService;
@@ -61,6 +65,9 @@ public class ProcessServiceApplication {
         // SpringApplication.run() 보다 먼저 실행해야 합니다.
         IAMServiceFactory.register("keycloak", KeycloakIAMService.getDefault());
         // IAMServiceFactory.register("external", ExternalIAMService.getDefault());
+
+        EventInboxProviderFactory.register("default", EventInboxService.getDefault());
+        // EventInboxProviderFactory.register("external", ExternalEventInboxService.getDefault());
 
         applicationContext = SpringApplication.run(ProcessServiceApplication.class, args);
         GlobalContext.setComponentFactory(new SpringComponentFactory());
