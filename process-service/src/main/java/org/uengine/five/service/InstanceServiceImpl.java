@@ -36,7 +36,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
 import org.springframework.context.ApplicationContext;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.rest.webmvc.ResourceNotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -79,8 +78,6 @@ import org.uengine.five.framework.ProcessTransactionContext;
 import org.uengine.five.framework.ProcessTransactional;
 import org.uengine.five.overriding.IAMRoleResolutionContext;
 import org.uengine.five.overriding.JPAProcessInstance;
-import org.uengine.five.messaging.EventInbox;
-import org.uengine.five.messaging.EventInboxRepository;
 import org.uengine.five.repository.EventMappingRepository;
 import org.uengine.five.repository.ProcessInstanceRepository;
 import org.uengine.five.repository.ServiceEndpointRepository;
@@ -129,8 +126,6 @@ import org.uengine.modeling.resource.ResourceManager;
 import org.uengine.util.UEngineUtil;
 import org.uengine.webservices.worklist.DefaultWorkList;
 
-import com.fasterxml.jackson.annotation.JsonAlias;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -173,9 +168,6 @@ public class InstanceServiceImpl implements InstanceService {
 
     @Autowired
     EventMappingRepository eventMappingRepository;
-
-    @Autowired
-    EventInboxRepository eventInboxRepository;
 
     @Autowired
     private ApplicationContext context;
@@ -2168,168 +2160,7 @@ public class InstanceServiceImpl implements InstanceService {
         completeWorkItemInternal(taskId, workItem, "true");
         System.out.println(
                 "[InstanceServiceImpl] completeWorkItemByActivityName: successfully completed taskId=" + taskId);
-    }
-
-
-
-    @PostMapping("/inbox")
-    public ResponseEntity<EventInboxBulkResponse> receiveInboxEvents(
-            @RequestHeader(name = "X-Event-Type", required = false) String defaultType,
-            @RequestHeader(name = "X-Corr-Key", required = false) String defaultCorrKey,
-            @RequestBody(required = false) List<EventInboxRequest> events) {
-
-        EventInboxBulkResponse response = new EventInboxBulkResponse();
-        if (events == null || events.isEmpty()) {
-            response.setStatus("SUCCESS");
-            return ResponseEntity.accepted().body(response);
-        }
-
-        for (EventInboxRequest event : events) {
-            if (event == null) {
-                response.addFailure(new EventInboxFailure(null, null, null, "0", "event must not be null"));
-                continue;
-            }
-
-            String type = event.getEventName() != null ? event.getEventName() : defaultType;
-            String corrKey = event.getCorrKey() != null ? event.getCorrKey() : defaultCorrKey;
-            String failReason = saveInboxEvent(type, corrKey, event.getPayload());
-            if (failReason == null) {
-                response.incrementSuccessCount();
-            } else {
-                response.addFailure(new EventInboxFailure(corrKey, type, event.getPayload(), "0", failReason));
-            }
-        }
-
-        response.setStatus(response.getFailCount() == 0 ? "SUCCESS" : "FAIL");
-        return ResponseEntity.accepted().body(response);
-    }
-
-    private String saveInboxEvent(String type, String corrKey, JsonNode body) {
-        String payloadJson;
-        if (body == null || body.isMissingNode()) {
-            payloadJson = "{}";
-        } else {
-            try {
-                payloadJson = plainObjectMapper.writeValueAsString(body);
-            } catch (Exception e) {
-                return "invalid payload: " + e.getMessage();
-            }
-        }
-
-        if (corrKey == null && type != null && body != null && !body.isMissingNode()) {
-            corrKey = extractInboxCorrKeyFromPayload(type, body);
-        }
-
-        EventInbox ev = new EventInbox();
-        ev.setEventName(type);
-        ev.setPayload(payloadJson);
-        ev.setCorrKey(corrKey);
-
-        try {
-            eventInboxRepository.save(ev);
-        } catch (DataIntegrityViolationException e) {
-            return "data integrity violation: " + e.getMostSpecificCause().getMessage();
-        }
-
-        return null;
-    }
-
-    private String extractInboxCorrKeyFromPayload(String eventType, JsonNode body) {
-        try {
-            EventMappingEntity mapping = eventMappingRepository.findEventMappingByEventName(eventType);
-            if (mapping == null || mapping.getCorrelationKey() == null)
-                return null;
-            JsonNode field = body.get(mapping.getCorrelationKey());
-            return (field != null && !field.isNull()) ? field.asText() : null;
-        } catch (Exception e) {
-            log.warn("[inbox] failed to extract corrKey from payload for type={}", eventType, e);
-            return null;
-        }
-    }
-
-    public static class EventInboxRequest {
-        @JsonAlias({ "eventname", "eventName" })
-        private String eventName;
-
-        @JsonAlias({ "corrkey", "corrKey" })
-        private String corrKey;
-
-        private JsonNode payload;
-
-        public String getEventName() { return eventName; }
-        public void setEventName(String eventName) { this.eventName = eventName; }
-
-        public String getCorrKey() { return corrKey; }
-        public void setCorrKey(String corrKey) { this.corrKey = corrKey; }
-
-        public JsonNode getPayload() { return payload; }
-        public void setPayload(JsonNode payload) { this.payload = payload; }
-    }
-
-    public static class EventInboxBulkResponse {
-        private String status;
-        private int successCount;
-        private int failCount;
-        private List<EventInboxFailure> failedList = new ArrayList<>();
-
-        public String getStatus() { return status; }
-        public void setStatus(String status) { this.status = status; }
-
-        public int getSuccessCount() { return successCount; }
-        public void setSuccessCount(int successCount) { this.successCount = successCount; }
-        public void incrementSuccessCount() { this.successCount++; }
-
-        public int getFailCount() { return failCount; }
-        public void setFailCount(int failCount) { this.failCount = failCount; }
-
-        public List<EventInboxFailure> getFailedList() { return failedList; }
-        public void setFailedList(List<EventInboxFailure> failedList) { this.failedList = failedList; }
-
-        public void addFailure(EventInboxFailure failure) {
-            failedList.add(failure);
-            failCount++;
-        }
-    }
-
-    public static class EventInboxFailure {
-        @JsonProperty("corrkey")
-        private String corrKey;
-
-        @JsonProperty("eventname")
-        private String eventName;
-
-        private JsonNode payload;
-
-        private String reasonCode;
-
-        private String reason;
-
-        public EventInboxFailure(String corrKey, String eventName, JsonNode payload, String reasonCode, String reason) {
-            this.corrKey = corrKey;
-            this.eventName = eventName;
-            this.payload = payload;
-            this.reasonCode = reasonCode;
-            this.reason = reason;
-        }
-
-        public String getCorrKey() { return corrKey; }
-        public void setCorrKey(String corrKey) { this.corrKey = corrKey; }
-
-        public String getEventName() { return eventName; }
-        public void setEventName(String eventName) { this.eventName = eventName; }
-
-        public JsonNode getPayload() { return payload; }
-        public void setPayload(JsonNode payload) { this.payload = payload; }
-
-        public String getReasonCode() { return reasonCode; }
-        public void setReasonCode(String reasonCode) { this.reasonCode = reasonCode; }
-
-        public String getReason() { return reason; }
-        public void setReason(String reason) { this.reason = reason; }
-    }
-
-
-    @RequestMapping(value = "/test/{recordPath}/record", method = RequestMethod.GET)
+    }    @RequestMapping(value = "/test/{recordPath}/record", method = RequestMethod.GET)
     @ProcessTransactional
     public List<String> testRecordList(@PathVariable("recordPath") String recordPath) throws Exception {
         List<String> fileContents = new ArrayList<>();
