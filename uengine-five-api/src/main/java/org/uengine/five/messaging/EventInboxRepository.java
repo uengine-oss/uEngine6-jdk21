@@ -18,7 +18,7 @@ public interface EventInboxRepository extends JpaRepository<EventInbox, Long> {
      *
      * <p>호출은 반드시 트랜잭션 내부에서 이루어져야 한다.
      */
-    @Query(value = "SELECT * FROM BPM_EVENT_INBOX " +
+    @Query(value = "SELECT * FROM {h-schema}BPM_EVENT_INBOX " +
                    "WHERE processed_at IS NULL " +
                    "ORDER BY id ASC LIMIT :limit FOR UPDATE SKIP LOCKED",
            nativeQuery = true)

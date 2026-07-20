@@ -5,6 +5,11 @@ spring:
     allow-bean-definition-overriding: true
   profiles:
     active: ${SPRING_PROFILES_ACTIVE:dev}
+  jpa:
+    properties:
+      hibernate:
+        # native SQL 의 {h-schema} 및 JPQL 테이블 prefix. WAS(LBM)=lbm, 로컬은 UENGINE_DB_SCHEMA= 로 비우거나 public
+        default_schema: ${UENGINE_DB_SCHEMA:lbm}
 
 server:
   port: 9094
