@@ -7,6 +7,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.uengine.hwlife.esbclient.dto.EsbCommonHeader;
 
@@ -18,6 +19,7 @@ import org.uengine.hwlife.esbclient.dto.EsbCommonHeader;
  * <b>고정값·자동생성값</b>이 세팅된 헤더를 만들어 준다.</p>
  *
  * <ul>
+ *   <li>설정: serverType ({@code esb.server-type}) — application.yml/환경변수 값</li>
  *   <li>고정: trnmSysCode, prsnInfoIncsYn, rspnDvsnCode, baseLang/Cnty/Crny …</li>
  *   <li>자동: tlgrCretDttm, rqstDttm, rndmNo, hsno, ipAddr, ogtsTrnnNo …</li>
  *   <li>가변(인자): itfcId, rcveSrvcId — 그 외 emnb 등은 호출 후 setter로 추가</li>
@@ -30,6 +32,13 @@ public class EsbHeaderFactory {
             DateTimeFormatter.ofPattern("yyyyMMddHHmmssSSS");
     private static final SecureRandom RANDOM = new SecureRandom();
     private static final AtomicInteger HSNO = new AtomicInteger(1);
+
+    /** ESB 서버 구분값. application.yml {@code esb.server-type}(환경변수 {@code ESB_SERVER_TYPE})에서 주입. */
+    private final String serverType;
+
+    public EsbHeaderFactory(@Value("${esb.server-type:}") String serverType) {
+        this.serverType = serverType;
+    }
 
     /**
      * @param itfcId     인터페이스 아이디
@@ -52,6 +61,7 @@ public class EsbHeaderFactory {
                 .hsno(HSNO.getAndIncrement())
                 .ogtsTrnnNo(UUID.randomUUID().toString())
                 .prsnInfoIncsYn("N")
+                .serverType(serverType)
                 .rspnDvsnCode("S")
                 .rqsrIp(hostIp)
                 .baseLang("KOR")
