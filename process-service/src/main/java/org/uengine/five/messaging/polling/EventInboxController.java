@@ -10,9 +10,10 @@ import org.uengine.five.messaging.EventInboxProviderFactory;
 import org.uengine.five.messaging.EventInboxReceiveResult;
 
 /**
- * 외부 이벤트 Inbox HTTP 진입점.
+ * Event Inbox HTTP 진입점.
  *
- * <p>요청을 {@link EventInboxProviderFactory#getDefault()} 가 선택한 Provider 에 위임한다.</p>
+ * <p>요청을 {@link EventInboxProviderFactory#getDefault()} 가 선택한 Provider
+ * ({@code default} / {@code external}) 에 위임한다.</p>
  */
 @RestController
 @CrossOrigin(origins = "*")

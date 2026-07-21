@@ -5,10 +5,11 @@ import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
+import org.uengine.five.dto.EventInboxRequest;
 import org.uengine.five.dto.EventInboxResponse;
 
 /**
- * 외부 이벤트 Inbox 인입 코어 구현.
+ * Event Inbox 공통 인입 구현.
  *
  * <p>NOTE: 의도적으로 {@code @Transactional} 을 두지 않는다.
  * Postgres 는 트랜잭션 안에서 UNIQUE 위반이 나면 트랜잭션이 abort 되어
@@ -28,7 +29,10 @@ public class EventInboxEnqueueServiceImpl implements EventInboxEnqueueService {
     }
 
     @Override
-    public EventInboxResponse enqueue(String eventName, String corrKey, String payloadJson) {
+    public EventInboxResponse enqueue(EventInboxRequest request) {
+        String eventName = request != null ? request.getEventName() : null;
+        String corrKey = request != null ? request.getCorrKey() : null;
+        String payloadJson = request != null ? request.getPayloadJson() : null;
         String normalizedPayload = payloadJson != null ? payloadJson : "{}";
 
         EventInbox ev = new EventInbox();

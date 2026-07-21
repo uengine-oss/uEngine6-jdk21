@@ -19,8 +19,8 @@ import org.uengine.five.overriding.ActivityQueue;
 import org.uengine.five.overriding.EventMappingDeployFilter;
 // import org.uengine.hwlife.iam.ExternalIAMService;
 import org.springframework.beans.factory.NoSuchBeanDefinitionException;
+import org.uengine.five.messaging.DefaultEventInboxService;
 import org.uengine.five.messaging.EventInboxProviderFactory;
-import org.uengine.five.messaging.EventInboxService;
 import org.uengine.hwlife.events.ExternalEventInboxService;
 import org.uengine.five.service.IAMCompanyRoleMapping;
 import org.uengine.five.service.IAMServiceFactory;
@@ -66,11 +66,12 @@ public class ProcessServiceApplication {
         IAMServiceFactory.register("keycloak", KeycloakIAMService.getDefault());
         // IAMServiceFactory.register("external", ExternalIAMService.getDefault());
 
-        EventInboxProviderFactory.register("default", EventInboxService.getDefault());
-        // EventInboxProviderFactory.register("external", ExternalEventInboxService.getDefault());
-
         applicationContext = SpringApplication.run(ProcessServiceApplication.class, args);
         GlobalContext.setComponentFactory(new SpringComponentFactory());
+        // EventInbox Provider 는 Spring 빈이므로 컨텍스트 기동 후 등록한다.
+        // 선택은 event-inbox.provider (또는 EVENT_INBOX_PROVIDER) 로 한다.
+        EventInboxProviderFactory.register("default", DefaultEventInboxService.getDefault());
+        //EventInboxProviderFactory.register("external", ExternalEventInboxService.getDefault());
         // rolemapping.class, iam.provider는 uengine.properties에서 관리합니다.
         // (process-service/src/main/resources/org/uengine/uengine.properties)
     }

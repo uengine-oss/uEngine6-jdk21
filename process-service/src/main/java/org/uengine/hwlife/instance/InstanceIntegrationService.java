@@ -45,7 +45,7 @@ public interface InstanceIntegrationService {
    *
    * <pre>PUT /instance/bulk-assign</pre>
    */
-  @RequestMapping(value = "/bulk-assign", method = RequestMethod.PUT, produces = "application/json;charset=UTF-8")
+  @RequestMapping(value = "/bulk-assign", method = RequestMethod.POST, produces = "application/json;charset=UTF-8")
   BulkAssignResponse assignBulk(@RequestBody BulkAssignRequest request) throws Exception;
 
   /**

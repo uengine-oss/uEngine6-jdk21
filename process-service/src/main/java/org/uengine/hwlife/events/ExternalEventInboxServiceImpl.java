@@ -3,6 +3,7 @@ package org.uengine.hwlife.events;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 import org.uengine.five.ProcessServiceApplication;
+import org.uengine.five.dto.EventInboxRequest;
 import org.uengine.five.dto.EventInboxResponse;
 import org.uengine.five.messaging.EventInboxEnqueueService;
 import org.uengine.five.messaging.EventInboxReceiveResult;
@@ -12,7 +13,7 @@ import org.uengine.hwlife.events.dto.ExternalEventInboxResponse;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
- * 외부(커스텀) Event Inbox 수신 서비스 구현.
+ * 외부(External) Event Inbox 수신 서비스 구현.
  */
 @Service
 @ConditionalOnProperty(name = "uengine.messaging.mode", havingValue = "polling")
@@ -46,7 +47,8 @@ public class ExternalEventInboxServiceImpl implements ExternalEventInboxService 
                     ExternalEventInboxResponse.failed(loanPcesMgmtNo, evntNm, "invalid payload: " + e.getMessage()));
         }
 
-        EventInboxResponse coreResponse = enqueueService.enqueue(evntNm, loanPcesMgmtNo, payloadJson);
+        EventInboxResponse coreResponse = enqueueService.enqueue(
+                new EventInboxRequest(evntNm, loanPcesMgmtNo, payloadJson));
         ExternalEventInboxResponse response = toExternalResponse(coreResponse, loanPcesMgmtNo, evntNm);
         if (EventInboxResponse.STATUS_FAILED.equals(coreResponse.getStatus())) {
             return EventInboxReceiveResult.failure(response);

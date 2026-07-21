@@ -1,9 +1,9 @@
 package org.uengine.five.messaging;
 
 /**
- * 외부 이벤트 Inbox 수신 Provider.
+ * Event Inbox 수신 Provider.
  *
- * <p>코어/커스텀 구현체가 각자 요청 JSON 을 파싱하고 응답을 반환한다.
+ * <p>Default/External 구현체가 각자 요청 JSON 을 파싱하고 응답을 반환한다.
  * {@link EventInboxProviderFactory} 로 런타임에 구현체를 선택한다.</p>
  */
 public interface EventInboxProvider {

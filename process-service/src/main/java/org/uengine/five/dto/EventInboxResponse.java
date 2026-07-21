@@ -5,11 +5,10 @@ import java.time.Instant;
 import com.fasterxml.jackson.annotation.JsonInclude;
 
 /**
- * 외부 이벤트 Inbox 통합 응답 DTO.
+ * Event Inbox 공통 enqueue 결과 DTO.
  *
- * <p>{@code POST /events/inbox} 의 모든 응답 케이스를 단일 객체로 표현한다.
- * 클라이언트는 {@link #status} 한 필드로 OK/Fail 분기하고, 멱등 중복 여부는 {@link #duplicate}
- * 플래그로 추가 판별한다.</p>
+ * <p>{@link org.uengine.five.messaging.EventInboxEnqueueService} 가 반환하며,
+ * Default/External Provider 가 각자의 {@code *Response} 로 변환한다.</p>
  *
  * <p>{@code status} 가질 수 있는 값:
  * <ul>
@@ -20,13 +19,10 @@ import com.fasterxml.jackson.annotation.JsonInclude;
  * <p>케이스별 채워지는 필드:
  * <ul>
  *   <li>신규 enqueue : status=SUCCESS, duplicate=false, eventName, corrKey, occurredAt(=신규 row.createdAt)</li>
- *   <li>멱등 중복   : status=SUCCESS, duplicate=true,  eventName, corrKey, occurredAt(=기존 row.createdAt)
- *       — (corrKey, eventName) 가 UNIQUE 라 두 키만으로 기존 row 식별 가능</li>
- *   <li>실패       : status=FAILED,  duplicate=false, reason, eventName, corrKey, occurredAt=null
- *       — inbox row 가 만들어지지 않았으므로 createdAt 없음</li>
+ *   <li>멱등 중복   : status=SUCCESS, duplicate=true,  eventName, corrKey, occurredAt(=기존 row.createdAt)</li>
+ *   <li>실패       : status=FAILED,  duplicate=false, reason, eventName, corrKey, occurredAt=null</li>
  * </ul>
- * 비어있는 참조 필드는 {@code @JsonInclude(NON_NULL)} 로 직렬화에서 자동 제외된다.
- * {@code duplicate} 는 primitive 라 항상 노출됨 (의도된 동작 — 클라이언트가 신뢰성 있게 분기).</p>
+ * 비어있는 참조 필드는 {@code @JsonInclude(NON_NULL)} 로 직렬화에서 자동 제외된다.</p>
  *
  * <p>인스턴스는 {@link #success}, {@link #duplicate}, {@link #failed} 정적 팩터리로만 생성한다.</p>
  */
