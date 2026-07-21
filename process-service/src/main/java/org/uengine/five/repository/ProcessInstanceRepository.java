@@ -70,6 +70,8 @@ public interface ProcessInstanceRepository
         List<ProcessInstanceEntity> findByCorrKeyAndStatus(@Param("corrKey") String corrKey,
                 @Param("status") String status);
 
+        List<ProcessInstanceEntity> findByCorrKey(String corrKey);
+
         @Query("select pi from ProcessInstanceEntity pi where pi.status = :status")
         List<ProcessInstanceEntity> findByStatus(@Param("status") String status);
 
