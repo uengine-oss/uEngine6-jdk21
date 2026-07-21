@@ -21,6 +21,15 @@ public interface AbsenceRepository extends JpaRepository<AbsenceEntity, Long> {
     @Query("select a from AbsenceEntity a where a.userId = :userId order by a.abscCretDttm desc")
     List<AbsenceEntity> findByUserId(@Param("userId") String userId);
 
+    @Query("select a from AbsenceEntity a " +
+            "where a.userId = :userId " +
+            "  and a.abscCnceDttm is null " +
+            "  and a.abscStarDttm <= :at " +
+            "  and (a.abscEndDttm is null or a.abscEndDttm >= :at) " +
+            "order by a.abscCretDttm desc")
+    List<AbsenceEntity> findActiveAt(@Param("userId") String userId,
+                                     @Param("at") Date at);
+
     /**
      * 동일 userId 로 기간이 겹치는 활성 부재가 존재하는지 검사 (등록 시 중복 방지용).
      *

@@ -37,6 +37,7 @@ public class RuleBasedRoleResolutionContext extends RoleResolutionContext {
     /** 모델러에서 직접 지정하는 정책 ID. 비어 있으면 인스턴스 변수 POLICY_ID 로 대체. */
     private String policyId;
     private String difficulty;
+    private DynamicAssignment dynamicAssignment;
 
     public String getPolicyId() {
         return policyId;
@@ -54,6 +55,14 @@ public class RuleBasedRoleResolutionContext extends RoleResolutionContext {
         this.difficulty = difficulty;
     }
 
+    public DynamicAssignment getDynamicAssignment() {
+        return dynamicAssignment;
+    }
+
+    public void setDynamicAssignment(DynamicAssignment dynamicAssignment) {
+        this.dynamicAssignment = dynamicAssignment;
+    }
+
     @Override
     public RoleMapping getActualMapping(ProcessDefinition pd, ProcessInstance instance,
                                         String tracingTag, Map options) throws Exception {
@@ -69,6 +78,13 @@ public class RuleBasedRoleResolutionContext extends RoleResolutionContext {
         }
 
         RuleRoleResolutionService service = RuleRoleResolutionSupport.get();
+        String directAssignee = resolveDirectAssignee(instance, tracingTag);
+        if (isNotEmpty(directAssignee)) {
+            String activeDelegate = service.resolveActiveDelegateEndpoint(directAssignee);
+            RoleMapping mapping = createUserMapping(isNotEmpty(activeDelegate) ? activeDelegate : directAssignee);
+            saveMapping(mapping, resolvedPolicyId, resolvedDifficulty, refId);
+            return mapping;
+        }
 
         // 2) 배정 규칙 조회 (없으면 외부 기준정보에서 적재 후 재조회)
         List<RuleCandidate> rules = loadRules(resolvedPolicyId, resolvedDifficulty);
@@ -87,13 +103,30 @@ public class RuleBasedRoleResolutionContext extends RoleResolutionContext {
         String chosen = selectByGap(rules, remaining);
 
         // 6) RoleMapping 생성
-        RoleMapping mapping = RoleMapping.create();
-        mapping.setEndpoint(chosen);
-        mapping.setAssignType(Role.ASSIGNTYPE_USER);
+        RoleMapping mapping = createUserMapping(chosen);
 
         // 7) 배정 메타(정책/난이도/REF_ID) 적재 → 코어가 BPM_ROLEMAPPING 저장 시 함께 보존
         saveMapping(mapping, resolvedPolicyId, resolvedDifficulty, refId);
 
+        return mapping;
+    }
+
+    String resolveDirectAssignee(ProcessInstance instance, String tracingTag) throws Exception {
+        if (dynamicAssignment == null || !dynamicAssignment.isEnabled() || !isNotEmpty(dynamicAssignment.getPayloadKey())) {
+            return null;
+        }
+        Object value = readVarRaw(instance, tracingTag, dynamicAssignment.getPayloadKey().trim());
+        if (!(value instanceof CharSequence)) {
+            return null;
+        }
+        String endpoint = value.toString().trim();
+        return isNotEmpty(endpoint) ? endpoint : null;
+    }
+
+    private RoleMapping createUserMapping(String endpoint) {
+        RoleMapping mapping = RoleMapping.create();
+        mapping.setEndpoint(endpoint);
+        mapping.setAssignType(Role.ASSIGNTYPE_USER);
         return mapping;
     }
 
@@ -194,6 +227,11 @@ public class RuleBasedRoleResolutionContext extends RoleResolutionContext {
     }
 
     private static String readVar(ProcessInstance instance, String tracingTag, String key) throws Exception {
+        Object v = readVarRaw(instance, tracingTag, key);
+        return v != null ? String.valueOf(v) : null;
+    }
+
+    private static Object readVarRaw(ProcessInstance instance, String tracingTag, String key) throws Exception {
         if (instance == null) {
             return null;
         }
@@ -201,10 +239,34 @@ public class RuleBasedRoleResolutionContext extends RoleResolutionContext {
         if (v == null && isNotEmpty(tracingTag)) {
             v = instance.get(tracingTag, key);
         }
-        return v != null ? String.valueOf(v) : null;
+        return v;
     }
 
     private static boolean isNotEmpty(String s) {
         return s != null && !s.trim().isEmpty();
+    }
+
+    public static class DynamicAssignment implements java.io.Serializable {
+
+        private static final long serialVersionUID = GlobalContext.SERIALIZATION_UID;
+
+        private boolean enabled;
+        private String payloadKey;
+
+        public boolean isEnabled() {
+            return enabled;
+        }
+
+        public void setEnabled(boolean enabled) {
+            this.enabled = enabled;
+        }
+
+        public String getPayloadKey() {
+            return payloadKey;
+        }
+
+        public void setPayloadKey(String payloadKey) {
+            this.payloadKey = payloadKey;
+        }
     }
 }
