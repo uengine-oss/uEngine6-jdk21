@@ -3026,7 +3026,8 @@ public class InstanceServiceImpl implements InstanceService {
         try {
             Long rootInstId = worklistEntity.getRootInstId() == null ? worklistEntity.getInstId() : worklistEntity.getRootInstId().longValue();
             if (rootInstId != null) {
-                List<WorklistEntity> currents = worklistRepository.findCurrentWorkItemByInstId(rootInstId);
+                List<WorklistEntity> currents = worklistRepository.findDelegationTargets(
+                        rootInstId, worklistEntity.getRoleName(), worklistEntity.getTaskId());
                 if (currents != null) {
                     String laneRoleName = worklistEntity.getRoleName();
                     String targetEndpoint = delegated != null ? delegated.getEndpoint() : null;
@@ -3058,6 +3059,7 @@ public class InstanceServiceImpl implements InstanceService {
                         wl.setPrevEndpoint(previousEndpoint);
                         wl.setPrevUserName(previousUserName);
                         wl.setPrevGroupCd(previousGroupCd);
+                        wl.setDelegated(Boolean.TRUE);
 
                         if (UEngineUtil.isNotEmpty(targetEndpoint)) {
                             wl.setEndpoint(targetEndpoint);
