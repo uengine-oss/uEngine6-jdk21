@@ -15,7 +15,7 @@
     <bpmn:laneSet id="LaneSet_1usyrzu">
       <bpmn:lane id="Lane_1nnm1ye" name="사용자">
         <bpmn:extensionElements>
-          <uengine:properties json="{&quot;roleResolutionContext&quot;:{&quot;_type&quot;:&quot;org.uengine.five.overriding.IAMRoleResolutionContext&quot;,&quot;scope&quot;:&quot;manager&quot;}}"/>
+          <uengine:properties json="{&quot;roleResolutionContext&quot;:{&quot;_type&quot;:&quot;org.uengine.kernel.DirectRoleResolutionContext&quot;,&quot;endpoint&quot;:&quot;hong@uengine.org&quot;},&quot;humanWorker&quot;:true}"/>
         </bpmn:extensionElements>
         <bpmn:flowNodeRef>Event_1g935kd</bpmn:flowNodeRef>
         <bpmn:flowNodeRef>Activity_1jj1cg2</bpmn:flowNodeRef>
@@ -23,7 +23,7 @@
       </bpmn:lane>
       <bpmn:lane id="Lane_049bqix" name="SW">
         <bpmn:extensionElements>
-          <uengine:properties json="{&quot;roleResolutionContext&quot;:{&quot;_type&quot;:&quot;org.uengine.five.overriding.IAMRoleResolutionContext&quot;,&quot;scope&quot;:&quot;engineer&quot;}}"/>
+          <uengine:properties json="{&quot;roleResolutionContext&quot;:{&quot;_type&quot;:&quot;org.uengine.kernel.DirectRoleResolutionContext&quot;,&quot;endpoint&quot;:&quot;hong@uengine.org&quot;},&quot;humanWorker&quot;:true}"/>
         </bpmn:extensionElements>
         <bpmn:flowNodeRef>Event_0gijfxc</bpmn:flowNodeRef>
         <bpmn:flowNodeRef>Activity_05lxyup</bpmn:flowNodeRef>
@@ -31,7 +31,7 @@
       </bpmn:lane>
       <bpmn:lane id="Lane_0gy1zky" name="HW">
         <bpmn:extensionElements>
-          <uengine:properties json="{&quot;roleResolutionContext&quot;:{&quot;_type&quot;:&quot;org.uengine.five.overriding.IAMRoleResolutionContext&quot;,&quot;scope&quot;:&quot;mechanic&quot;}}"/>
+          <uengine:properties json="{&quot;roleResolutionContext&quot;:{&quot;_type&quot;:&quot;org.uengine.kernel.DirectRoleResolutionContext&quot;,&quot;endpoint&quot;:&quot;hong@uengine.org&quot;},&quot;humanWorker&quot;:true}"/>
         </bpmn:extensionElements>
         <bpmn:flowNodeRef>Activity_15qs6ck</bpmn:flowNodeRef>
         <bpmn:flowNodeRef>Event_1nf9u8h</bpmn:flowNodeRef>

@@ -13,6 +13,14 @@ instances/
 payloads/
 archive/
 test/
+!process-service/src/test/
+!process-service/src/test/java/
+!process-service/src/test/java/org/
+!process-service/src/test/java/org/uengine/
+!process-service/src/test/java/org/uengine/five/
+!process-service/src/test/java/org/uengine/five/messaging/
+!process-service/src/test/java/org/uengine/five/messaging/polling/
+!process-service/src/test/java/org/uengine/five/messaging/polling/LoanBpmPostgresSchemaIntegrationTest.java
 ### IntelliJ IDEA ###
 .idea
 *.iws

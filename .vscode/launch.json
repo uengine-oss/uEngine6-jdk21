@@ -7,6 +7,22 @@
         // Java 디버그의 integratedTerminal은 워크스페이스 `.vscode/settings.json`의
         // `terminal.integrated.automationProfile.windows`(chcp 65001)로 띄워진다.
         {
+            // HLI 모드 게이트웨이 (8188 포트, frontend route -> 5273).
+            // start-hli.ps1 에서 별도 창으로 띄우는 게이트웨이를 디버그로 대체할 때 사용.
+            // process-service / definition-service 는 기존 항목으로 F5 하면 그대로 연동됨.
+            "type": "java",
+            "name": "Gateway (HLI 8188)",
+            "request": "launch",
+            "mainClass": "com.example.template.Application",
+            "projectName": "boot-camp-gateway",
+            "console": "integratedTerminal",
+            "vmArgs": "-Dfile.encoding=UTF-8 -Dstdout.encoding=UTF-8 -Dstderr.encoding=UTF-8",
+            "args": "--spring.profiles.active=hli",
+            "env": {
+                "UENGINE_BASEPATH": "${workspaceFolder}"
+            }
+        },
+        {
             "type": "java",
             "name": "ProcessServiceApplication",
             "request": "launch",

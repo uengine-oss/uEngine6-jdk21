@@ -19,17 +19,17 @@ spring:
           filters:
             - RewritePath=/execution/?(?<segment>.*), /$\{segment}
         - id: events
-          uri: http://localhost:9094
+          uri: ${PROCESS_SERVICE_URL:http://localhost:9094}
           predicates:
             - Path=/events/**
         - id: definition-servicce
-          uri: http://localhost:9093
+          uri: ${DEFINITION_SERVICE_URL:http://localhost:9093}
           predicates:
             - Path=/definition/**, /version/**, /versions/**
         - id: instance-servicce
-          uri: http://localhost:9094
+          uri: ${PROCESS_SERVICE_URL:http://localhost:9094}
           predicates:
-            - Path=/worklist/**, /test/**, /instance/**, /work-item/** , /instances/**, /dry-run/**, /validate/**, /start-and-complete, /business-rules, /business-rules/**, /inbox, /role-assign-rules
+            - Path=/worklist/**, /test/**, /instance/**, /work-item/** , /instances/**, /dry-run/**, /validate/**, /start-and-complete, /business-rules, /business-rules/**, /inbox, /role-assign-rules, /loan-bpm/status/*
         - id: inventory-service
           uri: http://localhost:8080
           predicates:

@@ -18,7 +18,7 @@ import org.springframework.web.bind.annotation.*;
  * - json must be Typed JSON to enable object polymorphism - need to change the
  * jackson engine. TODO: accept? typed json is sometimes hard to read
  */
-@FeignClient(name = "definition", url = "http://definition-service:9093")
+@FeignClient(name = "definition", url = "${DEFINITION_SERVICE_URL:http://definition-service:9093}")
 public interface DefinitionService {
 
     public static final String DEFINITION_RAW = "/definition/raw";

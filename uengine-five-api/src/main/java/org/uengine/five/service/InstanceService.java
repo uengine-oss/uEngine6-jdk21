@@ -41,7 +41,7 @@ import org.uengine.kernel.RoleMapping;
  * - json must be Typed JSON to enable object polymorphism - need to change the
  * jackson engine. TODO: accept? typed json is sometimes hard to read
  */
-@FeignClient(name = "bpm", url = "http://process-service:9094")
+@FeignClient(name = "bpm", url = "${PROCESS_SERVICE_URL:http://process-service:9094}")
 public interface InstanceService {
 
         @RequestMapping(value = "/instance", consumes = "application/json;charset=UTF-8", method = RequestMethod.POST, produces = "application/json;charset=UTF-8")
