@@ -68,6 +68,6 @@ public class ExternalEventInboxServiceImpl implements ExternalEventInboxService 
         if (EventInboxResponse.STATUS_FAILED.equals(coreResponse.getStatus())) {
             return ExternalEventInboxResponse.failed(loanPcesMgmtNo, evntNm, coreResponse.getReason());
         }
-        return ExternalEventInboxResponse.success(loanPcesMgmtNo, evntNm, "SUCCESS");
+        return ExternalEventInboxResponse.success(loanPcesMgmtNo, evntNm);
     }
 }

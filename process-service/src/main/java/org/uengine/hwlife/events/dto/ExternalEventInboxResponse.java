@@ -34,16 +34,17 @@ public class ExternalEventInboxResponse {
         this.evntNm = evntNm;
     }
 
-    /** 처리 성공. {@code prcsRsltCodeNm} 에 성공 결과를 담는다. */
-    public static ExternalEventInboxResponse success(String loanPcesMgmtNo, String evntNm, String prcsRsltCodeNm) {
+    /** 처리 성공. {@code prcsRsltCodeNm} 은 {@code SUCCESS} 로 설정된다. */
+    public static ExternalEventInboxResponse success(String loanPcesMgmtNo, String evntNm) {
         ExternalEventInboxResponse r = new ExternalEventInboxResponse(loanPcesMgmtNo, evntNm);
-        r.prcsRsltCodeNm = prcsRsltCodeNm;
+        r.prcsRsltCodeNm = "SUCCESS";
         return r;
     }
 
     /** 처리 실패. {@code prcsRsltCntn} 에 실패 사유를 담는다. */
     public static ExternalEventInboxResponse failed(String loanPcesMgmtNo, String evntNm, String prcsRsltCntn) {
         ExternalEventInboxResponse r = new ExternalEventInboxResponse(loanPcesMgmtNo, evntNm);
+        r.prcsRsltCodeNm = "FAILED";
         r.prcsRsltCntn = prcsRsltCntn;
         return r;
     }
