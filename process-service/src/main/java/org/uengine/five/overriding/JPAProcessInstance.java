@@ -153,7 +153,7 @@ public class JPAProcessInstance extends DefaultProcessInstance implements Transa
             if (isSubProcess) {
                 getProcessInstanceEntity().setSubProcess(true);
                 getProcessInstanceEntity()
-                        .setMainInstId(new Long((String) options.get(DefaultProcessInstance.RETURNING_PROCESS)));
+                        .setMainInstId(JPAWorkList.toInstanceEntityId(options.get(DefaultProcessInstance.RETURNING_PROCESS)));
                 getProcessInstanceEntity()
                         .setMainActTrcTag((String) options.get(DefaultProcessInstance.RETURNING_TRACINGTAG));
                 getProcessInstanceEntity()
@@ -172,7 +172,7 @@ public class JPAProcessInstance extends DefaultProcessInstance implements Transa
             if (options != null) {
                 if (options.containsKey(DefaultProcessInstance.ROOT_PROCESS)) {
                     getProcessInstanceEntity()
-                            .setRootInstId(new Long((String) options.get(DefaultProcessInstance.ROOT_PROCESS)));
+                            .setRootInstId(JPAWorkList.toInstanceEntityId(options.get(DefaultProcessInstance.ROOT_PROCESS)));
                 }
 
                 if (options.containsKey(DefaultProcessInstance.SIMULATIONPROCESS)) {

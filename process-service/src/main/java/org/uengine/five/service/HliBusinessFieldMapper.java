@@ -15,31 +15,35 @@ public final class HliBusinessFieldMapper {
         if (command == null || entity == null) {
             return;
         }
-        entity.setCustNo(asString(hliValue(command, "custNo")));
+        entity.setCustNo(asString(hliValue(command, "cusNo", "custNo")));
         entity.setFncgBswrDvsnCode(asString(hliValue(command, "fncgBswrDvsnCode")));
         entity.setLoanCntcNo(asString(hliValue(command, "loanCntcNo")));
         entity.setFncgSuptTrgtDvsnCode(asString(hliValue(command, "fncgSuptTrgtDvsnCode")));
         entity.setLoanSubjDvsnCode(asString(hliValue(command, "loanSubjDvsnCode")));
-        entity.setLaonHopeDate(asDate(hliValue(command, "laonHopeDate")));
+        entity.setLaonHopeDate(asDate(hliValue(command, "loanHopeDate", "laonHopeDate")));
         entity.setFncgMneyUsagClsfCode(asString(hliValue(command, "fncgMneyUsagClsfCode")));
-        entity.setBsnsClsf(asString(hliValue(command, "bsnsClsf")));
+        entity.setBsnsClsf(asString(hliValue(command, "bswrClsfCode", "bsnsClsf")));
     }
 
-    private static Object hliValue(ProcessExecutionCommand command, String name) {
-        Object payloadValue = valueFromPayload(command.getStartEventPayload(), name);
-        if (payloadValue != null) {
-            return payloadValue;
+    private static Object hliValue(ProcessExecutionCommand command, String... names) {
+        for (String name : names) {
+            Object payloadValue = valueFromPayload(command.getStartEventPayload(), name);
+            if (payloadValue != null) {
+                return payloadValue;
+            }
         }
 
         org.uengine.five.dto.ProcessVariableValue[] processVariableValues = command.getProcessVariableValues();
         if (processVariableValues == null) {
             return null;
         }
-        for (org.uengine.five.dto.ProcessVariableValue pv : processVariableValues) {
-            if (pv == null || !name.equals(pv.getName())) {
-                continue;
+        for (String name : names) {
+            for (org.uengine.five.dto.ProcessVariableValue pv : processVariableValues) {
+                if (pv == null || !name.equals(pv.getName())) {
+                    continue;
+                }
+                return pv.getValues() != null && pv.getValues().length > 0 ? pv.getValues()[0] : null;
             }
-            return pv.getValues() != null && pv.getValues().length > 0 ? pv.getValues()[0] : null;
         }
         return null;
     }

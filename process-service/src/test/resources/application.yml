@@ -1,0 +1,5 @@
+# 테스트에서 @SpringBootTest로 전체 컨텍스트를 띄울 때 startup 전체 동기화가 돌면 느리거나 환경 의존 실패가 날 수 있어 기본 비활성
+uengine:
+  definition:
+    sync-on-startup:
+      enabled: false

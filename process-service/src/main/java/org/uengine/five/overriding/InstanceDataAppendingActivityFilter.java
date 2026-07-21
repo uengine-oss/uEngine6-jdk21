@@ -118,8 +118,8 @@ public class InstanceDataAppendingActivityFilter implements ActivityFilter, Seri
 					params.add(new KeyedParameter(KeyedParameter.TITLE, title));
 					params.add(new KeyedParameter("actType", activity.getClass().getSimpleName()));
 					params.add(new KeyedParameter(KeyedParameter.TRACINGTAG, activity.getTracingTag()));
-					params.add(new KeyedParameter(KeyedParameter.INSTANCEID, instance.getInstanceId()));
-					params.add(new KeyedParameter(KeyedParameter.ROOTINSTANCEID, instance.getRootProcessInstanceId()));
+					params.add(new KeyedParameter(KeyedParameter.INSTANCEID, toBaseInstanceId(instance.getInstanceId())));
+					params.add(new KeyedParameter(KeyedParameter.ROOTINSTANCEID, toBaseInstanceId(instance.getRootProcessInstanceId())));
 					params.add(new KeyedParameter(KeyedParameter.PROCESSDEFINITION,
 							instance.getProcessDefinition().getId()));
 					params.add(new KeyedParameter(KeyedParameter.DEFAULT_STATUS, Activity.STATUS_COMPLETED));
@@ -181,8 +181,8 @@ public class InstanceDataAppendingActivityFilter implements ActivityFilter, Seri
 				params.add(new KeyedParameter(KeyedParameter.TITLE, title));
 				params.add(new KeyedParameter("actType", activity.getClass().getSimpleName()));
 				params.add(new KeyedParameter(KeyedParameter.TRACINGTAG, activity.getTracingTag()));
-				params.add(new KeyedParameter(KeyedParameter.INSTANCEID, instance.getInstanceId()));
-				params.add(new KeyedParameter(KeyedParameter.ROOTINSTANCEID, instance.getRootProcessInstanceId()));
+				params.add(new KeyedParameter(KeyedParameter.INSTANCEID, toBaseInstanceId(instance.getInstanceId())));
+				params.add(new KeyedParameter(KeyedParameter.ROOTINSTANCEID, toBaseInstanceId(instance.getRootProcessInstanceId())));
 				params.add(
 						new KeyedParameter(KeyedParameter.PROCESSDEFINITION, instance.getProcessDefinition().getId()));
 				params.add(new KeyedParameter(KeyedParameter.DEFAULT_STATUS, Activity.STATUS_FAULT));
@@ -202,6 +202,21 @@ public class InstanceDataAppendingActivityFilter implements ActivityFilter, Seri
 
 	public void afterComplete(Activity activity, ProcessInstance instance) throws Exception {
 
+	}
+
+	private static String toBaseInstanceId(String instanceId) {
+		if (instanceId == null)
+			return null;
+
+		int atIndex = instanceId.indexOf('@');
+		if (atIndex >= 0)
+			instanceId = instanceId.substring(0, atIndex);
+
+		int dotIndex = instanceId.indexOf('.');
+		if (dotIndex >= 0)
+			instanceId = instanceId.substring(0, dotIndex);
+
+		return instanceId;
 	}
 
 	public void beforeExecute(Activity activity, ProcessInstance instance)

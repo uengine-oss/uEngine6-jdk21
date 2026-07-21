@@ -6,6 +6,8 @@ import jakarta.persistence.*;
 
 import java.util.Date;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 /**
  * Created by uengine on 2017. 8. 1..
  */
@@ -38,6 +40,7 @@ public class WorklistEntity {// implements WorkListDAO {
     @PrimaryKeyJoinColumn(name = "instId")
     ProcessInstanceEntity processInstance;
 
+    @JsonIgnore
     public ProcessInstanceEntity getProcessInstance() {
         return processInstance;
     }
@@ -107,7 +110,7 @@ public class WorklistEntity {// implements WorkListDAO {
 
     String actType;
     String absTrcTag;
-    Boolean delegated;
+    Boolean delegated = Boolean.FALSE;
     Boolean urget;
     String execScope;
     String ext1;
@@ -309,6 +312,7 @@ public class WorklistEntity {// implements WorkListDAO {
         this.decision = decision;
     }
 
+    @JsonIgnore
     public String getReason() {
         return reason;
     }

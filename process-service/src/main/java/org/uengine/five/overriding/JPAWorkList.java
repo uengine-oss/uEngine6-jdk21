@@ -131,8 +131,8 @@ public class JPAWorkList implements WorkList {
 
             wl.setTitle(""+parameterMap.get(KeyedParameter.TITLE));
             wl.setTrcTag(""+parameterMap.get(KeyedParameter.TRACINGTAG));
-            wl.setInstId(new Long(""+parameterMap.get(KeyedParameter.INSTANCEID)));
-            wl.setRootInstId(new Long(""+parameterMap.get(KeyedParameter.ROOTINSTANCEID)));
+            wl.setInstId(toInstanceEntityId(parameterMap.get(KeyedParameter.INSTANCEID)));
+            wl.setRootInstId(toInstanceEntityId(parameterMap.get(KeyedParameter.ROOTINSTANCEID)));
             wl.setDefId(""+parameterMap.get(KeyedParameter.PROCESSDEFINITION));
             wl.setDefName(""+parameterMap.get(KeyedParameter.PROCESSDEFINITIONNAME));
             wl.setRoleName(""+parameterMap.get("roleName"));
@@ -410,6 +410,25 @@ public class JPAWorkList implements WorkList {
         }
 
         return parameterMap;
+    }
+
+    static Long toInstanceEntityId(Object value) {
+        if (value == null) {
+            return null;
+        }
+        String text = String.valueOf(value).trim();
+        if (text.isEmpty() || "null".equalsIgnoreCase(text)) {
+            return null;
+        }
+        int atIndex = text.indexOf('@');
+        if (atIndex >= 0) {
+            text = text.substring(0, atIndex);
+        }
+        int dotIndex = text.indexOf('.');
+        if (dotIndex >= 0) {
+            text = text.substring(0, dotIndex);
+        }
+        return Long.valueOf(text);
     }
 
 

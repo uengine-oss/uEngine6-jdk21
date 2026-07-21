@@ -447,8 +447,8 @@ public class HumanActivity extends ReceiveActivity {
 			} else {
 				kpv.setProperty(KeyedParameter.PROCESSDEFINITIONVERSION, instance.getProcessDefinition().getVersion());
 			}
-			kpv.setProperty(KeyedParameter.INSTANCEID, instance.getInstanceId());
-			kpv.setProperty(KeyedParameter.ROOTINSTANCEID, instance.getRootProcessInstanceId());
+			kpv.setProperty(KeyedParameter.INSTANCEID, toBaseInstanceId(instance.getInstanceId()));
+			kpv.setProperty(KeyedParameter.ROOTINSTANCEID, toBaseInstanceId(instance.getRootProcessInstanceId()));
 			kpv.setProperty(KeyedParameter.PROCESSDEFINITION, instance.getProcessDefinition().getId());
 			kpv.setProperty(KeyedParameter.KEYWORD,
 					evaluateContent(instance,
@@ -1290,6 +1290,21 @@ public class HumanActivity extends ReceiveActivity {
 		// TODO
 		return null;
 		// return createParameter(null);
+	}
+
+	private static String toBaseInstanceId(String instanceId) {
+		if (instanceId == null)
+			return null;
+
+		int atIndex = instanceId.indexOf('@');
+		if (atIndex >= 0)
+			instanceId = instanceId.substring(0, atIndex);
+
+		int dotIndex = instanceId.indexOf('.');
+		if (dotIndex >= 0)
+			instanceId = instanceId.substring(0, dotIndex);
+
+		return instanceId;
 	}
 
 	public void setStartedTime(ProcessInstance instance, Calendar theTime) throws Exception {

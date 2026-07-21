@@ -66,14 +66,17 @@ public class ProcessInstanceEntity {// implements ProcessInstanceDAO {
     private String group;
     
     /* custom information */
+    @Column(name = "CUS_NO")
     private String custNo;  // 고객번호
     private String fncgBswrDvsnCode; // 융자업무구분코드
     private String loanCntcNo; // 대출계약번호
     private String fncgSuptTrgtDvsnCode; // 융자지원대상구분코드
     private String loanSubjDvsnCode; // 융자과목구분코드
+    @Column(name = "LOAN_HOPE_DATE")
     @Temporal(TemporalType.DATE) 
     private Date laonHopeDate; // 대출희망일자 (날짜 타입)
     private String fncgMneyUsagClsfCode; // 자금사용구분코드
+    @Column(name = "BSWR_CLSF_CODE")
     private String bsnsClsf;    // 사업분류
 
 
