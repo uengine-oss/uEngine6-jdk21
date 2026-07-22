@@ -45,6 +45,7 @@ public class EventInboxController {
         if (result.isFailed()) {
             return ResponseEntity.badRequest().body(result.getBody());
         }
-        return ResponseEntity.accepted().body(result.getBody());
+        // ESB HTTP Adapter 는 200 만 정상으로 인정 (202 → status fail)
+        return ResponseEntity.ok(result.getBody());
     }
 }

@@ -17,8 +17,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 /**
  * ESB {@code { header, payload }} 봉투 파싱/응답 조립 헬퍼.
  *
- * <p>outbound({@code EsbClient})·inbound(수신 API) 공통으로 사용한다.
- * 업무별 DTO 는 payload 타입으로만 두고, 봉투는 {@link EsbRequest}/{@link EsbResponse} 로 감싼다.</p>
+ * <p>응답 header 규칙:
+ * <ul>
+ *   <li>시스템 공통부 + 요청정보 — 요청 header 를 에코</li>
+ *   <li>응답정보/메시지 — 응답 시 채움 ({@code tlgrRspnDttm}, {@code prcsRsltDvsnCode}, {@code msgeList} …)</li>
+ * </ul>
+ * 업무 결과 값은 항상 {@code payload} 에 둔다.</p>
  */
 public final class EsbEnvelope {
 
@@ -46,12 +50,16 @@ public final class EsbEnvelope {
         return new EsbResponse<>(parsed.header, parsed.payload);
     }
 
-    /** 성공 응답 — 요청 header 를 복사·에코하고 {@code prcsRsltDvsnCode=0} 을 세팅한다. */
+    /** 성공 응답 — 요청 header 에코 + 응답정보({@code prcsRsltDvsnCode=0}) 채움. */
     public static <R> EsbResponse<R> success(EsbCommonHeader requestHeader, R payload) {
         return respond(requestHeader, payload, true, null);
     }
 
-    /** 실패 응답 — 요청 header 를 복사·에코하고 {@code prcsRsltDvsnCode=1}, msgeList 에 사유를 담는다. */
+    /**
+     * 실패 응답 — 성공과 동일 봉투.
+     * header 응답정보에 {@code prcsRsltDvsnCode=1}/msgeList 를 채우고,
+     * 업무 실패 메시지는 {@code payload} 에 담는다.
+     */
     public static <R> EsbResponse<R> failed(EsbCommonHeader requestHeader, R payload, String reason) {
         return respond(requestHeader, payload, false, reason);
     }
@@ -76,9 +84,12 @@ public final class EsbEnvelope {
 
     private static <R> EsbResponse<R> respond(
             EsbCommonHeader requestHeader, R payload, boolean success, String reason) {
+        // 시스템 공통부 + 요청정보 에코
         EsbCommonHeader header = copyHeader(requestHeader);
-        header.setPrcsRsltDvsnCode(success ? EsbCodes.PRCS_RSLT_SUCCESS : EsbCodes.PRCS_RSLT_FAILED);
+        // 응답정보 초기화 후 채움
+        clearResponseSection(header);
         header.setTlgrRspnDttm(LocalDateTime.now().format(EsbCodes.DTTM));
+        header.setPrcsRsltDvsnCode(success ? EsbCodes.PRCS_RSLT_SUCCESS : EsbCodes.PRCS_RSLT_FAILED);
         if (!success && reason != null && !reason.isBlank()) {
             EsbMessage message = new EsbMessage();
             message.setMsgeCntn(reason);
@@ -87,6 +98,17 @@ public final class EsbEnvelope {
             header.setMsgeListCont(list.size());
         }
         return new EsbResponse<>(header, payload);
+    }
+
+    /** 응답정보/메시지 구역만 비운다. (요청에 섞여 온 값 제거) */
+    private static void clearResponseSection(EsbCommonHeader header) {
+        header.setTlgrRspnDttm(null);
+        header.setPrcsRsltDvsnCode(null);
+        header.setTotalCount(null);
+        header.setLastPageYn(null);
+        header.setMsgeListCont(null);
+        header.setMsgeList(null);
+        header.setMsgeStackTrace(null);
     }
 
     /** 요청 header 를 응답용으로 복사한다. (원본 mutate 방지) */

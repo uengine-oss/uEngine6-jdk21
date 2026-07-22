@@ -5,12 +5,20 @@ import java.util.List;
 import com.fasterxml.jackson.annotation.JsonInclude;
 
 /**
- * ESB 표준전문 공통 헤더 (시스템 공통부 + 요청정보 + 응답정보 + 메시지).
+ * ESB 표준전문 공통 헤더.
+ *
+ * <ul>
+ *   <li>시스템 공통부 — 요청·응답 모두 포함 (에코)</li>
+ *   <li>요청정보 — ESB 요청 시 채움</li>
+ *   <li>응답정보/메시지 — ESB 응답 시 채움</li>
+ * </ul>
+ *
+ * <p>업무 결과 값은 header 가 아니라 {@code payload} 에 둔다.</p>
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class EsbCommonHeader {
 
-    // ── 시스템 공통부 ──
+    // ── 시스템 공통부 (요청·응답 공통) ──
     private String trnmSysCode;
     private String ipAddr;
     private String tlgrCretDttm;
@@ -28,7 +36,7 @@ public class EsbCommonHeader {
     private String rspnDvsnCode;
     private String extlDvsnCode;
 
-    // ── 요청정보 ──
+    // ── 요청정보 (요청 시 채움) ──
     private String emnb;
     private String belnOrgnCode;
     private String custId;
@@ -44,7 +52,7 @@ public class EsbCommonHeader {
     private String tscsRqstVal;
     private String postfixSysCode;
 
-    // ── 응답정보 / 메시지 ──
+    // ── 응답정보 / 메시지 (응답 시 채움) ──
     private String tlgrRspnDttm;
     private String prcsRsltDvsnCode;
     private Integer totalCount;

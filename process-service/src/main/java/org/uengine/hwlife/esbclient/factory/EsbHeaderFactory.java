@@ -16,13 +16,14 @@ import org.uengine.hwlife.esbclient.dto.EsbCommonHeader;
  *
  * <p>호출자(업무 코드)가 매번 공통 헤더 필드를 채우지 않도록,
  * {@code itfcId}, {@code rcveSrvcId}만 넘기면 요청에 필요한
- * <b>고정값·자동생성값</b>이 세팅된 헤더를 만들어 준다.</p>
+ * <b>시스템 공통부 + 요청정보</b>가 세팅된 헤더를 만들어 준다.
+ * 응답정보/메시지 구역은 채우지 않는다 (응답 조립 시 {@code EsbEnvelope} 이 채움).</p>
  *
  * <ul>
  *   <li>설정: serverType ({@code esb.server-type}) — application.yml/환경변수 값</li>
- *   <li>고정: trnmSysCode, prsnInfoIncsYn, rspnDvsnCode, baseLang/Cnty/Crny …</li>
- *   <li>자동: tlgrCretDttm, rqstDttm, rndmNo, hsno, ipAddr, ogtsTrnnNo …</li>
- *   <li>가변(인자): itfcId, rcveSrvcId — 그 외 emnb 등은 호출 후 setter로 추가</li>
+ *   <li>시스템 공통부: trnmSysCode, prsnInfoIncsYn, rspnDvsnCode, ipAddr, tlgrCretDttm …</li>
+ *   <li>요청정보: rqstDttm, rqsrIp, baseLang/Cnty/Crny … (emnb 등은 호출 후 setter 로 추가)</li>
+ *   <li>가변(인자): itfcId, rcveSrvcId</li>
  * </ul>
  */
 @Component
