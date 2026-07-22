@@ -6,7 +6,9 @@ import java.util.Map;
 import java.util.Optional;
 
 import org.uengine.contexts.UserContext;
+import org.uengine.five.ProcessServiceApplication;
 import org.uengine.five.service.IAMService;
+import org.uengine.hwlife.esbclient.client.EsbClient;
 import org.uengine.hwlife.iam.dto.FncgOrgInfo;
 import org.uengine.hwlife.iam.dto.FncgRoleInfo;
 
@@ -16,7 +18,9 @@ import org.uengine.hwlife.iam.dto.FncgRoleInfo;
  * <p>그룹과 권한은 서로 종속되지 않으며, UI에서 각각 독립적으로 선택합니다.
  * 담당자 조회 시 전달된 파라미터 조합에 따라 결과가 결정됩니다.</p>
  *
- * <p>외부 시스템 연동 방식(ESB, REST API 등)이 확정되면 본 클래스에서 매핑을 채웁니다.</p>
+ * <p>Spring Bean이 아닌 싱글톤 팩토리 메서드({@link #getDefault()})로 인스턴스를 관리합니다.
+ * {@link org.uengine.five.service.KeycloakIAMService}와 동일 패턴이며, ESB 호출에 필요한
+ * {@link EsbClient}만 ApplicationContext에서 조회합니다.</p>
  *
  * <p>애플리케이션 기동 시
  * {@code IAMServiceFactory.register("external", ExternalIAMService.getDefault())} 로 등록합니다.</p>
@@ -33,6 +37,15 @@ public class ExternalIAMService implements IAMService {
             defaultService = new ExternalIAMService();
         }
         return defaultService;
+    }
+
+    /**
+     * KeycloakIAMService의 HttpClient에 해당하는 의존성.
+     * EsbClient는 Spring 빈이므로 런타임에 ApplicationContext에서 조회한다.
+     * (생성자/getDefault 안이 아닌 업무 메서드에서만 호출)
+     */
+    private EsbClient esbClient() {
+        return ProcessServiceApplication.getApplicationContext().getBean(EsbClient.class);
     }
 
     @Override

@@ -9,7 +9,6 @@ import org.uengine.five.messaging.EventInboxEnqueueService;
 import org.uengine.five.messaging.EventInboxReceiveResult;
 import org.uengine.hwlife.esbclient.dto.EsbCommonHeader;
 import org.uengine.hwlife.esbclient.dto.EsbRequest;
-import org.uengine.hwlife.esbclient.dto.EsbResponse;
 import org.uengine.hwlife.esbclient.support.EsbEnvelope;
 import org.uengine.hwlife.events.dto.ExternalEventInboxRequest;
 import org.uengine.hwlife.events.dto.ExternalEventInboxResponse;
@@ -20,7 +19,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 /**
  * 외부(External) Event Inbox 수신 서비스 구현.
  *
- * <p>ESB {@code { header, payload }} 전문을 받아 payload 업무 필드를 Inbox 에 enqueue 한다.</p>
+ * <p>ESB {@code { header, payload }} 전문을 받아 payload 업무 필드를 Inbox 에 enqueue 한다.
+ * 성공/실패 모두 동일 응답 형태(HTTP 200 + header/payload)이며,
+ * 업무 결과는 항상 {@code payload}({@link ExternalEventInboxResponse}) 에 담는다.</p>
  */
 @Service
 @ConditionalOnProperty(name = "uengine.messaging.mode", havingValue = "polling")
@@ -45,10 +46,8 @@ public class ExternalEventInboxServiceImpl implements ExternalEventInboxService 
             esbRequest = EsbEnvelope.parseRequest(
                     objectMapper, requestBodyJson, ExternalEventInboxRequest.class);
         } catch (Exception e) {
-            return EventInboxReceiveResult.failure(
-                    toEsbResponse(null, ExternalEventInboxResponse.failed(null, null,
-                            "invalid payload: " + e.getMessage()), false,
-                            "invalid payload: " + e.getMessage()));
+            return respond(null, ExternalEventInboxResponse.failed(null, null,
+                    "invalid payload: " + e.getMessage()));
         }
 
         EsbCommonHeader header = esbRequest.getHeader();
@@ -60,25 +59,26 @@ public class ExternalEventInboxServiceImpl implements ExternalEventInboxService 
         String loanPcesMgmtNo = payload.getLoanPcesMgmtNo();
         String evntNm = payload.getEvntNm();
 
+        if (isBlank(loanPcesMgmtNo) || isBlank(evntNm)) {
+            return respond(header, ExternalEventInboxResponse.failed(loanPcesMgmtNo, evntNm,
+                    "required field missing: loanPcesMgmtNo and evntNm are mandatory"));
+        }
+
         String payloadJson;
         try {
             payloadJson = objectMapper.writeValueAsString(payload);
         } catch (Exception e) {
-            String reason = "invalid payload: " + e.getMessage();
-            return EventInboxReceiveResult.failure(
-                    toEsbResponse(header, ExternalEventInboxResponse.failed(loanPcesMgmtNo, evntNm, reason),
-                            false, reason));
+            return respond(header, ExternalEventInboxResponse.failed(loanPcesMgmtNo, evntNm,
+                    "invalid payload: " + e.getMessage()));
         }
 
         EventInboxResponse coreResponse = enqueueService.enqueue(
                 new EventInboxRequest(evntNm, loanPcesMgmtNo, payloadJson));
-        ExternalEventInboxResponse businessResponse = toBusinessResponse(coreResponse, loanPcesMgmtNo, evntNm);
-        boolean failed = EventInboxResponse.STATUS_FAILED.equals(coreResponse.getStatus());
-        EsbResponse<ExternalEventInboxResponse> esbResponse = toEsbResponse(
-                header, businessResponse, !failed, failed ? coreResponse.getReason() : null);
-        return failed
-                ? EventInboxReceiveResult.failure(esbResponse)
-                : EventInboxReceiveResult.success(esbResponse);
+        return respond(header, toBusinessResponse(coreResponse, loanPcesMgmtNo, evntNm));
+    }
+
+    private static boolean isBlank(String value) {
+        return value == null || value.isBlank();
     }
 
     private ExternalEventInboxResponse toBusinessResponse(
@@ -89,13 +89,16 @@ public class ExternalEventInboxServiceImpl implements ExternalEventInboxService 
         return ExternalEventInboxResponse.success(loanPcesMgmtNo, evntNm);
     }
 
-    private EsbResponse<ExternalEventInboxResponse> toEsbResponse(
-            EsbCommonHeader header,
-            ExternalEventInboxResponse payload,
-            boolean success,
-            String reason) {
-        return success
-                ? EsbEnvelope.success(header, payload)
-                : EsbEnvelope.failed(header, payload, reason);
+    /**
+     * 성공 응답과 동일한 봉투. 차이는 payload 메시지({@code prcsRsltCodeNm}/{@code prcsRsltCntn})뿐.
+     * HTTP 는 항상 200 으로 내려가도록 {@link EventInboxReceiveResult#success} 만 사용한다.
+     */
+    private EventInboxReceiveResult respond(
+            EsbCommonHeader header, ExternalEventInboxResponse businessPayload) {
+        boolean ok = ExternalEventInboxResponse.STATUS_SUCCESS.equals(businessPayload.getPrcsRsltCodeNm());
+        return EventInboxReceiveResult.success(
+                ok
+                        ? EsbEnvelope.success(header, businessPayload)
+                        : EsbEnvelope.failed(header, businessPayload, businessPayload.getPrcsRsltCntn()));
     }
 }
