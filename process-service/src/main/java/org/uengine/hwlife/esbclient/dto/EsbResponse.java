@@ -19,6 +19,29 @@ public class EsbResponse<T> {
         this.payload = payload;
     }
 
+    public static <T> Builder<T> builder() {
+        return new Builder<>();
+    }
+
+    public static class Builder<T> {
+        private EsbCommonHeader header;
+        private T payload;
+
+        public Builder<T> header(EsbCommonHeader header) {
+            this.header = header;
+            return this;
+        }
+
+        public Builder<T> payload(T payload) {
+            this.payload = payload;
+            return this;
+        }
+
+        public EsbResponse<T> build() {
+            return new EsbResponse<>(header, payload);
+        }
+    }
+
     public EsbCommonHeader getHeader() { return header; }
     public void setHeader(EsbCommonHeader header) { this.header = header; }
     public T getPayload() { return payload; }

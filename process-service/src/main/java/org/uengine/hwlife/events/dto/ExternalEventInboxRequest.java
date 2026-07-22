@@ -4,17 +4,31 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 
 /**
- * 외부 시스템 이벤트 Inbox 요청 DTO.
+ * 외부 시스템 이벤트 Inbox — ESB 요청의code payload} 업무 DTO.
  *
- * <p>업무 필드가 평탄(flat) 구조로 들어온다. 필드는 추후 계속 추가될 수 있으므로
- * 알 수 없는 필드는 {@link JsonIgnoreProperties} 로 무시한다.</p>
+ * <p>ESB 전문은 {@code { "header": {...}, "payload": {...} }} 구조이며,
+ * 이 클래스는 {@code payload} 부에만 해당한다.
+ * 봉투 파싱은 {@link org.uengine.hwlife.esbclient.dto.EsbRequest} /
+ * {@link org.uengine.hwlife.esbclient.support.EsbEnvelope} 를 사용한다.</p>
+ *
+ * <pre>
+ * {
+ *   "header":  { ... EsbCommonHeader ... },
+ *   "payload": {
+ *     "loanPcesMgmtNo": "...",
+ *     "evntNm": "...",
+ *     ...
+ *   }
+ * }
+ * </pre>
  *
  * <p>DB 저장 매핑:
  * <ul>
  *   <li>corr_key   ← {@link #loanPcesMgmtNo}</li>
  *   <li>event_name ← {@link #evntNm}</li>
- *   <li>payload    ← 이 DTO 의 모든 속성을 JSON 문자열로 직렬화</li>
+ *   <li>payload    ← 이 DTO 를 JSON 문자열로 직렬화</li>
  * </ul>
+ * 필드는 추후 계속 추가될 수 있으므로 알 수 없는 필드는 무시한다.</p>
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonIgnoreProperties(ignoreUnknown = true)

@@ -14,15 +14,16 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClientResponseException;
 import org.springframework.web.client.RestTemplate;
+import org.uengine.hwlife.esbclient.dto.EsbCodes;
 import org.uengine.hwlife.esbclient.dto.EsbCommonHeader;
+import org.uengine.hwlife.esbclient.dto.EsbMessage;
 import org.uengine.hwlife.esbclient.dto.EsbRequest;
 import org.uengine.hwlife.esbclient.dto.EsbResponse;
-import org.uengine.hwlife.esbclient.dto.EsbMessage;
 import org.uengine.hwlife.esbclient.exception.EsbException;
 import org.uengine.hwlife.esbclient.factory.EsbHeaderFactory;
+import org.uengine.hwlife.esbclient.support.EsbEnvelope;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 @Service
@@ -87,16 +88,7 @@ public class EsbClientImpl implements EsbClient {
                 throw new EsbException("ESB Response is null", http.getStatusCode().value(), body);
             }
 
-            JsonNode root = objectMapper.readTree(body);
-            EsbResponse<R> result = new EsbResponse<>();
-            if (root.hasNonNull("header")) {
-                result.setHeader(objectMapper.treeToValue(root.get("header"), EsbCommonHeader.class));
-            }
-            if (root.has("payload") && !root.get("payload").isNull() && responseType != null
-                    && responseType != Void.class) {
-                result.setPayload(objectMapper.convertValue(root.get("payload"), responseType));
-            }
-
+            EsbResponse<R> result = EsbEnvelope.parseResponse(objectMapper, body, responseType);
             assertBusinessSuccess(result.getHeader(), http.getStatusCode().value(), body);
             return result;
         } catch (EsbException e) {
@@ -119,15 +111,10 @@ public class EsbClientImpl implements EsbClient {
             return;
         }
         String resultCode = header.getPrcsRsltDvsnCode();
-        if (resultCode == null || resultCode.isBlank() || isSuccessCode(resultCode)) {
+        if (resultCode == null || resultCode.isBlank() || EsbCodes.isSuccessCode(resultCode)) {
             return;
         }
         throw new EsbException(extractEsbErrorMessage(header, rawBody), httpStatus, rawBody);
-    }
-
-    private static boolean isSuccessCode(String prcsRsltDvsnCode) {
-        // 처리결과구분코드: 0 = 정상
-        return "0".equals(prcsRsltDvsnCode);
     }
 
     private static String extractEsbErrorMessage(EsbCommonHeader header, String rawBody) {

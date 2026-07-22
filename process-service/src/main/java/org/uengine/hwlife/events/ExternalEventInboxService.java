@@ -6,15 +6,16 @@ import org.uengine.five.messaging.EventInboxProvider;
 /**
  * 외부(External) Event Inbox 수신 서비스.
  *
- * <p>요청/응답 DTO:
+ * <p>ESB {@code { header, payload }} 전문을 수신한다.
+ * payload/응답 payload DTO:
  * {@link org.uengine.hwlife.events.dto.ExternalEventInboxRequest} /
- * {@link org.uengine.hwlife.events.dto.ExternalEventInboxResponse}</p>
+ * {@link org.uengine.hwlife.events.dto.ExternalEventInboxResponse}
+ * (봉투: {@link org.uengine.hwlife.esbclient.dto.EsbRequest} /
+ * {@link org.uengine.hwlife.esbclient.dto.EsbResponse})</p>
  *
  * <p>인입 처리는 공통 {@link org.uengine.five.messaging.EventInboxEnqueueService} 에 위임한다.</p>
  *
- * <p>애플리케이션 기동 시
- * {@code EventInboxProviderFactory.register("external", ExternalEventInboxService.getDefault())} 로 등록하고,
- * {@code event-inbox.provider=external} 로 선택합니다.</p>
+ * <p>{@code event-inbox.provider=external} 로 선택합니다.</p>
  *
  * <p>구현: {@link ExternalEventInboxServiceImpl}.</p>
  */

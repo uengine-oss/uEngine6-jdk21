@@ -3,12 +3,12 @@ package org.uengine.hwlife.esbclient.factory;
 import java.net.InetAddress;
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import org.uengine.hwlife.esbclient.dto.EsbCodes;
 import org.uengine.hwlife.esbclient.dto.EsbCommonHeader;
 
 /**
@@ -28,8 +28,6 @@ import org.uengine.hwlife.esbclient.dto.EsbCommonHeader;
 @Component
 public class EsbHeaderFactory {
 
-    private static final DateTimeFormatter DTTM =
-            DateTimeFormatter.ofPattern("yyyyMMddHHmmssSSS");
     private static final SecureRandom RANDOM = new SecureRandom();
     private static final AtomicInteger HSNO = new AtomicInteger(1);
 
@@ -71,7 +69,7 @@ public class EsbHeaderFactory {
     }
 
     private String now() {
-        return LocalDateTime.now().format(DTTM);
+        return LocalDateTime.now().format(EsbCodes.DTTM);
     }
 
     private String localIp() {
