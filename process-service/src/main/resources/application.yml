@@ -29,6 +29,9 @@ uengine:
       max-try-cnt: 3                          # dispatch 실패 시 최대 시도 횟수 (도달 시 dead-letter)
       inbox-ttl-hours: 24
       inbox-ttl-cron: "0 0 3 * * ?"
+      # WAS JNDI DataSource 는 PGConnection unwrap 불가 → 기본 OFF (Inbox 폴링과 무관)
+      pg-notify:
+        enabled: ${UENGINE_PG_NOTIFY_ENABLED:false}
   definition:
     sync-on-startup:
       enabled: true

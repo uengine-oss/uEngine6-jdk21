@@ -11,6 +11,7 @@ import org.uengine.five.dto.EventInboxResponse;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+
 /**
  * 기본(Default) Event Inbox 수신 서비스 구현.
  */
@@ -23,6 +24,11 @@ public class DefaultEventInboxServiceImpl implements DefaultEventInboxService {
 
     public DefaultEventInboxServiceImpl(EventInboxEnqueueService enqueueService) {
         this.enqueueService = enqueueService;
+    }
+
+    @Override
+    public String getProviderId() {
+        return "default";
     }
 
     @Override

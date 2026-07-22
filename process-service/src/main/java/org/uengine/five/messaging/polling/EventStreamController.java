@@ -2,7 +2,7 @@ package org.uengine.five.messaging.polling;
 
 import java.security.Principal;
 
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -20,7 +20,7 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
  */
 @RestController
 @RequestMapping("/events")
-@ConditionalOnProperty(name = "uengine.messaging.mode", havingValue = "polling")
+@ConditionalOnBean(PgNotifyListener.class)
 public class EventStreamController {
 
     private final PgNotifyListener listener;

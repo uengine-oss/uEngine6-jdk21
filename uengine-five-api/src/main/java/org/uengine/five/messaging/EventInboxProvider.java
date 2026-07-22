@@ -8,6 +8,9 @@ package org.uengine.five.messaging;
  */
 public interface EventInboxProvider {
 
+    /** 이 Provider의 식별자. "default" 또는 "external" 등 */
+    String getProviderId();
+
     /**
      * @param requestBodyJson 요청 body JSON 문자열 (null/blank → 빈 객체로 처리)
      */

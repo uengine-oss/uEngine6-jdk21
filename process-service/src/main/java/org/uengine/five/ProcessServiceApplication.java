@@ -17,11 +17,9 @@ import org.springframework.context.annotation.Scope;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.uengine.five.overriding.ActivityQueue;
 import org.uengine.five.overriding.EventMappingDeployFilter;
-// import org.uengine.hwlife.iam.ExternalIAMService;
-import org.springframework.beans.factory.NoSuchBeanDefinitionException;
-import org.uengine.five.messaging.DefaultEventInboxService;
-import org.uengine.five.messaging.EventInboxProviderFactory;
-import org.uengine.hwlife.events.ExternalEventInboxService;
+import org.uengine.hwlife.iam.ExternalIAMService;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.event.EventListener;
 import org.uengine.five.service.IAMCompanyRoleMapping;
 import org.uengine.five.service.IAMServiceFactory;
 import org.uengine.five.service.KeycloakIAMService;
@@ -60,20 +58,23 @@ public class ProcessServiceApplication {
     }
 
     public static void main(String[] args) {
-        // IAMService 구현체는 Spring 부팅 전에 등록
-        // Spring 빈 초기화 중 IAMServiceFactory.getDefault()가 호출될 수 있으므로
-        // SpringApplication.run() 보다 먼저 실행해야 합니다.
-        IAMServiceFactory.register("keycloak", KeycloakIAMService.getDefault());
-        // IAMServiceFactory.register("external", ExternalIAMService.getDefault());
+        bootstrapAfterContextReady(SpringApplication.run(ProcessServiceApplication.class, args));
+    }
 
-        applicationContext = SpringApplication.run(ProcessServiceApplication.class, args);
+    /** WAR 배포 시 main() 미호출 → 기동 완료 후 한 번만 보완 등록 */
+    @EventListener(ApplicationReadyEvent.class)
+    void onApplicationReady(ApplicationReadyEvent event) {
+        if (applicationContext == null) {
+            bootstrapAfterContextReady(event.getApplicationContext());
+        }
+    }
+
+    private static void bootstrapAfterContextReady(ApplicationContext ctx) {
+        applicationContext = ctx;
         GlobalContext.setComponentFactory(new SpringComponentFactory());
-        // EventInbox Provider 는 Spring 빈이므로 컨텍스트 기동 후 등록한다.
-        // 선택은 event-inbox.provider (또는 EVENT_INBOX_PROVIDER) 로 한다.
-        EventInboxProviderFactory.register("default", DefaultEventInboxService.getDefault());
-        //EventInboxProviderFactory.register("external", ExternalEventInboxService.getDefault());
-        // rolemapping.class, iam.provider는 uengine.properties에서 관리합니다.
-        // (process-service/src/main/resources/org/uengine/uengine.properties)
+
+        IAMServiceFactory.register("keycloak", KeycloakIAMService.getDefault());
+        IAMServiceFactory.register("external", ExternalIAMService.getDefault());
     }
 
     /**
