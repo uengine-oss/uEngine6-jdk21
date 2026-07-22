@@ -46,6 +46,7 @@ public class EventInbox {
 
     private String eventName;
 
+    @Column(name = "PAYLOAD", nullable = false, columnDefinition = "TEXT")
     private String payload;
 
     private Instant createdAt = Instant.now();

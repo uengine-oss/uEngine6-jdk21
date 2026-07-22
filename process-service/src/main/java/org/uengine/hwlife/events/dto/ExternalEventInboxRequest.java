@@ -29,9 +29,10 @@ import java.util.Date;
  * <ul>
  *   <li>corr_key   ← {@link #loanPcesMgmtNo}</li>
  *   <li>event_name ← {@link #evntNm}</li>
- *   <li>payload    ← 이 DTO 를 JSON 문자열로 직렬화</li>
+ *   <li>payload    ← 요청 JSON 의 {@code payload} 값 원문 (String)</li>
  * </ul>
- * 필드는 추후 계속 추가될 수 있으므로 알 수 없는 필드는 무시한다.</p>
+ * 이 DTO 는 필수값 검증용이다. DB 저장은 DTO 재직렬화가 아니라 요청 {@code payload}
+ * 원문(String)을 사용하며, 검증도 그 원문 문자열을 {@code readValue} 로 파싱한다.</p>
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonIgnoreProperties(ignoreUnknown = true)
