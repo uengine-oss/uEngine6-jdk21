@@ -58,6 +58,7 @@ public class PollingMessagingConfig {
     }
 
     @Bean(destroyMethod = "close")
+    @ConditionalOnProperty(name = "uengine.messaging.polling.pg-notify.enabled", havingValue = "true")
     public PgNotifyListener pgNotifyListener(DataSource dataSource) {
         PgNotifyListener listener = new PgNotifyListener(dataSource, Set.of("bpm_bpm_brodcast"));
         listener.start();
@@ -65,6 +66,7 @@ public class PollingMessagingConfig {
     }
 
     @Bean
+    @ConditionalOnProperty(name = "uengine.messaging.polling.pg-notify.enabled", havingValue = "true")
     public FilterRegistrationBean<SseAccessTokenQueryFilter> sseAccessTokenQueryFilter() {
         FilterRegistrationBean<SseAccessTokenQueryFilter> reg = new FilterRegistrationBean<>();
         reg.setFilter(new SseAccessTokenQueryFilter());
