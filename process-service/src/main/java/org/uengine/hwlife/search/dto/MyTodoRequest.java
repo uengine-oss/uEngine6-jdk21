@@ -16,23 +16,23 @@ public class MyTodoRequest {
     private String fncgSuptTrgtDvsnCode;
     private String loanSubjDvsnCode;
     private String fncgMneyUsagClsfCode;
-    private String trcTag;
+    private String fncgBpmTaskTrcgNm;
 
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
-    private Date arrvStarDate;
+    private Date starDate;
 
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
-    private Date arrvEndDate;
+    private Date endDate;
 
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
-    private Date loanHopeStarDate;
+    private Date hopeStarDate;
 
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
-    private Date loanHopeEndDate;
+    private Date hopeEndDate;
 
-    private String group;
+    private String fncgWndwOrgnCode;
     private String sortOrdrVal;
-    private String endpoint;
+    private String hndrEmnb;
     private Integer pageNo;
 
     public String getBswrClsfCode() {
@@ -91,52 +91,52 @@ public class MyTodoRequest {
         this.fncgMneyUsagClsfCode = fncgMneyUsagClsfCode;
     }
 
-    public String getTrcTag() {
-        return trcTag;
+    public String getFncgBpmTaskTrcgNm() {
+        return fncgBpmTaskTrcgNm;
     }
 
-    public void setTrcTag(String trcTag) {
-        this.trcTag = trcTag;
+    public void setFncgBpmTaskTrcgNm(String fncgBpmTaskTrcgNm) {
+        this.fncgBpmTaskTrcgNm = fncgBpmTaskTrcgNm;
     }
 
-    public Date getArrvStarDate() {
-        return arrvStarDate;
+    public Date getStarDate() {
+        return starDate;
     }
 
-    public void setArrvStarDate(Date arrvStarDate) {
-        this.arrvStarDate = arrvStarDate;
+    public void setStarDate(Date starDate) {
+        this.starDate = starDate;
     }
 
-    public Date getArrvEndDate() {
-        return arrvEndDate;
+    public Date getEndDate() {
+        return endDate;
     }
 
-    public void setArrvEndDate(Date arrvEndDate) {
-        this.arrvEndDate = arrvEndDate;
+    public void setEndDate(Date endDate) {
+        this.endDate = endDate;
     }
 
-    public Date getLoanHopeStarDate() {
-        return loanHopeStarDate;
+    public Date getHopeStarDate() {
+        return hopeStarDate;
     }
 
-    public void setLoanHopeStarDate(Date loanHopeStarDate) {
-        this.loanHopeStarDate = loanHopeStarDate;
+    public void setHopeStarDate(Date hopeStarDate) {
+        this.hopeStarDate = hopeStarDate;
     }
 
-    public Date getLoanHopeEndDate() {
-        return loanHopeEndDate;
+    public Date getHopeEndDate() {
+        return hopeEndDate;
     }
 
-    public void setLoanHopeEndDate(Date loanHopeEndDate) {
-        this.loanHopeEndDate = loanHopeEndDate;
+    public void setHopeEndDate(Date hopeEndDate) {
+        this.hopeEndDate = hopeEndDate;
     }
 
-    public String getGroup() {
-        return group;
+    public String getFncgWndwOrgnCode() {
+        return fncgWndwOrgnCode;
     }
 
-    public void setGroup(String group) {
-        this.group = group;
+    public void setFncgWndwOrgnCode(String fncgWndwOrgnCode) {
+        this.fncgWndwOrgnCode = fncgWndwOrgnCode;
     }
 
     public String getSortOrdrVal() {
@@ -147,12 +147,12 @@ public class MyTodoRequest {
         this.sortOrdrVal = sortOrdrVal;
     }
 
-    public String getEndpoint() {
-        return endpoint;
+    public String getHndrEmnb() {
+        return hndrEmnb;
     }
 
-    public void setEndpoint(String endpoint) {
-        this.endpoint = endpoint;
+    public void setHndrEmnb(String hndrEmnb) {
+        this.hndrEmnb = hndrEmnb;
     }
 
     public Integer getPageNo() {

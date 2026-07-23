@@ -8,15 +8,15 @@ import java.util.List;
  */
 public class MyTodoResponse {
 
-    private List<MyTodoItem> todoList = new ArrayList<>();
+    private List<MyTodoItem> todolist = new ArrayList<>();
     private Integer totCont;
 
-    public List<MyTodoItem> getTodoList() {
-        return todoList;
+    public List<MyTodoItem> getTodolist() {
+        return todolist;
     }
 
-    public void setTodoList(List<MyTodoItem> todoList) {
-        this.todoList = todoList;
+    public void setTodolist(List<MyTodoItem> todolist) {
+        this.todolist = todolist;
     }
 
     public Integer getTotCont() {

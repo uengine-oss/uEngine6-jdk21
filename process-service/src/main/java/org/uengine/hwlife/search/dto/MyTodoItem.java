@@ -15,25 +15,25 @@ public class MyTodoItem {
     private String loanSubjDvsnCode;
     private String fncgMneyUsagClsfCode;
     private Date loanHopeDate;
-    private String corrKey;
-    private String trcTag;
-    private Date startDate;
-    private String title;
-    private String defName;
-    private String initEp;
-    private String group;
-    private String prevTaskEndpoint;
-    private String prevTaskGroup;
-    private String status;
-    private Date startedDate;
-    private String prevEndpoint;
-    private String prevGroup;
-    private String endpoint;
-    private String resName;
-    private String assignGroup;
-    private String tool;
-    private String taskId;
-    private String instId;
+    private String loanPcesMgmtNo;
+    private String fncgBpmTaskTrcgNm;
+    private Date uworStarDttm;
+    private String uworNm;
+    private String loanPcesNm;
+    private String reptHndrEmnb;
+    private String reptHndrFncgOrgnCode;
+    private String prcdHndrEmnb;
+    private String prcdHndrFncgOrgnCode;
+    private String fncgBpmUworSttsCntn;
+    private Date starDttm;
+    private String befrHndrEmnb;
+    private String befrFncgOrgnCode;
+    private String hndrEmnb;
+    private String hndrNm;
+    private String hndrOrgnCode;
+    private String scrnUrlAddr;
+    private String fncgBpmTaskLstId;
+    private String fncgBpmPcesIntcId;
 
     public String getBswrClsfCode() {
         return bswrClsfCode;
@@ -99,155 +99,155 @@ public class MyTodoItem {
         this.loanHopeDate = loanHopeDate;
     }
 
-    public String getCorrKey() {
-        return corrKey;
+    public String getLoanPcesMgmtNo() {
+        return loanPcesMgmtNo;
     }
 
-    public void setCorrKey(String corrKey) {
-        this.corrKey = corrKey;
+    public void setLoanPcesMgmtNo(String loanPcesMgmtNo) {
+        this.loanPcesMgmtNo = loanPcesMgmtNo;
     }
 
-    public String getTrcTag() {
-        return trcTag;
+    public String getFncgBpmTaskTrcgNm() {
+        return fncgBpmTaskTrcgNm;
     }
 
-    public void setTrcTag(String trcTag) {
-        this.trcTag = trcTag;
+    public void setFncgBpmTaskTrcgNm(String fncgBpmTaskTrcgNm) {
+        this.fncgBpmTaskTrcgNm = fncgBpmTaskTrcgNm;
     }
 
-    public Date getStartDate() {
-        return startDate;
+    public Date getUworStarDttm() {
+        return uworStarDttm;
     }
 
-    public void setStartDate(Date startDate) {
-        this.startDate = startDate;
+    public void setUworStarDttm(Date uworStarDttm) {
+        this.uworStarDttm = uworStarDttm;
     }
 
-    public String getTitle() {
-        return title;
+    public String getUworNm() {
+        return uworNm;
     }
 
-    public void setTitle(String title) {
-        this.title = title;
+    public void setUworNm(String uworNm) {
+        this.uworNm = uworNm;
     }
 
-    public String getDefName() {
-        return defName;
+    public String getLoanPcesNm() {
+        return loanPcesNm;
     }
 
-    public void setDefName(String defName) {
-        this.defName = defName;
+    public void setLoanPcesNm(String loanPcesNm) {
+        this.loanPcesNm = loanPcesNm;
     }
 
-    public String getInitEp() {
-        return initEp;
+    public String getReptHndrEmnb() {
+        return reptHndrEmnb;
     }
 
-    public void setInitEp(String initEp) {
-        this.initEp = initEp;
+    public void setReptHndrEmnb(String reptHndrEmnb) {
+        this.reptHndrEmnb = reptHndrEmnb;
     }
 
-    public String getGroup() {
-        return group;
+    public String getReptHndrFncgOrgnCode() {
+        return reptHndrFncgOrgnCode;
     }
 
-    public void setGroup(String group) {
-        this.group = group;
+    public void setReptHndrFncgOrgnCode(String reptHndrFncgOrgnCode) {
+        this.reptHndrFncgOrgnCode = reptHndrFncgOrgnCode;
     }
 
-    public String getPrevTaskEndpoint() {
-        return prevTaskEndpoint;
+    public String getPrcdHndrEmnb() {
+        return prcdHndrEmnb;
     }
 
-    public void setPrevTaskEndpoint(String prevTaskEndpoint) {
-        this.prevTaskEndpoint = prevTaskEndpoint;
+    public void setPrcdHndrEmnb(String prcdHndrEmnb) {
+        this.prcdHndrEmnb = prcdHndrEmnb;
     }
 
-    public String getPrevTaskGroup() {
-        return prevTaskGroup;
+    public String getPrcdHndrFncgOrgnCode() {
+        return prcdHndrFncgOrgnCode;
     }
 
-    public void setPrevTaskGroup(String prevTaskGroup) {
-        this.prevTaskGroup = prevTaskGroup;
+    public void setPrcdHndrFncgOrgnCode(String prcdHndrFncgOrgnCode) {
+        this.prcdHndrFncgOrgnCode = prcdHndrFncgOrgnCode;
     }
 
-    public String getStatus() {
-        return status;
+    public String getFncgBpmUworSttsCntn() {
+        return fncgBpmUworSttsCntn;
     }
 
-    public void setStatus(String status) {
-        this.status = status;
+    public void setFncgBpmUworSttsCntn(String fncgBpmUworSttsCntn) {
+        this.fncgBpmUworSttsCntn = fncgBpmUworSttsCntn;
     }
 
-    public Date getStartedDate() {
-        return startedDate;
+    public Date getStarDttm() {
+        return starDttm;
     }
 
-    public void setStartedDate(Date startedDate) {
-        this.startedDate = startedDate;
+    public void setStarDttm(Date starDttm) {
+        this.starDttm = starDttm;
     }
 
-    public String getPrevEndpoint() {
-        return prevEndpoint;
+    public String getBefrHndrEmnb() {
+        return befrHndrEmnb;
     }
 
-    public void setPrevEndpoint(String prevEndpoint) {
-        this.prevEndpoint = prevEndpoint;
+    public void setBefrHndrEmnb(String befrHndrEmnb) {
+        this.befrHndrEmnb = befrHndrEmnb;
     }
 
-    public String getPrevGroup() {
-        return prevGroup;
+    public String getBefrFncgOrgnCode() {
+        return befrFncgOrgnCode;
     }
 
-    public void setPrevGroup(String prevGroup) {
-        this.prevGroup = prevGroup;
+    public void setBefrFncgOrgnCode(String befrFncgOrgnCode) {
+        this.befrFncgOrgnCode = befrFncgOrgnCode;
     }
 
-    public String getEndpoint() {
-        return endpoint;
+    public String getHndrEmnb() {
+        return hndrEmnb;
     }
 
-    public void setEndpoint(String endpoint) {
-        this.endpoint = endpoint;
+    public void setHndrEmnb(String hndrEmnb) {
+        this.hndrEmnb = hndrEmnb;
     }
 
-    public String getResName() {
-        return resName;
+    public String getHndrNm() {
+        return hndrNm;
     }
 
-    public void setResName(String resName) {
-        this.resName = resName;
+    public void setHndrNm(String hndrNm) {
+        this.hndrNm = hndrNm;
     }
 
-    public String getAssignGroup() {
-        return assignGroup;
+    public String getHndrOrgnCode() {
+        return hndrOrgnCode;
     }
 
-    public void setAssignGroup(String assignGroup) {
-        this.assignGroup = assignGroup;
+    public void setHndrOrgnCode(String hndrOrgnCode) {
+        this.hndrOrgnCode = hndrOrgnCode;
     }
 
-    public String getTool() {
-        return tool;
+    public String getScrnUrlAddr() {
+        return scrnUrlAddr;
     }
 
-    public void setTool(String tool) {
-        this.tool = tool;
+    public void setScrnUrlAddr(String scrnUrlAddr) {
+        this.scrnUrlAddr = scrnUrlAddr;
     }
 
-    public String getTaskId() {
-        return taskId;
+    public String getFncgBpmTaskLstId() {
+        return fncgBpmTaskLstId;
     }
 
-    public void setTaskId(String taskId) {
-        this.taskId = taskId;
+    public void setFncgBpmTaskLstId(String fncgBpmTaskLstId) {
+        this.fncgBpmTaskLstId = fncgBpmTaskLstId;
     }
 
-    public String getInstId() {
-        return instId;
+    public String getFncgBpmPcesIntcId() {
+        return fncgBpmPcesIntcId;
     }
 
-    public void setInstId(String instId) {
-        this.instId = instId;
+    public void setFncgBpmPcesIntcId(String fncgBpmPcesIntcId) {
+        this.fncgBpmPcesIntcId = fncgBpmPcesIntcId;
     }
 }
