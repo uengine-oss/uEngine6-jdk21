@@ -7,7 +7,7 @@ public class BulkAssignRequestItem {
 
     private String fncgBpmTaskLstId;
     private String fncgBpmPcesIntcId;
-    private String hndrEmnb;
+    private String hndrEmnb; // 처리자 사원번호 
 
     public String getFncgBpmTaskLstId() {
         return fncgBpmTaskLstId;

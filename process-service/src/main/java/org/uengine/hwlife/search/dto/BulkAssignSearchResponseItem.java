@@ -5,12 +5,12 @@ package org.uengine.hwlife.search.dto;
  */
 public class BulkAssignSearchResponseItem {
 
-    private String bswrClsfCode;
-    private String fncgBswrDvsnCode;
+    private String bswrClsfCode; // 업무분류 코드
+    private String fncgBswrDvsnCode; //융자 구분코드 
     private String fncgBpmTaskLstId;
     private String fncgBpmPcesIntcId;
-    private String uworNm;
-    private String loanPcesNm;
+    private String uworNm; // 태스크 명
+    private String loanPcesNm; // 대출프로세스명 ( defName )
 
     public String getBswrClsfCode() {
         return bswrClsfCode;

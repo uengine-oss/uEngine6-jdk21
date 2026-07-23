@@ -1,17 +1,16 @@
 package org.uengine.hwlife.search.dto;
 
-/**
- * loanPcesMgmtNo 기준 진행 업무 조회 요청 — POST /search/worklist-by-inst-id JSON body.
- */
+import java.util.List;
+
 public class RunningWorkByCorrKeyRequest {
 
-    private String loanPcesMgmtNo;
-
-    public String getLoanPcesMgmtNo() {
-        return loanPcesMgmtNo;
+    private List<RunningWorkByCorrKeyRequestItem> bswrList;
+    
+    public List<RunningWorkByCorrKeyRequestItem> getBswrList() {
+        return bswrList;
     }
 
-    public void setLoanPcesMgmtNo(String loanPcesMgmtNo) {
-        this.loanPcesMgmtNo = loanPcesMgmtNo;
+    public void setBswrList(List<RunningWorkByCorrKeyRequestItem> bswrList) {
+        this.bswrList = bswrList;
     }
 }

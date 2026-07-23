@@ -8,10 +8,10 @@ import java.util.List;
  */
 public class BulkAssignResponse {
 
-    private String prcsRsltCodeNm;
-    private Integer sucsCont;
-    private Integer failCont;
-    private List<BulkAssignResponseItem> failList = new ArrayList<>();
+    private String prcsRsltCodeNm; // 처리결과:  SUCCESS/ FAILED
+    private Integer sucsCont; // 성공건수 
+    private Integer failCont; // 실패 건수
+    private List<BulkAssignResponseItem> failList = new ArrayList<>(); // 실패 목록
 
     public String getPrcsRsltCodeNm() {
         return prcsRsltCodeNm;

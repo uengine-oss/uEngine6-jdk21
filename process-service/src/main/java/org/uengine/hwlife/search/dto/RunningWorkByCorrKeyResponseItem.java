@@ -1,12 +1,12 @@
 package org.uengine.hwlife.search.dto;
 
-public class RunningTasksByKeyResponseItem {
+public class RunningWorkByCorrKeyResponseItem {
     
-    private String loanPcesMgmtNo;
-    private String fncgBpmTaskTrcgNm;
-    private String fncgBpmUworSttsCntn;
-    private String prgsSttsNm;
-    private String prcsrsltCntn;
+    private String loanPcesMgmtNo; // 대출프로세스관리번호 
+    private String fncgBpmTaskTrcgNm; // BPM 추적 태그
+    private String fncgBpmUworSttsCntn; // 현재 진행중인 단위업무(WORKITME) 상태 
+    private String prgsSttsNm; // 인스턴스 상태 
+    private String prcsrsltCntn; // 실패 사유( 조회 실패시)
 
     public String getLoanPcesMgmtNo() {
         return loanPcesMgmtNo;

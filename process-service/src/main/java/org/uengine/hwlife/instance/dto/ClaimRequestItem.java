@@ -5,8 +5,8 @@ package org.uengine.hwlife.instance.dto;
  */
 public class ClaimRequestItem {
 
-    private String fncgBpmTaskLstId;
-    private String fncgBpmPcesIntcId;
+    private String fncgBpmTaskLstId; // taskId
+    private String fncgBpmPcesIntcId; // instanceId
 
     public String getFncgBpmTaskLstId() {
         return fncgBpmTaskLstId;

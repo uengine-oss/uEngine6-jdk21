@@ -35,12 +35,15 @@ public interface WorkSearchService {
   @RequestMapping(value = "/org-completed", method = RequestMethod.POST, consumes = "application/json;charset=UTF-8")
   OrgCompletedResponse searchOrgCompleted(@RequestBody OrgCompletedRequest request) throws Exception;
 
+  // 일괄배정(다중 강제 선점 처리)
   @RequestMapping(value = "/bulk-assign", method = RequestMethod.POST, consumes = "application/json;charset=UTF-8")
   BulkAssignSearchResponse searchBulkAssign(@RequestBody BulkAssignSearchRequest request) throws Exception;
 
+  // 인스턴스 기준 단위업무 목록
   @RequestMapping(value = "/worklist-by-inst-id", method = RequestMethod.POST, consumes = "application/json;charset=UTF-8")
-  RunningWorkByCorrKeyResponse searchWorklistByInstId(@RequestBody RunningWorkByCorrKeyRequest request) throws Exception;
+  WorklistByInstIdResponseItem searchWorklistByInstId(@RequestBody WorklistByInstIdRequest request) throws Exception;
 
+  // 현재 진행중인 단위업무 및 인스턴스 상태
   @RequestMapping(value = "/running-by-key", method = RequestMethod.POST, consumes = "application/json;charset=UTF-8")
-  RunningTasksByKeyResponse searchRunningWorkByCorrKey(@RequestBody RunningTasksByKeyRequest request) throws Exception;
+  RunningWorkByCorrKeyResponse searchRunningWorkByCorrKey(@RequestBody RunningWorkByCorrKeyRequest request) throws Exception;
 }

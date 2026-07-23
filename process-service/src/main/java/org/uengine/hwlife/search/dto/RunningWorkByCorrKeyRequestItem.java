@@ -1,8 +1,8 @@
 package org.uengine.hwlife.search.dto;
 
-public class RunningTasksByKeyRequestItem {
+public class RunningWorkByCorrKeyRequestItem {
     
-    private String loanPcesMgmtNo;
+    private String loanPcesMgmtNo; // 대출프로세스관리번호
 
     public String getLoanPcesMgmtNo() {
         return loanPcesMgmtNo;

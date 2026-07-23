@@ -7,9 +7,9 @@ import java.util.List;
  */
 public class ClaimRequest {
 
-    private String hndrEmnb;
-    private String bswrClsfCode;
-    private List<ClaimRequestItem> bswrList;
+    private String hndrEmnb; // 처리자 사원번호 
+    private String bswrClsfCode; // 업무 분류코드: 선점: 0/선점 해제: 1 
+    private List<ClaimRequestItem> bswrList; // 업무 목록
 
     public String getHndrEmnb() {
         return hndrEmnb;

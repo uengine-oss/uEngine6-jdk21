@@ -51,16 +51,16 @@ public class WorkSearchServiceImpl implements WorkSearchService {
 
   @Override
   @Transactional(readOnly = true)
-  public RunningWorkByCorrKeyResponse searchWorklistByInstId(@RequestBody RunningWorkByCorrKeyRequest request) {
+  public WorklistByInstIdResponseItem searchWorklistByInstId(@RequestBody WorklistByInstIdRequest request) {
     throw notImplemented("searchWorklistByInstId");
   }
 
   @Override
   @Transactional(readOnly = true)
-  public RunningTasksByKeyResponse searchRunningWorkByCorrKey(@RequestBody RunningTasksByKeyRequest request) {
-    RunningTasksByKeyResponse response = new RunningTasksByKeyResponse();
+  public RunningWorkByCorrKeyResponse searchRunningWorkByCorrKey(@RequestBody RunningWorkByCorrKeyRequest request) {
+    RunningWorkByCorrKeyResponse response = new RunningWorkByCorrKeyResponse();
 
-    RunningTasksByKeyResponseItem item = new RunningTasksByKeyResponseItem();
+    RunningWorkByCorrKeyResponseItem item = new RunningWorkByCorrKeyResponseItem();
     item.setLoanPcesMgmtNo("LOAN-2026-0001");
     item.setFncgBpmTaskTrcgNm("FN013_S03_402");
     item.setFncgBpmUworSttsCntn("NEW");
