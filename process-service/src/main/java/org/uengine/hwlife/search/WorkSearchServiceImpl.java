@@ -51,7 +51,7 @@ public class WorkSearchServiceImpl implements WorkSearchService {
 
   @Override
   @Transactional(readOnly = true)
-  public WorklistByInstIdResponseItem searchWorklistByInstId(@RequestBody WorklistByInstIdRequest request) {
+  public WorklistByInstIdResponse searchWorklistByInstId(@RequestBody WorklistByInstIdRequest request) {
     throw notImplemented("searchWorklistByInstId");
   }
 

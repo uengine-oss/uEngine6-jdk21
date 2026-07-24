@@ -41,7 +41,7 @@ public interface WorkSearchService {
 
   // 인스턴스 기준 단위업무 목록
   @RequestMapping(value = "/worklist-by-inst-id", method = RequestMethod.POST, consumes = "application/json;charset=UTF-8")
-  WorklistByInstIdResponseItem searchWorklistByInstId(@RequestBody WorklistByInstIdRequest request) throws Exception;
+  WorklistByInstIdResponse searchWorklistByInstId(@RequestBody WorklistByInstIdRequest request) throws Exception;
 
   // 현재 진행중인 단위업무 및 인스턴스 상태
   @RequestMapping(value = "/running-by-key", method = RequestMethod.POST, consumes = "application/json;charset=UTF-8")
