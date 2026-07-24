@@ -341,6 +341,14 @@ public class WorklistEntity {// implements WorkListDAO {
         this.prevEndpoint = prevEndpoint;
     }
 
+    public String getPrevGroupCd() {
+        return prevGroupCd;
+    }
+
+    public void setPrevGroupCd(String prevGroupCd) {
+        this.prevGroupCd = prevGroupCd;
+    }
+
     public Long getRootInstId() {
         return rootInstId;
     }

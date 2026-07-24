@@ -582,6 +582,70 @@ public class ProcessInstanceEntity {// implements ProcessInstanceDAO {
         this.corrKey = corrKey;
     }
 
+    public String getCustId() {
+        return custId;
+    }
+
+    public void setCustId(String custId) {
+        this.custId = custId;
+    }
+
+    public String getFncgBswrDvsnCode() {
+        return fncgBswrDvsnCode;
+    }
+
+    public void setFncgBswrDvsnCode(String fncgBswrDvsnCode) {
+        this.fncgBswrDvsnCode = fncgBswrDvsnCode;
+    }
+
+    public String getLoanCntcNo() {
+        return loanCntcNo;
+    }
+
+    public void setLoanCntcNo(String loanCntcNo) {
+        this.loanCntcNo = loanCntcNo;
+    }
+
+    public String getFncgSuptTrgtDvsnCode() {
+        return fncgSuptTrgtDvsnCode;
+    }
+
+    public void setFncgSuptTrgtDvsnCode(String fncgSuptTrgtDvsnCode) {
+        this.fncgSuptTrgtDvsnCode = fncgSuptTrgtDvsnCode;
+    }
+
+    public String getLoanSubjDvsnCode() {
+        return loanSubjDvsnCode;
+    }
+
+    public void setLoanSubjDvsnCode(String loanSubjDvsnCode) {
+        this.loanSubjDvsnCode = loanSubjDvsnCode;
+    }
+
+    public Date getLaonHopeDate() {
+        return laonHopeDate;
+    }
+
+    public void setLaonHopeDate(Date laonHopeDate) {
+        this.laonHopeDate = laonHopeDate;
+    }
+
+    public String getFncgMneyUsagClsfCode() {
+        return fncgMneyUsagClsfCode;
+    }
+
+    public void setFncgMneyUsagClsfCode(String fncgMneyUsagClsfCode) {
+        this.fncgMneyUsagClsfCode = fncgMneyUsagClsfCode;
+    }
+
+    public String getBsnsClsfCode() {
+        return bsnsClsfCode;
+    }
+
+    public void setBsnsClsfCode(String bsnsClsfCode) {
+        this.bsnsClsfCode = bsnsClsfCode;
+    }
+
     public String getVariablesPath() {
         return variablesPath;
     }
