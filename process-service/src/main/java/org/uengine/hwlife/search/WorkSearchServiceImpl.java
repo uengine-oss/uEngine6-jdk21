@@ -116,7 +116,7 @@ public class WorkSearchServiceImpl implements WorkSearchService {
 
   private boolean matches(MyTodoRequest request, WorklistEntity worklist) {
     ProcessInstanceEntity instance = worklist.getProcessInstance();
-    return matchesText(request.getBswrClsfCode(), instance == null ? null : instance.getBsnsClsfCode())
+    return matchesText(request.getBswrClsfCode(), instance == null ? null : instance.getBswrClsfCode())
         && matchesText(request.getCustId(), instance == null ? null : instance.getCustId())
         && matchesText(request.getFncgBswrDvsnCode(), instance == null ? null : instance.getFncgBswrDvsnCode())
         && matchesText(request.getLoanCntcNo(), instance == null ? null : instance.getLoanCntcNo())
@@ -127,21 +127,21 @@ public class WorkSearchServiceImpl implements WorkSearchService {
         && matchesText(request.getHndrEmnb(), worklist.getEndpoint())
         && matchesText(request.getFncgWndwOrgnCode(), firstNonBlank(worklist.getAssignGroup(), worklist.getScope()))
         && inRange(worklist.getStartDate(), request.getStarDate(), request.getEndDate())
-        && inRange(instance == null ? null : instance.getLaonHopeDate(), request.getHopeStarDate(), request.getHopeEndDate());
+        && inRange(instance == null ? null : instance.getLoanHopeDate(), request.getHopeStarDate(), request.getHopeEndDate());
   }
 
   private MyTodoItem toMyTodoItem(WorklistEntity worklist) {
     ProcessInstanceEntity instance = worklist.getProcessInstance();
     MyTodoItem item = new MyTodoItem();
 
-    item.setBswrClsfCode(instance == null ? null : instance.getBsnsClsfCode());
+    item.setBswrClsfCode(instance == null ? null : instance.getBswrClsfCode());
     item.setCustId(instance == null ? null : instance.getCustId());
     item.setFncgBswrDvsnCode(instance == null ? null : instance.getFncgBswrDvsnCode());
     item.setLoanCntcNo(instance == null ? null : instance.getLoanCntcNo());
     item.setFncgSuptTrgtDvsnCode(instance == null ? null : instance.getFncgSuptTrgtDvsnCode());
     item.setLoanSubjDvsnCode(instance == null ? null : instance.getLoanSubjDvsnCode());
     item.setFncgMneyUsagClsfCode(instance == null ? null : instance.getFncgMneyUsagClsfCode());
-    item.setLoanHopeDate(instance == null ? null : instance.getLaonHopeDate());
+    item.setLoanHopeDate(instance == null ? null : instance.getLoanHopeDate());
     item.setLoanPcesMgmtNo(instance == null ? null : instance.getCorrKey());
     item.setFncgBpmTaskTrcgNm(worklist.getTrcTag());
     item.setUworStarDttm(worklist.getStartDate());

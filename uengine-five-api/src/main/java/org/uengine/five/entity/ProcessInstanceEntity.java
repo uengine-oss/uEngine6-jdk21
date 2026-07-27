@@ -69,7 +69,7 @@ public class ProcessInstanceEntity {// implements ProcessInstanceDAO {
     private String fncgSuptTrgtDvsnCode; // 융자지원대상구분코드
     private String loanSubjDvsnCode; // 융자과목구분코드
     @Temporal(TemporalType.DATE) 
-    private Date laonHopeDate; // 대출희망일자 (날짜 타입)
+    private Date loanHopeDate; // 대출희망일자 (날짜 타입)
     private String fncgMneyUsagClsfCode; // 자금사용구분코드
     private String bswrClsfCode;    // 업무분류 코드
 
@@ -622,12 +622,12 @@ public class ProcessInstanceEntity {// implements ProcessInstanceDAO {
         this.loanSubjDvsnCode = loanSubjDvsnCode;
     }
 
-    public Date getLaonHopeDate() {
-        return laonHopeDate;
+    public Date getLoanHopeDate() {
+        return loanHopeDate;
     }
 
-    public void setLaonHopeDate(Date laonHopeDate) {
-        this.laonHopeDate = laonHopeDate;
+    public void setLoanHopeDate(Date loanHopeDate) {
+        this.loanHopeDate = loanHopeDate;
     }
 
     public String getFncgMneyUsagClsfCode() {
