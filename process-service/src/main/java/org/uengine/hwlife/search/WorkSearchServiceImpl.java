@@ -120,6 +120,7 @@ public class WorkSearchServiceImpl implements WorkSearchService {
         && matchesText(request.getCustId(), instance == null ? null : instance.getCustId())
         && matchesText(request.getFncgBswrDvsnCode(), instance == null ? null : instance.getFncgBswrDvsnCode())
         && matchesText(request.getLoanCntcNo(), instance == null ? null : instance.getLoanCntcNo())
+        && matchesText(request.getLoanPcesMgmtNo(), instance == null ? null : instance.getCorrKey())
         && matchesText(request.getFncgSuptTrgtDvsnCode(), instance == null ? null : instance.getFncgSuptTrgtDvsnCode())
         && matchesText(request.getLoanSubjDvsnCode(), instance == null ? null : instance.getLoanSubjDvsnCode())
         && matchesText(request.getFncgMneyUsagClsfCode(), instance == null ? null : instance.getFncgMneyUsagClsfCode())

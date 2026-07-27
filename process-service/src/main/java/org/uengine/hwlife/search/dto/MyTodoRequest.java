@@ -13,6 +13,7 @@ public class MyTodoRequest {
     private String custId;
     private String fncgBswrDvsnCode;
     private String loanCntcNo;
+    private String loanPcesMgmtNo;
     private String fncgSuptTrgtDvsnCode;
     private String loanSubjDvsnCode;
     private String fncgMneyUsagClsfCode;
@@ -67,6 +68,14 @@ public class MyTodoRequest {
 
     public void setLoanCntcNo(String loanCntcNo) {
         this.loanCntcNo = loanCntcNo;
+    }
+
+    public String getLoanPcesMgmtNo() {
+        return loanPcesMgmtNo;
+    }
+
+    public void setLoanPcesMgmtNo(String loanPcesMgmtNo) {
+        this.loanPcesMgmtNo = loanPcesMgmtNo;
     }
 
     public String getFncgSuptTrgtDvsnCode() {
