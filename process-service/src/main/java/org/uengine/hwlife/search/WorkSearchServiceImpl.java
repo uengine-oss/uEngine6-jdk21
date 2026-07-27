@@ -116,10 +116,11 @@ public class WorkSearchServiceImpl implements WorkSearchService {
 
   private boolean matches(MyTodoRequest request, WorklistEntity worklist) {
     ProcessInstanceEntity instance = worklist.getProcessInstance();
-    return matchesText(request.getBswrClsfCode(), instance == null ? null : instance.getBsnsClsfCode())
+    return matchesText(request.getBswrClsfCode(), instance == null ? null : instance.getBswrClsfCode())
         && matchesText(request.getCustId(), instance == null ? null : instance.getCustId())
         && matchesText(request.getFncgBswrDvsnCode(), instance == null ? null : instance.getFncgBswrDvsnCode())
         && matchesText(request.getLoanCntcNo(), instance == null ? null : instance.getLoanCntcNo())
+        && matchesText(request.getLoanPcesMgmtNo(), instance == null ? null : instance.getCorrKey())
         && matchesText(request.getFncgSuptTrgtDvsnCode(), instance == null ? null : instance.getFncgSuptTrgtDvsnCode())
         && matchesText(request.getLoanSubjDvsnCode(), instance == null ? null : instance.getLoanSubjDvsnCode())
         && matchesText(request.getFncgMneyUsagClsfCode(), instance == null ? null : instance.getFncgMneyUsagClsfCode())
@@ -134,7 +135,7 @@ public class WorkSearchServiceImpl implements WorkSearchService {
     ProcessInstanceEntity instance = worklist.getProcessInstance();
     MyTodoItem item = new MyTodoItem();
 
-    item.setBswrClsfCode(instance == null ? null : instance.getBsnsClsfCode());
+    item.setBswrClsfCode(instance == null ? null : instance.getBswrClsfCode());
     item.setCustId(instance == null ? null : instance.getCustId());
     item.setFncgBswrDvsnCode(instance == null ? null : instance.getFncgBswrDvsnCode());
     item.setLoanCntcNo(instance == null ? null : instance.getLoanCntcNo());
