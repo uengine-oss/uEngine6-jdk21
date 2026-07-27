@@ -7,6 +7,8 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import java.util.stream.Collectors;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -67,7 +69,23 @@ public class WorkSearchServiceImpl implements WorkSearchService {
   @Override
   @Transactional(readOnly = true)
   public OrgRunningResponse searchOrgRunning(@RequestBody OrgRunningRequest request) {
-    throw notImplemented("searchOrgRunning");
+    OrgRunningRequest normalizedRequest = request == null ? new OrgRunningRequest() : request;
+    int pageNo = normalizePageNo(normalizedRequest.getPageNo());
+
+    List<OrgRunningItem> filteredItems = worklistRepository.findRunningForOrgSearch().stream()
+        .filter(this::isRunningWorkItem)
+        .filter(worklist -> matches(normalizedRequest, worklist))
+        .sorted(orgRunningSort(normalizedRequest.getSortOrdrVal()))
+        .map(this::toOrgRunningItem)
+        .collect(Collectors.toList());
+
+    int fromIndex = Math.min(pageNo * DEFAULT_PAGE_SIZE, filteredItems.size());
+    int toIndex = Math.min(fromIndex + DEFAULT_PAGE_SIZE, filteredItems.size());
+
+    OrgRunningResponse response = new OrgRunningResponse();
+    response.setTotCont(filteredItems.size());
+    response.setOrgnPrgslist(new ArrayList<>(filteredItems.subList(fromIndex, toIndex)));
+    return response;
   }
 
   @Override
@@ -114,6 +132,11 @@ public class WorkSearchServiceImpl implements WorkSearchService {
         || (!"COMPLETED".equalsIgnoreCase(status) && !"CANCELLED".equalsIgnoreCase(status));
   }
 
+  private boolean isRunningWorkItem(WorklistEntity worklist) {
+    String status = trimToNull(worklist.getStatus());
+    return "NEW".equalsIgnoreCase(status) || "RUNNING".equalsIgnoreCase(status);
+  }
+
   private boolean matches(MyTodoRequest request, WorklistEntity worklist) {
     ProcessInstanceEntity instance = worklist.getProcessInstance();
     return matchesText(request.getBswrClsfCode(), instance == null ? null : instance.getBsnsClsfCode())
@@ -128,6 +151,36 @@ public class WorkSearchServiceImpl implements WorkSearchService {
         && matchesText(request.getFncgWndwOrgnCode(), firstNonBlank(worklist.getAssignGroup(), worklist.getScope()))
         && inRange(worklist.getStartDate(), request.getStarDate(), request.getEndDate())
         && inRange(instance == null ? null : instance.getLaonHopeDate(), request.getHopeStarDate(), request.getHopeEndDate());
+  }
+
+  private boolean matches(OrgRunningRequest request, WorklistEntity worklist) {
+    ProcessInstanceEntity instance = worklist.getProcessInstance();
+    if (instance == null) {
+      return false;
+    }
+
+    return matchesText(request.getBswrClsfCode(), instance.getBsnsClsfCode())
+        && matchesText(request.getFncgVswrDvsnCode(), instance.getFncgBswrDvsnCode())
+        && matchesText(request.getFncgBpmTaskTrcgNm(), worklist.getTrcTag())
+        && inLocalDateTimeRange(worklist.getStartDate(), request.getRqstStarDttm(), request.getRqstEndDttm())
+        && matchesText(request.getFncgSuptTrgtDvsnCode(), instance.getFncgSuptTrgtDvsnCode())
+        && matchesText(request.getLoanSubjDvsnCode(), instance.getLoanSubjDvsnCode())
+        && matchesText(request.getFncgMneyUsagClsfCode(), instance.getFncgMneyUsagClsfCode())
+        && matchesText(request.getLoanCntcNo(), instance.getLoanCntcNo())
+        && matchesText(request.getCustId(), instance.getCustId())
+        && matchesOrganization(request, worklist, instance);
+  }
+
+  private boolean matchesOrganization(
+      OrgRunningRequest request, WorklistEntity worklist, ProcessInstanceEntity instance) {
+    String organizationCode = trimToNull(request.getFncgWndwOrgnCode());
+    if (organizationCode == null) {
+      return true;
+    }
+    if ("Y".equalsIgnoreCase(trimToNull(request.getRqstDvsnCode()))) {
+      return matchesText(organizationCode, instance.getInitComCd());
+    }
+    return matchesText(organizationCode, firstNonBlank(worklist.getAssignGroup(), worklist.getScope()));
   }
 
   private MyTodoItem toMyTodoItem(WorklistEntity worklist) {
@@ -164,6 +217,31 @@ public class WorkSearchServiceImpl implements WorkSearchService {
     return item;
   }
 
+  private OrgRunningItem toOrgRunningItem(WorklistEntity worklist) {
+    ProcessInstanceEntity instance = worklist.getProcessInstance();
+    OrgRunningItem item = new OrgRunningItem();
+
+    item.setStarDttm(toLocalDateTime(instance.getStartedDate()));
+    item.setFncgBswrDvsnCode(instance.getFncgBswrDvsnCode());
+    item.setLoanCntcNo(instance.getLoanCntcNo());
+    item.setFncgSuptTrgtDvsnCode(instance.getFncgSuptTrgtDvsnCode());
+    item.setLoanSubjDvsnCode(instance.getLoanSubjDvsnCode());
+    item.setCustId(instance.getCustId());
+    item.setFncgMneyUsagClsfCode(instance.getFncgMneyUsagClsfCode());
+    item.setLoanHopeDate(instance.getLaonHopeDate());
+    item.setLoanPcesMgmtNo(instance.getCorrKey());
+    item.setReptHndrEmnb(instance.getInitEp());
+    item.setReptHndrFncgOrgnCode(instance.getInitComCd());
+    item.setHndrEmnb(worklist.getEndpoint());
+    item.setHndrOrgnCode(firstNonBlank(worklist.getAssignGroup(), worklist.getScope()));
+    item.setUworNm(worklist.getTitle());
+    item.setFncgBpmTaskTrcgNm(worklist.getTrcTag());
+    item.setUworStarDttm(toLocalDateTime(worklist.getStartDate()));
+    item.setFncgBpmtaskLstId(worklist.getTaskId() == null ? null : String.valueOf(worklist.getTaskId()));
+    item.setFncgBpmPcesIntcId(worklist.getInstId() == null ? null : String.valueOf(worklist.getInstId()));
+    return item;
+  }
+
   private Comparator<WorklistEntity> myTodoSort(String sortOrdrVal) {
     Comparator<WorklistEntity> comparator = Comparator
         .comparing(WorklistEntity::getStartDate, Comparator.nullsLast(Date::compareTo))
@@ -174,6 +252,10 @@ public class WorkSearchServiceImpl implements WorkSearchService {
       return comparator.reversed();
     }
     return comparator;
+  }
+
+  private Comparator<WorklistEntity> orgRunningSort(String sortOrdrVal) {
+    return myTodoSort(sortOrdrVal);
   }
 
   private static int normalizePageNo(Integer pageNo) {
@@ -198,6 +280,20 @@ public class WorkSearchServiceImpl implements WorkSearchService {
     }
     return (startInclusive == null || !target.before(startInclusive))
         && (endInclusive == null || !target.after(endInclusive));
+  }
+
+  private static boolean inLocalDateTimeRange(
+      Date target, LocalDateTime startInclusive, LocalDateTime endInclusive) {
+    if (target == null) {
+      return startInclusive == null && endInclusive == null;
+    }
+    LocalDateTime value = toLocalDateTime(target);
+    return (startInclusive == null || !value.isBefore(startInclusive))
+        && (endInclusive == null || !value.isAfter(endInclusive));
+  }
+
+  private static LocalDateTime toLocalDateTime(Date value) {
+    return value == null ? null : LocalDateTime.ofInstant(value.toInstant(), ZoneId.systemDefault());
   }
 
   private static String firstNonBlank(String... values) {

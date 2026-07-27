@@ -83,6 +83,13 @@ public interface WorklistRepository extends JpaRepository<WorklistEntity, Long> 
             @Param("endpoint") String endpoint);
 
     /**
+     * 기관별 진행현황 검색 대상. ProcessInstance를 함께 조회해 건별 대출 속성 필터에 사용한다.
+     */
+    @Query("select wl from WorklistEntity wl join fetch wl.processInstance pi " +
+            "where upper(wl.status) in ('NEW', 'RUNNING')")
+    List<WorklistEntity> findRunningForOrgSearch();
+
+    /**
      * 기관(조직) 코드·요청 타입·업무구분으로 워크리스트 검색. 결재함 구분 없이 전체 워크아이템 대상.
      *
      * <ul>
@@ -108,4 +115,3 @@ public interface WorklistRepository extends JpaRepository<WorklistEntity, Long> 
     // public List<WorklistEntity> findAll();
 
 }
-        
