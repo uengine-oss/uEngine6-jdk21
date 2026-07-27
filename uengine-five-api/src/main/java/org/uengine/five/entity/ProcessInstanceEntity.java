@@ -71,7 +71,7 @@ public class ProcessInstanceEntity {// implements ProcessInstanceDAO {
     @Temporal(TemporalType.DATE) 
     private Date laonHopeDate; // 대출희망일자 (날짜 타입)
     private String fncgMneyUsagClsfCode; // 자금사용구분코드
-    private String bsnsClsfCode;    // 업무분류 코드
+    private String bswrClsfCode;    // 업무분류 코드
 
 
     public List<DummyWorkList> getDummyWorkLists() {
@@ -638,12 +638,12 @@ public class ProcessInstanceEntity {// implements ProcessInstanceDAO {
         this.fncgMneyUsagClsfCode = fncgMneyUsagClsfCode;
     }
 
-    public String getBsnsClsfCode() {
-        return bsnsClsfCode;
+    public String getBswrClsfCode() {
+        return bswrClsfCode;
     }
 
-    public void setBsnsClsfCode(String bsnsClsfCode) {
-        this.bsnsClsfCode = bsnsClsfCode;
+    public void setBswrClsfCode(String bswrClsfCode) {
+        this.bswrClsfCode = bswrClsfCode;
     }
 
     public String getVariablesPath() {

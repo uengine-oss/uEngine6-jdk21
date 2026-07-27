@@ -51,6 +51,11 @@ logging:
 filter:
   payload:
     enabled: false
+
+# ESB 인바운드 { header, payload } → @RequestBody DTO unwrap (EsbRequestBodyAdvice)
+esb:
+  inbound-unwrap:
+    enabled: false
 ---
 # 개발 환경 (기본 프로파일)
 # WAS(Tomcat 등)에 DataSource JNDI를 등록한 뒤 실행: SPRING_PROFILES_ACTIVE=dev
