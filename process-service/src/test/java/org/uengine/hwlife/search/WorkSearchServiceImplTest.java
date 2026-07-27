@@ -2,8 +2,11 @@ package org.uengine.hwlife.search;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -14,6 +17,8 @@ import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 import org.uengine.contexts.UserContext;
 import org.uengine.five.entity.ProcessInstanceEntity;
 import org.uengine.five.entity.WorklistEntity;
@@ -37,12 +42,12 @@ class WorkSearchServiceImplTest {
   }
 
   @Test
-  void delegatesCompleteRequestAndOneBasedPageToRepository() {
+  void delegatesCompleteRequestCursorAndSizeToRepository() {
     MyTodoRequest request = fullRequest();
     when(searchRepository.search(
         any(MyTodoRequest.class),
-        eq(1),
-        eq(20),
+        eq(21L),
+        eq(35),
         any(UserContext.class)))
         .thenReturn(new SearchResult(List.of(minimalWorklist(21L)), 25));
 
@@ -51,8 +56,8 @@ class WorkSearchServiceImplTest {
     ArgumentCaptor<MyTodoRequest> requestCaptor = ArgumentCaptor.forClass(MyTodoRequest.class);
     verify(searchRepository).search(
         requestCaptor.capture(),
-        eq(1),
-        eq(20),
+        eq(21L),
+        eq(35),
         any(UserContext.class));
     assertSame(request, requestCaptor.getValue());
     assertEquals(25, response.getTotCont());
@@ -60,24 +65,49 @@ class WorkSearchServiceImplTest {
   }
 
   @Test
-  void normalizesMissingAndNonPositivePageNumbersToFirstPage() {
+  void normalizesMissingAndOutOfRangeSizes() {
     when(searchRepository.search(
         any(MyTodoRequest.class),
-        eq(0),
-        eq(20),
+        isNull(),
+        anyInt(),
         any(UserContext.class)))
         .thenReturn(new SearchResult(List.of(), 0));
 
     service.searchMyTodo(null);
-    MyTodoRequest zeroPage = new MyTodoRequest();
-    zeroPage.setPageNo(0);
-    service.searchMyTodo(zeroPage);
+    MyTodoRequest zeroSize = new MyTodoRequest();
+    zeroSize.setSize(0);
+    service.searchMyTodo(zeroSize);
+    MyTodoRequest oversized = new MyTodoRequest();
+    oversized.setSize(101);
+    service.searchMyTodo(oversized);
 
-    verify(searchRepository, org.mockito.Mockito.times(2)).search(
+    verify(searchRepository).search(
         any(MyTodoRequest.class),
-        eq(0),
+        isNull(),
         eq(20),
         any(UserContext.class));
+    verify(searchRepository).search(
+        any(MyTodoRequest.class),
+        isNull(),
+        eq(1),
+        any(UserContext.class));
+    verify(searchRepository).search(
+        any(MyTodoRequest.class),
+        isNull(),
+        eq(100),
+        any(UserContext.class));
+  }
+
+  @Test
+  void rejectsCursorThatIsNotAPositiveTaskId() {
+    MyTodoRequest request = new MyTodoRequest();
+    request.setCursor("not-a-task-id");
+
+    ResponseStatusException exception = assertThrows(
+        ResponseStatusException.class,
+        () -> service.searchMyTodo(request));
+
+    assertEquals(HttpStatus.BAD_REQUEST, exception.getStatusCode());
   }
 
   @Test
@@ -85,7 +115,7 @@ class WorkSearchServiceImplTest {
     WorklistEntity worklist = completeWorklist(101L, WORK_START);
     when(searchRepository.search(
         any(MyTodoRequest.class),
-        eq(0),
+        isNull(),
         eq(20),
         any(UserContext.class)))
         .thenReturn(new SearchResult(List.of(worklist), 1));
@@ -140,8 +170,9 @@ class WorkSearchServiceImplTest {
     request.setHopeEndDate(date(HOPE_DATE));
     request.setFncgWndwOrgnCode("GROUP");
     request.setHndrEmnb("handler");
-    request.setPageNo(2);
-    request.setSortOrdrVal("DESC");
+    request.setCursor("21");
+    request.setSize(35);
+    request.setSortOrdrVal("loanHopeDate");
     return request;
   }
 

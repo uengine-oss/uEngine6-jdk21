@@ -34,7 +34,6 @@ public class MyTodoRequest {
     private String fncgWndwOrgnCode;
     private String sortOrdrVal;
     private String hndrEmnb;
-   
     private String nextKey;
     private Integer pageSize;
 

@@ -3,7 +3,6 @@ package org.uengine.hwlife.search;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-import java.util.Locale;
 
 import org.springframework.stereotype.Repository;
 import org.uengine.contexts.UserContext;
@@ -13,6 +12,7 @@ import org.uengine.hwlife.search.dto.MyTodoRequest;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
+import jakarta.persistence.Tuple;
 import jakarta.persistence.TypedQuery;
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.CriteriaQuery;
@@ -39,25 +39,34 @@ public class MyTodoSearchRepository {
 
   public SearchResult search(
       MyTodoRequest request,
-      int pageIndex,
+      Long cursorTaskId,
       int pageSize,
       UserContext userContext) {
     CriteriaBuilder builder = entityManager.getCriteriaBuilder();
+    SortField sortField = SortField.from(request.getSortOrdrVal());
+    CursorPosition cursor = findCursor(builder, cursorTaskId, sortField);
+    if (cursorTaskId != null && cursor == null) {
+      return new SearchResult(List.of(), 0);
+    }
 
     CriteriaQuery<WorklistEntity> dataQuery = builder.createQuery(WorklistEntity.class);
     Root<WorklistEntity> worklist = dataQuery.from(WorklistEntity.class);
     Join<WorklistEntity, ProcessInstanceEntity> instance = fetchProcessInstance(worklist);
+    List<Predicate> dataPredicates = new ArrayList<>(
+        List.of(predicates(builder, worklist, instance, request, userContext)));
+    if (cursor != null) {
+      dataPredicates.add(cursorPredicate(builder, worklist, instance, sortField, cursor));
+    }
     dataQuery.select(worklist)
-        .where(predicates(builder, worklist, instance, request, userContext))
-        .orderBy(sortOrders(builder, worklist, request.getSortOrdrVal()));
+        .where(dataPredicates.toArray(Predicate[]::new))
+        .orderBy(sortOrders(builder, worklist, instance, sortField));
 
     TypedQuery<WorklistEntity> query = entityManager.createQuery(dataQuery);
-    query.setFirstResult(Math.multiplyExact(pageIndex, pageSize));
     query.setMaxResults(pageSize);
     List<WorklistEntity> items = query.getResultList();
 
-    if (items.size() < pageSize && (pageIndex == 0 || !items.isEmpty())) {
-      int totalCount = Math.addExact(Math.multiplyExact(pageIndex, pageSize), items.size());
+    if (cursor == null && items.size() < pageSize) {
+      int totalCount = items.size();
       return new SearchResult(items, totalCount);
     }
 
@@ -70,6 +79,35 @@ public class MyTodoSearchRepository {
     long totalCount = entityManager.createQuery(countQuery).getSingleResult();
 
     return new SearchResult(items, Math.toIntExact(totalCount));
+  }
+
+  private CursorPosition findCursor(
+      CriteriaBuilder builder,
+      Long cursorTaskId,
+      SortField sortField) {
+    if (cursorTaskId == null) {
+      return null;
+    }
+    if (sortField == SortField.TASK_ID) {
+      return new CursorPosition(null, cursorTaskId);
+    }
+
+    CriteriaQuery<Tuple> cursorQuery = builder.createTupleQuery();
+    Root<WorklistEntity> worklist = cursorQuery.from(WorklistEntity.class);
+    Join<WorklistEntity, ProcessInstanceEntity> instance =
+        worklist.join("processInstance", JoinType.LEFT);
+    cursorQuery.multiselect(
+        worklist.get("taskId").alias("taskId"),
+        dateSortPath(worklist, instance, sortField).alias("sortValue"))
+        .where(builder.equal(worklist.get("taskId"), cursorTaskId));
+
+    List<Tuple> rows = entityManager.createQuery(cursorQuery)
+        .setMaxResults(1)
+        .getResultList();
+    if (rows.isEmpty()) {
+      return null;
+    }
+    return new CursorPosition(rows.get(0).get("sortValue", Date.class), cursorTaskId);
   }
 
   @SuppressWarnings("unchecked")
@@ -196,21 +234,58 @@ public class MyTodoSearchRepository {
     }
   }
 
+  private static Predicate cursorPredicate(
+      CriteriaBuilder builder,
+      Root<WorklistEntity> worklist,
+      Join<WorklistEntity, ProcessInstanceEntity> instance,
+      SortField sortField,
+      CursorPosition cursor) {
+    Path<Long> taskId = worklist.get("taskId");
+    if (sortField == SortField.TASK_ID) {
+      return builder.lessThan(taskId, cursor.taskId());
+    }
+
+    Path<Date> sortPath = dateSortPath(worklist, instance, sortField);
+    if (cursor.sortValue() == null) {
+      return builder.and(
+          builder.isNull(sortPath),
+          builder.lessThan(taskId, cursor.taskId()));
+    }
+
+    return builder.or(
+        builder.isNull(sortPath),
+        builder.lessThan(sortPath, cursor.sortValue()),
+        builder.and(
+            builder.equal(sortPath, cursor.sortValue()),
+            builder.lessThan(taskId, cursor.taskId())));
+  }
+
   private static List<jakarta.persistence.criteria.Order> sortOrders(
       CriteriaBuilder builder,
       Root<WorklistEntity> worklist,
-      String sortOrder) {
-    String normalized = trimToNull(sortOrder);
-    boolean descending =
-        normalized == null || normalized.toUpperCase(Locale.ROOT).contains("DESC");
-    if (descending) {
-      return List.of(
-          builder.desc(worklist.get("startDate")),
-          builder.desc(worklist.get("taskId")));
+      Join<WorklistEntity, ProcessInstanceEntity> instance,
+      SortField sortField) {
+    if (sortField == SortField.TASK_ID) {
+      return List.of(builder.desc(worklist.get("taskId")));
     }
+
+    Path<Date> sortPath = dateSortPath(worklist, instance, sortField);
     return List.of(
-        builder.asc(worklist.get("startDate")),
-        builder.asc(worklist.get("taskId")));
+        builder.asc(builder.selectCase().when(builder.isNull(sortPath), 1).otherwise(0)),
+        builder.desc(sortPath),
+        builder.desc(worklist.get("taskId")));
+  }
+
+  private static Path<Date> dateSortPath(
+      Root<WorklistEntity> worklist,
+      Join<WorklistEntity, ProcessInstanceEntity> instance,
+      SortField sortField) {
+    return switch (sortField) {
+      case LOAN_HOPE_DATE -> instance.get("laonHopeDate");
+      case STARTED_DATE -> instance.get("startedDate");
+      case WORK_STARTED_DATE -> worklist.get("startDate");
+      case TASK_ID -> throw new IllegalArgumentException("taskId is not a date sort field");
+    };
   }
 
   private static List<String> normalizedValues(List<String> values) {
@@ -236,6 +311,30 @@ public class MyTodoSearchRepository {
 
     public SearchResult {
       items = List.copyOf(items);
+    }
+  }
+
+  private record CursorPosition(Date sortValue, Long taskId) {
+  }
+
+  private enum SortField {
+    LOAN_HOPE_DATE,
+    STARTED_DATE,
+    WORK_STARTED_DATE,
+    TASK_ID;
+
+    private static SortField from(String propertyName) {
+      String value = trimToNull(propertyName);
+      if ("loanHopeDate".equals(value)) {
+        return LOAN_HOPE_DATE;
+      }
+      if ("uworStarDttm".equals(value) || "startDate".equals(value)) {
+        return WORK_STARTED_DATE;
+      }
+      if ("fncgBpmTaskLstId".equals(value) || "taskId".equals(value)) {
+        return TASK_ID;
+      }
+      return STARTED_DATE;
     }
   }
 }
