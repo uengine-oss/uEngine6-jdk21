@@ -9,6 +9,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.format.annotation.DateTimeFormat;
 
 import java.util.Date;
+import java.util.Collection;
 import org.uengine.five.entity.ProcessInstanceEntity;
 import org.uengine.five.entity.WorklistEntity;
 import org.uengine.five.framework.ProcessTransactional;
@@ -68,6 +69,12 @@ public interface ProcessInstanceRepository
 
         @Query("select pi from ProcessInstanceEntity pi where (pi.corrKey = :corrKey and pi.status = :status)")
         List<ProcessInstanceEntity> findByCorrKeyAndStatus(@Param("corrKey") String corrKey,
+                @Param("status") String status);
+
+        @Query("select pi from ProcessInstanceEntity pi "
+                + "where pi.corrKey in :corrKeys and pi.status = :status")
+        List<ProcessInstanceEntity> findByCorrKeyInAndStatus(
+                @Param("corrKeys") Collection<String> corrKeys,
                 @Param("status") String status);
 
         @Query("select pi from ProcessInstanceEntity pi where pi.status = :status")
