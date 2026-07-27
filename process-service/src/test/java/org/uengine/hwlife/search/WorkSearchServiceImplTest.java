@@ -111,6 +111,18 @@ class WorkSearchServiceImplTest {
   }
 
   @Test
+  void rejectsUnknownSortDirection() {
+    MyTodoRequest request = new MyTodoRequest();
+    request.setSortDirection("NEWEST");
+
+    ResponseStatusException exception = assertThrows(
+        ResponseStatusException.class,
+        () -> service.searchMyTodo(request));
+
+    assertEquals(HttpStatus.BAD_REQUEST, exception.getStatusCode());
+  }
+
+  @Test
   void mapsEveryResponseFieldFromPagedRepositoryResult() {
     WorklistEntity worklist = completeWorklist(101L, WORK_START);
     when(searchRepository.search(
@@ -173,6 +185,7 @@ class WorkSearchServiceImplTest {
     request.setCursor("21");
     request.setSize(35);
     request.setSortOrdrVal("loanHopeDate");
+    request.setSortDirection("ASC");
     return request;
   }
 

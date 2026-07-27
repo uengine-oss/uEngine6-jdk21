@@ -12,7 +12,8 @@ import org.uengine.hwlife.search.dto.*;
  *
  * <pre>
  *   POST /search/my-todo  body: { "custId": "...", "cursor": "", "size": 20,
- *                                 "sortOrdrVal": "startedDate" }
+ *                                 "sortOrdrVal": "startedDate",
+ *                                 "sortDirection": "DESC" }
  *   POST /search/my-progress  body: { "custId": "...", "pageNo": "1" }
  *   POST /search/org-running  body: { "custId": "...", "pageNo": "1" }
  *   POST /search/org-completed  body: { "custId": "...", "pageNo": "1" }

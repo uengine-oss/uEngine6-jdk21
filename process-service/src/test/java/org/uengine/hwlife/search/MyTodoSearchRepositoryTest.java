@@ -60,10 +60,22 @@ class MyTodoSearchRepositoryTest {
   void sortsRequestedLoanHopeDateDescendingWithTaskIdTieBreaker() {
     MyTodoRequest request = new MyTodoRequest();
     request.setSortOrdrVal("loanHopeDate");
+    request.setSortDirection("DESC");
 
     SearchResult result = search(request, null, 10);
 
     assertEquals(List.of(3L, 2L, 4L, 1L, 5L), taskIds(result));
+  }
+
+  @Test
+  void sortsRequestedLoanHopeDateAscendingWithTaskIdTieBreaker() {
+    MyTodoRequest request = new MyTodoRequest();
+    request.setSortOrdrVal("loanHopeDate");
+    request.setSortDirection("ASC");
+
+    SearchResult result = search(request, null, 10);
+
+    assertEquals(List.of(1L, 4L, 2L, 3L, 5L), taskIds(result));
   }
 
   @Test
@@ -87,6 +99,24 @@ class MyTodoSearchRepositoryTest {
 
     assertEquals(List.of(2L, 1L), taskIds(first));
     assertEquals(List.of(3L, 4L), taskIds(second));
+    assertEquals(List.of(5L), taskIds(third));
+    assertEquals(5, first.totalCount());
+    assertEquals(5, second.totalCount());
+    assertEquals(5, third.totalCount());
+  }
+
+  @Test
+  void continuesAscendingAfterCursorWithoutDuplicatesWhenSortValuesAreEqual() {
+    MyTodoRequest request = new MyTodoRequest();
+    request.setSortOrdrVal("startedDate");
+    request.setSortDirection("ASC");
+
+    SearchResult first = search(request, null, 2);
+    SearchResult second = search(request, 3L, 2);
+    SearchResult third = search(request, 2L, 2);
+
+    assertEquals(List.of(4L, 3L), taskIds(first));
+    assertEquals(List.of(1L, 2L), taskIds(second));
     assertEquals(List.of(5L), taskIds(third));
     assertEquals(5, first.totalCount());
     assertEquals(5, second.totalCount());
