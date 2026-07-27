@@ -1,20 +1,23 @@
 package org.uengine.hwlife.search;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-import java.util.function.Consumer;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
+import org.uengine.contexts.UserContext;
 import org.uengine.five.entity.ProcessInstanceEntity;
 import org.uengine.five.entity.WorklistEntity;
-import org.uengine.five.repository.WorklistRepository;
+import org.uengine.hwlife.search.MyTodoSearchRepository.SearchResult;
 import org.uengine.hwlife.search.dto.MyTodoItem;
 import org.uengine.hwlife.search.dto.MyTodoRequest;
 import org.uengine.hwlife.search.dto.MyTodoResponse;
@@ -24,107 +27,68 @@ class WorkSearchServiceImplTest {
   private static final long WORK_START = 1_750_000_000_000L;
   private static final long HOPE_DATE = 1_760_000_000_000L;
 
-  private WorklistRepository worklistRepository;
+  private MyTodoSearchRepository searchRepository;
   private WorkSearchServiceImpl service;
 
   @BeforeEach
   void setUp() {
-    worklistRepository = mock(WorklistRepository.class);
-    service = new WorkSearchServiceImpl(worklistRepository);
+    searchRepository = mock(MyTodoSearchRepository.class);
+    service = new WorkSearchServiceImpl(searchRepository);
   }
 
   @Test
-  void filtersByEverySupportedRequestFieldWithAndSemantics() {
+  void delegatesCompleteRequestAndOneBasedPageToRepository() {
+    MyTodoRequest request = fullRequest();
+    when(searchRepository.search(
+        any(MyTodoRequest.class),
+        eq(1),
+        eq(20),
+        any(UserContext.class)))
+        .thenReturn(new SearchResult(List.of(minimalWorklist(21L)), 25));
+
+    MyTodoResponse response = service.searchMyTodo(request);
+
+    ArgumentCaptor<MyTodoRequest> requestCaptor = ArgumentCaptor.forClass(MyTodoRequest.class);
+    verify(searchRepository).search(
+        requestCaptor.capture(),
+        eq(1),
+        eq(20),
+        any(UserContext.class));
+    assertSame(request, requestCaptor.getValue());
+    assertEquals(25, response.getTotCont());
+    assertEquals(List.of("21"), taskIds(response));
+  }
+
+  @Test
+  void normalizesMissingAndNonPositivePageNumbersToFirstPage() {
+    when(searchRepository.search(
+        any(MyTodoRequest.class),
+        eq(0),
+        eq(20),
+        any(UserContext.class)))
+        .thenReturn(new SearchResult(List.of(), 0));
+
+    service.searchMyTodo(null);
+    MyTodoRequest zeroPage = new MyTodoRequest();
+    zeroPage.setPageNo(0);
+    service.searchMyTodo(zeroPage);
+
+    verify(searchRepository, org.mockito.Mockito.times(2)).search(
+        any(MyTodoRequest.class),
+        eq(0),
+        eq(20),
+        any(UserContext.class));
+  }
+
+  @Test
+  void mapsEveryResponseFieldFromPagedRepositoryResult() {
     WorklistEntity worklist = completeWorklist(101L, WORK_START);
-    when(worklistRepository.findToDo()).thenReturn(List.of(worklist));
-
-    MyTodoResponse response = service.searchMyTodo(fullRequest());
-
-    assertEquals(1, response.getTotCont());
-    assertEquals(List.of("101"), taskIds(response));
-
-    List<Consumer<MyTodoRequest>> mismatches = List.of(
-        request -> request.setBswrClsfCode("OTHER"),
-        request -> request.setCustId("OTHER"),
-        request -> request.setFncgBswrDvsnCode("OTHER"),
-        request -> request.setLoanCntcNo("OTHER"),
-        request -> request.setLoanPcesMgmtNo("OTHER"),
-        request -> request.setFncgSuptTrgtDvsnCode("OTHER"),
-        request -> request.setLoanSubjDvsnCode("OTHER"),
-        request -> request.setFncgMneyUsagClsfCode("OTHER"),
-        request -> request.setFncgBpmTaskTrcgNm("OTHER"),
-        request -> request.setFncgWndwOrgnCode("OTHER"),
-        request -> request.setHndrEmnb("OTHER"));
-
-    for (Consumer<MyTodoRequest> mismatch : mismatches) {
-      MyTodoRequest request = fullRequest();
-      mismatch.accept(request);
-      assertTrue(service.searchMyTodo(request).getTodolist().isEmpty());
-    }
-  }
-
-  @Test
-  void appliesInclusiveWorkAndHopeDateRanges() {
-    when(worklistRepository.findToDo()).thenReturn(List.of(completeWorklist(101L, WORK_START)));
-
-    MyTodoRequest inclusive = fullRequest();
-    inclusive.setStarDate(date(WORK_START));
-    inclusive.setEndDate(date(WORK_START));
-    inclusive.setHopeStarDate(date(HOPE_DATE));
-    inclusive.setHopeEndDate(date(HOPE_DATE));
-    assertEquals(1, service.searchMyTodo(inclusive).getTotCont());
-
-    MyTodoRequest workStartsTooLate = fullRequest();
-    workStartsTooLate.setStarDate(date(WORK_START + 1));
-    assertEquals(0, service.searchMyTodo(workStartsTooLate).getTotCont());
-
-    MyTodoRequest workEndsTooEarly = fullRequest();
-    workEndsTooEarly.setEndDate(date(WORK_START - 1));
-    assertEquals(0, service.searchMyTodo(workEndsTooEarly).getTotCont());
-
-    MyTodoRequest hopeStartsTooLate = fullRequest();
-    hopeStartsTooLate.setHopeStarDate(date(HOPE_DATE + 1));
-    assertEquals(0, service.searchMyTodo(hopeStartsTooLate).getTotCont());
-
-    MyTodoRequest hopeEndsTooEarly = fullRequest();
-    hopeEndsTooEarly.setHopeEndDate(date(HOPE_DATE - 1));
-    assertEquals(0, service.searchMyTodo(hopeEndsTooEarly).getTotCont());
-  }
-
-  @Test
-  void sortsAndPaginatesWithOneBasedPageNumbers() {
-    List<WorklistEntity> worklists = new ArrayList<>();
-    for (long taskId = 1; taskId <= 25; taskId++) {
-      worklists.add(minimalWorklist(taskId, WORK_START + taskId));
-    }
-    when(worklistRepository.findToDo()).thenReturn(worklists);
-
-    MyTodoRequest descendingSecondPage = new MyTodoRequest();
-    descendingSecondPage.setSortOrdrVal("DESC");
-    descendingSecondPage.setPageNo(2);
-    MyTodoResponse descending = service.searchMyTodo(descendingSecondPage);
-
-    assertEquals(25, descending.getTotCont());
-    assertEquals(List.of("5", "4", "3", "2", "1"), taskIds(descending));
-
-    MyTodoRequest ascendingFirstPage = new MyTodoRequest();
-    ascendingFirstPage.setSortOrdrVal("ASC");
-    ascendingFirstPage.setPageNo(1);
-    MyTodoResponse ascending = service.searchMyTodo(ascendingFirstPage);
-
-    assertEquals(20, ascending.getTodolist().size());
-    assertEquals("1", ascending.getTodolist().get(0).getFncgBpmTaskLstId());
-    assertEquals("20", ascending.getTodolist().get(19).getFncgBpmTaskLstId());
-  }
-
-  @Test
-  void mapsEveryResponseFieldAndExcludesClosedWorkItems() {
-    WorklistEntity open = completeWorklist(101L, WORK_START);
-    WorklistEntity completed = completeWorklist(102L, WORK_START + 2);
-    completed.setStatus("COMPLETED");
-    WorklistEntity cancelled = completeWorklist(103L, WORK_START + 3);
-    cancelled.setStatus("CANCELLED");
-    when(worklistRepository.findToDo()).thenReturn(List.of(open, completed, cancelled));
+    when(searchRepository.search(
+        any(MyTodoRequest.class),
+        eq(0),
+        eq(20),
+        any(UserContext.class)))
+        .thenReturn(new SearchResult(List.of(worklist), 1));
 
     MyTodoResponse response = service.searchMyTodo(new MyTodoRequest());
 
@@ -170,9 +134,13 @@ class WorkSearchServiceImplTest {
     request.setLoanSubjDvsnCode("SUBJECT");
     request.setFncgMneyUsagClsfCode("USAGE");
     request.setFncgBpmTaskTrcgNm("TRACE");
+    request.setStarDate(date(WORK_START));
+    request.setEndDate(date(WORK_START));
+    request.setHopeStarDate(date(HOPE_DATE));
+    request.setHopeEndDate(date(HOPE_DATE));
     request.setFncgWndwOrgnCode("GROUP");
     request.setHndrEmnb("handler");
-    request.setPageNo(1);
+    request.setPageNo(2);
     request.setSortOrdrVal("DESC");
     return request;
   }
@@ -211,11 +179,10 @@ class WorkSearchServiceImplTest {
     return worklist;
   }
 
-  private static WorklistEntity minimalWorklist(long taskId, long startDate) {
+  private static WorklistEntity minimalWorklist(long taskId) {
     WorklistEntity worklist = new WorklistEntity();
     worklist.setTaskId(taskId);
     worklist.setInstId(taskId + 100);
-    worklist.setStartDate(date(startDate));
     worklist.setStatus("NEW");
     return worklist;
   }
