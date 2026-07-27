@@ -34,7 +34,8 @@ public class MyTodoRequest {
     private String fncgWndwOrgnCode;
     private String sortOrdrVal;
     private String hndrEmnb;
-    private Integer pageNo;
+    private String cursor;
+    private Integer size;
 
     public String getBswrClsfCode() {
         return bswrClsfCode;
@@ -164,11 +165,19 @@ public class MyTodoRequest {
         this.hndrEmnb = hndrEmnb;
     }
 
-    public Integer getPageNo() {
-        return pageNo;
+    public String getCursor() {
+        return cursor;
     }
 
-    public void setPageNo(Integer pageNo) {
-        this.pageNo = pageNo;
+    public void setCursor(String cursor) {
+        this.cursor = cursor;
+    }
+
+    public Integer getSize() {
+        return size;
+    }
+
+    public void setSize(Integer size) {
+        this.size = size;
     }
 }

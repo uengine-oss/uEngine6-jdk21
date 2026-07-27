@@ -24,6 +24,7 @@ import org.uengine.hwlife.search.dto.*;
 public class WorkSearchServiceImpl implements WorkSearchService {
 
   private static final int DEFAULT_PAGE_SIZE = 20;
+  private static final int MAX_PAGE_SIZE = 100;
 
   private final MyTodoSearchRepository myTodoSearchRepository;
 
@@ -35,11 +36,12 @@ public class WorkSearchServiceImpl implements WorkSearchService {
   @Transactional(readOnly = true)
   public MyTodoResponse searchMyTodo(@RequestBody MyTodoRequest request) {
     MyTodoRequest normalizedRequest = request == null ? new MyTodoRequest() : request;
-    int pageIndex = normalizePageNo(normalizedRequest.getPageNo());
+    Long cursorTaskId = parseCursor(normalizedRequest.getCursor());
+    int pageSize = normalizeSize(normalizedRequest.getSize());
     MyTodoSearchRepository.SearchResult result = myTodoSearchRepository.search(
         normalizedRequest,
-        pageIndex,
-        DEFAULT_PAGE_SIZE,
+        cursorTaskId,
+        pageSize,
         UserContext.getThreadLocalInstance());
 
     MyTodoResponse response = new MyTodoResponse();
@@ -134,11 +136,30 @@ public class WorkSearchServiceImpl implements WorkSearchService {
     return item;
   }
 
-  private static int normalizePageNo(Integer pageNo) {
-    if (pageNo == null || pageNo <= 0) {
-      return 0;
+  private static Long parseCursor(String cursor) {
+    String value = trimToNull(cursor);
+    if (value == null) {
+      return null;
     }
-    return pageNo - 1;
+    try {
+      long taskId = Long.parseLong(value);
+      if (taskId <= 0) {
+        throw new NumberFormatException("cursor must be positive");
+      }
+      return taskId;
+    } catch (NumberFormatException exception) {
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST,
+          "cursor must be a positive fncgBpmTaskLstId",
+          exception);
+    }
+  }
+
+  private static int normalizeSize(Integer size) {
+    if (size == null) {
+      return DEFAULT_PAGE_SIZE;
+    }
+    return Math.max(1, Math.min(size, MAX_PAGE_SIZE));
   }
 
   private static String firstNonBlank(String... values) {
