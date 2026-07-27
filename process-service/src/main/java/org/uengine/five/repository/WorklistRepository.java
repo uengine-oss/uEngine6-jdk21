@@ -1,5 +1,6 @@
 package org.uengine.five.repository;
 
+import java.util.Collection;
 import java.util.List;
 
 import org.springframework.data.domain.Page;
@@ -61,6 +62,13 @@ public interface WorklistRepository extends JpaRepository<WorklistEntity, Long> 
     @Query("select wl from WorklistEntity wl where (wl.rootInstId = :rootInstId and (wl.status = 'NEW' or wl.status = 'RUNNING')) order by wl.endDate ")
     public List<WorklistEntity> findCurrentWorkItemByInstId(@Param(value = "rootInstId") Long rootInstId);
 
+    @Query("select wl from WorklistEntity wl "
+            + "where wl.rootInstId in :rootInstIds "
+            + "and (wl.status = 'NEW' or wl.status = 'RUNNING') "
+            + "order by wl.endDate")
+    List<WorklistEntity> findCurrentWorkItemsByRootInstIds(
+            @Param("rootInstIds") Collection<Long> rootInstIds);
+
     /**
      * 경합(DispatchOption=1) 등으로 endpoint가 비어있는 workitem들을,
      * 특정 사용자가 claim 했을 때 동일 role/scope/assignType 그룹으로 함께 소유자 세팅하기 위해 사용.
@@ -108,4 +116,3 @@ public interface WorklistRepository extends JpaRepository<WorklistEntity, Long> 
     // public List<WorklistEntity> findAll();
 
 }
-        
