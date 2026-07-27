@@ -87,5 +87,4 @@ public interface InstanceIntegrationService {
    */
   @RequestMapping(value = "/sync", method = RequestMethod.POST, produces = "application/json;charset=UTF-8")
   InstanceSyncResponse syncInstances(@RequestBody InstanceSyncRequest request) throws Exception;
-
 }
