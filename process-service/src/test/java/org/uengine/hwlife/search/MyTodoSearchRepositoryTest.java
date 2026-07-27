@@ -148,7 +148,7 @@ class MyTodoSearchRepositoryTest {
     ProcessInstanceEntity instance = new ProcessInstanceEntity();
     instance.setInstId(instanceId);
     instance.setStartedDate(date(startedDate));
-    instance.setLaonHopeDate(date(loanHopeDate));
+    instance.setLoanHopeDate(date(loanHopeDate));
     instance.setStatus("Running");
     ProcessInstanceEntity managedInstance = session.merge(instance);
 

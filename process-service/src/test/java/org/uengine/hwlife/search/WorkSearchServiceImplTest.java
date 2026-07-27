@@ -304,7 +304,7 @@ class WorkSearchServiceImplTest {
     instance.setFncgSuptTrgtDvsnCode("TARGET");
     instance.setLoanSubjDvsnCode("SUBJECT");
     instance.setFncgMneyUsagClsfCode("USAGE");
-    instance.setLaonHopeDate(date(HOPE_DATE));
+    instance.setLoanHopeDate(date(HOPE_DATE));
     instance.setStartedDate(date(WORK_START - 100));
     instance.setDefName("Instance process");
     instance.setInitEp("reporter");

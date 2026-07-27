@@ -145,7 +145,7 @@ public class MyTodoSearchRepository {
     addRange(
         builder,
         predicates,
-        instance.get("laonHopeDate"),
+        instance.get("loanHopeDate"),
         request.getHopeStarDate(),
         request.getHopeEndDate());
     return predicates.toArray(Predicate[]::new);
@@ -295,7 +295,7 @@ public class MyTodoSearchRepository {
       Join<WorklistEntity, ProcessInstanceEntity> instance,
       SortField sortField) {
     return switch (sortField) {
-      case LOAN_HOPE_DATE -> instance.get("laonHopeDate");
+      case LOAN_HOPE_DATE -> instance.get("loanHopeDate");
       case STARTED_DATE -> instance.get("startedDate");
       case WORK_STARTED_DATE -> worklist.get("startDate");
       case TASK_ID -> throw new IllegalArgumentException("taskId is not a date sort field");
