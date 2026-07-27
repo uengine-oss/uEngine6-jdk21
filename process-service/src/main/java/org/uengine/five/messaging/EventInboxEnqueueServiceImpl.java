@@ -45,7 +45,7 @@ public class EventInboxEnqueueServiceImpl implements EventInboxEnqueueService {
         } catch (DataIntegrityViolationException dup) {
             EventInbox existing = findExistingInboxForDuplicate(corrKey, eventName);
             Long existingId = existing != null ? existing.getId() : null;
-            log.info("[inbox] duplicate (corrKey={}, eventName={}, existingId={}), treated as idempotent success",
+            log.info("[inbox] duplicate (corrKey={}, eventName={}, existingId={}), treated as idempotent failure",
                     corrKey, eventName, existingId);
             return EventInboxResponse.duplicate(
                     eventName,

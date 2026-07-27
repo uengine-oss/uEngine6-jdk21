@@ -12,14 +12,14 @@ import com.fasterxml.jackson.annotation.JsonInclude;
  *
  * <p>{@code status} 가질 수 있는 값:
  * <ul>
- *   <li>{@link #STATUS_SUCCESS} — 큐에 안전하게 보관됨 (신규 INSERT 또는 멱등 중복).</li>
- *   <li>{@link #STATUS_FAILED}  — 잘못된 payload 등으로 거부됨.</li>
+ *   <li>{@link #STATUS_SUCCESS} — 큐에 신규 INSERT 됨.</li>
+ *   <li>{@link #STATUS_FAILED}  — 잘못된 payload 또는 멱등 중복으로 거부됨.</li>
  * </ul></p>
  *
  * <p>케이스별 채워지는 필드:
  * <ul>
  *   <li>신규 enqueue : status=SUCCESS, duplicate=false, eventName, corrKey, occurredAt(=신규 row.createdAt)</li>
- *   <li>멱등 중복   : status=SUCCESS, duplicate=true,  eventName, corrKey, occurredAt(=기존 row.createdAt)</li>
+ *   <li>멱등 중복   : status=FAILED,  duplicate=true,  reason, eventName, corrKey, occurredAt(=기존 row.createdAt)</li>
  *   <li>실패       : status=FAILED,  duplicate=false, reason, eventName, corrKey, occurredAt=null</li>
  * </ul>
  * 비어있는 참조 필드는 {@code @JsonInclude(NON_NULL)} 로 직렬화에서 자동 제외된다.</p>
@@ -45,9 +45,9 @@ public class EventInboxResponse {
     /**
      * 이벤트가 inbox 에 들어간 시각 (= BPM_EVENT_INBOX.created_at, UTC).
      * <ul>
-     *   <li>SUCCESS + duplicate=false : 새로 만든 row 의 createdAt</li>
-     *   <li>SUCCESS + duplicate=true  : 기존 row 의 createdAt (= 처음 큐에 들어간 시각)</li>
-     *   <li>FAILED                    : null (row 자체가 없음)</li>
+     *   <li>SUCCESS                   : 새로 만든 row 의 createdAt</li>
+     *   <li>FAILED + duplicate=true   : 기존 row 의 createdAt (= 처음 큐에 들어간 시각)</li>
+     *   <li>FAILED + duplicate=false  : null (row 자체가 없음)</li>
      * </ul>
      */
     private Instant occurredAt;
@@ -64,17 +64,18 @@ public class EventInboxResponse {
     }
 
     /**
-     * 멱등 중복으로 무시됨. (corrKey, eventName) 가 UNIQUE 라
-     * 클라이언트가 두 키만으로 기존 row 를 식별할 수 있다.
+     * 멱등 중복 — 실패로 처리한다. (corrKey, eventName) UNIQUE 위반.
      * {@code existingCreatedAt} 은 충돌한 기존 row 의 createdAt.
      */
     public static EventInboxResponse duplicate(String eventName, String corrKey, Instant existingCreatedAt) {
         EventInboxResponse r = new EventInboxResponse();
-        r.status = STATUS_SUCCESS;
+        r.status = STATUS_FAILED;
         r.duplicate = true;
         r.eventName = eventName;
         r.corrKey = corrKey;
         r.occurredAt = existingCreatedAt;
+        r.reason = "Idempotency error: an event with the same keys already exists"
+                + " (corrKey=" + corrKey + ", eventName=" + eventName + ").";
         return r;
     }
 
