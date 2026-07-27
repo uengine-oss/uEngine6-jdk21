@@ -33,6 +33,7 @@ public class MyTodoRequest {
 
     private String fncgWndwOrgnCode;
     private String sortOrdrVal;
+    private String sortDirection;
     private String hndrEmnb;
     private String cursor;
     private Integer size;
@@ -155,6 +156,14 @@ public class MyTodoRequest {
 
     public void setSortOrdrVal(String sortOrdrVal) {
         this.sortOrdrVal = sortOrdrVal;
+    }
+
+    public String getSortDirection() {
+        return sortDirection;
+    }
+
+    public void setSortDirection(String sortDirection) {
+        this.sortDirection = sortDirection;
     }
 
     public String getHndrEmnb() {

@@ -36,6 +36,7 @@ public class WorkSearchServiceImpl implements WorkSearchService {
   @Transactional(readOnly = true)
   public MyTodoResponse searchMyTodo(@RequestBody MyTodoRequest request) {
     MyTodoRequest normalizedRequest = request == null ? new MyTodoRequest() : request;
+    validateSortDirection(normalizedRequest.getSortDirection());
     Long cursorTaskId = parseCursor(normalizedRequest.getCursor());
     int pageSize = normalizeSize(normalizedRequest.getSize());
     MyTodoSearchRepository.SearchResult result = myTodoSearchRepository.search(
@@ -160,6 +161,17 @@ public class WorkSearchServiceImpl implements WorkSearchService {
       return DEFAULT_PAGE_SIZE;
     }
     return Math.max(1, Math.min(size, MAX_PAGE_SIZE));
+  }
+
+  private static void validateSortDirection(String sortDirection) {
+    String value = trimToNull(sortDirection);
+    if (value != null
+        && !"ASC".equalsIgnoreCase(value)
+        && !"DESC".equalsIgnoreCase(value)) {
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST,
+          "sortDirection must be ASC or DESC");
+    }
   }
 
   private static String firstNonBlank(String... values) {

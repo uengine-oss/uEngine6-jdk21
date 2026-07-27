@@ -44,6 +44,7 @@ public class MyTodoSearchRepository {
       UserContext userContext) {
     CriteriaBuilder builder = entityManager.getCriteriaBuilder();
     SortField sortField = SortField.from(request.getSortOrdrVal());
+    SortDirection sortDirection = SortDirection.from(request.getSortDirection());
     CursorPosition cursor = findCursor(builder, cursorTaskId, sortField);
     if (cursorTaskId != null && cursor == null) {
       return new SearchResult(List.of(), 0);
@@ -55,11 +56,12 @@ public class MyTodoSearchRepository {
     List<Predicate> dataPredicates = new ArrayList<>(
         List.of(predicates(builder, worklist, instance, request, userContext)));
     if (cursor != null) {
-      dataPredicates.add(cursorPredicate(builder, worklist, instance, sortField, cursor));
+      dataPredicates.add(cursorPredicate(
+          builder, worklist, instance, sortField, sortDirection, cursor));
     }
     dataQuery.select(worklist)
         .where(dataPredicates.toArray(Predicate[]::new))
-        .orderBy(sortOrders(builder, worklist, instance, sortField));
+        .orderBy(sortOrders(builder, worklist, instance, sortField, sortDirection));
 
     TypedQuery<WorklistEntity> query = entityManager.createQuery(dataQuery);
     query.setMaxResults(pageSize);
@@ -239,41 +241,53 @@ public class MyTodoSearchRepository {
       Root<WorklistEntity> worklist,
       Join<WorklistEntity, ProcessInstanceEntity> instance,
       SortField sortField,
+      SortDirection sortDirection,
       CursorPosition cursor) {
     Path<Long> taskId = worklist.get("taskId");
     if (sortField == SortField.TASK_ID) {
-      return builder.lessThan(taskId, cursor.taskId());
+      return compare(builder, taskId, cursor.taskId(), sortDirection);
     }
 
     Path<Date> sortPath = dateSortPath(worklist, instance, sortField);
     if (cursor.sortValue() == null) {
       return builder.and(
           builder.isNull(sortPath),
-          builder.lessThan(taskId, cursor.taskId()));
+          compare(builder, taskId, cursor.taskId(), sortDirection));
     }
 
     return builder.or(
         builder.isNull(sortPath),
-        builder.lessThan(sortPath, cursor.sortValue()),
+        compare(builder, sortPath, cursor.sortValue(), sortDirection),
         builder.and(
             builder.equal(sortPath, cursor.sortValue()),
-            builder.lessThan(taskId, cursor.taskId())));
+            compare(builder, taskId, cursor.taskId(), sortDirection)));
+  }
+
+  private static <T extends Comparable<? super T>> Predicate compare(
+      CriteriaBuilder builder,
+      Path<T> path,
+      T cursorValue,
+      SortDirection sortDirection) {
+    return sortDirection == SortDirection.ASC
+        ? builder.greaterThan(path, cursorValue)
+        : builder.lessThan(path, cursorValue);
   }
 
   private static List<jakarta.persistence.criteria.Order> sortOrders(
       CriteriaBuilder builder,
       Root<WorklistEntity> worklist,
       Join<WorklistEntity, ProcessInstanceEntity> instance,
-      SortField sortField) {
+      SortField sortField,
+      SortDirection sortDirection) {
     if (sortField == SortField.TASK_ID) {
-      return List.of(builder.desc(worklist.get("taskId")));
+      return List.of(sortDirection.order(builder, worklist.get("taskId")));
     }
 
     Path<Date> sortPath = dateSortPath(worklist, instance, sortField);
     return List.of(
         builder.asc(builder.selectCase().when(builder.isNull(sortPath), 1).otherwise(0)),
-        builder.desc(sortPath),
-        builder.desc(worklist.get("taskId")));
+        sortDirection.order(builder, sortPath),
+        sortDirection.order(builder, worklist.get("taskId")));
   }
 
   private static Path<Date> dateSortPath(
@@ -335,6 +349,21 @@ public class MyTodoSearchRepository {
         return TASK_ID;
       }
       return STARTED_DATE;
+    }
+  }
+
+  private enum SortDirection {
+    ASC,
+    DESC;
+
+    private static SortDirection from(String direction) {
+      return "ASC".equalsIgnoreCase(trimToNull(direction)) ? ASC : DESC;
+    }
+
+    private jakarta.persistence.criteria.Order order(
+        CriteriaBuilder builder,
+        Expression<?> expression) {
+      return this == ASC ? builder.asc(expression) : builder.desc(expression);
     }
   }
 }
