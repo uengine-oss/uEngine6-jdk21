@@ -4,8 +4,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.uengine.hwlife.instance.dto.*;
-import org.uengine.hwlife.search.dto.RunningWorkByCorrKeyRequest;
-import org.uengine.hwlife.search.dto.RunningWorkByCorrKeyResponse;
 
 /**
  * 인스턴스 단위 커스텀 연동 REST API — 외부·hwlife 전용.
@@ -90,13 +88,4 @@ public interface InstanceIntegrationService {
   @RequestMapping(value = "/sync", method = RequestMethod.POST, produces = "application/json;charset=UTF-8")
   InstanceSyncResponse syncInstances(@RequestBody InstanceSyncRequest request) throws Exception;
 
-  /**
-   * 대출 프로세스 관리번호로 실행 중인 BPM 단위업무를 조회한다.
-   *
-   * <pre>POST /instance/running-by-key</pre>
-   */
-  @RequestMapping(value = "/running-by-key", method = RequestMethod.POST,
-      consumes = "application/json;charset=UTF-8", produces = "application/json;charset=UTF-8")
-  RunningWorkByCorrKeyResponse searchRunningWorkByCorrKey(
-      @RequestBody RunningWorkByCorrKeyRequest request) throws Exception;
 }

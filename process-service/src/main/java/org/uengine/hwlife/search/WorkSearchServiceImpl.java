@@ -1,6 +1,12 @@
 package org.uengine.hwlife.search;
 
-import java.util.Arrays;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.springframework.http.HttpStatus;
@@ -13,7 +19,10 @@ import org.springframework.web.server.ResponseStatusException;
 import org.uengine.contexts.UserContext;
 import org.uengine.five.entity.ProcessInstanceEntity;
 import org.uengine.five.entity.WorklistEntity;
+import org.uengine.five.repository.ProcessInstanceRepository;
+import org.uengine.five.repository.WorklistRepository;
 import org.uengine.hwlife.search.dto.*;
+import org.uengine.kernel.Activity;
 
 /**
  * BPM 통합 검색 REST API 구현. Repository 연동은 추후 구현.
@@ -27,9 +36,16 @@ public class WorkSearchServiceImpl implements WorkSearchService {
   private static final int MAX_PAGE_SIZE = 100;
 
   private final MyTodoSearchRepository myTodoSearchRepository;
+  private final ProcessInstanceRepository processInstanceRepository;
+  private final WorklistRepository worklistRepository;
 
-  public WorkSearchServiceImpl(MyTodoSearchRepository myTodoSearchRepository) {
+  public WorkSearchServiceImpl(
+      MyTodoSearchRepository myTodoSearchRepository,
+      ProcessInstanceRepository processInstanceRepository,
+      WorklistRepository worklistRepository) {
     this.myTodoSearchRepository = myTodoSearchRepository;
+    this.processInstanceRepository = processInstanceRepository;
+    this.worklistRepository = worklistRepository;
   }
 
   @Override
@@ -87,16 +103,101 @@ public class WorkSearchServiceImpl implements WorkSearchService {
   @Transactional(readOnly = true)
   public RunningWorkByCorrKeyResponse searchRunningWorkByCorrKey(@RequestBody RunningWorkByCorrKeyRequest request) {
     RunningWorkByCorrKeyResponse response = new RunningWorkByCorrKeyResponse();
+    List<RunningWorkByCorrKeyResponseItem> resultItems = new ArrayList<>();
+    response.setBswrList(resultItems);
 
-    RunningWorkByCorrKeyResponseItem item = new RunningWorkByCorrKeyResponseItem();
-    item.setLoanPcesMgmtNo("LOAN-2026-0001");
-    item.setFncgBpmTaskTrcgNm("FN013_S03_402");
-    item.setFncgBpmUworSttsCntn("NEW");
-    item.setPrgsSttsNm("RUNNING");
-    item.setPrcsrsltCntn("정상(인스턴스: RUNNING, 단위업무상태: NEW)");
-  
-    response.setBswrList(Arrays.asList(item));
+    if (request == null || request.getBswrList() == null || request.getBswrList().isEmpty()) {
+      return response;
+    }
+
+    Set<String> corrKeys = new LinkedHashSet<>();
+    for (RunningWorkByCorrKeyRequestItem requestItem : request.getBswrList()) {
+      String corrKey = requestItem == null ? null : trimToNull(requestItem.getLoanPcesMgmtNo());
+      if (corrKey != null) {
+        corrKeys.add(corrKey);
+      }
+    }
+
+    Map<String, List<ProcessInstanceEntity>> instancesByCorrKey = new HashMap<>();
+    Set<Long> rootInstIds = new LinkedHashSet<>();
+    if (!corrKeys.isEmpty()) {
+      List<ProcessInstanceEntity> runningInstances =
+          processInstanceRepository.findByCorrKeyInAndStatus(corrKeys, Activity.STATUS_RUNNING);
+      for (ProcessInstanceEntity processInstance : runningInstances) {
+        instancesByCorrKey
+            .computeIfAbsent(processInstance.getCorrKey(), ignored -> new ArrayList<>())
+            .add(processInstance);
+        rootInstIds.add(rootInstId(processInstance));
+      }
+    }
+
+    Map<Long, List<WorklistEntity>> workItemsByRootInstId = new HashMap<>();
+    if (!rootInstIds.isEmpty()) {
+      List<WorklistEntity> workItems =
+          worklistRepository.findCurrentWorkItemsByRootInstIds(rootInstIds);
+      for (WorklistEntity workItem : workItems) {
+        workItemsByRootInstId
+            .computeIfAbsent(workItem.getRootInstId(), ignored -> new ArrayList<>())
+            .add(workItem);
+      }
+    }
+
+    for (RunningWorkByCorrKeyRequestItem requestItem : request.getBswrList()) {
+      String loanPcesMgmtNo = requestItem == null ? null : trimToNull(requestItem.getLoanPcesMgmtNo());
+      if (loanPcesMgmtNo == null) {
+        resultItems.add(runningWorkResult(null, null, null, "loanPcesMgmtNo is required"));
+        continue;
+      }
+
+      List<ProcessInstanceEntity> runningInstances =
+          instancesByCorrKey.getOrDefault(loanPcesMgmtNo, Collections.emptyList());
+      if (runningInstances.isEmpty()) {
+        resultItems.add(runningWorkResult(loanPcesMgmtNo, null, null,
+            "No running BPM instance found for loanPcesMgmtNo=" + loanPcesMgmtNo));
+        continue;
+      }
+
+      for (ProcessInstanceEntity processInstance : runningInstances) {
+        List<WorklistEntity> workItems =
+            workItemsByRootInstId.getOrDefault(rootInstId(processInstance), Collections.emptyList());
+        if (workItems.isEmpty()) {
+          resultItems.add(runningWorkResult(loanPcesMgmtNo, processInstance, null,
+              "No active work item found for running BPM instance instId=" + processInstance.getInstId()));
+          continue;
+        }
+
+        for (WorklistEntity workItem : workItems) {
+          resultItems.add(runningWorkResult(loanPcesMgmtNo, processInstance, workItem, null));
+        }
+      }
+    }
+
     return response;
+  }
+
+  private static Long rootInstId(ProcessInstanceEntity processInstance) {
+    return processInstance.getRootInstId() == null
+        ? processInstance.getInstId()
+        : processInstance.getRootInstId();
+  }
+
+  private static RunningWorkByCorrKeyResponseItem runningWorkResult(
+      String loanPcesMgmtNo,
+      ProcessInstanceEntity processInstance,
+      WorklistEntity workItem,
+      String resultMessage) {
+    RunningWorkByCorrKeyResponseItem item = new RunningWorkByCorrKeyResponseItem();
+    item.setLoanPcesMgmtNo(loanPcesMgmtNo);
+    item.setPrcsrsltCntn(resultMessage);
+
+    if (processInstance != null) {
+      item.setPrgsSttsNm(processInstance.getStatus());
+    }
+    if (workItem != null) {
+      item.setFncgBpmTaskTrcgNm(workItem.getTrcTag());
+      item.setFncgBpmUworSttsCntn(workItem.getStatus());
+    }
+    return item;
   }
 
   private static ResponseStatusException notImplemented(String operation) {
