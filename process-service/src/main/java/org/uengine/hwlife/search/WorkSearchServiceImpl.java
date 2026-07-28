@@ -1,13 +1,8 @@
 package org.uengine.hwlife.search;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Date;
-import java.util.HashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.springframework.http.HttpStatus;
@@ -23,7 +18,6 @@ import org.uengine.five.entity.WorklistEntity;
 import org.uengine.five.repository.ProcessInstanceRepository;
 import org.uengine.five.repository.WorklistRepository;
 import org.uengine.hwlife.search.dto.*;
-import org.uengine.kernel.Activity;
 
 /**
  * BPM 통합 검색 REST API 구현. Repository 연동은 추후 구현.
@@ -126,78 +120,42 @@ public class WorkSearchServiceImpl implements WorkSearchService {
       return response;
     }
 
-    Set<String> corrKeys = new LinkedHashSet<>();
-    for (RunningWorkByCorrKeyRequestItem requestItem : request.getBswrList()) {
-      String corrKey = requestItem == null ? null : trimToNull(requestItem.getLoanPcesMgmtNo());
-      if (corrKey != null) {
-        corrKeys.add(corrKey);
-      }
-    }
-
-    Map<String, List<ProcessInstanceEntity>> instancesByCorrKey = new HashMap<>();
-    Set<Long> rootInstIds = new LinkedHashSet<>();
-    if (!corrKeys.isEmpty()) {
-      List<ProcessInstanceEntity> runningInstances =
-          processInstanceRepository.findByCorrKeyInAndStatus(corrKeys, Activity.STATUS_RUNNING);
-      for (ProcessInstanceEntity processInstance : runningInstances) {
-        instancesByCorrKey
-            .computeIfAbsent(processInstance.getCorrKey(), ignored -> new ArrayList<>())
-            .add(processInstance);
-        rootInstIds.add(rootInstId(processInstance));
-      }
-    }
-
-    Map<Long, List<WorklistEntity>> workItemsByRootInstId = new HashMap<>();
-    if (!rootInstIds.isEmpty()) {
-      List<WorklistEntity> workItems =
-          worklistRepository.findCurrentWorkItemsByRootInstIds(rootInstIds);
-      for (WorklistEntity workItem : workItems) {
-        workItemsByRootInstId
-            .computeIfAbsent(workItem.getRootInstId(), ignored -> new ArrayList<>())
-            .add(workItem);
-      }
-    }
-
     for (RunningWorkByCorrKeyRequestItem requestItem : request.getBswrList()) {
       String loanPcesMgmtNo = requestItem == null ? null : trimToNull(requestItem.getLoanPcesMgmtNo());
       if (loanPcesMgmtNo == null) {
-        resultItems.add(runningWorkResult(null, null, null, "loanPcesMgmtNo is required"));
+        resultItems.add(resultItem(null, null, null, "loanPcesMgmtNo is required"));
         continue;
       }
 
-      List<ProcessInstanceEntity> runningInstances =
-          instancesByCorrKey.getOrDefault(loanPcesMgmtNo, Collections.emptyList());
-      if (runningInstances.isEmpty()) {
-        resultItems.add(runningWorkResult(loanPcesMgmtNo, null, null,
-            "No running BPM instance found for loanPcesMgmtNo=" + loanPcesMgmtNo));
+      // 인스턴스 상태와 무관하게 corrKey 로 조회
+      List<ProcessInstanceEntity> instances = processInstanceRepository.findByCorrKey(loanPcesMgmtNo);
+      if (instances == null || instances.isEmpty()) {
+        resultItems.add(resultItem(loanPcesMgmtNo, null, null,
+            "No BPM instance found for loanPcesMgmtNo=" + loanPcesMgmtNo));
         continue;
       }
 
-      for (ProcessInstanceEntity processInstance : runningInstances) {
-        List<WorklistEntity> workItems =
-            workItemsByRootInstId.getOrDefault(rootInstId(processInstance), Collections.emptyList());
-        if (workItems.isEmpty()) {
-          resultItems.add(runningWorkResult(loanPcesMgmtNo, processInstance, null,
-              "No active work item found for running BPM instance instId=" + processInstance.getInstId()));
+      for (ProcessInstanceEntity processInstance : instances) {
+        Long rootInstId = processInstance.getRootInstId() == null
+            ? processInstance.getInstId()
+            : processInstance.getRootInstId();
+        // startDate/taskId 오름차순 → 마지막이 현재(최신) 단위업무
+        List<WorklistEntity> workItems = processInstanceRepository.findAllWorklistsByRootInstId(rootInstId);
+        if (workItems == null || workItems.isEmpty()) {
+          resultItems.add(resultItem(loanPcesMgmtNo, processInstance, null,
+              "No work item found for BPM instance instId=" + processInstance.getInstId()));
           continue;
         }
 
-        for (WorklistEntity workItem : workItems) {
-          resultItems.add(runningWorkResult(loanPcesMgmtNo, processInstance, workItem, null));
-        }
+        WorklistEntity lastWorkItem = workItems.get(workItems.size() - 1);
+        resultItems.add(resultItem(loanPcesMgmtNo, processInstance, lastWorkItem, null));
       }
     }
 
     return response;
   }
 
-  private static Long rootInstId(ProcessInstanceEntity processInstance) {
-    return processInstance.getRootInstId() == null
-        ? processInstance.getInstId()
-        : processInstance.getRootInstId();
-  }
-
-  private static RunningWorkByCorrKeyResponseItem runningWorkResult(
+  private static RunningWorkByCorrKeyResponseItem resultItem(
       String loanPcesMgmtNo,
       ProcessInstanceEntity processInstance,
       WorklistEntity workItem,

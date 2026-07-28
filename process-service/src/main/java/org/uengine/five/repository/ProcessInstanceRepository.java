@@ -67,6 +67,9 @@ public interface ProcessInstanceRepository
         @Query("select wl from WorklistEntity wl where wl.rootInstId = :rootInstId and wl.status = 'COMPLETED' order by wl.endDate desc, wl.taskId desc")
         List<WorklistEntity> findReturnableWorklistsByRootInstId(@Param("rootInstId") Long rootInstId);
 
+        @Query("select pi from ProcessInstanceEntity pi where pi.corrKey = :corrKey")
+        List<ProcessInstanceEntity> findByCorrKey(@Param("corrKey") String corrKey);
+
         @Query("select pi from ProcessInstanceEntity pi where (pi.corrKey = :corrKey and pi.status = :status)")
         List<ProcessInstanceEntity> findByCorrKeyAndStatus(@Param("corrKey") String corrKey,
                 @Param("status") String status);
