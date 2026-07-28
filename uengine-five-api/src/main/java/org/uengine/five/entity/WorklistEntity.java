@@ -70,7 +70,8 @@ public class WorklistEntity {// implements WorkListDAO {
     String trcTag; // 추척 태그
     String tool;
     String parameter;
-    Number priority;
+    // Number 는 Hibernate 가 Serializable(bytea) 로 매핑함 → PG numeric 컬럼과 충돌.
+    Integer priority;
 
     @Temporal(TemporalType.DATE)
     Date startDate; //업무 시작 시각(배정받은 시각)
@@ -247,11 +248,11 @@ public class WorklistEntity {// implements WorkListDAO {
         this.parameter = parameter;
     }
 
-    public Number getPriority() {
+    public Integer getPriority() {
         return priority;
     }
 
-    public void setPriority(Number priority) {
+    public void setPriority(Integer priority) {
         this.priority = priority;
     }
 

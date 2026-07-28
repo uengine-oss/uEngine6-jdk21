@@ -86,11 +86,11 @@ public class JPAWorkList implements WorkList {
                 }
             }
 
-            Number priority = new Integer(1);
+            Integer priority = Integer.valueOf(1);
             {
                 try{
                     String priorityStr = ""+parameterMap.get(KeyedParameter.PRIORITY);
-                    priority = new Integer(priorityStr);
+                    priority = Integer.valueOf(priorityStr);
                 }catch(Exception e){
                 }
             }
