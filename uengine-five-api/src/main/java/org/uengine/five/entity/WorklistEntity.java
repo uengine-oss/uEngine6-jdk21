@@ -25,7 +25,7 @@ public class WorklistEntity {// implements WorkListDAO {
 
     Long instId;
 
-    @PrimaryKeyJoinColumn
+    // @PrimaryKeyJoinColumn
     public Long getInstId() {
         return instId;
     }
@@ -34,8 +34,10 @@ public class WorklistEntity {// implements WorkListDAO {
         this.instId = instId;
     }
 
+    // instId 스칼라와 동일 컬럼(inst_id)을 공유. 쓰기는 setInstId()가 담당.
     @ManyToOne
-    @PrimaryKeyJoinColumn(name = "instId")
+    // @PrimaryKeyJoinColumn(name = "instId")
+    @JoinColumn(name = "instId", insertable = false, updatable = false)
     ProcessInstanceEntity processInstance;
 
     public ProcessInstanceEntity getProcessInstance() {

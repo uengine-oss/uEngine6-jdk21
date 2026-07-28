@@ -12,6 +12,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Lob;
+//import jakarta.persistence.Lob;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.SequenceGenerator;
 import jakarta.persistence.Table;
@@ -19,6 +20,8 @@ import jakarta.persistence.Temporal;
 import jakarta.persistence.TemporalType;
 import jakarta.persistence.Transient;
 
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 import org.uengine.five.entity.converter.OracleBooleanConverter;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -172,7 +175,8 @@ public class ProcessInstanceEntity {// implements ProcessInstanceDAO {
     /** 현재 유효한 인스턴스 변수 파일 경로 (instances/...). null이면 startedDate 기준 계산 경로 사용. */
     String variablesPath;
 
-    @Lob
+    // @Lob
+    @JdbcTypeCode(SqlTypes.VARBINARY)
     @JsonIgnore
     byte[] varLob;
 

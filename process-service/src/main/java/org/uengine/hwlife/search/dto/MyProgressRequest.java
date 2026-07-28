@@ -23,7 +23,8 @@ public class MyProgressRequest {
     private String sortOrdrVal;
     private String endpoint;
 
-    private Integer pageNo;
+    private String nextKey;
+    private Integer pageSize;
 
     public String getBswrClsfCode() {
         return bswrClsfCode;
@@ -128,12 +129,20 @@ public class MyProgressRequest {
     public void setEndpoint(String endpoint) {
         this.endpoint = endpoint;
     }
-
-    public Integer getPageNo() {
-        return pageNo;
+  
+    public String getNextKey() {
+        return nextKey;
     }
 
-    public void setPageNo(Integer pageNo) {
-        this.pageNo = pageNo;
+    public void setNextKey(String nextKey) {
+        this.nextKey = nextKey;
+    }
+
+    public Integer getPageSize() {
+        return pageSize;
+    }
+
+    public void setPageSize(Integer pageSize) {
+        this.pageSize = pageSize;
     }
 }

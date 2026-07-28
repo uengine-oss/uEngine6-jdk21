@@ -33,7 +33,9 @@ public class MyTodoRequest {
     private String fncgWndwOrgnCode;
     private String sortOrdrVal;
     private String hndrEmnb;
-    private Integer pageNo;
+   
+    private String nextKey;
+    private Integer pageSize;
 
     public String getBswrClsfCode() {
         return bswrClsfCode;
@@ -155,11 +157,19 @@ public class MyTodoRequest {
         this.hndrEmnb = hndrEmnb;
     }
 
-    public Integer getPageNo() {
-        return pageNo;
+    public String getNextKey() {
+        return nextKey;
     }
 
-    public void setPageNo(Integer pageNo) {
-        this.pageNo = pageNo;
+    public void setNextKey(String nextKey) {
+        this.nextKey = nextKey;
+    }
+
+    public Integer getPageSize() {
+        return pageSize;
+    }
+
+    public void setPageSize(Integer pageSize) {
+        this.pageSize = pageSize;
     }
 }

@@ -21,7 +21,8 @@ public class OrgRunningRequest {
     private String rqstDvsnCode;
     private String sortOrdrVal;
 
-    private Integer pageNo;
+    private String nextKey;
+    private Integer pageSize;
 
     public String getBswrClsfCode() {
         return bswrClsfCode;
@@ -127,11 +128,19 @@ public class OrgRunningRequest {
         this.sortOrdrVal = sortOrdrVal;
     }
 
-    public Integer getPageNo() {
-        return pageNo;
+    public String getNextKey() {
+        return nextKey;
     }
 
-    public void setPageNo(Integer pageNo) {
-        this.pageNo = pageNo;
+    public void setNextKey(String nextKey) {
+        this.nextKey = nextKey;
+    }
+
+    public Integer getPageSize() {
+        return pageSize;
+    }
+
+    public void setPageSize(Integer pageSize) {
+        this.pageSize = pageSize;
     }
 }

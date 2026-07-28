@@ -7,7 +7,8 @@ public class AbsenceHistoryRequest {
 
     private String abscEmnb;
     
-    private Integer pageNo;
+    private String nextKey;
+    private Integer pageSize;
 
     public String getAbscEmnb() {
         return abscEmnb;
@@ -17,11 +18,19 @@ public class AbsenceHistoryRequest {
         this.abscEmnb = abscEmnb;
     }
 
-    public Integer getPageNo() {
-        return pageNo;
+    public String getNextKey() {
+        return nextKey;
     }
 
-    public void setPageNo(Integer pageNo) {
-        this.pageNo = pageNo;
+    public void setNextKey(String nextKey) {
+        this.nextKey = nextKey;
+    }
+
+    public Integer getPageSize() {
+        return pageSize;
+    }
+
+    public void setPageSize(Integer pageSize) {
+        this.pageSize = pageSize;
     }
 }
