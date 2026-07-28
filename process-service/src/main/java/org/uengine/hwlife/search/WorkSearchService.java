@@ -15,7 +15,9 @@ import org.uengine.hwlife.search.dto.*;
  *                                 "sortOrdrVal": "startedDate",
  *                                 "sortDirection": "DESC" }
  *   POST /search/my-progress  body: { "custId": "...", "pageNo": "1" }
- *   POST /search/org-running  body: { "custId": "...", "pageNo": "1" }
+ *   POST /search/org-running  body: { "fncgWndwOrgnCode": "...", "nextKey": "",
+ *                                    "pageSize": 20, "sortOrdrVal": "startedDate",
+ *                                    "sortDirection": "DESC" }
  *   POST /search/org-completed  body: { "custId": "...", "pageNo": "1" }
  *   POST /search/bulk-assign  body: { "custId": "...", "hndrEmnb": "..." }
  *   POST /search/worklist-by-inst-id  body: { "loanPcesMgmtNo": "..." }

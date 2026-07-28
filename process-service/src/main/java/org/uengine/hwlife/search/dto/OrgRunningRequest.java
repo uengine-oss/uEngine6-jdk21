@@ -20,6 +20,7 @@ public class OrgRunningRequest {
     private String fncgWndwOrgnCode;
     private String rqstDvsnCode;
     private String sortOrdrVal;
+    private String sortDirection;
 
     private String nextKey;
     private Integer pageSize;
@@ -126,6 +127,14 @@ public class OrgRunningRequest {
 
     public void setSortOrdrVal(String sortOrdrVal) {
         this.sortOrdrVal = sortOrdrVal;
+    }
+
+    public String getSortDirection() {
+        return sortDirection;
+    }
+
+    public void setSortDirection(String sortDirection) {
+        this.sortDirection = sortDirection;
     }
 
     public String getNextKey() {

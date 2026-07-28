@@ -38,6 +38,9 @@ import org.uengine.hwlife.search.MyTodoSearchRepository.SearchResult;
 import org.uengine.hwlife.search.dto.MyTodoItem;
 import org.uengine.hwlife.search.dto.MyTodoRequest;
 import org.uengine.hwlife.search.dto.MyTodoResponse;
+import org.uengine.hwlife.search.dto.OrgRunningItem;
+import org.uengine.hwlife.search.dto.OrgRunningRequest;
+import org.uengine.hwlife.search.dto.OrgRunningResponse;
 import org.uengine.hwlife.search.dto.RunningWorkByCorrKeyRequest;
 import org.uengine.hwlife.search.dto.RunningWorkByCorrKeyRequestItem;
 import org.uengine.hwlife.search.dto.RunningWorkByCorrKeyResponse;
@@ -50,6 +53,7 @@ class WorkSearchServiceImplTest {
   private static final long HOPE_DATE = 1_760_000_000_000L;
 
   private MyTodoSearchRepository searchRepository;
+  private OrgRunningSearchRepository orgRunningSearchRepository;
   private ProcessInstanceRepository processInstanceRepository;
   private WorklistRepository worklistRepository;
   private WorkSearchServiceImpl service;
@@ -57,10 +61,12 @@ class WorkSearchServiceImplTest {
   @BeforeEach
   void setUp() {
     searchRepository = mock(MyTodoSearchRepository.class);
+    orgRunningSearchRepository = mock(OrgRunningSearchRepository.class);
     processInstanceRepository = mock(ProcessInstanceRepository.class);
     worklistRepository = mock(WorklistRepository.class);
     service = new WorkSearchServiceImpl(
         searchRepository,
+        orgRunningSearchRepository,
         processInstanceRepository,
         worklistRepository);
   }
@@ -203,6 +209,106 @@ class WorkSearchServiceImplTest {
     assertEquals("form", item.getScrnUrlAddr());
     assertEquals("101", item.getFncgBpmTaskLstId());
     assertEquals("201", item.getFncgBpmPcesIntcId());
+  }
+
+  @Test
+  void delegatesOrgRunningRequestNextKeyAndPageSizeToRepository() {
+    OrgRunningRequest request = new OrgRunningRequest();
+    request.setNextKey("101");
+    request.setPageSize(35);
+    request.setSortOrdrVal("loanHopeDate");
+    request.setSortDirection("ASC");
+    when(orgRunningSearchRepository.search(request, 101L, 35))
+        .thenReturn(new OrgRunningSearchRepository.SearchResult(
+            List.of(minimalWorklist(102L)),
+            40));
+
+    OrgRunningResponse response = service.searchOrgRunning(request);
+
+    verify(orgRunningSearchRepository).search(request, 101L, 35);
+    assertEquals(40, response.getTotCont());
+    assertEquals("102", response.getOrgnPrgslist().get(0).getFncgBpmtaskLstId());
+  }
+
+  @Test
+  void normalizesOrgRunningPageSizeAndRejectsInvalidScrollValues() {
+    when(orgRunningSearchRepository.search(any(OrgRunningRequest.class), isNull(), eq(20)))
+        .thenReturn(new OrgRunningSearchRepository.SearchResult(List.of(), 0));
+    service.searchOrgRunning(null);
+
+    OrgRunningRequest invalidKey = new OrgRunningRequest();
+    invalidKey.setNextKey("zero");
+    ResponseStatusException keyException = assertThrows(
+        ResponseStatusException.class,
+        () -> service.searchOrgRunning(invalidKey));
+
+    OrgRunningRequest invalidDirection = new OrgRunningRequest();
+    invalidDirection.setSortDirection("NEWEST");
+    ResponseStatusException directionException = assertThrows(
+        ResponseStatusException.class,
+        () -> service.searchOrgRunning(invalidDirection));
+
+    verify(orgRunningSearchRepository).search(any(OrgRunningRequest.class), isNull(), eq(20));
+    assertEquals(HttpStatus.BAD_REQUEST, keyException.getStatusCode());
+    assertEquals(HttpStatus.BAD_REQUEST, directionException.getStatusCode());
+  }
+
+  @Test
+  void serializesOrgRunningScrollAndSortContractWithoutPageNumber() {
+    OrgRunningRequest request = new OrgRunningRequest();
+    request.setNextKey("101");
+    request.setPageSize(35);
+    request.setSortOrdrVal("startedDate");
+    request.setSortDirection("DESC");
+
+    JsonNode json = new ObjectMapper().valueToTree(request);
+
+    assertEquals("101", json.get("nextKey").asText());
+    assertEquals(35, json.get("pageSize").asInt());
+    assertEquals("startedDate", json.get("sortOrdrVal").asText());
+    assertEquals("DESC", json.get("sortDirection").asText());
+    assertFalse(json.has("pageNo"));
+  }
+
+  @Test
+  void mapsEveryOrgRunningResponseField() {
+    WorklistEntity worklist = completeWorklist(101L, WORK_START);
+    ProcessInstanceEntity instance = worklist.getProcessInstance();
+    instance.setInitComCd("REQUEST-GROUP");
+    worklist.setStartDate(new java.sql.Date(WORK_START));
+    when(orgRunningSearchRepository.search(any(OrgRunningRequest.class), isNull(), eq(20)))
+        .thenReturn(new OrgRunningSearchRepository.SearchResult(List.of(worklist), 1));
+
+    OrgRunningResponse response = service.searchOrgRunning(new OrgRunningRequest());
+
+    assertEquals(1, response.getTotCont());
+    OrgRunningItem item = response.getOrgnPrgslist().get(0);
+    assertEquals("LOAN", item.getFncgBswrDvsnCode());
+    assertEquals("CONTACT", item.getLoanCntcNo());
+    assertEquals("TARGET", item.getFncgSuptTrgtDvsnCode());
+    assertEquals("SUBJECT", item.getLoanSubjDvsnCode());
+    assertEquals("CUST", item.getCustId());
+    assertEquals("USAGE", item.getFncgMneyUsagClsfCode());
+    assertEquals(date(HOPE_DATE), item.getLoanHopeDate());
+    assertEquals("CORR-101", item.getLoanPcesMgmtNo());
+    assertEquals("reporter", item.getReptHndrEmnb());
+    assertEquals("REQUEST-GROUP", item.getReptHndrFncgOrgnCode());
+    assertEquals("handler", item.getHndrEmnb());
+    assertEquals("GROUP", item.getHndrOrgnCode());
+    assertEquals("Unit work", item.getUworNm());
+    assertEquals("TRACE", item.getFncgBpmTaskTrcgNm());
+    assertEquals("101", item.getFncgBpmtaskLstId());
+    assertEquals("201", item.getFncgBpmPcesIntcId());
+    assertEquals(
+        java.time.LocalDateTime.ofInstant(
+            date(WORK_START - 100).toInstant(),
+            java.time.ZoneId.systemDefault()),
+        item.getStarDttm());
+    assertEquals(
+        java.time.LocalDateTime.ofInstant(
+            date(WORK_START).toInstant(),
+            java.time.ZoneId.systemDefault()),
+        item.getUworStarDttm());
   }
 
   @Test

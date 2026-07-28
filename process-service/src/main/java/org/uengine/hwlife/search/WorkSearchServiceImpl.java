@@ -2,6 +2,7 @@ package org.uengine.hwlife.search;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -36,14 +37,17 @@ public class WorkSearchServiceImpl implements WorkSearchService {
   private static final int MAX_PAGE_SIZE = 100;
 
   private final MyTodoSearchRepository myTodoSearchRepository;
+  private final OrgRunningSearchRepository orgRunningSearchRepository;
   private final ProcessInstanceRepository processInstanceRepository;
   private final WorklistRepository worklistRepository;
 
   public WorkSearchServiceImpl(
       MyTodoSearchRepository myTodoSearchRepository,
+      OrgRunningSearchRepository orgRunningSearchRepository,
       ProcessInstanceRepository processInstanceRepository,
       WorklistRepository worklistRepository) {
     this.myTodoSearchRepository = myTodoSearchRepository;
+    this.orgRunningSearchRepository = orgRunningSearchRepository;
     this.processInstanceRepository = processInstanceRepository;
     this.worklistRepository = worklistRepository;
   }
@@ -78,7 +82,19 @@ public class WorkSearchServiceImpl implements WorkSearchService {
   @Override
   @Transactional(readOnly = true)
   public OrgRunningResponse searchOrgRunning(@RequestBody OrgRunningRequest request) {
-    throw notImplemented("searchOrgRunning");
+    OrgRunningRequest normalizedRequest = request == null ? new OrgRunningRequest() : request;
+    validateSortDirection(normalizedRequest.getSortDirection());
+    Long cursorTaskId = parseNextKey(normalizedRequest.getNextKey());
+    int pageSize = normalizePageSize(normalizedRequest.getPageSize());
+    OrgRunningSearchRepository.SearchResult result =
+        orgRunningSearchRepository.search(normalizedRequest, cursorTaskId, pageSize);
+
+    OrgRunningResponse response = new OrgRunningResponse();
+    response.setTotCont(result.totalCount());
+    response.setOrgnPrgslist(result.items().stream()
+        .map(this::toOrgRunningItem)
+        .collect(Collectors.toList()));
+    return response;
   }
 
   @Override
@@ -236,6 +252,41 @@ public class WorkSearchServiceImpl implements WorkSearchService {
     item.setFncgBpmTaskLstId(worklist.getTaskId() == null ? null : String.valueOf(worklist.getTaskId()));
     item.setFncgBpmPcesIntcId(worklist.getInstId() == null ? null : String.valueOf(worklist.getInstId()));
     return item;
+  }
+
+  private OrgRunningItem toOrgRunningItem(WorklistEntity worklist) {
+    ProcessInstanceEntity instance = worklist.getProcessInstance();
+    OrgRunningItem item = new OrgRunningItem();
+
+    item.setStarDttm(toLocalDateTime(instance == null ? null : instance.getStartedDate()));
+    item.setFncgBswrDvsnCode(instance == null ? null : instance.getFncgBswrDvsnCode());
+    item.setLoanCntcNo(instance == null ? null : instance.getLoanCntcNo());
+    item.setFncgSuptTrgtDvsnCode(instance == null ? null : instance.getFncgSuptTrgtDvsnCode());
+    item.setLoanSubjDvsnCode(instance == null ? null : instance.getLoanSubjDvsnCode());
+    item.setCustId(instance == null ? null : instance.getCustId());
+    item.setFncgMneyUsagClsfCode(instance == null ? null : instance.getFncgMneyUsagClsfCode());
+    item.setLoanHopeDate(instance == null ? null : instance.getLoanHopeDate());
+    item.setLoanPcesMgmtNo(instance == null ? null : instance.getCorrKey());
+    item.setReptHndrEmnb(instance == null ? null : instance.getInitEp());
+    item.setReptHndrFncgOrgnCode(instance == null ? null : instance.getInitComCd());
+    item.setHndrEmnb(worklist.getEndpoint());
+    item.setHndrOrgnCode(firstNonBlank(worklist.getAssignGroup(), worklist.getScope()));
+    item.setUworNm(worklist.getTitle());
+    item.setFncgBpmTaskTrcgNm(worklist.getTrcTag());
+    item.setUworStarDttm(toLocalDateTime(worklist.getStartDate()));
+    item.setFncgBpmtaskLstId(
+        worklist.getTaskId() == null ? null : String.valueOf(worklist.getTaskId()));
+    item.setFncgBpmPcesIntcId(
+        worklist.getInstId() == null ? null : String.valueOf(worklist.getInstId()));
+    return item;
+  }
+
+  private static java.time.LocalDateTime toLocalDateTime(Date value) {
+    return value == null
+        ? null
+        : java.time.LocalDateTime.ofInstant(
+            java.time.Instant.ofEpochMilli(value.getTime()),
+            java.time.ZoneId.systemDefault());
   }
 
   private static Long parseNextKey(String nextKey) {
