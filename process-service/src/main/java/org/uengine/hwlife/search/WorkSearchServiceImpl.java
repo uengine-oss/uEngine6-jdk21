@@ -139,16 +139,16 @@ public class WorkSearchServiceImpl implements WorkSearchService {
         Long rootInstId = processInstance.getRootInstId() == null
             ? processInstance.getInstId()
             : processInstance.getRootInstId();
-        // startDate/taskId 오름차순 → 마지막이 현재(최신) 단위업무
-        List<WorklistEntity> workItems = processInstanceRepository.findAllWorklistsByRootInstId(rootInstId);
+        List<WorklistEntity> workItems = worklistRepository.findCurrentWorkItemByInstId(rootInstId);
         if (workItems == null || workItems.isEmpty()) {
           resultItems.add(resultItem(loanPcesMgmtNo, processInstance, null,
               "No work item found for BPM instance instId=" + processInstance.getInstId()));
           continue;
         }
 
-        WorklistEntity lastWorkItem = workItems.get(workItems.size() - 1);
-        resultItems.add(resultItem(loanPcesMgmtNo, processInstance, lastWorkItem, null));
+        for(WorklistEntity workItem : workItems){
+          resultItems.add(resultItem(loanPcesMgmtNo, processInstance, workItem, null));
+        }
       }
     }
 
