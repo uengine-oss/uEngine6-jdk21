@@ -9,6 +9,7 @@ import java.util.List;
 public class OrgRunningResponse {
 
     private List<OrgRunningItem> orgnPrgslist = new ArrayList<>();
+    private String nextKey;
     private Integer totCont;
 
     public List<OrgRunningItem> getOrgnPrgslist() {
@@ -17,6 +18,14 @@ public class OrgRunningResponse {
 
     public void setOrgnPrgslist(List<OrgRunningItem> orgnPrgslist) {
         this.orgnPrgslist = orgnPrgslist;
+    }
+
+    public String getNextKey() {
+        return nextKey;
+    }
+
+    public void setNextKey(String nextKey) {
+        this.nextKey = nextKey;
     }
 
     public Integer getTotCont() {

@@ -9,6 +9,7 @@ import java.util.List;
 public class OrgCompletedResponse {
 
     private List<OrgCompletedItem> orgnCpltlist = new ArrayList<>();
+    private String nextKey;
     private Integer totCont;
 
     public List<OrgCompletedItem> getOrgnCpltlist() {
@@ -17,6 +18,14 @@ public class OrgCompletedResponse {
 
     public void setOrgnCpltlist(List<OrgCompletedItem> orgnCpltlist) {
         this.orgnCpltlist = orgnCpltlist;
+    }
+
+    public String getNextKey() {
+        return nextKey;
+    }
+
+    public void setNextKey(String nextKey) {
+        this.nextKey = nextKey;
     }
 
     public Integer getTotCont() {

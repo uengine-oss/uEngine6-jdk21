@@ -170,6 +170,7 @@ public class WorkSearchServiceImpl implements WorkSearchService {
     if (workItem != null) {
       item.setFncgBpmTaskTrcgNm(workItem.getTrcTag());
       item.setFncgBpmUworSttsCntn(workItem.getStatus());
+      item.setHndrEmnb(workItem.getEndpoint());
     }
     return item;
   }

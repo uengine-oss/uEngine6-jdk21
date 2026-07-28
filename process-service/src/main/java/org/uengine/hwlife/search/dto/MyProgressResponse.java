@@ -9,6 +9,7 @@ import java.util.List;
 public class MyProgressResponse {
 
     private List<MyProgressItem> todoPrgsList = new ArrayList<>();
+    private String nextKey;
     private Integer totCont;
 
     public List<MyProgressItem> getTodoPrgsList() {
@@ -17,6 +18,14 @@ public class MyProgressResponse {
 
     public void setTodoPrgsList(List<MyProgressItem> todoPrgsList) {
         this.todoPrgsList = todoPrgsList;
+    }
+
+    public String getNextKey() {
+        return nextKey;
+    }
+
+    public void setNextKey(String nextKey) {
+        this.nextKey = nextKey;
     }
 
     public Integer getTotCont() {

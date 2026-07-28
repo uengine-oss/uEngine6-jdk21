@@ -89,22 +89,22 @@ public class AbsenceServiceImpl implements AbsenceService {
         }
         require(request.getAbscEmnb(), "abscEmnb");
 
-        List<AbsenceEntity> all = absenceRepository.findByUserId(request.getAbscEmnb().trim());
+        // List<AbsenceEntity> all = absenceRepository.findByUserId(request.getAbscEmnb().trim());
         AbsenceHistoryResponse response = new AbsenceHistoryResponse();
-        response.setTotCont(all.size());
+        // response.setTotCont(all.size());
 
-        int pageSize = 20;
-        int pageNo = request.getPageNo() == null || request.getPageNo() < 1 ? 1 : request.getPageNo();
-        int from = (pageNo - 1) * pageSize;
-        if (from >= all.size()) {
-            response.setAbscList(List.of());
-            return response;
-        }
-        int to = Math.min(from + pageSize, all.size());
-        List<AbsenceHistoryItem> page = all.subList(from, to).stream()
-                .map(this::toHistoryItem)
-                .toList();
-        response.setAbscList(page);
+        // int pageSize = 20;
+        // int pageNo = request.getPageNo() == null || request.getPageNo() < 1 ? 1 : request.getPageNo();
+        // int from = (pageNo - 1) * pageSize;
+        // if (from >= all.size()) {
+        //     response.setAbscList(List.of());
+        //     return response;
+        // }
+        // int to = Math.min(from + pageSize, all.size());
+        // List<AbsenceHistoryItem> page = all.subList(from, to).stream()
+        //         .map(this::toHistoryItem)
+        //         .toList();
+        // response.setAbscList(page);
         return response;
     }
 

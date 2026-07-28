@@ -9,6 +9,7 @@ import java.util.List;
 public class MyTodoResponse {
 
     private List<MyTodoItem> todolist = new ArrayList<>();
+    private String nextKey;
     private Integer totCont;
 
     public List<MyTodoItem> getTodolist() {
@@ -17,6 +18,14 @@ public class MyTodoResponse {
 
     public void setTodolist(List<MyTodoItem> todolist) {
         this.todolist = todolist;
+    }
+
+    public String getNextKey() {
+        return nextKey;
+    }
+
+    public void setNextKey(String nextKey) {
+        this.nextKey = nextKey;
     }
 
     public Integer getTotCont() {
