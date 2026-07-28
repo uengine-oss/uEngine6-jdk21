@@ -53,8 +53,8 @@ public class WorkSearchServiceImpl implements WorkSearchService {
   public MyTodoResponse searchMyTodo(@RequestBody MyTodoRequest request) {
     MyTodoRequest normalizedRequest = request == null ? new MyTodoRequest() : request;
     validateSortDirection(normalizedRequest.getSortDirection());
-    Long cursorTaskId = parseCursor(normalizedRequest.getCursor());
-    int pageSize = normalizeSize(normalizedRequest.getSize());
+    Long cursorTaskId = parseNextKey(normalizedRequest.getNextKey());
+    int pageSize = normalizePageSize(normalizedRequest.getPageSize());
     MyTodoSearchRepository.SearchResult result = myTodoSearchRepository.search(
         normalizedRequest,
         cursorTaskId,
@@ -238,30 +238,30 @@ public class WorkSearchServiceImpl implements WorkSearchService {
     return item;
   }
 
-  private static Long parseCursor(String cursor) {
-    String value = trimToNull(cursor);
+  private static Long parseNextKey(String nextKey) {
+    String value = trimToNull(nextKey);
     if (value == null) {
       return null;
     }
     try {
       long taskId = Long.parseLong(value);
       if (taskId <= 0) {
-        throw new NumberFormatException("cursor must be positive");
+        throw new NumberFormatException("nextKey must be positive");
       }
       return taskId;
     } catch (NumberFormatException exception) {
       throw new ResponseStatusException(
           HttpStatus.BAD_REQUEST,
-          "cursor must be a positive fncgBpmTaskLstId",
+          "nextKey must be a positive fncgBpmTaskLstId",
           exception);
     }
   }
 
-  private static int normalizeSize(Integer size) {
-    if (size == null) {
+  private static int normalizePageSize(Integer pageSize) {
+    if (pageSize == null) {
       return DEFAULT_PAGE_SIZE;
     }
-    return Math.max(1, Math.min(size, MAX_PAGE_SIZE));
+    return Math.max(1, Math.min(pageSize, MAX_PAGE_SIZE));
   }
 
   private static void validateSortDirection(String sortDirection) {

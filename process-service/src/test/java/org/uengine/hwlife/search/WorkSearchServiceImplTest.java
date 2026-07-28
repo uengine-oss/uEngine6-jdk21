@@ -1,9 +1,11 @@
 package org.uengine.hwlife.search;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyCollection;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -20,6 +22,8 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -62,7 +66,7 @@ class WorkSearchServiceImplTest {
   }
 
   @Test
-  void delegatesCompleteRequestCursorAndSizeToRepository() {
+  void delegatesCompleteRequestNextKeyAndPageSizeToRepository() {
     MyTodoRequest request = fullRequest();
     when(searchRepository.search(
         any(MyTodoRequest.class),
@@ -95,10 +99,10 @@ class WorkSearchServiceImplTest {
 
     service.searchMyTodo(null);
     MyTodoRequest zeroSize = new MyTodoRequest();
-    zeroSize.setSize(0);
+    zeroSize.setPageSize(0);
     service.searchMyTodo(zeroSize);
     MyTodoRequest oversized = new MyTodoRequest();
-    oversized.setSize(101);
+    oversized.setPageSize(101);
     service.searchMyTodo(oversized);
 
     verify(searchRepository).search(
@@ -119,15 +123,31 @@ class WorkSearchServiceImplTest {
   }
 
   @Test
-  void rejectsCursorThatIsNotAPositiveTaskId() {
+  void rejectsNextKeyThatIsNotAPositiveTaskId() {
     MyTodoRequest request = new MyTodoRequest();
-    request.setCursor("not-a-task-id");
+    request.setNextKey("not-a-task-id");
 
     ResponseStatusException exception = assertThrows(
         ResponseStatusException.class,
         () -> service.searchMyTodo(request));
 
     assertEquals(HttpStatus.BAD_REQUEST, exception.getStatusCode());
+  }
+
+  @Test
+  void serializesScrollRequestWithSpecifiedFieldNames() {
+    MyTodoRequest request = new MyTodoRequest();
+    request.setNextKey("21");
+    request.setPageSize(35);
+
+    JsonNode json = new ObjectMapper().valueToTree(request);
+
+    assertEquals("21", json.get("nextKey").asText());
+    assertEquals(35, json.get("pageSize").asInt());
+    assertTrue(json.has("nextKey"));
+    assertTrue(json.has("pageSize"));
+    assertFalse(json.has("cursor"));
+    assertFalse(json.has("size"));
   }
 
   @Test
@@ -287,8 +307,8 @@ class WorkSearchServiceImplTest {
     request.setHopeEndDate(date(HOPE_DATE));
     request.setFncgWndwOrgnCode("GROUP");
     request.setHndrEmnb("handler");
-    request.setCursor("21");
-    request.setSize(35);
+    request.setNextKey("21");
+    request.setPageSize(35);
     request.setSortOrdrVal("loanHopeDate");
     request.setSortDirection("ASC");
     return request;
