@@ -59,7 +59,7 @@ public interface WorklistRepository extends JpaRepository<WorklistEntity, Long> 
     @Query("select wl from WorklistEntity wl where (wl.rootInstId = :rootInstId and wl.status = 'COMPLETED') order by wl.endDate ")
     public List<WorklistEntity> findWorkListByInstId(@Param(value = "rootInstId") Long rootInstId);
 
-    @Query("select wl from WorklistEntity wl where (wl.rootInstId = :rootInstId and (wl.status = 'NEW' or wl.status = 'RUNNING')) order by wl.endDate ")
+    @Query("select wl from WorklistEntity wl where (wl.rootInstId = :rootInstId and (wl.status = 'NEW' or wl.status = 'RUNNING')) order by wl.startDate desc, wl.taskId desc")
     public List<WorklistEntity> findCurrentWorkItemByInstId(@Param(value = "rootInstId") Long rootInstId);
 
     @Query("select wl from WorklistEntity wl "

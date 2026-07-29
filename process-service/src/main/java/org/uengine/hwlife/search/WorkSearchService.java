@@ -11,15 +11,15 @@ import org.uengine.hwlife.search.dto.*;
  * <p>구현: {@link WorkSearchServiceImpl}. 필터·응답 DTO는 추후 확장.</p>
  *
  * <pre>
- *   POST /search/my-todo  body: { "custId": "...", "nextKey": "", "pageSize": 20,
- *                                 "sortOrdrVal": "startedDate" }
+ *   POST /search/my-todo  body: { "hndrEmnb": "...", "fncgWndwOrgnCode": "...",
+ *                                 "pageSize": 10, "nextKey": null }
  *   POST /search/my-progress  body: { "custId": "...", "pageNo": "1" }
  *   POST /search/org-running  body: { "fncgWndwOrgnCode": "...", "nextKey": "",
  *                                    "pageSize": 20, "sortOrdrVal": "startedDate" }
  *   POST /search/org-completed  body: { "custId": "...", "pageNo": "1" }
  *   POST /search/bulk-assign  body: { "custId": "...", "hndrEmnb": "..." }
  *   POST /search/worklist-by-inst-id  body: { "loanPcesMgmtNo": "..." }
- *   POST /search/running-by-key  body: { "loanPcesMgmtNo": "..." }
+ *   POST /search/running-by-key  body: { "bswrList": [{ "loanPcesMgmtNo": "..." }] }
  * </pre>
  */
 @RequestMapping("/search")

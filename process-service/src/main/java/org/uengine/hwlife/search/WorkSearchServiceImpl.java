@@ -49,9 +49,9 @@ public class WorkSearchServiceImpl implements WorkSearchService {
   @Override
   @Transactional(readOnly = true)
   public MyTodoResponse searchMyTodo(@RequestBody MyTodoRequest request) {
-    MyTodoRequest normalizedRequest = request == null ? new MyTodoRequest() : request;
+    MyTodoRequest normalizedRequest = requireMyTodoRequest(request);
     Long cursorInstId = parseMyTodoNextKey(normalizedRequest.getNextKey());
-    int pageSize = normalizePageSize(normalizedRequest.getPageSize());
+    int pageSize = normalizeRequiredPageSize(normalizedRequest.getPageSize());
     MyTodoSearchRepository.SearchResult result = myTodoSearchRepository.search(
         normalizedRequest,
         cursorInstId,
@@ -128,7 +128,8 @@ public class WorkSearchServiceImpl implements WorkSearchService {
       }
 
       // 인스턴스 상태와 무관하게 corrKey 로 조회
-      List<ProcessInstanceEntity> instances = processInstanceRepository.findByCorrKey(loanPcesMgmtNo);
+      List<ProcessInstanceEntity> instances =
+          processInstanceRepository.findByCorrKeyOrderByStartedDateDescInstIdDesc(loanPcesMgmtNo);
       if (instances == null || instances.isEmpty()) {
         resultItems.add(resultItem(loanPcesMgmtNo, null, null,
             "No BPM instance found for loanPcesMgmtNo=" + loanPcesMgmtNo));
@@ -289,6 +290,20 @@ public class WorkSearchServiceImpl implements WorkSearchService {
   private static int normalizePageSize(Integer pageSize) {
     if (pageSize == null) {
       return DEFAULT_PAGE_SIZE;
+    }
+    return Math.max(1, Math.min(pageSize, MAX_PAGE_SIZE));
+  }
+
+  private static MyTodoRequest requireMyTodoRequest(MyTodoRequest request) {
+    if (request == null) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "request body is required");
+    }
+    return request;
+  }
+
+  private static int normalizeRequiredPageSize(Integer pageSize) {
+    if (pageSize == null) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "pageSize is required");
     }
     return Math.max(1, Math.min(pageSize, MAX_PAGE_SIZE));
   }

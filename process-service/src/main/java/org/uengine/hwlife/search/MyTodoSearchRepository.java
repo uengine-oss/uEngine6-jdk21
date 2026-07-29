@@ -50,13 +50,13 @@ public class MyTodoSearchRepository {
     List<Predicate> dataPredicates = new ArrayList<>(
         List.of(predicates(builder, worklist, instance, request, userContext)));
     if (cursorInstId != null) {
-      dataPredicates.add(builder.greaterThanOrEqualTo(worklist.get("instId"), cursorInstId));
+      dataPredicates.add(builder.lessThanOrEqualTo(worklist.get("instId"), cursorInstId));
     }
     dataQuery.select(worklist)
         .where(dataPredicates.toArray(Predicate[]::new))
         .orderBy(
-            builder.asc(worklist.get("instId")),
-            builder.asc(worklist.get("taskId")));
+            builder.desc(worklist.get("instId")),
+            builder.desc(worklist.get("taskId")));
 
     TypedQuery<WorklistEntity> query = entityManager.createQuery(dataQuery);
     query.setMaxResults(pageSize + 1);
@@ -99,7 +99,7 @@ public class MyTodoSearchRepository {
       MyTodoRequest request,
       UserContext userContext) {
     List<Predicate> predicates = new ArrayList<>();
-    predicates.add(accessPredicate(builder, worklist, userContext));
+    predicates.add(accessPredicate(builder, worklist, request, userContext));
     predicates.add(builder.not(worklist.get("status").in("COMPLETED", "CANCELLED")));
 
     addText(builder, predicates, instance.get("bswrClsfCode"), request.getBswrClsfCode());
@@ -111,8 +111,6 @@ public class MyTodoSearchRepository {
     addText(builder, predicates, instance.get("loanSubjDvsnCode"), request.getLoanSubjDvsnCode());
     addText(builder, predicates, instance.get("fncgMneyUsagClsfCode"), request.getFncgMneyUsagClsfCode());
     addText(builder, predicates, worklist.get("trcTag"), request.getFncgBpmTaskTrcgNm());
-    addText(builder, predicates, worklist.get("endpoint"), request.getHndrEmnb());
-    addOrganization(builder, predicates, worklist, request.getFncgWndwOrgnCode());
     addDateRange(
         builder,
         predicates,
@@ -131,28 +129,25 @@ public class MyTodoSearchRepository {
   private static Predicate accessPredicate(
       CriteriaBuilder builder,
       Root<WorklistEntity> worklist,
+      MyTodoRequest request,
       UserContext userContext) {
-    String userId = trimToNull(userContext == null ? null : userContext.getUserId());
-    List<String> scopes = normalizedValues(userContext == null ? null : userContext.getScopes());
-    List<String> groups = normalizedValues(userContext == null ? null : userContext.getGroups());
+    String requestedHandler = trimToNull(request.getHndrEmnb());
+    String requestedOrganization = trimToNull(request.getFncgWndwOrgnCode());
 
     Path<String> endpoint = worklist.get("endpoint");
-    Path<String> scope = worklist.get("scope");
+    Path<String> groupCd = worklist.get("groupCd");
     Predicate dispatch = builder.equal(worklist.get("dispatchOption"), 1);
     Predicate unclaimed = builder.isNull(endpoint);
+    Predicate requestHandler =
+        requestedHandler == null ? builder.disjunction() : builder.equal(endpoint, requestedHandler);
+    Predicate requestClaimable =
+        requestedOrganization == null
+            ? builder.disjunction()
+            : builder.and(dispatch, unclaimed, builder.equal(builder.trim(groupCd), requestedOrganization));
 
     return builder.or(
-        userId == null ? builder.disjunction() : builder.equal(endpoint, userId),
-        in(builder, endpoint, scopes),
-        builder.and(dispatch, unclaimed, in(builder, scope, groups)),
-        builder.and(dispatch, unclaimed, in(builder, scope, scopes)));
-  }
-
-  private static Predicate in(
-      CriteriaBuilder builder,
-      Path<String> path,
-      List<String> values) {
-    return values.isEmpty() ? builder.disjunction() : path.in(values);
+        requestHandler,
+        requestClaimable);
   }
 
   private static void addText(
@@ -164,20 +159,6 @@ public class MyTodoSearchRepository {
     if (value != null) {
       predicates.add(builder.equal(path, value));
     }
-  }
-
-  private static void addOrganization(
-      CriteriaBuilder builder,
-      List<Predicate> predicates,
-      Root<WorklistEntity> worklist,
-      String expected) {
-    String value = trimToNull(expected);
-    if (value == null) {
-      return;
-    }
-
-    Path<String> scope = worklist.get("scope");
-    predicates.add(builder.equal(builder.trim(scope), value));
   }
 
   private static void addDateRange(
@@ -209,17 +190,6 @@ public class MyTodoSearchRepository {
     calendar.setTime(startOfDay(value));
     calendar.add(Calendar.DAY_OF_MONTH, 1);
     return calendar.getTime();
-  }
-
-  private static List<String> normalizedValues(List<String> values) {
-    if (values == null) {
-      return List.of();
-    }
-    return values.stream()
-        .map(MyTodoSearchRepository::trimToNull)
-        .filter(value -> value != null)
-        .distinct()
-        .toList();
   }
 
   private static String trimToNull(String value) {

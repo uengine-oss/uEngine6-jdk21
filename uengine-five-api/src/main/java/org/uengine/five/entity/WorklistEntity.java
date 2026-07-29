@@ -191,6 +191,14 @@ public class WorklistEntity {// implements WorkListDAO {
         this.scope = scope;
     }
 
+    public String getGroupCd() {
+        return groupCd;
+    }
+
+    public void setGroupCd(String groupCd) {
+        this.groupCd = groupCd;
+    }
+
     public String getAssignGroup() {
         return assignGroup;
     }

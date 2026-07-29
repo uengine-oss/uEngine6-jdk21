@@ -70,6 +70,9 @@ public interface ProcessInstanceRepository
         @Query("select pi from ProcessInstanceEntity pi where pi.corrKey = :corrKey")
         List<ProcessInstanceEntity> findByCorrKey(@Param("corrKey") String corrKey);
 
+        @Query("select pi from ProcessInstanceEntity pi where pi.corrKey = :corrKey order by pi.startedDate desc, pi.instId desc")
+        List<ProcessInstanceEntity> findByCorrKeyOrderByStartedDateDescInstIdDesc(@Param("corrKey") String corrKey);
+
         @Query("select pi from ProcessInstanceEntity pi where (pi.corrKey = :corrKey and pi.status = :status)")
         List<ProcessInstanceEntity> findByCorrKeyAndStatus(@Param("corrKey") String corrKey,
                 @Param("status") String status);

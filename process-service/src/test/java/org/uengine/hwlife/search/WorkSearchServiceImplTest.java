@@ -95,7 +95,7 @@ class WorkSearchServiceImplTest {
   }
 
   @Test
-  void normalizesMissingAndOutOfRangeSizes() {
+  void requiresMyTodoPageSizeAndNormalizesOutOfRangeSizes() {
     when(searchRepository.search(
         any(MyTodoRequest.class),
         isNull(),
@@ -103,19 +103,16 @@ class WorkSearchServiceImplTest {
         any(UserContext.class)))
         .thenReturn(new SearchResult(List.of(), 0));
 
-    service.searchMyTodo(null);
-    MyTodoRequest zeroSize = new MyTodoRequest();
+    assertBadRequest(() -> service.searchMyTodo(null));
+    assertBadRequest(() -> service.searchMyTodo(new MyTodoRequest()));
+
+    MyTodoRequest zeroSize = requiredMyTodoRequest();
     zeroSize.setPageSize(0);
     service.searchMyTodo(zeroSize);
-    MyTodoRequest oversized = new MyTodoRequest();
+    MyTodoRequest oversized = requiredMyTodoRequest();
     oversized.setPageSize(101);
     service.searchMyTodo(oversized);
 
-    verify(searchRepository).search(
-        any(MyTodoRequest.class),
-        isNull(),
-        eq(20),
-        any(UserContext.class));
     verify(searchRepository).search(
         any(MyTodoRequest.class),
         isNull(),
@@ -129,8 +126,29 @@ class WorkSearchServiceImplTest {
   }
 
   @Test
-  void rejectsNextKeyThatIsNotAPositiveInstId() {
+  void returnsEmptyMyTodoResponseForBlankHandlerAndOrganization() {
+    when(searchRepository.search(
+        any(MyTodoRequest.class),
+        isNull(),
+        eq(10),
+        any(UserContext.class)))
+        .thenReturn(new SearchResult(List.of(), 0));
+
     MyTodoRequest request = new MyTodoRequest();
+    request.setHndrEmnb("");
+    request.setFncgWndwOrgnCode("");
+    request.setPageSize(10);
+
+    MyTodoResponse response = service.searchMyTodo(request);
+
+    assertEquals(0, response.getTotCont());
+    assertNull(response.getNextKey());
+    assertTrue(response.getTodoList().isEmpty());
+  }
+
+  @Test
+  void rejectsNextKeyThatIsNotAPositiveInstId() {
+    MyTodoRequest request = requiredMyTodoRequest();
     request.setNextKey("not-an-inst-id");
 
     ResponseStatusException exception = assertThrows(
@@ -172,7 +190,7 @@ class WorkSearchServiceImplTest {
         any(UserContext.class)))
         .thenReturn(new SearchResult(List.of(worklist), 1));
 
-    MyTodoResponse response = service.searchMyTodo(new MyTodoRequest());
+    MyTodoResponse response = service.searchMyTodo(requiredMyTodoRequest());
 
     assertEquals(1, response.getTotCont());
     MyTodoItem item = response.getTodoList().get(0);
@@ -253,7 +271,7 @@ class WorkSearchServiceImplTest {
     assertEquals("101", json.get("nextKey").asText());
     assertEquals(35, json.get("pageSize").asInt());
     assertEquals("startedDate", json.get("sortOrdrVal").asText());
-    assertFalse(json.has("sortDirection"));
+    assertFalse(json.has("sort" + "Direction"));
     assertFalse(json.has("pageNo"));
   }
 
@@ -305,7 +323,7 @@ class WorkSearchServiceImplTest {
         service.searchRunningWorkByCorrKey(new RunningWorkByCorrKeyRequest());
 
     assertEquals(List.of(), response.getBswrList());
-    verify(processInstanceRepository, never()).findByCorrKey(any());
+    verify(processInstanceRepository, never()).findByCorrKeyOrderByStartedDateDescInstIdDesc(any());
     verify(worklistRepository, never()).findCurrentWorkItemByInstId(any());
   }
 
@@ -316,7 +334,7 @@ class WorkSearchServiceImplTest {
       String corrKey = "CORR-" + index;
       long instanceId = index;
       requestItems.add(runningWorkRequestItem(corrKey));
-      when(processInstanceRepository.findByCorrKey(corrKey))
+      when(processInstanceRepository.findByCorrKeyOrderByStartedDateDescInstIdDesc(corrKey))
           .thenReturn(List.of(runningInstance(instanceId, corrKey)));
       when(worklistRepository.findCurrentWorkItemByInstId(instanceId))
           .thenReturn(List.of(currentWorkItem(instanceId, "TASK-" + index)));
@@ -326,7 +344,7 @@ class WorkSearchServiceImplTest {
         service.searchRunningWorkByCorrKey(runningWorkRequest(requestItems));
 
     assertEquals(100, response.getBswrList().size());
-    verify(processInstanceRepository, times(100)).findByCorrKey(any());
+    verify(processInstanceRepository, times(100)).findByCorrKeyOrderByStartedDateDescInstIdDesc(any());
     verify(worklistRepository, times(100)).findCurrentWorkItemByInstId(any());
   }
 
@@ -337,8 +355,8 @@ class WorkSearchServiceImplTest {
     WorklistEntity firstTask = currentWorkItem(11L, "A-1");
     WorklistEntity parallelTask = currentWorkItem(11L, "A-2");
     WorklistEntity secondTask = currentWorkItem(12L, "A-3");
-    when(processInstanceRepository.findByCorrKey("CORR-A")).thenReturn(List.of(first, second));
-    when(processInstanceRepository.findByCorrKey("UNKNOWN")).thenReturn(List.of());
+    when(processInstanceRepository.findByCorrKeyOrderByStartedDateDescInstIdDesc("CORR-A")).thenReturn(List.of(first, second));
+    when(processInstanceRepository.findByCorrKeyOrderByStartedDateDescInstIdDesc("UNKNOWN")).thenReturn(List.of());
     when(worklistRepository.findCurrentWorkItemByInstId(11L))
         .thenReturn(List.of(firstTask, parallelTask));
     when(worklistRepository.findCurrentWorkItemByInstId(12L))
@@ -362,7 +380,7 @@ class WorkSearchServiceImplTest {
   @Test
   void reportsInvalidRunningWorkKeyAndInstanceWithoutActiveWork() {
     ProcessInstanceEntity instance = runningInstance(21L, "CORR-NO-WORK");
-    when(processInstanceRepository.findByCorrKey("CORR-NO-WORK")).thenReturn(List.of(instance));
+    when(processInstanceRepository.findByCorrKeyOrderByStartedDateDescInstIdDesc("CORR-NO-WORK")).thenReturn(List.of(instance));
     when(worklistRepository.findCurrentWorkItemByInstId(21L)).thenReturn(List.of());
 
     RunningWorkByCorrKeyResponse response = service.searchRunningWorkByCorrKey(runningWorkRequest(List.of(
@@ -397,6 +415,19 @@ class WorkSearchServiceImplTest {
     request.setNextKey("21");
     request.setPageSize(35);
     return request;
+  }
+
+  private static MyTodoRequest requiredMyTodoRequest() {
+    MyTodoRequest request = new MyTodoRequest();
+    request.setHndrEmnb("handler");
+    request.setFncgWndwOrgnCode("GROUP");
+    request.setPageSize(20);
+    return request;
+  }
+
+  private static void assertBadRequest(Runnable runnable) {
+    ResponseStatusException exception = assertThrows(ResponseStatusException.class, runnable::run);
+    assertEquals(HttpStatus.BAD_REQUEST, exception.getStatusCode());
   }
 
   private static WorklistEntity completeWorklist(long taskId, long startDate) {

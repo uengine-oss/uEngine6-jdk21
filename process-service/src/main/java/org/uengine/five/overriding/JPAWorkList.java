@@ -168,7 +168,10 @@ public class JPAWorkList implements WorkList {
             }
             wl.setResName(resName);
             wl.setDefVerId(""+parameterMap.get(KeyedParameter.PROCESSDEFINITIONVERSION));
-            wl.setScope(""+parameterMap.get("scope"));
+            Object scopeObj = parameterMap.get("scope");
+            String scope = scopeObj == null ? null : String.valueOf(scopeObj);
+            wl.setScope(scope);
+            wl.setGroupCd(scope);
             Object assignGroupForWl = parameterMap.get("assignGroup");
             wl.setAssignGroup(assignGroupForWl != null ? String.valueOf(assignGroupForWl) : null);
             wl.setAssignType(Integer.parseInt("" + parameterMap.get("assignType")));
