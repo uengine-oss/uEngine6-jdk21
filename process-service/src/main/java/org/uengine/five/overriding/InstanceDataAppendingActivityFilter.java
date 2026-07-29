@@ -81,28 +81,14 @@ public class InstanceDataAppendingActivityFilter implements ActivityFilter, Seri
 						&& instance.getProcessDefinition()
 								.getInitiatorHumanActivityReference(instance.getProcessTransactionContext())
 								.getActivity().equals(activity)) {
-					jpaProcessInstance.getProcessInstanceEntity().setInitEp(rm.getEndpoint());
-					jpaProcessInstance.getProcessInstanceEntity().setInitRsNm(rm.getResourceName());
+					ProcessInstanceHandlerFields.initialize(
+							jpaProcessInstance.getProcessInstanceEntity(), rm);
 					jpaProcessInstance.getProcessInstanceEntity().setInitComCd(rm.getCompanyId());
-
-					jpaProcessInstance.getProcessInstanceEntity()
-							.setPrevCurrEp("");
-					jpaProcessInstance.getProcessInstanceEntity()
-							.setPrevCurrRsNm("");
-
-					jpaProcessInstance.getProcessInstanceEntity().setCurrEp(rm.getEndpoint());
-					jpaProcessInstance.getProcessInstanceEntity().setCurrRsNm(rm.getResourceName());
 
 					jpaProcessInstance.setNewInstance(false);
 				} else {
-					jpaProcessInstance.getProcessInstanceEntity()
-							.setPrevCurrEp(jpaProcessInstance.getProcessInstanceEntity().getCurrEp());
-					jpaProcessInstance.getProcessInstanceEntity()
-							.setPrevCurrRsNm(jpaProcessInstance.getProcessInstanceEntity().getCurrRsNm());
-
-					jpaProcessInstance.getProcessInstanceEntity().setCurrEp(rm.getEndpoint());
-					jpaProcessInstance.getProcessInstanceEntity().setCurrRsNm(rm.getResourceName());
-
+					ProcessInstanceHandlerFields.updateCurrent(
+							jpaProcessInstance.getProcessInstanceEntity(), rm);
 				}
 
 				if (activity instanceof ServiceTask || activity instanceof ScriptActivity) {
@@ -219,12 +205,9 @@ public class InstanceDataAppendingActivityFilter implements ActivityFilter, Seri
 						&& instance.getProcessDefinition()
 								.getInitiatorHumanActivityReference(instance.getProcessTransactionContext())
 								.getActivity().equals(activity)) {
-					processInstance.getProcessInstanceEntity().setInitEp(rm.getEndpoint());
-					processInstance.getProcessInstanceEntity().setInitRsNm(rm.getResourceName());
+					ProcessInstanceHandlerFields.initialize(
+							processInstance.getProcessInstanceEntity(), rm);
 					processInstance.getProcessInstanceEntity().setInitComCd(rm.getCompanyId());
-
-					processInstance.getProcessInstanceEntity().setCurrEp(rm.getEndpoint());
-					processInstance.getProcessInstanceEntity().setCurrRsNm(rm.getResourceName());
 				} else {
 					StringBuffer endpoint = new StringBuffer();
 					StringBuffer resourceName = new StringBuffer();
@@ -240,6 +223,8 @@ public class InstanceDataAppendingActivityFilter implements ActivityFilter, Seri
 
 					processInstance.getProcessInstanceEntity().setCurrEp(endpoint.toString());
 					processInstance.getProcessInstanceEntity().setCurrRsNm(resourceName.toString());
+					processInstance.getProcessInstanceEntity()
+							.setCurrGroupCd(ProcessInstanceHandlerFields.resolveGroup(rm));
 				}
 			} catch (Exception e) {
 				e.printStackTrace();
@@ -251,13 +236,16 @@ public class InstanceDataAppendingActivityFilter implements ActivityFilter, Seri
 						.getLocalInstance();
 				String initEp = (String) rootProcessInstance.getProcessInstanceEntity().getInitEp();
 				String initRSNM = (String) rootProcessInstance.getProcessInstanceEntity().getInitRsNm();
+				String initGroupCd = rootProcessInstance.getProcessInstanceEntity().getInitGroupCd();
 				String initComcode = (String) rootProcessInstance.getProcessInstanceEntity().getInitComCd();
 				processInstance.getProcessInstanceEntity().setInitEp(initEp);
 				processInstance.getProcessInstanceEntity().setInitRsNm(initRSNM);
+				processInstance.getProcessInstanceEntity().setInitGroupCd(initGroupCd);
 				processInstance.getProcessInstanceEntity().setInitComCd(initComcode);
 
 				processInstance.getProcessInstanceEntity().setCurrEp(initEp);
 				processInstance.getProcessInstanceEntity().setCurrRsNm(initRSNM);
+				processInstance.getProcessInstanceEntity().setCurrGroupCd(initGroupCd);
 			}
 		}
 	}

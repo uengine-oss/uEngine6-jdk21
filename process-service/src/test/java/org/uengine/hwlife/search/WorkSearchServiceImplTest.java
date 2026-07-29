@@ -7,18 +7,17 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyCollection;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 
@@ -79,7 +78,7 @@ class WorkSearchServiceImplTest {
         eq(21L),
         eq(35),
         any(UserContext.class)))
-        .thenReturn(new SearchResult(List.of(minimalWorklist(21L)), 25));
+        .thenReturn(new SearchResult(List.of(minimalWorklist(21L)), 25, "22"));
 
     MyTodoResponse response = service.searchMyTodo(request);
 
@@ -91,6 +90,7 @@ class WorkSearchServiceImplTest {
         any(UserContext.class));
     assertSame(request, requestCaptor.getValue());
     assertEquals(25, response.getTotCont());
+    assertEquals("22", response.getNextKey());
     assertEquals(List.of("21"), taskIds(response));
   }
 
@@ -196,7 +196,7 @@ class WorkSearchServiceImplTest {
     assertEquals("Unit work", item.getUworNm());
     assertEquals("Loan process", item.getLoanPcesNm());
     assertEquals("reporter", item.getReptHndrEmnb());
-    assertEquals("GROUP", item.getReptHndrFncgOrgnCode());
+    assertEquals("SCOPE", item.getReptHndrFncgOrgnCode());
     assertEquals("previous", item.getPrcdHndrEmnb());
     assertEquals("PREV-GROUP", item.getPrcdHndrFncgOrgnCode());
     assertEquals("NEW", item.getFncgBpmUworSttsCntn());
@@ -205,7 +205,7 @@ class WorkSearchServiceImplTest {
     assertEquals("PREV-GROUP", item.getBefrFncgOrgnCode());
     assertEquals("handler", item.getHndrEmnb());
     assertEquals("Handler Name", item.getHndrNm());
-    assertEquals("GROUP", item.getHndrOrgnCode());
+    assertEquals("SCOPE", item.getHndrOrgnCode());
     assertEquals("form", item.getScrnUrlAddr());
     assertEquals("101", item.getFncgBpmTaskLstId());
     assertEquals("201", item.getFncgBpmPcesIntcId());
@@ -221,12 +221,14 @@ class WorkSearchServiceImplTest {
     when(orgRunningSearchRepository.search(request, 101L, 35))
         .thenReturn(new OrgRunningSearchRepository.SearchResult(
             List.of(minimalWorklist(102L)),
-            40));
+            40,
+            "103"));
 
     OrgRunningResponse response = service.searchOrgRunning(request);
 
     verify(orgRunningSearchRepository).search(request, 101L, 35);
     assertEquals(40, response.getTotCont());
+    assertEquals("103", response.getNextKey());
     assertEquals("102", response.getOrgnPrgslist().get(0).getFncgBpmtaskLstId());
   }
 
@@ -274,7 +276,8 @@ class WorkSearchServiceImplTest {
   void mapsEveryOrgRunningResponseField() {
     WorklistEntity worklist = completeWorklist(101L, WORK_START);
     ProcessInstanceEntity instance = worklist.getProcessInstance();
-    instance.setInitComCd("REQUEST-GROUP");
+    instance.setInitComCd("REQUEST-COMPANY");
+    instance.setInitGroupCd("REQUEST-GROUP");
     worklist.setStartDate(new java.sql.Date(WORK_START));
     when(orgRunningSearchRepository.search(any(OrgRunningRequest.class), isNull(), eq(20)))
         .thenReturn(new OrgRunningSearchRepository.SearchResult(List.of(worklist), 1));
@@ -294,7 +297,7 @@ class WorkSearchServiceImplTest {
     assertEquals("reporter", item.getReptHndrEmnb());
     assertEquals("REQUEST-GROUP", item.getReptHndrFncgOrgnCode());
     assertEquals("handler", item.getHndrEmnb());
-    assertEquals("GROUP", item.getHndrOrgnCode());
+    assertEquals("SCOPE", item.getHndrOrgnCode());
     assertEquals("Unit work", item.getUworNm());
     assertEquals("TRACE", item.getFncgBpmTaskTrcgNm());
     assertEquals("101", item.getFncgBpmtaskLstId());
@@ -317,37 +320,29 @@ class WorkSearchServiceImplTest {
         service.searchRunningWorkByCorrKey(new RunningWorkByCorrKeyRequest());
 
     assertEquals(List.of(), response.getBswrList());
-    verify(processInstanceRepository, never()).findByCorrKeyInAndStatus(
-        anyCollection(), eq(Activity.STATUS_RUNNING));
-    verify(worklistRepository, never()).findCurrentWorkItemsByRootInstIds(anyCollection());
+    verify(processInstanceRepository, never()).findByCorrKey(any());
+    verify(worklistRepository, never()).findCurrentWorkItemByInstId(any());
   }
 
   @Test
-  void keepsRunningWorkRepositoryCallsConstantForOneHundredCorrKeys() {
+  void looksUpEveryRequestedCorrKeyUsingLatestMainContract() {
     List<RunningWorkByCorrKeyRequestItem> requestItems = new ArrayList<>();
-    List<ProcessInstanceEntity> instances = new ArrayList<>();
-    List<WorklistEntity> workItems = new ArrayList<>();
     for (int index = 1; index <= 100; index++) {
       String corrKey = "CORR-" + index;
+      long instanceId = index;
       requestItems.add(runningWorkRequestItem(corrKey));
-      instances.add(runningInstance((long) index, corrKey));
-      workItems.add(currentWorkItem((long) index, "TASK-" + index));
+      when(processInstanceRepository.findByCorrKey(corrKey))
+          .thenReturn(List.of(runningInstance(instanceId, corrKey)));
+      when(worklistRepository.findCurrentWorkItemByInstId(instanceId))
+          .thenReturn(List.of(currentWorkItem(instanceId, "TASK-" + index)));
     }
-    when(processInstanceRepository.findByCorrKeyInAndStatus(
-        anyCollection(), eq(Activity.STATUS_RUNNING))).thenReturn(instances);
-    when(worklistRepository.findCurrentWorkItemsByRootInstIds(anyCollection())).thenReturn(workItems);
 
     RunningWorkByCorrKeyResponse response =
         service.searchRunningWorkByCorrKey(runningWorkRequest(requestItems));
 
     assertEquals(100, response.getBswrList().size());
-    ArgumentCaptor<Collection<String>> corrKeys = collectionCaptor();
-    verify(processInstanceRepository).findByCorrKeyInAndStatus(
-        corrKeys.capture(), eq(Activity.STATUS_RUNNING));
-    assertEquals(100, corrKeys.getValue().size());
-    ArgumentCaptor<Collection<Long>> rootInstIds = collectionCaptor();
-    verify(worklistRepository).findCurrentWorkItemsByRootInstIds(rootInstIds.capture());
-    assertEquals(100, rootInstIds.getValue().size());
+    verify(processInstanceRepository, times(100)).findByCorrKey(any());
+    verify(worklistRepository, times(100)).findCurrentWorkItemByInstId(any());
   }
 
   @Test
@@ -357,10 +352,12 @@ class WorkSearchServiceImplTest {
     WorklistEntity firstTask = currentWorkItem(11L, "A-1");
     WorklistEntity parallelTask = currentWorkItem(11L, "A-2");
     WorklistEntity secondTask = currentWorkItem(12L, "A-3");
-    when(processInstanceRepository.findByCorrKeyInAndStatus(
-        anyCollection(), eq(Activity.STATUS_RUNNING))).thenReturn(List.of(first, second));
-    when(worklistRepository.findCurrentWorkItemsByRootInstIds(anyCollection()))
-        .thenReturn(List.of(firstTask, parallelTask, secondTask));
+    when(processInstanceRepository.findByCorrKey("CORR-A")).thenReturn(List.of(first, second));
+    when(processInstanceRepository.findByCorrKey("UNKNOWN")).thenReturn(List.of());
+    when(worklistRepository.findCurrentWorkItemByInstId(11L))
+        .thenReturn(List.of(firstTask, parallelTask));
+    when(worklistRepository.findCurrentWorkItemByInstId(12L))
+        .thenReturn(List.of(secondTask));
 
     RunningWorkByCorrKeyResponse response = service.searchRunningWorkByCorrKey(runningWorkRequest(List.of(
         runningWorkRequestItem("CORR-A"),
@@ -373,16 +370,15 @@ class WorkSearchServiceImplTest {
             .map(RunningWorkByCorrKeyResponseItem::getFncgBpmTaskTrcgNm)
             .toList());
     assertEquals(
-        "No running BPM instance found for loanPcesMgmtNo=UNKNOWN",
+        "No BPM instance found for loanPcesMgmtNo=UNKNOWN",
         response.getBswrList().get(3).getPrcsrsltCntn());
   }
 
   @Test
   void reportsInvalidRunningWorkKeyAndInstanceWithoutActiveWork() {
     ProcessInstanceEntity instance = runningInstance(21L, "CORR-NO-WORK");
-    when(processInstanceRepository.findByCorrKeyInAndStatus(
-        anyCollection(), eq(Activity.STATUS_RUNNING))).thenReturn(List.of(instance));
-    when(worklistRepository.findCurrentWorkItemsByRootInstIds(anyCollection())).thenReturn(List.of());
+    when(processInstanceRepository.findByCorrKey("CORR-NO-WORK")).thenReturn(List.of(instance));
+    when(worklistRepository.findCurrentWorkItemByInstId(21L)).thenReturn(List.of());
 
     RunningWorkByCorrKeyResponse response = service.searchRunningWorkByCorrKey(runningWorkRequest(List.of(
         runningWorkRequestItem("   "),
@@ -392,7 +388,7 @@ class WorkSearchServiceImplTest {
     assertNull(response.getBswrList().get(0).getLoanPcesMgmtNo());
     assertEquals("loanPcesMgmtNo is required", response.getBswrList().get(0).getPrcsrsltCntn());
     assertEquals(
-        "No active work item found for running BPM instance instId=21",
+        "No work item found for BPM instance instId=21",
         response.getBswrList().get(1).getPrcsrsltCntn());
   }
 
@@ -502,8 +498,4 @@ class WorkSearchServiceImplTest {
     return workItem;
   }
 
-  @SuppressWarnings({"rawtypes", "unchecked"})
-  private static <T> ArgumentCaptor<Collection<T>> collectionCaptor() {
-    return (ArgumentCaptor) ArgumentCaptor.forClass(Collection.class);
-  }
 }

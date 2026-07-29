@@ -61,6 +61,7 @@ public class WorkSearchServiceImpl implements WorkSearchService {
 
     MyTodoResponse response = new MyTodoResponse();
     response.setTotCont(result.totalCount());
+    response.setNextKey(result.nextKey());
     response.setTodolist(result.items().stream()
         .map(this::toMyTodoItem)
         .collect(Collectors.toList()));
@@ -85,6 +86,7 @@ public class WorkSearchServiceImpl implements WorkSearchService {
 
     OrgRunningResponse response = new OrgRunningResponse();
     response.setTotCont(result.totalCount());
+    response.setNextKey(result.nextKey());
     response.setOrgnPrgslist(result.items().stream()
         .map(this::toOrgRunningItem)
         .collect(Collectors.toList()));
@@ -197,7 +199,7 @@ public class WorkSearchServiceImpl implements WorkSearchService {
     item.setUworNm(worklist.getTitle());
     item.setLoanPcesNm(firstNonBlank(worklist.getDefName(), instance == null ? null : instance.getDefName()));
     item.setReptHndrEmnb(instance == null ? null : instance.getInitEp());
-    item.setReptHndrFncgOrgnCode(firstNonBlank(worklist.getAssignGroup(), worklist.getScope()));
+    item.setReptHndrFncgOrgnCode(trimToNull(worklist.getScope()));
     item.setPrcdHndrEmnb(worklist.getPrevEndpoint());
     item.setPrcdHndrFncgOrgnCode(worklist.getPrevGroupCd());
     item.setFncgBpmUworSttsCntn(worklist.getStatus());
@@ -206,7 +208,7 @@ public class WorkSearchServiceImpl implements WorkSearchService {
     item.setBefrFncgOrgnCode(worklist.getPrevGroupCd());
     item.setHndrEmnb(worklist.getEndpoint());
     item.setHndrNm(worklist.getResName());
-    item.setHndrOrgnCode(firstNonBlank(worklist.getAssignGroup(), worklist.getScope()));
+    item.setHndrOrgnCode(trimToNull(worklist.getScope()));
     item.setScrnUrlAddr(worklist.getTool());
     item.setFncgBpmTaskLstId(worklist.getTaskId() == null ? null : String.valueOf(worklist.getTaskId()));
     item.setFncgBpmPcesIntcId(worklist.getInstId() == null ? null : String.valueOf(worklist.getInstId()));
@@ -227,9 +229,9 @@ public class WorkSearchServiceImpl implements WorkSearchService {
     item.setLoanHopeDate(instance == null ? null : instance.getLoanHopeDate());
     item.setLoanPcesMgmtNo(instance == null ? null : instance.getCorrKey());
     item.setReptHndrEmnb(instance == null ? null : instance.getInitEp());
-    item.setReptHndrFncgOrgnCode(instance == null ? null : instance.getInitComCd());
+    item.setReptHndrFncgOrgnCode(instance == null ? null : instance.getInitGroupCd());
     item.setHndrEmnb(worklist.getEndpoint());
-    item.setHndrOrgnCode(firstNonBlank(worklist.getAssignGroup(), worklist.getScope()));
+    item.setHndrOrgnCode(trimToNull(worklist.getScope()));
     item.setUworNm(worklist.getTitle());
     item.setFncgBpmTaskTrcgNm(worklist.getTrcTag());
     item.setUworStarDttm(toLocalDateTime(worklist.getStartDate()));

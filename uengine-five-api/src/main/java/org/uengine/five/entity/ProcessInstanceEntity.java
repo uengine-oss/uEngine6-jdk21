@@ -562,6 +562,14 @@ public class ProcessInstanceEntity {// implements ProcessInstanceDAO {
         this.initRsNm = initRsNm;
     }
 
+    public String getInitGroupCd() {
+        return initGroupCd;
+    }
+
+    public void setInitGroupCd(String initGroupCd) {
+        this.initGroupCd = initGroupCd;
+    }
+
     public String getPrevCurrRsNm() {
         return prevCurrRsNm;
     }
@@ -570,12 +578,28 @@ public class ProcessInstanceEntity {// implements ProcessInstanceDAO {
         this.prevCurrRsNm = prevCurrRsNm;
     }
 
+    public String getPrevCurrGroupCd() {
+        return prevCurrGroupCd;
+    }
+
+    public void setPrevCurrGroupCd(String prevCurrGroupCd) {
+        this.prevCurrGroupCd = prevCurrGroupCd;
+    }
+
     public String getCurrRsNm() {
         return currRsNm;
     }
 
     public void setCurrRsNm(String currRsNm) {
         this.currRsNm = currRsNm;
+    }
+
+    public String getCurrGroupCd() {
+        return currGroupCd;
+    }
+
+    public void setCurrGroupCd(String currGroupCd) {
+        this.currGroupCd = currGroupCd;
     }
 
     public String getCorrKey() {

@@ -170,6 +170,9 @@ public class InstanceServiceImpl implements InstanceService {
     EventMappingRepository eventMappingRepository;
 
     @Autowired
+    ProcessInstanceAttributeMapper processInstanceAttributeMapper;
+
+    @Autowired
     private ApplicationContext context;
 
     @Autowired
@@ -338,6 +341,9 @@ public class InstanceServiceImpl implements InstanceService {
                 log.info("[BPM] start(): startEventPayload null={} size={}", startEventPayload == null,
                         startEventPayload == null ? 0 : startEventPayload.size());
                 if (startEventPayload != null && !startEventPayload.isEmpty()) {
+                    processInstanceAttributeMapper.apply(
+                            ((JPAProcessInstance) instance).getProcessInstanceEntity(),
+                            startEventPayload);
                     if (instance instanceof org.uengine.kernel.DefaultProcessInstance) {
                         ((org.uengine.kernel.DefaultProcessInstance) instance).setEventInitiated(true);
                     }
@@ -1131,14 +1137,22 @@ public class InstanceServiceImpl implements InstanceService {
 
         pe.setPrevCurrEp(pe.getCurrEp());
         pe.setPrevCurrRsNm(pe.getCurrRsNm());
+        pe.setPrevCurrGroupCd(pe.getCurrGroupCd());
         pe.setCurrEp(rm != null ? rm.getEndpoint() : null);          // null 이면 컬럼도 비움
         pe.setCurrRsNm(rm != null ? rm.getResourceName() : null);
+        pe.setCurrGroupCd(rm != null
+                ? org.uengine.five.overriding.ProcessInstanceHandlerFields.resolveGroup(rm)
+                : null);
 
         // initEp 가 비어있고 새로 endpoint 가 들어왔으면 같이 채움 (시그널 시작 인스턴스 보강).
         if (rm != null && rm.getEndpoint() != null
                 && (pe.getInitEp() == null || pe.getInitEp().trim().isEmpty())) {
             pe.setInitEp(rm.getEndpoint());
             if (rm.getResourceName() != null) pe.setInitRsNm(rm.getResourceName());
+        }
+        if (rm != null && (pe.getInitGroupCd() == null || pe.getInitGroupCd().trim().isEmpty())) {
+            pe.setInitGroupCd(
+                    org.uengine.five.overriding.ProcessInstanceHandlerFields.resolveGroup(rm));
         }
     }
 

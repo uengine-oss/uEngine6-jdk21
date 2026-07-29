@@ -1,39 +1,42 @@
 package org.uengine.five.service;
 
-import java.nio.charset.StandardCharsets;
 import java.io.Serializable;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.regex.Pattern;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.uengine.contexts.EventSynchronization;
 import org.uengine.five.dto.ProcessExecutionCommand;
+import org.uengine.five.dto.ProcessVariableValue;
 import org.uengine.five.entity.EventMappingEntity;
 import org.uengine.five.entity.ProcessInstanceEntity;
 import org.uengine.five.framework.ProcessTransactional;
 import org.uengine.five.repository.EventMappingRepository;
 import org.uengine.five.repository.ProcessInstanceRepository;
-import org.uengine.five.serializers.BpmnXMLParser;
-import org.uengine.contexts.EventSynchronization;
 import org.uengine.kernel.Activity;
 import org.uengine.kernel.DefaultProcessInstance;
 import org.uengine.kernel.ProcessInstance;
 import org.uengine.kernel.ReceiveActivity;
 import org.uengine.kernel.bpmn.Event;
+
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 @Service
 public class AsyncEventListener {
 
     private static final Logger log = LoggerFactory.getLogger(AsyncEventListener.class);
-
-    static ObjectMapper objectMapper = BpmnXMLParser.createTypedJsonObjectMapper();
     private static final Pattern NUMERIC_CSV = Pattern.compile("^\\s*\\d+(\\s*,\\s*\\d+)*\\s*$");
 
     @Autowired
@@ -51,131 +54,108 @@ public class AsyncEventListener {
     @Autowired
     EventMappingRepository eventMappingRepository;
 
-    /** Called from BpmMessageDispatcher for every message. */
     public void whatever(String eventString) {
         System.out.println("\n\n##### listener whatever : " + eventString + "\n\n");
     }
 
-    /**
-     * Called from BpmMessageDispatcher when type header is present.
-     * inboxCorrKey: 폴링 모드에서 BPM_EVENT_INBOX.corr_key (auto-generated start_&lt;uuid&gt;).
-     * payload 에 EventMapping.correlationKey 매칭 필드가 없을 때 fallback 값으로 사용된다.
-     * Kafka 모드 등 inbox row 없이 호출되는 경로에서는 null.
-     */
     @Transactional(rollbackFor = { Exception.class })
     @ProcessTransactional
     public void wheneverEvent(String eventBody, String typeHeader, String inboxCorrKey) {
         log.info("[BPM] wheneverEvent called, typeHeader={}, inboxCorrKey={}", typeHeader, inboxCorrKey);
-        System.out.println("\n\n##### listener wheneverEvent : " + eventBody + "\n\n");
         try {
-            // 기본은 raw 헤더 문자열로 매칭. 실패하면 숫자 CSV(예: "76,79,65,...")를 디코딩해서 재시도.
             String eventType = typeHeader;
+            HashMap<String, Object> eventContent = eventObjectMapper().readValue(eventBody, HashMap.class);
+            List<EventMappingEntity> eventMappings =
+                    eventMappingRepository.findAllByEventNameOrderByIdAsc(eventType);
 
-            ObjectMapper objectMapper = new ObjectMapper();
-
-            objectMapper.setVisibilityChecker(objectMapper.getSerializationConfig()
-                    .getDefaultVisibilityChecker()
-                    .withFieldVisibility(JsonAutoDetect.Visibility.ANY)
-                    .withGetterVisibility(JsonAutoDetect.Visibility.NONE)
-                    .withSetterVisibility(JsonAutoDetect.Visibility.NONE)
-                    .withCreatorVisibility(JsonAutoDetect.Visibility.NONE));
-
-            objectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
-            objectMapper.setSerializationInclusion(JsonInclude.Include.NON_DEFAULT);
-            HashMap<String, Object> eventContent = objectMapper.readValue(eventBody, HashMap.class);
-
-            EventMappingEntity eventMappingEntity = eventMappingRepository.findEventMappingByEventName(eventType);
-            if (eventMappingEntity == null) {
+            if (eventMappings.isEmpty()) {
                 String decoded = decodeNumericCsvIfNeeded(typeHeader);
                 if (!decoded.equals(typeHeader)) {
                     eventType = decoded;
-                    eventMappingEntity = eventMappingRepository.findEventMappingByEventName(eventType);
+                    eventMappings = eventMappingRepository.findAllByEventNameOrderByIdAsc(eventType);
                 }
             }
 
-            if (eventMappingEntity == null) {
-                log.error("[BPM] EventMapping not found for eventType='{}'. Register BPM_EVENT_MAPPING for this event type (e.g. LOAN_APPLIED).", eventType);
-                throw new Exception("EventMappingEntity is null for eventType: " + eventType);
+            if (eventMappings.isEmpty()) {
+                log.error("[BPM] EventMapping not found for eventType='{}'", eventType);
+                throw new IllegalStateException("EventMappingEntity is null for eventType: " + eventType);
             }
 
-            String corrKey = eventMappingEntity.getCorrelationKey();
-
-            if (eventContent.get(corrKey) != null) {
-                String coorKeyValue = eventContent.get(corrKey).toString();
-
-                if (eventMappingEntity.isStartEvent()) {
-                    String startDefId = eventMappingEntity.getDefinitionId();
-                    ProcessExecutionCommand processExecutionCommand = new ProcessExecutionCommand();
-                    processExecutionCommand.setProcessDefinitionId(startDefId);
-                    processExecutionCommand.setCorrelationKeyValue(coorKeyValue);
-                    processExecutionCommand.setProcessVariableValues(toProcessVariables(eventContent, corrKey));
-                    processExecutionCommand.setStartEventPayload(eventContent);
-
-                    instanceService.start(processExecutionCommand);
-                }
-
-                triggerReceiveActivitiesByCorrKeyAndEventType(coorKeyValue, eventType, eventContent);
-            } else {
-                // payload 에 매칭 필드가 없으면:
-                //   - 폴링 모드: BPM_EVENT_INBOX.corr_key (start_<uuid>) 사용 → 인스턴스 유일성 보장
-                //   - 그 외:    기존 동작 유지 (correlationKey 필드명 자체)
-                String coorKeyValue = (inboxCorrKey != null && !inboxCorrKey.isEmpty()) ? inboxCorrKey : corrKey;
-                if (eventMappingEntity.isStartEvent()) {
-                    // START
-                    String startDefId = eventMappingEntity.getDefinitionId();
-                    ProcessExecutionCommand processExecutionCommand = new ProcessExecutionCommand();
-                    processExecutionCommand.setProcessDefinitionId(startDefId);
-                    processExecutionCommand.setCorrelationKeyValue(coorKeyValue);
-                    processExecutionCommand.setProcessVariableValues(toProcessVariables(eventContent, corrKey));
-                    processExecutionCommand.setStartEventPayload(eventContent);
-
-                    instanceService.start(processExecutionCommand);
-
-                    // NEXT (요청사항: START 이후에도 동일 NEXT 로직 실행)
-                    triggerReceiveActivitiesByCorrKeyAndEventType(coorKeyValue, eventType, eventContent);
-                } else {
-                    // task 이벤트(receive activity / HumanActivity 매칭)도 inboxCorrKey 로 인스턴스 매칭해서 라우팅
-                    triggerReceiveActivitiesByCorrKeyAndEventType(coorKeyValue, eventType, eventContent);
-
-                    // 추가로, 인스턴스에 매달린 intermediate Event 활동에 onMessage 발화 (기존 동작 유지)
-                    List<ProcessInstanceEntity> processInstanceList = processInstanceRepository
-                            .findByStatus("Running");
-                    for (ProcessInstanceEntity processInstanceEntity : processInstanceList) {
-                        ProcessInstance instance = instanceServiceImpl
-                                .getProcessInstanceLocal(processInstanceEntity.getInstId().toString());
-
-                        for (Activity activity : instance.getCurrentRunningActivities()) {
-                            if (activity instanceof Event) {
-                                Event event = (Event) activity;
-                                if (event.getEventKey() != null &&
-                                        event.getEventKey().equals(eventType) &&
-                                        !Event.THROW_EVENT.equals(event.getEventType())) {
-                                    event.onMessage(instance, event.getTracingTag());
-                                }
-                                break;
-                            }
-                        }
-                    }
-                }
-            }
-
+            processEventMappings(eventMappings, eventType, eventContent, inboxCorrKey);
         } catch (Exception e) {
-            // Acknowledgment acknowledgment =
-            // eventBody.getHeaders().get(KafkaHeaders.ACKNOWLEDGMENT,
-            // Acknowledgment.class);
-            // acknowledgment.acknowledge();
             throw new RuntimeException("Error wheneverEvent :" + e.getMessage(), e);
         }
-
     }
 
-    private void triggerReceiveActivitiesByCorrKeyAndEventType(String corrKeyValue, String eventType,
+    private void processEventMappings(
+            List<EventMappingEntity> eventMappings,
+            String eventType,
+            HashMap<String, Object> eventContent,
+            String inboxCorrKey) throws Exception {
+        Set<String> receiveCorrelationValues = new LinkedHashSet<>();
+        Set<String> startedDefinitions = new LinkedHashSet<>();
+        int startFailures = 0;
+        boolean shouldTriggerWaitingEvents = false;
+
+        for (EventMappingEntity mapping : eventMappings) {
+            String correlationField = mapping.getCorrelationKey();
+            Object payloadCorrelation = correlationField == null ? null : eventContent.get(correlationField);
+            String correlationValue = payloadCorrelation != null
+                    ? payloadCorrelation.toString()
+                    : firstNonBlank(inboxCorrKey, correlationField);
+
+            if (Boolean.TRUE.equals(mapping.isStartEvent())
+                    && startedDefinitions.add(mapping.getDefinitionId())) {
+                try {
+                    startMappedDefinition(mapping, correlationValue, eventContent);
+                } catch (Exception e) {
+                    startFailures++;
+                    log.error("[BPM] Failed to start mapped definition: eventType={}, definitionId={}",
+                            eventType, mapping.getDefinitionId(), e);
+                }
+            }
+
+            if (correlationValue != null) {
+                receiveCorrelationValues.add(correlationValue);
+            }
+            if (!Boolean.TRUE.equals(mapping.isStartEvent()) && payloadCorrelation == null) {
+                shouldTriggerWaitingEvents = true;
+            }
+        }
+
+        for (String correlationValue : receiveCorrelationValues) {
+            triggerReceiveActivitiesByCorrKeyAndEventType(
+                    correlationValue, eventType, eventContent);
+        }
+
+        if (!startedDefinitions.isEmpty() && startFailures == startedDefinitions.size()) {
+            throw new IllegalStateException("All mapped process starts failed for eventType: " + eventType);
+        }
+
+        if (shouldTriggerWaitingEvents) {
+            triggerWaitingEvents(eventType);
+        }
+    }
+
+    private void startMappedDefinition(
+            EventMappingEntity mapping,
+            String correlationValue,
             HashMap<String, Object> eventContent) throws Exception {
-        // NEXT
-        // String tracingTag = eventMappingEntity.getTracingTag();
-        List<ProcessInstanceEntity> processInstanceList = processInstanceRepository
-                .findByCorrKeyAndStatus(corrKeyValue, "Running");
-        for (ProcessInstanceEntity processInstanceEntity : processInstanceList) {
+        ProcessExecutionCommand command = new ProcessExecutionCommand();
+        command.setProcessDefinitionId(mapping.getDefinitionId());
+        command.setCorrelationKeyValue(correlationValue);
+        command.setProcessVariableValues(toProcessVariables(eventContent, mapping.getCorrelationKey()));
+        command.setStartEventPayload(eventContent);
+        instanceService.start(command);
+    }
+
+    private void triggerReceiveActivitiesByCorrKeyAndEventType(
+            String correlationValue,
+            String eventType,
+            HashMap<String, Object> eventContent) throws Exception {
+        List<ProcessInstanceEntity> processInstances =
+                processInstanceRepository.findByCorrKeyAndStatus(correlationValue, "Running");
+        for (ProcessInstanceEntity processInstanceEntity : processInstances) {
             ProcessInstance instance = instanceServiceImpl
                     .getProcessInstanceLocal(processInstanceEntity.getInstId().toString());
 
@@ -183,11 +163,11 @@ public class AsyncEventListener {
             for (Activity activity : instance.getCurrentRunningActivities()) {
                 for (EventSynchronization sync : activity.getEventSynchronizations()) {
                     if (sync != null && eventType.equals(sync.getEventType())) {
-                        ((DefaultProcessInstance) instance).set(activity.getTracingTag(), DefaultProcessInstance.EVENT_DATA,
+                        ((DefaultProcessInstance) instance).set(
+                                activity.getTracingTag(),
+                                DefaultProcessInstance.EVENT_DATA,
                                 (Serializable) eventContent);
-
-                        ReceiveActivity receiveActivity = (ReceiveActivity) activity;
-                        receiveActivity.fireReceived(instance, eventContent);
+                        ((ReceiveActivity) activity).fireReceived(instance, eventContent);
                         break activityLoop;
                     }
                 }
@@ -195,38 +175,73 @@ public class AsyncEventListener {
         }
     }
 
-    /**
-     * 외부 이벤트 payload 의 필드를 ProcessVariableValue 배열로 변환. 단,
-     * correlationKey 필드는 인스턴스 식별 용도이므로 변수에서 제외.
-     */
-    private static org.uengine.five.dto.ProcessVariableValue[] toProcessVariables(
-            HashMap<String, Object> eventContent, String corrKey) {
-        java.util.List<org.uengine.five.dto.ProcessVariableValue> vars = new java.util.ArrayList<>();
-        for (java.util.Map.Entry<String, Object> entry : eventContent.entrySet()) {
-            if (entry.getKey().equals(corrKey)) continue;          // 상관 키는 변수에서 제외
-            if (entry.getValue() == null) continue;
-            if (!(entry.getValue() instanceof java.io.Serializable)) continue;
-
-            org.uengine.five.dto.ProcessVariableValue pv = new org.uengine.five.dto.ProcessVariableValue();
-            pv.setName(entry.getKey());
-            pv.setValues(new java.io.Serializable[] { (java.io.Serializable) entry.getValue() });
-            vars.add(pv);
+    private void triggerWaitingEvents(String eventType) throws Exception {
+        List<ProcessInstanceEntity> processInstances = processInstanceRepository.findByStatus("Running");
+        for (ProcessInstanceEntity processInstanceEntity : processInstances) {
+            ProcessInstance instance = instanceServiceImpl
+                    .getProcessInstanceLocal(processInstanceEntity.getInstId().toString());
+            for (Activity activity : instance.getCurrentRunningActivities()) {
+                if (activity instanceof Event) {
+                    Event event = (Event) activity;
+                    if (eventType.equals(event.getEventKey())
+                            && !Event.THROW_EVENT.equals(event.getEventType())) {
+                        event.onMessage(instance, event.getTracingTag());
+                    }
+                    break;
+                }
+            }
         }
-        return vars.toArray(new org.uengine.five.dto.ProcessVariableValue[0]);
+    }
+
+    static ProcessVariableValue[] toProcessVariables(
+            HashMap<String, Object> eventContent,
+            String correlationKey) {
+        List<ProcessVariableValue> variables = new ArrayList<>();
+        for (Map.Entry<String, Object> entry : eventContent.entrySet()) {
+            if (entry.getKey().equals(correlationKey)
+                    || entry.getValue() == null
+                    || !(entry.getValue() instanceof Serializable)) {
+                continue;
+            }
+
+            ProcessVariableValue variable = new ProcessVariableValue();
+            variable.setName(entry.getKey());
+            variable.setValues(new Serializable[] {(Serializable) entry.getValue()});
+            variables.add(variable);
+        }
+        return variables.toArray(new ProcessVariableValue[0]);
+    }
+
+    private static ObjectMapper eventObjectMapper() {
+        ObjectMapper mapper = new ObjectMapper();
+        mapper.setVisibilityChecker(mapper.getSerializationConfig()
+                .getDefaultVisibilityChecker()
+                .withFieldVisibility(JsonAutoDetect.Visibility.ANY)
+                .withGetterVisibility(JsonAutoDetect.Visibility.NONE)
+                .withSetterVisibility(JsonAutoDetect.Visibility.NONE)
+                .withCreatorVisibility(JsonAutoDetect.Visibility.NONE));
+        mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+        mapper.setSerializationInclusion(JsonInclude.Include.NON_DEFAULT);
+        return mapper;
+    }
+
+    private static String firstNonBlank(String first, String second) {
+        if (first != null && !first.isBlank()) {
+            return first;
+        }
+        return second == null || second.isBlank() ? null : second;
     }
 
     private static String decodeNumericCsvIfNeeded(String raw) {
-        String result = "";
         try {
-            if (raw == null)
+            if (raw == null) {
                 return "";
+            }
 
             String trimmed = raw.trim();
-            // 혹시 "[76, 79, ...]" 형태로 올 경우 대괄호 제거
             if (trimmed.startsWith("[") && trimmed.endsWith("]")) {
                 trimmed = trimmed.substring(1, trimmed.length() - 1).trim();
             }
-
             if (!NUMERIC_CSV.matcher(trimmed).matches()) {
                 return raw;
             }
@@ -234,17 +249,11 @@ public class AsyncEventListener {
             String[] parts = trimmed.split("\\s*,\\s*");
             byte[] bytes = new byte[parts.length];
             for (int i = 0; i < parts.length; i++) {
-                int v = Integer.parseInt(parts[i]);
-                bytes[i] = (byte) v;
+                bytes[i] = (byte) Integer.parseInt(parts[i]);
             }
-
-            result = new String(bytes, StandardCharsets.UTF_8).trim();
-            return result;
+            return new String(bytes, StandardCharsets.UTF_8).trim();
         } catch (Exception ignored) {
             return "";
-        } finally {
-            if (result == null)
-                result = "";
         }
     }
 }

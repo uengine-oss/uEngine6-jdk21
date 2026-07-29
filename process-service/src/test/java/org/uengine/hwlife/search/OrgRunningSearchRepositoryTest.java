@@ -88,41 +88,47 @@ class OrgRunningSearchRepositoryTest {
     SearchResult processing = search(processingRequest, null, 20);
     SearchResult requested = search(requestOrganization, null, 20);
 
-    assertEquals(List.of(6L, 4L, 2L, 1L), taskIds(processing));
+    assertEquals(List.of(4L), taskIds(processing));
     assertEquals(List.of(4L, 3L), taskIds(requested));
   }
 
   @Test
-  void excludesCompletedWorkAndContinuesDescendingWithoutDuplicates() {
+  void excludesCompletedWorkAndContinuesDescendingWithoutGaps() {
     OrgRunningRequest request = new OrgRunningRequest();
     request.setSortOrdrVal("startedDate");
     request.setSortDirection("DESC");
 
     SearchResult first = search(request, null, 2);
-    SearchResult second = search(request, 1L, 2);
-    SearchResult third = search(request, 4L, 2);
+    SearchResult second = search(request, Long.valueOf(first.nextKey()), 2);
+    SearchResult third = search(request, Long.valueOf(second.nextKey()), 2);
 
     assertEquals(List.of(2L, 1L), taskIds(first));
     assertEquals(List.of(3L, 4L), taskIds(second));
     assertEquals(List.of(6L), taskIds(third));
+    assertEquals("3", first.nextKey());
+    assertEquals("6", second.nextKey());
+    assertEquals(null, third.nextKey());
     assertEquals(5, first.totalCount());
     assertEquals(5, second.totalCount());
     assertEquals(5, third.totalCount());
   }
 
   @Test
-  void continuesAscendingWithoutDuplicatesAndKeepsNullDatesLast() {
+  void continuesAscendingWithoutGapsAndKeepsNullDatesLast() {
     OrgRunningRequest request = new OrgRunningRequest();
     request.setSortOrdrVal("loanHopeDate");
     request.setSortDirection("ASC");
 
     SearchResult first = search(request, null, 2);
-    SearchResult second = search(request, 2L, 2);
-    SearchResult third = search(request, 4L, 2);
+    SearchResult second = search(request, Long.valueOf(first.nextKey()), 2);
+    SearchResult third = search(request, Long.valueOf(second.nextKey()), 2);
 
     assertEquals(List.of(1L, 2L), taskIds(first));
     assertEquals(List.of(3L, 4L), taskIds(second));
     assertEquals(List.of(6L), taskIds(third));
+    assertEquals("3", first.nextKey());
+    assertEquals("6", second.nextKey());
+    assertEquals(null, third.nextKey());
   }
 
   @Test
@@ -131,6 +137,17 @@ class OrgRunningSearchRepositoryTest {
 
     assertEquals(List.of(), taskIds(result));
     assertEquals(0, result.totalCount());
+  }
+
+  @Test
+  void filtersProcessingOrganizationByScopeOnly() {
+    OrgRunningRequest request = new OrgRunningRequest();
+    request.setFncgWndwOrgnCode("SCOPE-A");
+    request.setSortOrdrVal("taskId");
+
+    SearchResult result = search(request, null, 20);
+
+    assertEquals(List.of(6L, 2L, 1L), taskIds(result));
   }
 
   private static OrgRunningRequest fullRequest() {
@@ -143,7 +160,7 @@ class OrgRunningSearchRepositoryTest {
     request.setFncgMneyUsagClsfCode("USAGE");
     request.setLoanCntcNo("CONTACT");
     request.setCustId("CUST");
-    request.setFncgWndwOrgnCode("PROC-A");
+    request.setFncgWndwOrgnCode("SCOPE-A");
     request.setSortOrdrVal("taskId");
     return request;
   }

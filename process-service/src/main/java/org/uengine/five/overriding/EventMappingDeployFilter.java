@@ -12,13 +12,11 @@ import org.uengine.kernel.FieldDescriptor;
 import org.uengine.kernel.ProcessDefinition;
 import org.uengine.kernel.ReceiveActivity;
 import org.uengine.kernel.UEngineException;
+import org.uengine.kernel.bpmn.CatchingRestMessageEvent;
 import org.uengine.kernel.bpmn.Event;
-import org.uengine.kernel.bpmn.SequenceFlow;
-import org.uengine.kernel.bpmn.StartEvent;
 import org.uengine.processmanager.ProcessTransactionContext;
 
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -43,16 +41,12 @@ public class EventMappingDeployFilter implements DeployFilter {
          * 2. ReceiveActivity 상속 Activity
          */
 
-        Set<Activity> startActivitiesWithEventSync = new HashSet<>();
+        Set<String> processStartEventTracingTags = new HashSet<>();
         List<Activity> startActivities = definition.getStartActivities();
         if (startActivities != null) {
             for (Activity activity : startActivities) {
-                Activity startActivity = findStartActivityWithEventSynchronization(activity, definition, new HashSet<>());
-                if (startActivity == null) {
-                    // Not Found Start Event
-                } else {
-                    startActivitiesWithEventSync.add(startActivity);
-                    saveEventMappingEntity(startActivity, definition, true);
+                if (activity instanceof Event && activity.getTracingTag() != null) {
+                    processStartEventTracingTags.add(activity.getTracingTag());
                 }
             }
         }
@@ -60,56 +54,23 @@ public class EventMappingDeployFilter implements DeployFilter {
         List<Activity> startEvents = definition.getEvents();
         if (startEvents != null) {
             for (Activity startEvent : startEvents) {
-                saveEventMappingEntity(true, startEvent, definition, true);
+                boolean isProcessStartEvent =
+                        processStartEventTracingTags.contains(startEvent.getTracingTag());
+                saveEventMappingEntity(true, startEvent, definition, isProcessStartEvent);
             }
         }
 
-        // ReceiveActivity && Except Start Activity
+        // Event nodes are handled above. Event synchronizations on normal activities
+        // are receive mappings even when the activity directly follows a plain start node.
         List<Activity> activities = definition.getChildActivities();
         if (activities != null) {
             for (Activity activity : activities) {
-                if (activity instanceof ReceiveActivity && !startActivitiesWithEventSync.contains(activity)
+                if (activity instanceof ReceiveActivity
+                        && !(activity instanceof Event)
                         && activity.getEventSynchronizations().length > 0) {
                     saveEventMappingEntity(activity, definition, false);
                 }
             }
-        }
-
-    }
-
-    private Activity findStartActivityWithEventSynchronization(Activity activity, ProcessDefinition definition, Set<Activity> visited)
-            throws Exception {
-        try {
-            if (activity == null) return null;
-            if (visited == null) visited = new HashSet<>();
-            if (visited.contains(activity)) return null;
-            visited.add(activity);
-
-            if ((activity instanceof StartEvent || activity instanceof ReceiveActivity)
-                    && activity.getEventSynchronizations().length > 0) {
-                return activity;
-            }
-
-            List<SequenceFlow> outgoing = activity.getOutgoingSequenceFlows();
-            if (outgoing == null) outgoing = Collections.emptyList();
-
-            for (SequenceFlow sequenceFlow : outgoing) {
-                if (sequenceFlow.getTargetActivity() != null) {
-                    Activity result = findStartActivityWithEventSynchronization(sequenceFlow.getTargetActivity(),
-                            definition, visited);
-                    if (result != null) {
-                        return result;
-                    }
-                }
-            }
-            return null;
-        } catch (Exception e) {
-            String nameSafe = "(unknown)";
-            try {
-                if (activity != null && activity.getName() != null) nameSafe = activity.getName();
-            } catch (Exception ignore) {}
-            throw new UEngineException(
-                    "Error when to find StartActivityWith EventSynchronization: " + nameSafe, e);
         }
 
     }
@@ -124,10 +85,7 @@ public class EventMappingDeployFilter implements DeployFilter {
                 if (Event.THROW_EVENT.equals(event.getEventType()))
                     return;
 
-                if (event.getEventType() == null)
-                    return;
-
-                // event_name 은 UNIQUE 업무 키 — 비어 있으면 매핑 식별 불가이므로 저장 스킵
+                // An event key is required for a stable mapping identity.
                 if (isNullOrBlank(eventKey)) {
                     log.warn("Skip EventMappingEntity save: eventKey is null/blank. defId={}, tracingTag={}",
                             safe(definition != null ? definition.getId() : null),
@@ -136,22 +94,11 @@ public class EventMappingDeployFilter implements DeployFilter {
                 }
                 eventKey = eventKey.trim();
 
-                // event_name(UNIQUE) 기준 find-or-update — 재배포 시 멱등 upsert
-                EventMappingEntity eventMappingEntity = eventMappingRepository.findByEventName(eventKey);
-                if (eventMappingEntity == null) {
-                    eventMappingEntity = new EventMappingEntity();
-                    eventMappingEntity.setEventName(eventKey);
-                }
-                eventMappingEntity.setCorrelationKey(event.getEventType());
-                eventMappingEntity.setDefinitionId(
-                        definition.getId());
-                eventMappingEntity.setTracingTag(activity.getTracingTag());
-
-                if (Event.START_EVENT.equals(event.getEventType())) {
-                    eventMappingEntity.setIsStartEvent(true);
-                } else {
-                    eventMappingEntity.setIsStartEvent(false);
-                }
+                // Upsert by the full mapping target; event names may be shared.
+                EventMappingEntity eventMappingEntity = findOrCreate(
+                        eventKey, definition, activity, isStartEvent);
+                eventMappingEntity.setCorrelationKey(resolveCorrelationKey(activity));
+                eventMappingEntity.setIsStartEvent(isStartEvent);
 
                 eventMappingRepository.save(eventMappingEntity);
                 logRegisteredEventMapping("bpmn-event", eventMappingEntity);
@@ -190,15 +137,10 @@ public class EventMappingDeployFilter implements DeployFilter {
                 }
                 eventType = eventType.trim();
 
-                // event_name(UNIQUE) 기준 find-or-update — 재배포 시 멱등 upsert
-                EventMappingEntity eventMappingEntity = eventMappingRepository.findByEventName(eventType);
-                if (eventMappingEntity == null) {
-                    eventMappingEntity = new EventMappingEntity();
-                    eventMappingEntity.setEventName(eventType);
-                }
-                eventMappingEntity.setDefinitionId(definition.getId());
+                // Upsert by the full mapping target; event names may be shared.
+                EventMappingEntity eventMappingEntity = findOrCreate(
+                        eventType, definition, activity, isStartEvent);
                 eventMappingEntity.setCorrelationKey(corrKey);
-                eventMappingEntity.setTracingTag(activity.getTracingTag());
                 eventMappingEntity.setIsStartEvent(isStartEvent);
 
                 eventMappingRepository.save(eventMappingEntity);
@@ -207,6 +149,44 @@ public class EventMappingDeployFilter implements DeployFilter {
         } catch (Exception e) {
             throw new UEngineException("Error when to save EventMappingEntity: " + activity.getName(), e);
         }
+    }
+
+    private EventMappingEntity findOrCreate(
+            String eventName,
+            ProcessDefinition definition,
+            Activity activity,
+            Boolean isStartEvent) {
+        String definitionId = definition.getId();
+        String tracingTag = activity.getTracingTag();
+        EventMappingEntity mapping = eventMappingRepository
+                .findByEventNameAndDefinitionIdAndTracingTagAndIsStartEvent(
+                        eventName, definitionId, tracingTag, isStartEvent)
+                .orElseGet(EventMappingEntity::new);
+        mapping.setEventName(eventName);
+        mapping.setDefinitionId(definitionId);
+        mapping.setTracingTag(tracingTag);
+        mapping.setIsStartEvent(isStartEvent);
+        return mapping;
+    }
+
+    private String resolveCorrelationKey(Activity activity) {
+        EventSynchronization[] synchronizations = activity.getEventSynchronizations();
+        if (synchronizations != null) {
+            for (EventSynchronization synchronization : synchronizations) {
+                if (synchronization == null || synchronization.getAttributes() == null) {
+                    continue;
+                }
+                for (FieldDescriptor attribute : synchronization.getAttributes()) {
+                    if (attribute != null && attribute.getIsCorrKey()) {
+                        return attribute.getName();
+                    }
+                }
+            }
+        }
+        if (activity instanceof CatchingRestMessageEvent) {
+            return ((CatchingRestMessageEvent) activity).getCorrelationKey();
+        }
+        return null;
     }
 
     private void logRegisteredEventMapping(String source, EventMappingEntity eventMappingEntity) {

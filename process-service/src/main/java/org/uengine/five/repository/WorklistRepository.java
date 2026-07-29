@@ -69,6 +69,8 @@ public interface WorklistRepository extends JpaRepository<WorklistEntity, Long> 
     List<WorklistEntity> findCurrentWorkItemsByRootInstIds(
             @Param("rootInstIds") Collection<Long> rootInstIds);
 
+    List<WorklistEntity> findByInstIdAndStatusIn(Long instId, Collection<String> statuses);
+
     /**
      * 경합(DispatchOption=1) 등으로 endpoint가 비어있는 workitem들을,
      * 특정 사용자가 claim 했을 때 동일 role/scope/assignType 그룹으로 함께 소유자 세팅하기 위해 사용.

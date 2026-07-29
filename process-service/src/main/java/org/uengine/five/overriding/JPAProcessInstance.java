@@ -72,6 +72,9 @@ public class JPAProcessInstance extends DefaultProcessInstance implements Transa
     @Autowired(required = false)
     BpmLifecycleService bpmLifecycleService;
 
+    @Autowired(required = false)
+    ProcessCompletionWorkitemReconciler processCompletionWorkitemReconciler;
+
 
     ProcessInstanceEntity processInstanceEntity;
 
@@ -464,6 +467,11 @@ public class JPAProcessInstance extends DefaultProcessInstance implements Transa
                 }
                 pi.setFinishedDate(new Date());
                 saveVariables();
+
+                if (status.equals(Activity.STATUS_COMPLETED)
+                        && processCompletionWorkitemReconciler != null) {
+                    processCompletionWorkitemReconciler.reconcile(pi.getInstId());
+                }
 
                 // ── [HOOK] 메인 프로세스 인스턴스 종료 ───────────────────
                 // 서브프로세스 제외: isSubProcess=true 이면 BpmLifecycleService 내부에서 무시

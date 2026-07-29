@@ -4,7 +4,9 @@ import jakarta.persistence.*;
 
 @Entity
 @Table(name = "BPM_EVENT_MAPPING",
-    uniqueConstraints = @UniqueConstraint(name = "uk_event_mapping_event_name", columnNames = "event_name"))
+    uniqueConstraints = @UniqueConstraint(
+        name = "uk_event_mapping_target",
+        columnNames = {"event_name", "definition_id", "tracing_tag", "is_start_event"}))
 @SequenceGenerator(
     name = "event_mapping_seq_gen",
     sequenceName = "SEQ_BPM_EVENT_MAPPING",
@@ -12,13 +14,13 @@ import jakarta.persistence.*;
 )
 public class EventMappingEntity {
 
-    /** 테이블 surrogate PK. 업무 식별은 {@link #eventName} (UNIQUE) 로 한다. */
+    /** Surrogate primary key. Mapping identity is defined by the table constraint. */
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "event_mapping_seq_gen")
     @Column(name = "id")
     private Long id;
 
-    /** 외부/내부 이벤트 식별자(이벤트명). 매핑 조회의 업무 키 — UNIQUE. */
+    /** External or internal event name. Multiple mapping targets may share it. */
     @Column(name = "event_name", nullable = false)
     private String eventName;
 

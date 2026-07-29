@@ -47,7 +47,7 @@ public class MyTodoSearchRepository {
     SortDirection sortDirection = SortDirection.from(request.getSortDirection());
     CursorPosition cursor = findCursor(builder, cursorTaskId, sortField);
     if (cursorTaskId != null && cursor == null) {
-      return new SearchResult(List.of(), 0);
+      return new SearchResult(List.of(), 0, null);
     }
 
     CriteriaQuery<WorklistEntity> dataQuery = builder.createQuery(WorklistEntity.class);
@@ -64,12 +64,18 @@ public class MyTodoSearchRepository {
         .orderBy(sortOrders(builder, worklist, instance, sortField, sortDirection));
 
     TypedQuery<WorklistEntity> query = entityManager.createQuery(dataQuery);
-    query.setMaxResults(pageSize);
-    List<WorklistEntity> items = query.getResultList();
+    query.setMaxResults(pageSize + 1);
+    List<WorklistEntity> fetchedItems = query.getResultList();
+    String nextKey = fetchedItems.size() > pageSize
+        ? String.valueOf(fetchedItems.get(pageSize).getTaskId())
+        : null;
+    List<WorklistEntity> items = fetchedItems.size() > pageSize
+        ? fetchedItems.subList(0, pageSize)
+        : fetchedItems;
 
-    if (cursor == null && items.size() < pageSize) {
+    if (cursor == null && nextKey == null) {
       int totalCount = items.size();
-      return new SearchResult(items, totalCount);
+      return new SearchResult(items, totalCount, null);
     }
 
     CriteriaQuery<Long> countQuery = builder.createQuery(Long.class);
@@ -80,7 +86,7 @@ public class MyTodoSearchRepository {
         .where(predicates(builder, countWorklist, countInstance, request, userContext));
     long totalCount = entityManager.createQuery(countQuery).getSingleResult();
 
-    return new SearchResult(items, Math.toIntExact(totalCount));
+    return new SearchResult(items, Math.toIntExact(totalCount), nextKey);
   }
 
   private CursorPosition findCursor(
@@ -160,27 +166,15 @@ public class MyTodoSearchRepository {
     List<String> groups = normalizedValues(userContext == null ? null : userContext.getGroups());
 
     Path<String> endpoint = worklist.get("endpoint");
-    Path<String> assignGroup = worklist.get("assignGroup");
     Path<String> scope = worklist.get("scope");
     Predicate dispatch = builder.equal(worklist.get("dispatchOption"), 1);
     Predicate unclaimed = builder.isNull(endpoint);
-    Predicate noAssignGroup = builder.or(
-        builder.isNull(assignGroup),
-        builder.equal(assignGroup, "null"));
-    Predicate noScope = builder.or(
-        builder.isNull(scope),
-        builder.equal(scope, "null"));
 
     return builder.or(
         userId == null ? builder.disjunction() : builder.equal(endpoint, userId),
         in(builder, endpoint, scopes),
-        builder.and(dispatch, unclaimed, noAssignGroup, in(builder, scope, groups)),
-        builder.and(dispatch, unclaimed, noAssignGroup, in(builder, scope, scopes)),
-        builder.and(
-            dispatch,
-            unclaimed,
-            in(builder, assignGroup, groups),
-            builder.or(noScope, in(builder, scope, scopes))));
+        builder.and(dispatch, unclaimed, in(builder, scope, groups)),
+        builder.and(dispatch, unclaimed, in(builder, scope, scopes)));
   }
 
   private static Predicate in(
@@ -211,15 +205,8 @@ public class MyTodoSearchRepository {
       return;
     }
 
-    Path<String> assignGroup = worklist.get("assignGroup");
     Path<String> scope = worklist.get("scope");
-    Expression<String> trimmedGroup = builder.trim(assignGroup);
-    Predicate hasGroup = builder.and(
-        builder.isNotNull(assignGroup),
-        builder.notEqual(trimmedGroup, ""));
-    predicates.add(builder.or(
-        builder.and(hasGroup, builder.equal(trimmedGroup, value)),
-        builder.and(builder.not(hasGroup), builder.equal(builder.trim(scope), value))));
+    predicates.add(builder.equal(builder.trim(scope), value));
   }
 
   private static void addRange(
@@ -245,14 +232,14 @@ public class MyTodoSearchRepository {
       CursorPosition cursor) {
     Path<Long> taskId = worklist.get("taskId");
     if (sortField == SortField.TASK_ID) {
-      return compare(builder, taskId, cursor.taskId(), sortDirection);
+      return compareInclusive(builder, taskId, cursor.taskId(), sortDirection);
     }
 
     Path<Date> sortPath = dateSortPath(worklist, instance, sortField);
     if (cursor.sortValue() == null) {
       return builder.and(
           builder.isNull(sortPath),
-          compare(builder, taskId, cursor.taskId(), sortDirection));
+          compareInclusive(builder, taskId, cursor.taskId(), sortDirection));
     }
 
     return builder.or(
@@ -260,7 +247,7 @@ public class MyTodoSearchRepository {
         compare(builder, sortPath, cursor.sortValue(), sortDirection),
         builder.and(
             builder.equal(sortPath, cursor.sortValue()),
-            compare(builder, taskId, cursor.taskId(), sortDirection)));
+            compareInclusive(builder, taskId, cursor.taskId(), sortDirection)));
   }
 
   private static <T extends Comparable<? super T>> Predicate compare(
@@ -271,6 +258,16 @@ public class MyTodoSearchRepository {
     return sortDirection == SortDirection.ASC
         ? builder.greaterThan(path, cursorValue)
         : builder.lessThan(path, cursorValue);
+  }
+
+  private static <T extends Comparable<? super T>> Predicate compareInclusive(
+      CriteriaBuilder builder,
+      Path<T> path,
+      T cursorValue,
+      SortDirection sortDirection) {
+    return sortDirection == SortDirection.ASC
+        ? builder.greaterThanOrEqualTo(path, cursorValue)
+        : builder.lessThanOrEqualTo(path, cursorValue);
   }
 
   private static List<jakarta.persistence.criteria.Order> sortOrders(
@@ -321,10 +318,14 @@ public class MyTodoSearchRepository {
     return trimmed.isEmpty() ? null : trimmed;
   }
 
-  public record SearchResult(List<WorklistEntity> items, int totalCount) {
+  public record SearchResult(List<WorklistEntity> items, int totalCount, String nextKey) {
 
     public SearchResult {
       items = List.copyOf(items);
+    }
+
+    public SearchResult(List<WorklistEntity> items, int totalCount) {
+      this(items, totalCount, null);
     }
   }
 

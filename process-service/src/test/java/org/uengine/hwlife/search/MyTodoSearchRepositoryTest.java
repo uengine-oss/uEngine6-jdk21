@@ -89,38 +89,76 @@ class MyTodoSearchRepositoryTest {
   }
 
   @Test
-  void continuesAfterCursorWithoutDuplicatesWhenSortValuesAreEqual() {
+  void returnsNextItemKeyAndContinuesWithoutGapsWhenSortValuesAreEqual() {
     MyTodoRequest request = new MyTodoRequest();
     request.setSortOrdrVal("startedDate");
 
     SearchResult first = search(request, null, 2);
-    SearchResult second = search(request, 1L, 2);
-    SearchResult third = search(request, 4L, 2);
+    SearchResult second = search(request, Long.valueOf(first.nextKey()), 2);
+    SearchResult third = search(request, Long.valueOf(second.nextKey()), 2);
 
     assertEquals(List.of(2L, 1L), taskIds(first));
     assertEquals(List.of(3L, 4L), taskIds(second));
     assertEquals(List.of(5L), taskIds(third));
+    assertEquals("3", first.nextKey());
+    assertEquals("5", second.nextKey());
+    assertEquals(null, third.nextKey());
     assertEquals(5, first.totalCount());
     assertEquals(5, second.totalCount());
     assertEquals(5, third.totalCount());
   }
 
   @Test
-  void continuesAscendingAfterCursorWithoutDuplicatesWhenSortValuesAreEqual() {
+  void returnsNextItemKeyAndContinuesAscendingWithoutGapsWhenSortValuesAreEqual() {
     MyTodoRequest request = new MyTodoRequest();
     request.setSortOrdrVal("startedDate");
     request.setSortDirection("ASC");
 
     SearchResult first = search(request, null, 2);
-    SearchResult second = search(request, 3L, 2);
-    SearchResult third = search(request, 2L, 2);
+    SearchResult second = search(request, Long.valueOf(first.nextKey()), 2);
+    SearchResult third = search(request, Long.valueOf(second.nextKey()), 2);
 
     assertEquals(List.of(4L, 3L), taskIds(first));
     assertEquals(List.of(1L, 2L), taskIds(second));
     assertEquals(List.of(5L), taskIds(third));
+    assertEquals("1", first.nextKey());
+    assertEquals("5", second.nextKey());
+    assertEquals(null, third.nextKey());
     assertEquals(5, first.totalCount());
     assertEquals(5, second.totalCount());
     assertEquals(5, third.totalCount());
+  }
+
+  @Test
+  void usesScopeForGroupAccessEvenWhenAssignGroupDiffers() {
+    MyTodoRequest request = new MyTodoRequest();
+    request.setSortOrdrVal("taskId");
+    UserContext userContext = UserContext.getThreadLocalInstance();
+    userContext.setUserId("different-user");
+    userContext.setGroups(List.of("SCOPE-ACCESS"));
+    userContext.setScopes(List.of());
+
+    try (EntityManager entityManager = sessionFactory.createEntityManager()) {
+      entityManager.getTransaction().begin();
+      WorklistEntity worklist = entityManager.find(WorklistEntity.class, 1L);
+      worklist.setEndpoint(null);
+      worklist.setDispatchOption(1);
+      worklist.setAssignGroup("RETIRED-GROUP");
+      worklist.setScope("SCOPE-ACCESS");
+      entityManager.getTransaction().commit();
+
+      SearchResult result = new MyTodoSearchRepository(entityManager)
+          .search(request, null, 10, userContext);
+
+      assertEquals(List.of(1L), taskIds(result));
+
+      entityManager.getTransaction().begin();
+      worklist.setEndpoint(USER_ID);
+      worklist.setDispatchOption(0);
+      worklist.setAssignGroup(null);
+      worklist.setScope(null);
+      entityManager.getTransaction().commit();
+    }
   }
 
   private static SearchResult search(MyTodoRequest request, Long cursor, int size) {
