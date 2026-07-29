@@ -175,7 +175,7 @@ class WorkSearchServiceImplTest {
     MyTodoResponse response = service.searchMyTodo(new MyTodoRequest());
 
     assertEquals(1, response.getTotCont());
-    MyTodoItem item = response.getTodolist().get(0);
+    MyTodoItem item = response.getTodoList().get(0);
     assertEquals("BSWR", item.getBswrClsfCode());
     assertEquals("CUST", item.getCustId());
     assertEquals("LOAN", item.getFncgBswrDvsnCode());
@@ -442,7 +442,7 @@ class WorkSearchServiceImplTest {
   }
 
   private static List<String> taskIds(MyTodoResponse response) {
-    return response.getTodolist().stream()
+    return response.getTodoList().stream()
         .map(MyTodoItem::getFncgBpmTaskLstId)
         .toList();
   }

@@ -128,7 +128,7 @@ public class OrgRunningSearchRepository {
         builder,
         predicates,
         instance.get("fncgBswrDvsnCode"),
-        request.getFncgVswrDvsnCode());
+        request.getFncgBswrDvsnCode());
     addText(builder, predicates, worklist.get("trcTag"), request.getFncgBpmTaskTrcgNm());
     addRange(
         builder,

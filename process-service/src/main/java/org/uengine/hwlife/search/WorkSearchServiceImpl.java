@@ -61,7 +61,7 @@ public class WorkSearchServiceImpl implements WorkSearchService {
     MyTodoResponse response = new MyTodoResponse();
     response.setTotCont(result.totalCount());
     response.setNextKey(result.nextKey());
-    response.setTodolist(result.items().stream()
+    response.setTodoList(result.items().stream()
         .map(this::toMyTodoItem)
         .collect(Collectors.toList()));
     return response;

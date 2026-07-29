@@ -8,7 +8,7 @@ import java.time.LocalDateTime;
 public class OrgCompletedRequest {
 
     private String bswrClsfCode;
-    private String fncgVswrDvsnCode;
+    private String fncgBswrDvsnCode;
     private LocalDateTime rqstStarDttm;
     private LocalDateTime rqstEndDttm;
     private String fncgSuptTrgtDvsnCode;
@@ -29,12 +29,12 @@ public class OrgCompletedRequest {
         this.bswrClsfCode = bswrClsfCode;
     }
 
-    public String getFncgVswrDvsnCode() {
-        return fncgVswrDvsnCode;
+    public String getFncgBswrDvsnCode() {
+        return fncgBswrDvsnCode;
     }
 
-    public void setFncgVswrDvsnCode(String fncgVswrDvsnCode) {
-        this.fncgVswrDvsnCode = fncgVswrDvsnCode;
+    public void setFncgBswrDvsnCode(String fncgBswrDvsnCode) {
+        this.fncgBswrDvsnCode = fncgBswrDvsnCode;
     }
 
     public LocalDateTime getRqstStarDttm() {
