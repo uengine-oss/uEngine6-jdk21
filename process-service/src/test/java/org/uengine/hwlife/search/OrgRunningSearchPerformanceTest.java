@@ -144,7 +144,6 @@ class OrgRunningSearchPerformanceTest {
     OrgRunningRequest request = new OrgRunningRequest();
     request.setPageSize(PAGE_SIZE);
     request.setSortOrdrVal("startedDate");
-    request.setSortDirection("DESC");
     try (EntityManager entityManager = sessionFactory.createEntityManager()) {
       OrgRunningSearchRepository.SearchResult result =
           new OrgRunningSearchRepository(entityManager).search(request, null, PAGE_SIZE);

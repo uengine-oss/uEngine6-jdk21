@@ -12,12 +12,10 @@ import org.uengine.hwlife.search.dto.*;
  *
  * <pre>
  *   POST /search/my-todo  body: { "custId": "...", "nextKey": "", "pageSize": 20,
- *                                 "sortOrdrVal": "startedDate",
- *                                 "sortDirection": "DESC" }
+ *                                 "sortOrdrVal": "startedDate" }
  *   POST /search/my-progress  body: { "custId": "...", "pageNo": "1" }
  *   POST /search/org-running  body: { "fncgWndwOrgnCode": "...", "nextKey": "",
- *                                    "pageSize": 20, "sortOrdrVal": "startedDate",
- *                                    "sortDirection": "DESC" }
+ *                                    "pageSize": 20, "sortOrdrVal": "startedDate" }
  *   POST /search/org-completed  body: { "custId": "...", "pageNo": "1" }
  *   POST /search/bulk-assign  body: { "custId": "...", "hndrEmnb": "..." }
  *   POST /search/worklist-by-inst-id  body: { "loanPcesMgmtNo": "..." }

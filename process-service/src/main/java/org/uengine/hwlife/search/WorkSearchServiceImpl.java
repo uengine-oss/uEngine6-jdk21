@@ -77,7 +77,6 @@ public class WorkSearchServiceImpl implements WorkSearchService {
   @Transactional(readOnly = true)
   public OrgRunningResponse searchOrgRunning(@RequestBody OrgRunningRequest request) {
     OrgRunningRequest normalizedRequest = request == null ? new OrgRunningRequest() : request;
-    validateSortDirection(normalizedRequest.getSortDirection());
     Long cursorTaskId = parseNextKey(normalizedRequest.getNextKey());
     int pageSize = normalizePageSize(normalizedRequest.getPageSize());
     OrgRunningSearchRepository.SearchResult result =
@@ -292,17 +291,6 @@ public class WorkSearchServiceImpl implements WorkSearchService {
       return DEFAULT_PAGE_SIZE;
     }
     return Math.max(1, Math.min(pageSize, MAX_PAGE_SIZE));
-  }
-
-  private static void validateSortDirection(String sortDirection) {
-    String value = trimToNull(sortDirection);
-    if (value != null
-        && !"ASC".equalsIgnoreCase(value)
-        && !"DESC".equalsIgnoreCase(value)) {
-      throw new ResponseStatusException(
-          HttpStatus.BAD_REQUEST,
-          "sortDirection must be ASC or DESC");
-    }
   }
 
   private static String firstNonBlank(String... values) {

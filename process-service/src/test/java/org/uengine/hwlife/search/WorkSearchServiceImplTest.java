@@ -163,26 +163,6 @@ class WorkSearchServiceImplTest {
   }
 
   @Test
-  void ignoresLegacySortDirectionForInstIdOrdering() {
-    MyTodoRequest request = new MyTodoRequest();
-    request.setSortDirection("NEWEST");
-    when(searchRepository.search(
-        any(MyTodoRequest.class),
-        isNull(),
-        eq(20),
-        any(UserContext.class)))
-        .thenReturn(new SearchResult(List.of(), 0));
-
-    service.searchMyTodo(request);
-
-    verify(searchRepository).search(
-        request,
-        null,
-        20,
-        UserContext.getThreadLocalInstance());
-  }
-
-  @Test
   void mapsEveryResponseFieldFromPagedRepositoryResult() {
     WorklistEntity worklist = completeWorklist(101L, WORK_START);
     when(searchRepository.search(
@@ -231,7 +211,6 @@ class WorkSearchServiceImplTest {
     request.setNextKey("101");
     request.setPageSize(35);
     request.setSortOrdrVal("loanHopeDate");
-    request.setSortDirection("ASC");
     when(orgRunningSearchRepository.search(request, 101L, 35))
         .thenReturn(new OrgRunningSearchRepository.SearchResult(
             List.of(minimalWorklist(102L)),
@@ -258,15 +237,8 @@ class WorkSearchServiceImplTest {
         ResponseStatusException.class,
         () -> service.searchOrgRunning(invalidKey));
 
-    OrgRunningRequest invalidDirection = new OrgRunningRequest();
-    invalidDirection.setSortDirection("NEWEST");
-    ResponseStatusException directionException = assertThrows(
-        ResponseStatusException.class,
-        () -> service.searchOrgRunning(invalidDirection));
-
     verify(orgRunningSearchRepository).search(any(OrgRunningRequest.class), isNull(), eq(20));
     assertEquals(HttpStatus.BAD_REQUEST, keyException.getStatusCode());
-    assertEquals(HttpStatus.BAD_REQUEST, directionException.getStatusCode());
   }
 
   @Test
@@ -275,14 +247,13 @@ class WorkSearchServiceImplTest {
     request.setNextKey("101");
     request.setPageSize(35);
     request.setSortOrdrVal("startedDate");
-    request.setSortDirection("DESC");
 
     JsonNode json = new ObjectMapper().valueToTree(request);
 
     assertEquals("101", json.get("nextKey").asText());
     assertEquals(35, json.get("pageSize").asInt());
     assertEquals("startedDate", json.get("sortOrdrVal").asText());
-    assertEquals("DESC", json.get("sortDirection").asText());
+    assertFalse(json.has("sortDirection"));
     assertFalse(json.has("pageNo"));
   }
 

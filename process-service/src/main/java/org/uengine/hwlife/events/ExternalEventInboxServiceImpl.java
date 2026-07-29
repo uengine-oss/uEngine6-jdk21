@@ -113,7 +113,7 @@ public class ExternalEventInboxServiceImpl implements ExternalEventInboxService 
                 skipJsonValue(parser, token);
             }
         }
-        return new IncomingEsbRequest(header, payloadJson != null ? payloadJson : "{}");
+        return new IncomingEsbRequest(header, payloadJson != null ? payloadJson : requestBodyJson);
     }
 
     private EsbCommonHeader parseHeaderValue(JsonToken token, JsonParser parser) throws IOException {

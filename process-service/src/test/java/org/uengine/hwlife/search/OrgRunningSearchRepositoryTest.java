@@ -96,7 +96,6 @@ class OrgRunningSearchRepositoryTest {
   void excludesCompletedWorkAndContinuesDescendingWithoutGaps() {
     OrgRunningRequest request = new OrgRunningRequest();
     request.setSortOrdrVal("startedDate");
-    request.setSortDirection("DESC");
 
     SearchResult first = search(request, null, 2);
     SearchResult second = search(request, Long.valueOf(first.nextKey()), 2);
@@ -114,19 +113,18 @@ class OrgRunningSearchRepositoryTest {
   }
 
   @Test
-  void continuesAscendingWithoutGapsAndKeepsNullDatesLast() {
+  void continuesBySortOrderValueDescendingAndKeepsNullDatesLast() {
     OrgRunningRequest request = new OrgRunningRequest();
     request.setSortOrdrVal("loanHopeDate");
-    request.setSortDirection("ASC");
 
     SearchResult first = search(request, null, 2);
     SearchResult second = search(request, Long.valueOf(first.nextKey()), 2);
     SearchResult third = search(request, Long.valueOf(second.nextKey()), 2);
 
-    assertEquals(List.of(1L, 2L), taskIds(first));
-    assertEquals(List.of(3L, 4L), taskIds(second));
+    assertEquals(List.of(4L, 3L), taskIds(first));
+    assertEquals(List.of(2L, 1L), taskIds(second));
     assertEquals(List.of(6L), taskIds(third));
-    assertEquals("3", first.nextKey());
+    assertEquals("2", first.nextKey());
     assertEquals("6", second.nextKey());
     assertEquals(null, third.nextKey());
   }

@@ -17,7 +17,6 @@ import jakarta.persistence.Tuple;
 import jakarta.persistence.TypedQuery;
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.CriteriaQuery;
-import jakarta.persistence.criteria.Expression;
 import jakarta.persistence.criteria.Fetch;
 import jakarta.persistence.criteria.Join;
 import jakarta.persistence.criteria.JoinType;
@@ -41,7 +40,6 @@ public class OrgRunningSearchRepository {
   public SearchResult search(OrgRunningRequest request, Long cursorTaskId, int pageSize) {
     CriteriaBuilder builder = entityManager.getCriteriaBuilder();
     SortField sortField = SortField.from(request.getSortOrdrVal());
-    SortDirection sortDirection = SortDirection.from(request.getSortDirection());
     CursorPosition cursor = findCursor(builder, cursorTaskId, sortField);
     if (cursorTaskId != null && cursor == null) {
       return new SearchResult(List.of(), 0, null);
@@ -54,11 +52,11 @@ public class OrgRunningSearchRepository {
         new ArrayList<>(List.of(predicates(builder, worklist, instance, request)));
     if (cursor != null) {
       dataPredicates.add(
-          cursorPredicate(builder, worklist, instance, sortField, sortDirection, cursor));
+          cursorPredicate(builder, worklist, instance, sortField, cursor));
     }
     dataQuery.select(worklist)
         .where(dataPredicates.toArray(Predicate[]::new))
-        .orderBy(sortOrders(builder, worklist, instance, sortField, sortDirection));
+        .orderBy(sortOrders(builder, worklist, instance, sortField));
 
     TypedQuery<WorklistEntity> query = entityManager.createQuery(dataQuery);
     query.setMaxResults(pageSize + 1);
@@ -204,60 +202,52 @@ public class OrgRunningSearchRepository {
       Root<WorklistEntity> worklist,
       Join<WorklistEntity, ProcessInstanceEntity> instance,
       SortField sortField,
-      SortDirection sortDirection,
       CursorPosition cursor) {
     Path<Long> taskId = worklist.get("taskId");
     if (sortField == SortField.TASK_ID) {
-      return compareInclusive(builder, taskId, cursor.taskId(), sortDirection);
+      return compareInclusive(builder, taskId, cursor.taskId());
     }
     Path<Date> sortPath = dateSortPath(worklist, instance, sortField);
     if (cursor.sortValue() == null) {
       return builder.and(
           builder.isNull(sortPath),
-          compareInclusive(builder, taskId, cursor.taskId(), sortDirection));
+          compareInclusive(builder, taskId, cursor.taskId()));
     }
     return builder.or(
         builder.isNull(sortPath),
-        compare(builder, sortPath, cursor.sortValue(), sortDirection),
+        compare(builder, sortPath, cursor.sortValue()),
         builder.and(
             builder.equal(sortPath, cursor.sortValue()),
-            compareInclusive(builder, taskId, cursor.taskId(), sortDirection)));
+            compareInclusive(builder, taskId, cursor.taskId())));
   }
 
   private static <T extends Comparable<? super T>> Predicate compare(
       CriteriaBuilder builder,
       Path<T> path,
-      T cursorValue,
-      SortDirection direction) {
-    return direction == SortDirection.ASC
-        ? builder.greaterThan(path, cursorValue)
-        : builder.lessThan(path, cursorValue);
+      T cursorValue) {
+    return builder.lessThan(path, cursorValue);
   }
 
   private static <T extends Comparable<? super T>> Predicate compareInclusive(
       CriteriaBuilder builder,
       Path<T> path,
-      T cursorValue,
-      SortDirection direction) {
-    return direction == SortDirection.ASC
-        ? builder.greaterThanOrEqualTo(path, cursorValue)
-        : builder.lessThanOrEqualTo(path, cursorValue);
+      T cursorValue) {
+    return builder.lessThanOrEqualTo(path, cursorValue);
   }
 
   private static List<jakarta.persistence.criteria.Order> sortOrders(
       CriteriaBuilder builder,
       Root<WorklistEntity> worklist,
       Join<WorklistEntity, ProcessInstanceEntity> instance,
-      SortField sortField,
-      SortDirection direction) {
+      SortField sortField) {
     if (sortField == SortField.TASK_ID) {
-      return List.of(direction.order(builder, worklist.get("taskId")));
+      return List.of(builder.desc(worklist.get("taskId")));
     }
     Path<Date> sortPath = dateSortPath(worklist, instance, sortField);
     return List.of(
         builder.asc(builder.selectCase().when(builder.isNull(sortPath), 1).otherwise(0)),
-        direction.order(builder, sortPath),
-        direction.order(builder, worklist.get("taskId")));
+        builder.desc(sortPath),
+        builder.desc(worklist.get("taskId")));
   }
 
   private static Path<Date> dateSortPath(
@@ -321,18 +311,4 @@ public class OrgRunningSearchRepository {
     }
   }
 
-  private enum SortDirection {
-    ASC,
-    DESC;
-
-    private static SortDirection from(String direction) {
-      return "ASC".equalsIgnoreCase(trimToNull(direction)) ? ASC : DESC;
-    }
-
-    private jakarta.persistence.criteria.Order order(
-        CriteriaBuilder builder,
-        Expression<?> expression) {
-      return this == ASC ? builder.asc(expression) : builder.desc(expression);
-    }
-  }
 }
