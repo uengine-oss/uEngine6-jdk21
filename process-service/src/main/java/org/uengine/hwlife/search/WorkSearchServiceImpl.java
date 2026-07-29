@@ -50,12 +50,11 @@ public class WorkSearchServiceImpl implements WorkSearchService {
   @Transactional(readOnly = true)
   public MyTodoResponse searchMyTodo(@RequestBody MyTodoRequest request) {
     MyTodoRequest normalizedRequest = request == null ? new MyTodoRequest() : request;
-    validateSortDirection(normalizedRequest.getSortDirection());
-    Long cursorTaskId = parseNextKey(normalizedRequest.getNextKey());
+    Long cursorInstId = parseMyTodoNextKey(normalizedRequest.getNextKey());
     int pageSize = normalizePageSize(normalizedRequest.getPageSize());
     MyTodoSearchRepository.SearchResult result = myTodoSearchRepository.search(
         normalizedRequest,
-        cursorTaskId,
+        cursorInstId,
         pageSize,
         UserContext.getThreadLocalInstance());
 
@@ -265,6 +264,25 @@ public class WorkSearchServiceImpl implements WorkSearchService {
       throw new ResponseStatusException(
           HttpStatus.BAD_REQUEST,
           "nextKey must be a positive fncgBpmTaskLstId",
+          exception);
+    }
+  }
+
+  private static Long parseMyTodoNextKey(String nextKey) {
+    String value = trimToNull(nextKey);
+    if (value == null) {
+      return null;
+    }
+    try {
+      long instId = Long.parseLong(value);
+      if (instId <= 0) {
+        throw new NumberFormatException("nextKey must be positive");
+      }
+      return instId;
+    } catch (NumberFormatException exception) {
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST,
+          "nextKey must be a positive instId",
           exception);
     }
   }

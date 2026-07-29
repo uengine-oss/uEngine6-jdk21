@@ -78,7 +78,7 @@ class WorkSearchServiceImplTest {
         eq(21L),
         eq(35),
         any(UserContext.class)))
-        .thenReturn(new SearchResult(List.of(minimalWorklist(21L)), 25, "22"));
+        .thenReturn(new SearchResult(List.of(minimalWorklist(21L)), 25, "122"));
 
     MyTodoResponse response = service.searchMyTodo(request);
 
@@ -90,7 +90,7 @@ class WorkSearchServiceImplTest {
         any(UserContext.class));
     assertSame(request, requestCaptor.getValue());
     assertEquals(25, response.getTotCont());
-    assertEquals("22", response.getNextKey());
+    assertEquals("122", response.getNextKey());
     assertEquals(List.of("21"), taskIds(response));
   }
 
@@ -129,9 +129,9 @@ class WorkSearchServiceImplTest {
   }
 
   @Test
-  void rejectsNextKeyThatIsNotAPositiveTaskId() {
+  void rejectsNextKeyThatIsNotAPositiveInstId() {
     MyTodoRequest request = new MyTodoRequest();
-    request.setNextKey("not-a-task-id");
+    request.setNextKey("not-an-inst-id");
 
     ResponseStatusException exception = assertThrows(
         ResponseStatusException.class,
@@ -145,6 +145,8 @@ class WorkSearchServiceImplTest {
     MyTodoRequest request = new MyTodoRequest();
     request.setNextKey("21");
     request.setPageSize(35);
+    request.setStartDate(date(WORK_START));
+    request.setHopeStartDate(date(HOPE_DATE));
 
     JsonNode json = new ObjectMapper().valueToTree(request);
 
@@ -152,20 +154,32 @@ class WorkSearchServiceImplTest {
     assertEquals(35, json.get("pageSize").asInt());
     assertTrue(json.has("nextKey"));
     assertTrue(json.has("pageSize"));
+    assertTrue(json.has("startDate"));
+    assertTrue(json.has("hopeStartDate"));
+    assertFalse(json.has("starDate"));
+    assertFalse(json.has("hopeStarDate"));
     assertFalse(json.has("cursor"));
     assertFalse(json.has("size"));
   }
 
   @Test
-  void rejectsUnknownSortDirection() {
+  void ignoresLegacySortDirectionForInstIdOrdering() {
     MyTodoRequest request = new MyTodoRequest();
     request.setSortDirection("NEWEST");
+    when(searchRepository.search(
+        any(MyTodoRequest.class),
+        isNull(),
+        eq(20),
+        any(UserContext.class)))
+        .thenReturn(new SearchResult(List.of(), 0));
 
-    ResponseStatusException exception = assertThrows(
-        ResponseStatusException.class,
-        () -> service.searchMyTodo(request));
+    service.searchMyTodo(request);
 
-    assertEquals(HttpStatus.BAD_REQUEST, exception.getStatusCode());
+    verify(searchRepository).search(
+        request,
+        null,
+        20,
+        UserContext.getThreadLocalInstance());
   }
 
   @Test
@@ -403,16 +417,14 @@ class WorkSearchServiceImplTest {
     request.setLoanSubjDvsnCode("SUBJECT");
     request.setFncgMneyUsagClsfCode("USAGE");
     request.setFncgBpmTaskTrcgNm("TRACE");
-    request.setStarDate(date(WORK_START));
+    request.setStartDate(date(WORK_START));
     request.setEndDate(date(WORK_START));
-    request.setHopeStarDate(date(HOPE_DATE));
+    request.setHopeStartDate(date(HOPE_DATE));
     request.setHopeEndDate(date(HOPE_DATE));
     request.setFncgWndwOrgnCode("GROUP");
     request.setHndrEmnb("handler");
     request.setNextKey("21");
     request.setPageSize(35);
-    request.setSortOrdrVal("loanHopeDate");
-    request.setSortDirection("ASC");
     return request;
   }
 

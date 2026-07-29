@@ -1,8 +1,10 @@
 package org.uengine.hwlife.search;
 
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
+import java.util.TimeZone;
 
 import org.springframework.stereotype.Repository;
 import org.uengine.contexts.UserContext;
@@ -12,11 +14,9 @@ import org.uengine.hwlife.search.dto.MyTodoRequest;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
-import jakarta.persistence.Tuple;
 import jakarta.persistence.TypedQuery;
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.CriteriaQuery;
-import jakarta.persistence.criteria.Expression;
 import jakarta.persistence.criteria.Fetch;
 import jakarta.persistence.criteria.Join;
 import jakarta.persistence.criteria.JoinType;
@@ -39,41 +39,36 @@ public class MyTodoSearchRepository {
 
   public SearchResult search(
       MyTodoRequest request,
-      Long cursorTaskId,
+      Long cursorInstId,
       int pageSize,
       UserContext userContext) {
     CriteriaBuilder builder = entityManager.getCriteriaBuilder();
-    SortField sortField = SortField.from(request.getSortOrdrVal());
-    SortDirection sortDirection = SortDirection.from(request.getSortDirection());
-    CursorPosition cursor = findCursor(builder, cursorTaskId, sortField);
-    if (cursorTaskId != null && cursor == null) {
-      return new SearchResult(List.of(), 0, null);
-    }
 
     CriteriaQuery<WorklistEntity> dataQuery = builder.createQuery(WorklistEntity.class);
     Root<WorklistEntity> worklist = dataQuery.from(WorklistEntity.class);
     Join<WorklistEntity, ProcessInstanceEntity> instance = fetchProcessInstance(worklist);
     List<Predicate> dataPredicates = new ArrayList<>(
         List.of(predicates(builder, worklist, instance, request, userContext)));
-    if (cursor != null) {
-      dataPredicates.add(cursorPredicate(
-          builder, worklist, instance, sortField, sortDirection, cursor));
+    if (cursorInstId != null) {
+      dataPredicates.add(builder.greaterThanOrEqualTo(worklist.get("instId"), cursorInstId));
     }
     dataQuery.select(worklist)
         .where(dataPredicates.toArray(Predicate[]::new))
-        .orderBy(sortOrders(builder, worklist, instance, sortField, sortDirection));
+        .orderBy(
+            builder.asc(worklist.get("instId")),
+            builder.asc(worklist.get("taskId")));
 
     TypedQuery<WorklistEntity> query = entityManager.createQuery(dataQuery);
     query.setMaxResults(pageSize + 1);
     List<WorklistEntity> fetchedItems = query.getResultList();
     String nextKey = fetchedItems.size() > pageSize
-        ? String.valueOf(fetchedItems.get(pageSize).getTaskId())
+        ? String.valueOf(fetchedItems.get(pageSize).getInstId())
         : null;
     List<WorklistEntity> items = fetchedItems.size() > pageSize
         ? fetchedItems.subList(0, pageSize)
         : fetchedItems;
 
-    if (cursor == null && nextKey == null) {
+    if (cursorInstId == null && nextKey == null) {
       int totalCount = items.size();
       return new SearchResult(items, totalCount, null);
     }
@@ -87,35 +82,6 @@ public class MyTodoSearchRepository {
     long totalCount = entityManager.createQuery(countQuery).getSingleResult();
 
     return new SearchResult(items, Math.toIntExact(totalCount), nextKey);
-  }
-
-  private CursorPosition findCursor(
-      CriteriaBuilder builder,
-      Long cursorTaskId,
-      SortField sortField) {
-    if (cursorTaskId == null) {
-      return null;
-    }
-    if (sortField == SortField.TASK_ID) {
-      return new CursorPosition(null, cursorTaskId);
-    }
-
-    CriteriaQuery<Tuple> cursorQuery = builder.createTupleQuery();
-    Root<WorklistEntity> worklist = cursorQuery.from(WorklistEntity.class);
-    Join<WorklistEntity, ProcessInstanceEntity> instance =
-        worklist.join("processInstance", JoinType.LEFT);
-    cursorQuery.multiselect(
-        worklist.get("taskId").alias("taskId"),
-        dateSortPath(worklist, instance, sortField).alias("sortValue"))
-        .where(builder.equal(worklist.get("taskId"), cursorTaskId));
-
-    List<Tuple> rows = entityManager.createQuery(cursorQuery)
-        .setMaxResults(1)
-        .getResultList();
-    if (rows.isEmpty()) {
-      return null;
-    }
-    return new CursorPosition(rows.get(0).get("sortValue", Date.class), cursorTaskId);
   }
 
   @SuppressWarnings("unchecked")
@@ -147,12 +113,17 @@ public class MyTodoSearchRepository {
     addText(builder, predicates, worklist.get("trcTag"), request.getFncgBpmTaskTrcgNm());
     addText(builder, predicates, worklist.get("endpoint"), request.getHndrEmnb());
     addOrganization(builder, predicates, worklist, request.getFncgWndwOrgnCode());
-    addRange(builder, predicates, worklist.get("startDate"), request.getStarDate(), request.getEndDate());
-    addRange(
+    addDateRange(
+        builder,
+        predicates,
+        worklist.get("startDate"),
+        request.getStartDate(),
+        request.getEndDate());
+    addDateRange(
         builder,
         predicates,
         instance.get("loanHopeDate"),
-        request.getHopeStarDate(),
+        request.getHopeStartDate(),
         request.getHopeEndDate());
     return predicates.toArray(Predicate[]::new);
   }
@@ -209,94 +180,35 @@ public class MyTodoSearchRepository {
     predicates.add(builder.equal(builder.trim(scope), value));
   }
 
-  private static void addRange(
+  private static void addDateRange(
       CriteriaBuilder builder,
       List<Predicate> predicates,
       Path<Date> path,
       Date startInclusive,
       Date endInclusive) {
     if (startInclusive != null) {
-      predicates.add(builder.greaterThanOrEqualTo(path, startInclusive));
+      predicates.add(builder.greaterThanOrEqualTo(path, startOfDay(startInclusive)));
     }
     if (endInclusive != null) {
-      predicates.add(builder.lessThanOrEqualTo(path, endInclusive));
+      predicates.add(builder.lessThan(path, startOfNextDay(endInclusive)));
     }
   }
 
-  private static Predicate cursorPredicate(
-      CriteriaBuilder builder,
-      Root<WorklistEntity> worklist,
-      Join<WorklistEntity, ProcessInstanceEntity> instance,
-      SortField sortField,
-      SortDirection sortDirection,
-      CursorPosition cursor) {
-    Path<Long> taskId = worklist.get("taskId");
-    if (sortField == SortField.TASK_ID) {
-      return compareInclusive(builder, taskId, cursor.taskId(), sortDirection);
-    }
-
-    Path<Date> sortPath = dateSortPath(worklist, instance, sortField);
-    if (cursor.sortValue() == null) {
-      return builder.and(
-          builder.isNull(sortPath),
-          compareInclusive(builder, taskId, cursor.taskId(), sortDirection));
-    }
-
-    return builder.or(
-        builder.isNull(sortPath),
-        compare(builder, sortPath, cursor.sortValue(), sortDirection),
-        builder.and(
-            builder.equal(sortPath, cursor.sortValue()),
-            compareInclusive(builder, taskId, cursor.taskId(), sortDirection)));
+  private static Date startOfDay(Date value) {
+    Calendar calendar = Calendar.getInstance(TimeZone.getTimeZone("Asia/Seoul"));
+    calendar.setTime(value);
+    calendar.set(Calendar.HOUR_OF_DAY, 0);
+    calendar.set(Calendar.MINUTE, 0);
+    calendar.set(Calendar.SECOND, 0);
+    calendar.set(Calendar.MILLISECOND, 0);
+    return calendar.getTime();
   }
 
-  private static <T extends Comparable<? super T>> Predicate compare(
-      CriteriaBuilder builder,
-      Path<T> path,
-      T cursorValue,
-      SortDirection sortDirection) {
-    return sortDirection == SortDirection.ASC
-        ? builder.greaterThan(path, cursorValue)
-        : builder.lessThan(path, cursorValue);
-  }
-
-  private static <T extends Comparable<? super T>> Predicate compareInclusive(
-      CriteriaBuilder builder,
-      Path<T> path,
-      T cursorValue,
-      SortDirection sortDirection) {
-    return sortDirection == SortDirection.ASC
-        ? builder.greaterThanOrEqualTo(path, cursorValue)
-        : builder.lessThanOrEqualTo(path, cursorValue);
-  }
-
-  private static List<jakarta.persistence.criteria.Order> sortOrders(
-      CriteriaBuilder builder,
-      Root<WorklistEntity> worklist,
-      Join<WorklistEntity, ProcessInstanceEntity> instance,
-      SortField sortField,
-      SortDirection sortDirection) {
-    if (sortField == SortField.TASK_ID) {
-      return List.of(sortDirection.order(builder, worklist.get("taskId")));
-    }
-
-    Path<Date> sortPath = dateSortPath(worklist, instance, sortField);
-    return List.of(
-        builder.asc(builder.selectCase().when(builder.isNull(sortPath), 1).otherwise(0)),
-        sortDirection.order(builder, sortPath),
-        sortDirection.order(builder, worklist.get("taskId")));
-  }
-
-  private static Path<Date> dateSortPath(
-      Root<WorklistEntity> worklist,
-      Join<WorklistEntity, ProcessInstanceEntity> instance,
-      SortField sortField) {
-    return switch (sortField) {
-      case LOAN_HOPE_DATE -> instance.get("loanHopeDate");
-      case STARTED_DATE -> instance.get("startedDate");
-      case WORK_STARTED_DATE -> worklist.get("startDate");
-      case TASK_ID -> throw new IllegalArgumentException("taskId is not a date sort field");
-    };
+  private static Date startOfNextDay(Date value) {
+    Calendar calendar = Calendar.getInstance(TimeZone.getTimeZone("Asia/Seoul"));
+    calendar.setTime(startOfDay(value));
+    calendar.add(Calendar.DAY_OF_MONTH, 1);
+    return calendar.getTime();
   }
 
   private static List<String> normalizedValues(List<String> values) {
@@ -329,42 +241,4 @@ public class MyTodoSearchRepository {
     }
   }
 
-  private record CursorPosition(Date sortValue, Long taskId) {
-  }
-
-  private enum SortField {
-    LOAN_HOPE_DATE,
-    STARTED_DATE,
-    WORK_STARTED_DATE,
-    TASK_ID;
-
-    private static SortField from(String propertyName) {
-      String value = trimToNull(propertyName);
-      if ("loanHopeDate".equals(value)) {
-        return LOAN_HOPE_DATE;
-      }
-      if ("uworStarDttm".equals(value) || "startDate".equals(value)) {
-        return WORK_STARTED_DATE;
-      }
-      if ("fncgBpmTaskLstId".equals(value) || "taskId".equals(value)) {
-        return TASK_ID;
-      }
-      return STARTED_DATE;
-    }
-  }
-
-  private enum SortDirection {
-    ASC,
-    DESC;
-
-    private static SortDirection from(String direction) {
-      return "ASC".equalsIgnoreCase(trimToNull(direction)) ? ASC : DESC;
-    }
-
-    private jakarta.persistence.criteria.Order order(
-        CriteriaBuilder builder,
-        Expression<?> expression) {
-      return this == ASC ? builder.asc(expression) : builder.desc(expression);
-    }
-  }
 }

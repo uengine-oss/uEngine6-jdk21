@@ -2,6 +2,8 @@ package org.uengine.hwlife.search.dto;
 
 import java.util.Date;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
+import com.fasterxml.jackson.annotation.JsonFormat;
 import org.springframework.format.annotation.DateTimeFormat;
 
 /**
@@ -19,15 +21,21 @@ public class MyTodoRequest {
     private String fncgMneyUsagClsfCode;
     private String fncgBpmTaskTrcgNm;
 
+    @JsonAlias("starDate")
+    @JsonFormat(pattern = "yyyy-MM-dd", timezone = "Asia/Seoul")
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
-    private Date starDate;
+    private Date startDate;
 
+    @JsonFormat(pattern = "yyyy-MM-dd", timezone = "Asia/Seoul")
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
     private Date endDate;
 
+    @JsonAlias("hopeStarDate")
+    @JsonFormat(pattern = "yyyy-MM-dd", timezone = "Asia/Seoul")
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
-    private Date hopeStarDate;
+    private Date hopeStartDate;
 
+    @JsonFormat(pattern = "yyyy-MM-dd", timezone = "Asia/Seoul")
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
     private Date hopeEndDate;
 
@@ -110,12 +118,12 @@ public class MyTodoRequest {
         this.fncgBpmTaskTrcgNm = fncgBpmTaskTrcgNm;
     }
 
-    public Date getStarDate() {
-        return starDate;
+    public Date getStartDate() {
+        return startDate;
     }
 
-    public void setStarDate(Date starDate) {
-        this.starDate = starDate;
+    public void setStartDate(Date startDate) {
+        this.startDate = startDate;
     }
 
     public Date getEndDate() {
@@ -126,12 +134,12 @@ public class MyTodoRequest {
         this.endDate = endDate;
     }
 
-    public Date getHopeStarDate() {
-        return hopeStarDate;
+    public Date getHopeStartDate() {
+        return hopeStartDate;
     }
 
-    public void setHopeStarDate(Date hopeStarDate) {
-        this.hopeStarDate = hopeStarDate;
+    public void setHopeStartDate(Date hopeStartDate) {
+        this.hopeStartDate = hopeStartDate;
     }
 
     public Date getHopeEndDate() {

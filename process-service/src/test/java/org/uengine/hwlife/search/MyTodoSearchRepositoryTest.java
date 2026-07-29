@@ -2,6 +2,8 @@ package org.uengine.hwlife.search;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.Date;
 import java.util.List;
 
@@ -23,6 +25,7 @@ import jakarta.persistence.EntityManager;
 class MyTodoSearchRepositoryTest {
 
   private static final String USER_ID = "cursor-user";
+  private static final ZoneId SEOUL = ZoneId.of("Asia/Seoul");
 
   private static SessionFactory sessionFactory;
 
@@ -33,18 +36,20 @@ class MyTodoSearchRepositoryTest {
         .addAnnotatedClass(WorklistEntity.class)
         .addAnnotatedClass(RoleMappingEntity.class)
         .setProperty("hibernate.connection.url",
-            "jdbc:h2:mem:my_todo_cursor;NON_KEYWORDS=VALUE;DB_CLOSE_DELAY=-1")
+            "jdbc:h2:mem:my_todo_inst_cursor;NON_KEYWORDS=VALUE;DB_CLOSE_DELAY=-1")
         .setProperty("hibernate.hbm2ddl.auto", "create-drop")
         .setProperty("hibernate.show_sql", "false")
         .buildSessionFactory();
 
     try (Session session = sessionFactory.openSession()) {
       session.beginTransaction();
-      persist(session, 1L, 101L, 300_000_000L, 100_000_000L);
-      persist(session, 2L, 102L, 300_000_000L, 300_000_000L);
-      persist(session, 3L, 103L, 200_000_000L, 300_000_000L);
-      persist(session, 4L, 104L, 100_000_000L, 200_000_000L);
-      persist(session, 5L, 105L, null, null);
+      persist(session, 1L, 101L, "LOAN-A", at(2026, 8, 1, 9, 0), day(2026, 8, 10));
+      persist(session, 2L, 102L, "LOAN-A", at(2026, 8, 2, 23, 59), day(2026, 8, 11));
+      persist(session, 3L, 103L, "LOAN-A", at(2026, 8, 3, 0, 0), day(2026, 8, 12));
+      persist(session, 4L, 104L, "LOAN-A", at(2026, 8, 4, 9, 0), day(2026, 8, 13));
+      persist(session, 5L, 105L, "LOAN-A", at(2026, 8, 5, 9, 0), day(2026, 8, 14));
+      persist(session, 6L, 106L, "LOAN-B", at(2026, 8, 6, 9, 0), day(2026, 9, 1));
+      persist(session, 7L, 107L, "LOAN-B", at(2026, 8, 7, 9, 0), day(2026, 9, 2));
       session.getTransaction().commit();
     }
   }
@@ -57,82 +62,60 @@ class MyTodoSearchRepositoryTest {
   }
 
   @Test
-  void sortsRequestedLoanHopeDateDescendingWithTaskIdTieBreaker() {
+  void returnsNextPageFirstInstIdAndKeepsTotalCount() {
     MyTodoRequest request = new MyTodoRequest();
-    request.setSortOrdrVal("loanHopeDate");
-    request.setSortDirection("DESC");
-
-    SearchResult result = search(request, null, 10);
-
-    assertEquals(List.of(3L, 2L, 4L, 1L, 5L), taskIds(result));
-  }
-
-  @Test
-  void sortsRequestedLoanHopeDateAscendingWithTaskIdTieBreaker() {
-    MyTodoRequest request = new MyTodoRequest();
-    request.setSortOrdrVal("loanHopeDate");
-    request.setSortDirection("ASC");
-
-    SearchResult result = search(request, null, 10);
-
-    assertEquals(List.of(1L, 4L, 2L, 3L, 5L), taskIds(result));
-  }
-
-  @Test
-  void defaultsToStartedDateDescendingForUnknownProperty() {
-    MyTodoRequest request = new MyTodoRequest();
-    request.setSortOrdrVal("DESC");
-
-    SearchResult result = search(request, null, 10);
-
-    assertEquals(List.of(2L, 1L, 3L, 4L, 5L), taskIds(result));
-  }
-
-  @Test
-  void returnsNextItemKeyAndContinuesWithoutGapsWhenSortValuesAreEqual() {
-    MyTodoRequest request = new MyTodoRequest();
-    request.setSortOrdrVal("startedDate");
 
     SearchResult first = search(request, null, 2);
     SearchResult second = search(request, Long.valueOf(first.nextKey()), 2);
-    SearchResult third = search(request, Long.valueOf(second.nextKey()), 2);
+    SearchResult last = search(request, 7L, 2);
 
-    assertEquals(List.of(2L, 1L), taskIds(first));
-    assertEquals(List.of(3L, 4L), taskIds(second));
-    assertEquals(List.of(5L), taskIds(third));
+    assertEquals(List.of(1L, 2L), instIds(first));
     assertEquals("3", first.nextKey());
+    assertEquals(7, first.totalCount());
+    assertEquals(List.of(3L, 4L), instIds(second));
     assertEquals("5", second.nextKey());
-    assertEquals(null, third.nextKey());
-    assertEquals(5, first.totalCount());
-    assertEquals(5, second.totalCount());
-    assertEquals(5, third.totalCount());
+    assertEquals(7, second.totalCount());
+    assertEquals(List.of(7L), instIds(last));
+    assertEquals(null, last.nextKey());
+    assertEquals(7, last.totalCount());
   }
 
   @Test
-  void returnsNextItemKeyAndContinuesAscendingWithoutGapsWhenSortValuesAreEqual() {
+  void filtersFixedRequestPropertiesAgainstProcessInstance() {
     MyTodoRequest request = new MyTodoRequest();
-    request.setSortOrdrVal("startedDate");
-    request.setSortDirection("ASC");
+    request.setLoanCntcNo("LOAN-A");
 
-    SearchResult first = search(request, null, 2);
-    SearchResult second = search(request, Long.valueOf(first.nextKey()), 2);
-    SearchResult third = search(request, Long.valueOf(second.nextKey()), 2);
+    SearchResult result = search(request, null, 10);
 
-    assertEquals(List.of(4L, 3L), taskIds(first));
-    assertEquals(List.of(1L, 2L), taskIds(second));
-    assertEquals(List.of(5L), taskIds(third));
-    assertEquals("1", first.nextKey());
-    assertEquals("5", second.nextKey());
-    assertEquals(null, third.nextKey());
-    assertEquals(5, first.totalCount());
-    assertEquals(5, second.totalCount());
-    assertEquals(5, third.totalCount());
+    assertEquals(List.of(1L, 2L, 3L, 4L, 5L), instIds(result));
+    assertEquals(5, result.totalCount());
+  }
+
+  @Test
+  void includesWholeEndDateForWorklistStartDate() {
+    MyTodoRequest request = new MyTodoRequest();
+    request.setStartDate(day(2026, 8, 1));
+    request.setEndDate(day(2026, 8, 2));
+
+    SearchResult result = search(request, null, 10);
+
+    assertEquals(List.of(1L, 2L), instIds(result));
+  }
+
+  @Test
+  void filtersLoanHopeDateByInclusiveCalendarDays() {
+    MyTodoRequest request = new MyTodoRequest();
+    request.setHopeStartDate(day(2026, 8, 10));
+    request.setHopeEndDate(day(2026, 8, 11));
+
+    SearchResult result = search(request, null, 10);
+
+    assertEquals(List.of(1L, 2L), instIds(result));
   }
 
   @Test
   void usesScopeForGroupAccessEvenWhenAssignGroupDiffers() {
     MyTodoRequest request = new MyTodoRequest();
-    request.setSortOrdrVal("taskId");
     UserContext userContext = UserContext.getThreadLocalInstance();
     userContext.setUserId("different-user");
     userContext.setGroups(List.of("SCOPE-ACCESS"));
@@ -140,7 +123,11 @@ class MyTodoSearchRepositoryTest {
 
     try (EntityManager entityManager = sessionFactory.createEntityManager()) {
       entityManager.getTransaction().begin();
-      WorklistEntity worklist = entityManager.find(WorklistEntity.class, 1L);
+      WorklistEntity worklist = entityManager.createQuery(
+              "select worklist from WorklistEntity worklist where worklist.instId = :instId",
+              WorklistEntity.class)
+          .setParameter("instId", 1L)
+          .getSingleResult();
       worklist.setEndpoint(null);
       worklist.setDispatchOption(1);
       worklist.setAssignGroup("RETIRED-GROUP");
@@ -150,7 +137,7 @@ class MyTodoSearchRepositoryTest {
       SearchResult result = new MyTodoSearchRepository(entityManager)
           .search(request, null, 10, userContext);
 
-      assertEquals(List.of(1L), taskIds(result));
+      assertEquals(List.of(1L), instIds(result));
 
       entityManager.getTransaction().begin();
       worklist.setEndpoint(USER_ID);
@@ -173,20 +160,21 @@ class MyTodoSearchRepositoryTest {
     }
   }
 
-  private static List<Long> taskIds(SearchResult result) {
-    return result.items().stream().map(WorklistEntity::getTaskId).toList();
+  private static List<Long> instIds(SearchResult result) {
+    return result.items().stream().map(WorklistEntity::getInstId).toList();
   }
 
   private static void persist(
       Session session,
       long instanceId,
       long taskId,
-      Long startedDate,
-      Long loanHopeDate) {
+      String loanCntcNo,
+      Date workStartDate,
+      Date loanHopeDate) {
     ProcessInstanceEntity instance = new ProcessInstanceEntity();
     instance.setInstId(instanceId);
-    instance.setStartedDate(date(startedDate));
-    instance.setLoanHopeDate(date(loanHopeDate));
+    instance.setLoanCntcNo(loanCntcNo);
+    instance.setLoanHopeDate(loanHopeDate);
     instance.setStatus("Running");
     ProcessInstanceEntity managedInstance = session.merge(instance);
 
@@ -196,12 +184,20 @@ class MyTodoSearchRepositoryTest {
     worklist.setProcessInstance(managedInstance);
     worklist.setEndpoint(USER_ID);
     worklist.setStatus("NEW");
-    worklist.setStartDate(new Date(taskId));
+    worklist.setStartDate(workStartDate);
     worklist.setDispatchOption(0);
     session.merge(worklist);
   }
 
-  private static Date date(Long value) {
-    return value == null ? null : new Date(value);
+  private static Date day(int year, int month, int day) {
+    return at(year, month, day, 0, 0);
+  }
+
+  private static Date at(int year, int month, int day, int hour, int minute) {
+    return Date.from(
+        LocalDate.of(year, month, day)
+            .atTime(hour, minute)
+            .atZone(SEOUL)
+            .toInstant());
   }
 }
