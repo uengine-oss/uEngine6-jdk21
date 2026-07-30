@@ -123,7 +123,7 @@ public class OrgRunningSearchRepository {
       OrgRunningRequest request) {
     List<Predicate> predicates = new ArrayList<>();
     predicates.add(builder.upper(worklist.get("status")).in("NEW", "RUNNING"));
-    addText(builder, predicates, instance.get("bswrClsfCode"), request.getBswrClsfCode());
+    addText(builder, predicates, instance.get("bswrClsfCode"), request.getBpmBswrClsfCode());
     addText(
         builder,
         predicates,

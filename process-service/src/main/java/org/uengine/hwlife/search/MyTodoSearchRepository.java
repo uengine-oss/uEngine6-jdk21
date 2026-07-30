@@ -102,7 +102,7 @@ public class MyTodoSearchRepository {
     predicates.add(accessPredicate(builder, worklist, request, userContext));
     predicates.add(builder.not(worklist.get("status").in("COMPLETED", "CANCELLED")));
 
-    addText(builder, predicates, instance.get("bswrClsfCode"), request.getBswrClsfCode());
+    addText(builder, predicates, instance.get("bswrClsfCode"), request.getBpmBswrClsfCode());
     addText(builder, predicates, instance.get("custId"), request.getCustId());
     addText(builder, predicates, instance.get("fncgBswrDvsnCode"), request.getFncgBswrDvsnCode());
     addText(builder, predicates, instance.get("loanCntcNo"), request.getLoanCntcNo());

@@ -8,7 +8,7 @@ import java.util.List;
 public class ClaimRequest {
 
     private String hndrEmnb; // 처리자 사원번호 
-    private String bswrClsfCode; // 업무 분류코드: 선점: 0/선점 해제: 1 
+    private String dvsnVal; // 선점: 0 / 선점 해제: 1
     private List<ClaimRequestItem> bswrList; // 업무 목록
 
     public String getHndrEmnb() {
@@ -19,12 +19,12 @@ public class ClaimRequest {
         this.hndrEmnb = hndrEmnb;
     }
 
-    public String getBswrClsfCode() {
-        return bswrClsfCode;
+    public String getDvsnVal() {
+        return dvsnVal;
     }
 
-    public void setBswrClsfCode(String bswrClsfCode) {
-        this.bswrClsfCode = bswrClsfCode;
+    public void setDvsnVal(String dvsnVal) {
+        this.dvsnVal = dvsnVal;
     }
 
     public List<ClaimRequestItem> getBswrList() {

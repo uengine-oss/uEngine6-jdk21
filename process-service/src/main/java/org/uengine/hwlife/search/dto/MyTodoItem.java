@@ -7,7 +7,6 @@ import java.util.Date;
  */
 public class MyTodoItem {
 
-    private String bswrClsfCode;
     private String custId;
     private String fncgBswrDvsnCode;
     private String loanCntcNo;
@@ -35,13 +34,6 @@ public class MyTodoItem {
     private String fncgBpmTaskLstId;
     private String fncgBpmPcesIntcId;
 
-    public String getBswrClsfCode() {
-        return bswrClsfCode;
-    }
-
-    public void setBswrClsfCode(String bswrClsfCode) {
-        this.bswrClsfCode = bswrClsfCode;
-    }
 
     public String getCustId() {
         return custId;

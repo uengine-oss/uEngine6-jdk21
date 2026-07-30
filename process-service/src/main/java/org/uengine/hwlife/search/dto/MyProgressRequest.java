@@ -9,7 +9,7 @@ import org.springframework.format.annotation.DateTimeFormat;
  */
 public class MyProgressRequest {
 
-    private String bswrClsfCode;
+    private String bpmBswrClsfCode;
     private String fncgBswrDvsnCode;
     private String trcTag;
     private Date rqstStarDate;
@@ -26,12 +26,12 @@ public class MyProgressRequest {
     private String nextKey;
     private Integer pageSize;
 
-    public String getBswrClsfCode() {
-        return bswrClsfCode;
+    public String getBpmBswrClsfCode() {
+        return bpmBswrClsfCode;
     }
 
-    public void setBswrClsfCode(String bswrClsfCode) {
-        this.bswrClsfCode = bswrClsfCode;
+    public void setBpmBswrClsfCode(String bpmBswrClsfCode) {
+        this.bpmBswrClsfCode = bpmBswrClsfCode;
     }
 
     public String getFncgBswrDvsnCode() {

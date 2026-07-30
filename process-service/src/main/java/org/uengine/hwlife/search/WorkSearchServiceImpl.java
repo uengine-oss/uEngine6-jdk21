@@ -51,7 +51,7 @@ public class WorkSearchServiceImpl implements WorkSearchService {
   public MyTodoResponse searchMyTodo(@RequestBody MyTodoRequest request) {
     MyTodoRequest normalizedRequest = requireMyTodoRequest(request);
     Long cursorInstId = parseMyTodoNextKey(normalizedRequest.getNextKey());
-    int pageSize = normalizeRequiredPageSize(normalizedRequest.getPageSize());
+    int pageSize = normalizePageSize(normalizedRequest.getPageSize());
     MyTodoSearchRepository.SearchResult result = myTodoSearchRepository.search(
         normalizedRequest,
         cursorInstId,
@@ -184,7 +184,6 @@ public class WorkSearchServiceImpl implements WorkSearchService {
     ProcessInstanceEntity instance = worklist.getProcessInstance();
     MyTodoItem item = new MyTodoItem();
 
-    item.setBswrClsfCode(instance == null ? null : instance.getBswrClsfCode());
     item.setCustId(instance == null ? null : instance.getCustId());
     item.setFncgBswrDvsnCode(instance == null ? null : instance.getFncgBswrDvsnCode());
     item.setLoanCntcNo(instance == null ? null : instance.getLoanCntcNo());
@@ -299,13 +298,6 @@ public class WorkSearchServiceImpl implements WorkSearchService {
       throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "request body is required");
     }
     return request;
-  }
-
-  private static int normalizeRequiredPageSize(Integer pageSize) {
-    if (pageSize == null) {
-      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "pageSize is required");
-    }
-    return Math.max(1, Math.min(pageSize, MAX_PAGE_SIZE));
   }
 
   private static String firstNonBlank(String... values) {

@@ -150,7 +150,7 @@ class OrgRunningSearchRepositoryTest {
 
   private static OrgRunningRequest fullRequest() {
     OrgRunningRequest request = new OrgRunningRequest();
-    request.setBswrClsfCode("BSWR");
+    request.setBpmBswrClsfCode("BSWR");
     request.setFncgBswrDvsnCode("LOAN");
     request.setFncgBpmTaskTrcgNm("TRACE");
     request.setFncgSuptTrgtDvsnCode("TARGET");

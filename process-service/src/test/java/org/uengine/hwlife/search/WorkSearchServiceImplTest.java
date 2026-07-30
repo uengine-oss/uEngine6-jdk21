@@ -194,7 +194,6 @@ class WorkSearchServiceImplTest {
 
     assertEquals(1, response.getTotCont());
     MyTodoItem item = response.getTodoList().get(0);
-    assertEquals("BSWR", item.getBswrClsfCode());
     assertEquals("CUST", item.getCustId());
     assertEquals("LOAN", item.getFncgBswrDvsnCode());
     assertEquals("CONTACT", item.getLoanCntcNo());
@@ -397,7 +396,7 @@ class WorkSearchServiceImplTest {
 
   private static MyTodoRequest fullRequest() {
     MyTodoRequest request = new MyTodoRequest();
-    request.setBswrClsfCode("BSWR");
+    request.setBpmBswrClsfCode("BSWR");
     request.setCustId("CUST");
     request.setFncgBswrDvsnCode("LOAN");
     request.setLoanCntcNo("CONTACT");

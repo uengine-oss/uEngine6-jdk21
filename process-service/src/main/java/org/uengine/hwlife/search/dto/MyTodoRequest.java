@@ -11,7 +11,7 @@ import org.springframework.format.annotation.DateTimeFormat;
  */
 public class MyTodoRequest {
 
-    private String bswrClsfCode;
+    private String bpmBswrClsfCode;
     private String custId;
     private String fncgBswrDvsnCode;
     private String loanCntcNo;
@@ -45,12 +45,12 @@ public class MyTodoRequest {
     private String nextKey;
     private Integer pageSize;
 
-    public String getBswrClsfCode() {
-        return bswrClsfCode;
+    public String getBpmBswrClsfCode() {
+        return bpmBswrClsfCode;
     }
 
-    public void setBswrClsfCode(String bswrClsfCode) {
-        this.bswrClsfCode = bswrClsfCode;
+    public void setBpmBswrClsfCode(String bpmBswrClsfCode) {
+        this.bpmBswrClsfCode = bpmBswrClsfCode;
     }
 
     public String getCustId() {

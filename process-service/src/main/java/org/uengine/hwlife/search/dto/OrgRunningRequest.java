@@ -7,7 +7,7 @@ import java.time.LocalDateTime;
  */
 public class OrgRunningRequest {
 
-    private String bswrClsfCode;
+    private String bpmBswrClsfCode;
     private String fncgBswrDvsnCode;
     private String fncgBpmTaskTrcgNm;
     private LocalDateTime rqstStarDttm;
@@ -24,12 +24,12 @@ public class OrgRunningRequest {
     private String nextKey;
     private Integer pageSize;
 
-    public String getBswrClsfCode() {
-        return bswrClsfCode;
+    public String getBpmBswrClsfCode() {
+        return bpmBswrClsfCode;
     }
 
-    public void setBswrClsfCode(String bswrClsfCode) {
-        this.bswrClsfCode = bswrClsfCode;
+    public void setBpmBswrClsfCode(String bpmBswrClsfCode) {
+        this.bpmBswrClsfCode = bpmBswrClsfCode;
     }
 
     public String getFncgBswrDvsnCode() {

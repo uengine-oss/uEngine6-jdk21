@@ -25,7 +25,7 @@ public class ProcessInstanceAttributeMapper {
         instance.setFncgSuptTrgtDvsnCode(text(payload.get("fncgSuptTrgtDvsnCode")));
         instance.setLoanSubjDvsnCode(text(payload.get("loanSubjDvsnCode")));
         instance.setFncgMneyUsagClsfCode(text(payload.get("fncgMneyUsagClsfCode")));
-        instance.setBswrClsfCode(text(payload.get("bswrClsfCode")));
+        instance.setBswrClsfCode(text(payload.get("bpmBswrClsfCode")));
 
         Date loanHopeDate = date(payload.get("loanHopeDate"));
         if (loanHopeDate != null) {
