@@ -50,11 +50,11 @@ public class WorkSearchServiceImpl implements WorkSearchService {
   @Transactional(readOnly = true)
   public MyTodoResponse searchMyTodo(@RequestBody MyTodoRequest request) {
     MyTodoRequest normalizedRequest = requireMyTodoRequest(request);
-    Long cursorInstId = parseMyTodoNextKey(normalizedRequest.getNextKey());
+    Long cursorId = parseNextKey(normalizedRequest.getNextKey());
     int pageSize = normalizePageSize(normalizedRequest.getPageSize());
     MyTodoSearchRepository.SearchResult result = myTodoSearchRepository.search(
         normalizedRequest,
-        cursorInstId,
+        cursorId,
         pageSize,
         UserContext.getThreadLocalInstance());
 
@@ -77,10 +77,10 @@ public class WorkSearchServiceImpl implements WorkSearchService {
   @Transactional(readOnly = true)
   public OrgRunningResponse searchOrgRunning(@RequestBody OrgRunningRequest request) {
     OrgRunningRequest normalizedRequest = request == null ? new OrgRunningRequest() : request;
-    Long cursorTaskId = parseNextKey(normalizedRequest.getNextKey());
+    Long cursorId = parseNextKey(normalizedRequest.getNextKey());
     int pageSize = normalizePageSize(normalizedRequest.getPageSize());
     OrgRunningSearchRepository.SearchResult result =
-        orgRunningSearchRepository.search(normalizedRequest, cursorTaskId, pageSize);
+        orgRunningSearchRepository.search(normalizedRequest, cursorId, pageSize);
 
     OrgRunningResponse response = new OrgRunningResponse();
     response.setTotCont(result.totalCount());
@@ -263,25 +263,6 @@ public class WorkSearchServiceImpl implements WorkSearchService {
       throw new ResponseStatusException(
           HttpStatus.BAD_REQUEST,
           "nextKey must be a positive fncgBpmTaskLstId",
-          exception);
-    }
-  }
-
-  private static Long parseMyTodoNextKey(String nextKey) {
-    String value = trimToNull(nextKey);
-    if (value == null) {
-      return null;
-    }
-    try {
-      long instId = Long.parseLong(value);
-      if (instId <= 0) {
-        throw new NumberFormatException("nextKey must be positive");
-      }
-      return instId;
-    } catch (NumberFormatException exception) {
-      throw new ResponseStatusException(
-          HttpStatus.BAD_REQUEST,
-          "nextKey must be a positive instId",
           exception);
     }
   }

@@ -19,6 +19,8 @@ public class BulkAssignSearchRequest {
     private Date hopeEndDate;
     private String fncgWndwOrgnCode;
     private String hndrEmnb;
+    private String nextKey;
+    private Integer pageSize;
 
     public String getBpmBswrClsfCode() {
         return bpmBswrClsfCode;
@@ -115,4 +117,20 @@ public class BulkAssignSearchRequest {
     public void setHndrEmnb(String hndrEmnb) {
         this.hndrEmnb = hndrEmnb;
     }
+
+    public String getNextKey() {
+        return nextKey;
+    }
+
+    public void setNextKey(String nextKey) {
+        this.nextKey = nextKey;
+    }
+
+    public Integer getPageSize() {
+        return pageSize;
+    }
+
+    public void setPageSize(Integer pageSize) {
+        this.pageSize = pageSize;
+    } 
 }

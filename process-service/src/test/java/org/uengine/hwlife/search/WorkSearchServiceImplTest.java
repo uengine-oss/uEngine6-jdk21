@@ -147,9 +147,9 @@ class WorkSearchServiceImplTest {
   }
 
   @Test
-  void rejectsNextKeyThatIsNotAPositiveInstId() {
+  void rejectsNextKeyThatIsNotAPositiveTaskId() {
     MyTodoRequest request = requiredMyTodoRequest();
-    request.setNextKey("not-an-inst-id");
+    request.setNextKey("not-a-task-id");
 
     ResponseStatusException exception = assertThrows(
         ResponseStatusException.class,
@@ -163,6 +163,7 @@ class WorkSearchServiceImplTest {
     MyTodoRequest request = new MyTodoRequest();
     request.setNextKey("21");
     request.setPageSize(35);
+    request.setSortOrdrVal("START_DATE");
     request.setStartDate(date(WORK_START));
     request.setHopeStartDate(date(HOPE_DATE));
 
@@ -170,8 +171,10 @@ class WorkSearchServiceImplTest {
 
     assertEquals("21", json.get("nextKey").asText());
     assertEquals(35, json.get("pageSize").asInt());
+    assertEquals("START_DATE", json.get("sortOrdrVal").asText());
     assertTrue(json.has("nextKey"));
     assertTrue(json.has("pageSize"));
+    assertTrue(json.has("sortOrdrVal"));
     assertTrue(json.has("startDate"));
     assertTrue(json.has("hopeStartDate"));
     assertFalse(json.has("starDate"));

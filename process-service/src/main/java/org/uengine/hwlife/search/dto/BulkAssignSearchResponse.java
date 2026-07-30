@@ -9,6 +9,7 @@ import java.util.List;
 public class BulkAssignSearchResponse {
 
     private List<BulkAssignSearchResponseItem> bswrList = new ArrayList<>();
+    private String nextKey;
     private Integer totCont;
 
     public List<BulkAssignSearchResponseItem> getBswrList() {
@@ -17,6 +18,14 @@ public class BulkAssignSearchResponse {
 
     public void setBswrList(List<BulkAssignSearchResponseItem> bswrList) {
         this.bswrList = bswrList;
+    }
+
+    public String getNextKey() {
+        return nextKey;
+    }
+
+    public void setNextKey(String nextKey) {
+        this.nextKey = nextKey;
     }
 
     public Integer getTotCont() {
