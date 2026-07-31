@@ -4,7 +4,6 @@ import java.util.Date;
 
 import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonFormat;
-import org.springframework.format.annotation.DateTimeFormat;
 
 /**
  * 나의 할일 검색 요청 — POST /search/my-todo JSON body.
@@ -22,26 +21,22 @@ public class MyTodoRequest {
     private String fncgBpmTaskTrcgNm;
 
     @JsonAlias("starDate")
-    @JsonFormat(pattern = "yyyy-MM-dd", timezone = "Asia/Seoul")
-    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+    @JsonFormat(pattern = "yyyyMMdd", timezone = "Asia/Seoul")
     private Date startDate;
 
-    @JsonFormat(pattern = "yyyy-MM-dd", timezone = "Asia/Seoul")
-    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+    @JsonFormat(pattern = "yyyyMMdd", timezone = "Asia/Seoul")
     private Date endDate;
 
     @JsonAlias("hopeStarDate")
-    @JsonFormat(pattern = "yyyy-MM-dd", timezone = "Asia/Seoul")
-    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+    @JsonFormat(pattern = "yyyyMMdd", timezone = "Asia/Seoul")
     private Date hopeStartDate;
 
-    @JsonFormat(pattern = "yyyy-MM-dd", timezone = "Asia/Seoul")
-    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+    @JsonFormat(pattern = "yyyyMMdd", timezone = "Asia/Seoul")
     private Date hopeEndDate;
 
+    /** 요청기관 필터 — {@code bpm_procinst.init_group_cd} 와 일치. */
     private String fncgWndwOrgnCode;
     private String sortOrdrVal;
-    private String hndrEmnb;
     private String nextKey;
     private Integer pageSize;
 
@@ -163,14 +158,6 @@ public class MyTodoRequest {
 
     public void setSortOrdrVal(String sortOrdrVal) {
         this.sortOrdrVal = sortOrdrVal;
-    }
-
-    public String getHndrEmnb() {
-        return hndrEmnb;
-    }
-
-    public void setHndrEmnb(String hndrEmnb) {
-        this.hndrEmnb = hndrEmnb;
     }
 
     public String getNextKey() {

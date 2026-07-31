@@ -12,12 +12,14 @@ import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
-import org.uengine.contexts.UserContext;
 import org.uengine.five.entity.ProcessInstanceEntity;
 import org.uengine.five.entity.WorklistEntity;
 import org.uengine.five.repository.ProcessInstanceRepository;
 import org.uengine.five.repository.WorklistRepository;
 import org.uengine.hwlife.search.dto.*;
+import org.uengine.hwlife.esbclient.dto.EsbCommonHeader;
+import org.uengine.hwlife.esbclient.support.EsbRequestBodyAdvice;
+
 
 /**
  * BPM 통합 검색 REST API 구현. Repository 연동은 추후 구현.
@@ -49,6 +51,13 @@ public class WorkSearchServiceImpl implements WorkSearchService {
   @Override
   @Transactional(readOnly = true)
   public MyTodoResponse searchMyTodo(@RequestBody MyTodoRequest request) {
+    EsbCommonHeader header = EsbRequestBodyAdvice.currentHeader();
+    String emnb = trimToNull(header != null ? header.getEmnb() : null);
+    String belnOrgnCode = trimToNull(header != null ? header.getBelnOrgnCode() : null);
+    if (emnb == null) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "header.emnb is required");
+    }
+
     MyTodoRequest normalizedRequest = requireMyTodoRequest(request);
     Long cursorId = parseNextKey(normalizedRequest.getNextKey());
     int pageSize = normalizePageSize(normalizedRequest.getPageSize());
@@ -56,7 +65,8 @@ public class WorkSearchServiceImpl implements WorkSearchService {
         normalizedRequest,
         cursorId,
         pageSize,
-        UserContext.getThreadLocalInstance());
+        emnb,
+        belnOrgnCode);
 
     MyTodoResponse response = new MyTodoResponse();
     response.setTotCont(result.totalCount());
@@ -163,7 +173,7 @@ public class WorkSearchServiceImpl implements WorkSearchService {
       String resultMessage) {
     RunningWorkByCorrKeyResponseItem item = new RunningWorkByCorrKeyResponseItem();
     item.setLoanPcesMgmtNo(loanPcesMgmtNo);
-    item.setPrcsrsltCntn(resultMessage);
+    item.setPrcsRsltCntn(resultMessage);
 
     if (processInstance != null) {
       item.setPrgsSttsNm(processInstance.getStatus());
@@ -197,16 +207,16 @@ public class WorkSearchServiceImpl implements WorkSearchService {
     item.setUworNm(worklist.getTitle());
     item.setLoanPcesNm(firstNonBlank(worklist.getDefName(), instance == null ? null : instance.getDefName()));
     item.setReptHndrEmnb(instance == null ? null : instance.getInitEp());
-    item.setReptHndrFncgOrgnCode(trimToNull(worklist.getScope()));
+    item.setReptHndrFncgOrgnCode(instance == null ? null : instance.getInitGroupCd());
     item.setPrcdHndrEmnb(worklist.getPrevEndpoint());
     item.setPrcdHndrFncgOrgnCode(worklist.getPrevGroupCd());
     item.setFncgBpmUworSttsCntn(worklist.getStatus());
     item.setStarDttm(instance == null ? null : instance.getStartedDate());
-    item.setBefrHndrEmnb(worklist.getPrevEndpoint());
-    item.setBefrFncgOrgnCode(worklist.getPrevGroupCd());
+    item.setBefoHndrEmnb(worklist.getPrevEndpoint());
+    item.setBefoFncgOrgnCode(worklist.getPrevGroupCd());
     item.setHndrEmnb(worklist.getEndpoint());
     item.setHndrNm(worklist.getResName());
-    item.setHndrOrgnCode(trimToNull(worklist.getScope()));
+    item.setHndrOrgnCode(firstNonBlank(worklist.getGroupCd(), worklist.getScope()));
     item.setScrnUrlAddr(worklist.getTool());
     item.setFncgBpmTaskLstId(worklist.getTaskId() == null ? null : String.valueOf(worklist.getTaskId()));
     item.setFncgBpmPcesIntcId(worklist.getInstId() == null ? null : String.valueOf(worklist.getInstId()));

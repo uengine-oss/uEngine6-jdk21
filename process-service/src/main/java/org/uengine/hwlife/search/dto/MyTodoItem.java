@@ -25,8 +25,8 @@ public class MyTodoItem {
     private String prcdHndrFncgOrgnCode;
     private String fncgBpmUworSttsCntn;
     private Date starDttm;
-    private String befrHndrEmnb;
-    private String befrFncgOrgnCode;
+    private String befoHndrEmnb;
+    private String befoFncgOrgnCode;
     private String hndrEmnb;
     private String hndrNm;
     private String hndrOrgnCode;
@@ -179,20 +179,20 @@ public class MyTodoItem {
         this.starDttm = starDttm;
     }
 
-    public String getBefrHndrEmnb() {
-        return befrHndrEmnb;
+    public String getBefoHndrEmnb() {
+        return befoHndrEmnb;
     }
 
-    public void setBefrHndrEmnb(String befrHndrEmnb) {
-        this.befrHndrEmnb = befrHndrEmnb;
+    public void setBefoHndrEmnb(String befoHndrEmnb) {
+        this.befoHndrEmnb = befoHndrEmnb;
     }
 
-    public String getBefrFncgOrgnCode() {
-        return befrFncgOrgnCode;
+    public String getBefoFncgOrgnCode() {
+        return befoFncgOrgnCode;
     }
 
-    public void setBefrFncgOrgnCode(String befrFncgOrgnCode) {
-        this.befrFncgOrgnCode = befrFncgOrgnCode;
+    public void setBefoFncgOrgnCode(String befoFncgOrgnCode) {
+        this.befoFncgOrgnCode = befoFncgOrgnCode;
     }
 
     public String getHndrEmnb() {

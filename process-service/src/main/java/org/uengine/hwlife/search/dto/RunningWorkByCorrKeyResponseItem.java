@@ -6,7 +6,7 @@ public class RunningWorkByCorrKeyResponseItem {
     private String fncgBpmTaskTrcgNm; // BPM 추적 태그
     private String fncgBpmUworSttsCntn; // 현재 진행중인 단위업무(WORKITME) 상태 
     private String prgsSttsNm; // 인스턴스 상태 
-    private String prcsrsltCntn; // 실패 사유( 조회 실패시)
+    private String prcsRsltCntn; // 실패 사유( 조회 실패시)
     private String hndrEmnb; // 담당자 사번
 
     public String getLoanPcesMgmtNo() {
@@ -41,12 +41,12 @@ public class RunningWorkByCorrKeyResponseItem {
         this.prgsSttsNm = prgsSttsNm;
     }
 
-    public String getPrcsrsltCntn() {
-        return prcsrsltCntn;
+    public String getPrcsRsltCntn() {
+        return prcsRsltCntn;
     }
 
-    public void setPrcsrsltCntn(String prcsrsltCntn) {
-        this.prcsrsltCntn = prcsrsltCntn;
+    public void setPrcsRsltCntn(String prcsRsltCntn) {
+        this.prcsRsltCntn = prcsRsltCntn;
     }
     
     public String getHndrEmnb() {

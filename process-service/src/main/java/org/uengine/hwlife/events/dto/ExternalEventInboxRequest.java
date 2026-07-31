@@ -122,6 +122,9 @@ public class ExternalEventInboxRequest {
     /** 역량난이도레벨명 */
     private String cpabLvdfLvelNm;
 
+    /** BPM 업무분류코드 → bpm_procinst.bswr_clsf_code */
+    private String bpmBswrClsfCode;
+
     // /** MI 가입여부 */
     // private String miJoinYn;
 
@@ -208,6 +211,9 @@ public class ExternalEventInboxRequest {
 
     public String getCpabLvdfLvelNm() { return cpabLvdfLvelNm; }
     public void setCpabLvdfLvelNm(String cpabLvdfLvelNm) { this.cpabLvdfLvelNm = cpabLvdfLvelNm; }
+
+    public String getBpmBswrClsfCode() { return bpmBswrClsfCode; }
+    public void setBpmBswrClsfCode(String bpmBswrClsfCode) { this.bpmBswrClsfCode = bpmBswrClsfCode; }
 
     // public String getMiJoinYn() { return miJoinYn; }
     // public void setMiJoinYn(String miJoinYn) { this.miJoinYn = miJoinYn; }

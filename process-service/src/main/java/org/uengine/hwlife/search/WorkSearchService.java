@@ -11,8 +11,9 @@ import org.uengine.hwlife.search.dto.*;
  * <p>구현: {@link WorkSearchServiceImpl}. 필터·응답 DTO는 추후 확장.</p>
  *
  * <pre>
- *   POST /search/my-todo  body: { "hndrEmnb": "...", "fncgWndwOrgnCode": "...",
+ *   POST /search/my-todo  body: { "fncgWndwOrgnCode": "...",
  *                                 "pageSize": 10, "nextKey": null }
+ *     (담당자 사번/소속기관은 ESB header.emnb / header.belnOrgnCode 사용)
  *   POST /search/my-progress  body: { "custId": "...", "pageNo": "1" }
  *   POST /search/org-running  body: { "fncgWndwOrgnCode": "...", "nextKey": "",
  *                                    "pageSize": 20, "sortOrdrVal": "startedDate" }

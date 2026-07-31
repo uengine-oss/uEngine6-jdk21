@@ -7,7 +7,6 @@ import java.util.List;
 import java.util.TimeZone;
 
 import org.springframework.stereotype.Repository;
-import org.uengine.contexts.UserContext;
 import org.uengine.five.entity.ProcessInstanceEntity;
 import org.uengine.five.entity.WorklistEntity;
 import org.uengine.hwlife.search.dto.MyTodoRequest;
@@ -42,7 +41,8 @@ public class MyTodoSearchRepository {
       MyTodoRequest request,
       Long cursorId,
       int pageSize,
-      UserContext userContext) {
+      String emnb,
+      String belnOrgnCode) {
     CriteriaBuilder builder = entityManager.getCriteriaBuilder();
     String sortKey = sortKey(request);
     CursorPosition cursor = findCursor(builder, cursorId, sortKey);
@@ -54,7 +54,7 @@ public class MyTodoSearchRepository {
     Root<WorklistEntity> worklist = dataQuery.from(WorklistEntity.class);
     Join<WorklistEntity, ProcessInstanceEntity> instance = fetchProcessInstance(worklist);
     List<Predicate> dataPredicates = new ArrayList<>(
-        List.of(predicates(builder, worklist, instance, request, userContext)));
+        List.of(predicates(builder, worklist, instance, request, emnb, belnOrgnCode)));
     // nextKey(taskId)는 정렬·비즈니스 필터가 아니라, 정렬된 결과의 페이지 커서다.
     if (cursor != null) {
       dataPredicates.add(cursorPredicate(builder, worklist, instance, sortKey, cursor));
@@ -83,7 +83,7 @@ public class MyTodoSearchRepository {
     Join<WorklistEntity, ProcessInstanceEntity> countInstance =
         countWorklist.join("processInstance", JoinType.LEFT);
     countQuery.select(builder.count(countWorklist))
-        .where(predicates(builder, countWorklist, countInstance, request, userContext));
+        .where(predicates(builder, countWorklist, countInstance, request, emnb, belnOrgnCode));
     long totalCount = entityManager.createQuery(countQuery).getSingleResult();
 
     return new SearchResult(items, Math.toIntExact(totalCount), nextKey);
@@ -129,10 +129,13 @@ public class MyTodoSearchRepository {
       Root<WorklistEntity> worklist,
       Join<WorklistEntity, ProcessInstanceEntity> instance,
       MyTodoRequest request,
-      UserContext userContext) {
+      String emnb,
+      String belnOrgnCode) {
     List<Predicate> predicates = new ArrayList<>();
-    predicates.add(accessPredicate(builder, worklist, request, userContext));
-    predicates.add(builder.not(worklist.get("status").in("COMPLETED", "CANCELLED")));
+    // 1) 진행중(NEW) 건
+    predicates.add(builder.equal(worklist.get("status"), "NEW"));
+    // 2) 본인 할당 건 OR 3) 소속기관 선점 미선점 건
+    predicates.add(accessPredicate(builder, worklist, emnb, belnOrgnCode));
 
     addText(builder, predicates, instance.get("bswrClsfCode"), request.getBpmBswrClsfCode());
     addText(builder, predicates, instance.get("custId"), request.getCustId());
@@ -143,6 +146,8 @@ public class MyTodoSearchRepository {
     addText(builder, predicates, instance.get("loanSubjDvsnCode"), request.getLoanSubjDvsnCode());
     addText(builder, predicates, instance.get("fncgMneyUsagClsfCode"), request.getFncgMneyUsagClsfCode());
     addText(builder, predicates, worklist.get("trcTag"), request.getFncgBpmTaskTrcgNm());
+    // 요청기관 필터 (fncgWndwOrgnCode → bpm_procinst.init_group_cd)
+    addText(builder, predicates, instance.get("initGroupCd"), request.getFncgWndwOrgnCode());
     addDateRange(
         builder,
         predicates,
@@ -253,28 +258,34 @@ public class MyTodoSearchRepository {
     return "taskId".equals(trimToNull(sortKey));
   }
 
+  /**
+   * 나의 업무함 접근 조건.
+   * <ul>
+   *   <li>본인 할당: {@code endpoint == emnb}</li>
+   *   <li>기관 선점 미선점: {@code dispatchOption == 1 AND groupCd == belnOrgnCode AND endpoint IS NULL}</li>
+   * </ul>
+   */
   private static Predicate accessPredicate(
       CriteriaBuilder builder,
       Root<WorklistEntity> worklist,
-      MyTodoRequest request,
-      UserContext userContext) {
-    String requestedHandler = trimToNull(request.getHndrEmnb());
-    String requestedOrganization = trimToNull(request.getFncgWndwOrgnCode());
+      String emnb,
+      String belnOrgnCode) {
+    String handler = trimToNull(emnb);
+    String organization = trimToNull(belnOrgnCode);
 
     Path<String> endpoint = worklist.get("endpoint");
     Path<String> groupCd = worklist.get("groupCd");
-    Predicate dispatch = builder.equal(worklist.get("dispatchOption"), 1);
-    Predicate unclaimed = builder.isNull(endpoint);
-    Predicate requestHandler =
-        requestedHandler == null ? builder.disjunction() : builder.equal(endpoint, requestedHandler);
-    Predicate requestClaimable =
-        requestedOrganization == null
+    Predicate assignedToMe =
+        handler == null ? builder.disjunction() : builder.equal(endpoint, handler);
+    Predicate claimable =
+        organization == null
             ? builder.disjunction()
-            : builder.and(dispatch, unclaimed, builder.equal(builder.trim(groupCd), requestedOrganization));
+            : builder.and(
+                builder.equal(worklist.get("dispatchOption"), 1),
+                builder.isNull(endpoint),
+                builder.equal(builder.trim(groupCd), organization));
 
-    return builder.or(
-        requestHandler,
-        requestClaimable);
+    return builder.or(assignedToMe, claimable);
   }
 
   private static void addText(
@@ -294,9 +305,11 @@ public class MyTodoSearchRepository {
       Path<Date> path,
       Date startInclusive,
       Date endInclusive) {
+    // 시작일: yyyyMMdd 00:00:00.000 이상
     if (startInclusive != null) {
       predicates.add(builder.greaterThanOrEqualTo(path, startOfDay(startInclusive)));
     }
+    // 종료일: yyyyMMdd 23:59:59.999 이하 (= 익일 00:00:00 미만)
     if (endInclusive != null) {
       predicates.add(builder.lessThan(path, startOfNextDay(endInclusive)));
     }
