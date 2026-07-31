@@ -1144,16 +1144,6 @@ public class InstanceServiceImpl implements InstanceService {
                 ? org.uengine.five.overriding.ProcessInstanceHandlerFields.resolveGroup(rm)
                 : null);
 
-        // initEp 가 비어있고 새로 endpoint 가 들어왔으면 같이 채움 (시그널 시작 인스턴스 보강).
-        if (rm != null && rm.getEndpoint() != null
-                && (pe.getInitEp() == null || pe.getInitEp().trim().isEmpty())) {
-            pe.setInitEp(rm.getEndpoint());
-            if (rm.getResourceName() != null) pe.setInitRsNm(rm.getResourceName());
-        }
-        if (rm != null && (pe.getInitGroupCd() == null || pe.getInitGroupCd().trim().isEmpty())) {
-            pe.setInitGroupCd(
-                    org.uengine.five.overriding.ProcessInstanceHandlerFields.resolveGroup(rm));
-        }
     }
 
     @RequestMapping(value = "/instance/{instanceId}/role-mapping/{roleName}", method = RequestMethod.PUT, produces = "application/json; charset=UTF-8")
@@ -2665,7 +2655,10 @@ public class InstanceServiceImpl implements InstanceService {
         // unclaim은 반드시 로그인 사용자 컨텍스트가 필요
         String actorEndpoint = null;
         if (unclaim) {
-            actorEndpoint = SecurityAwareServletFilter.getUserId();
+            actorEndpoint = UserContext.getThreadLocalInstance().getUserId();
+            if (actorEndpoint == null || actorEndpoint.trim().isEmpty()) {
+                actorEndpoint = SecurityAwareServletFilter.getUserId();
+            }
             if (actorEndpoint != null) actorEndpoint = actorEndpoint.trim();
             if (actorEndpoint == null || actorEndpoint.isEmpty()) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "login user is required for unclaim");

@@ -2,10 +2,13 @@ package org.uengine.five.repository;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 
+import jakarta.persistence.LockModeType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 //import org.metaworks.multitenancy.persistence.MultitenantRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -18,6 +21,10 @@ import org.uengine.five.entity.WorklistEntity;
 @RepositoryRestResource(collectionResourceRel = "worklist", path = "worklist")
 public interface WorklistRepository extends JpaRepository<WorklistEntity, Long> {
 
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select wl from WorklistEntity wl where wl.taskId = :taskId")
+    Optional<WorklistEntity> findByIdForUpdate(@Param("taskId") Long taskId);
+
     // @Query("select wl from WorklistEntity wl where (wl.endpoint =
     // ?#{loggedUserId} or wl.endpoint in ?#{loggedUserScopes}) and (wl.status =
     // 'NEW' or wl.status = 'DRAFT')")
@@ -25,7 +32,7 @@ public interface WorklistRepository extends JpaRepository<WorklistEntity, Long> 
     /**
      * ToDo 정의
      * - 기본: endpoint 가 나(principal.userId) 이거나, endpoint 가 내 scope(roles) 중 하나인 workitem
-     * - 추가: dispatchOption = 1(경합/RACING) 인 경우 roleName 이 내 scope(roles)와 일치해도 노출
+     * - 추가: dispatchOption = 1(경합/RACING) 이고 endpoint 가 비어 있으면 groupCd 가 내 group 과 일치할 때 노출
      * - 상태: COMPLETED / CANCELLED 는 제외
      */
 //     @Query("select wl from WorklistEntity wl where (wl.endpoint = ?#{principal.userId} or wl.endpoint in ?#{principal.scopes}) and (wl.status != 'COMPLETED') ")
@@ -35,6 +42,7 @@ public interface WorklistRepository extends JpaRepository<WorklistEntity, Long> 
             "   or (wl.dispatchOption = 1 and wl.endpoint is null and (wl.assignGroup is null or wl.assignGroup = 'null') and wl.scope in ?#{principal.groups})" +
             "   or (wl.dispatchOption = 1 and wl.endpoint is null and (wl.assignGroup is null or wl.assignGroup = 'null') and wl.scope in ?#{principal.scopes})" +
             "   or (wl.dispatchOption = 1 and wl.endpoint is null and wl.assignGroup in ?#{principal.groups} and (wl.scope is null or wl.scope = 'null' or wl.scope in ?#{principal.scopes}))" +
+            "   or (wl.dispatchOption = 1 and wl.endpoint is null and wl.groupCd in ?#{T(org.uengine.contexts.UserContext).getThreadLocalInstance().getGroups()})" +
             ") and (wl.status != 'COMPLETED') ")
     public List<WorklistEntity> findToDo();
 
