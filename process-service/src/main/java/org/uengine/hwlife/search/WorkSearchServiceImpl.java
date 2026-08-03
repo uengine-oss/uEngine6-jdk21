@@ -133,7 +133,7 @@ public class WorkSearchServiceImpl implements WorkSearchService {
     for (RunningWorkByCorrKeyRequestItem requestItem : request.getBswrList()) {
       String loanPcesMgmtNo = requestItem == null ? null : trimToNull(requestItem.getLoanPcesMgmtNo());
       if (loanPcesMgmtNo == null) {
-        resultItems.add(resultItem(null, null, null, "loanPcesMgmtNo is required"));
+        resultItems.add(resultItem(null, null, null, "LBM020001"));
         continue;
       }
 
@@ -141,8 +141,7 @@ public class WorkSearchServiceImpl implements WorkSearchService {
       List<ProcessInstanceEntity> instances =
           processInstanceRepository.findByCorrKeyOrderByStartedDateDescInstIdDesc(loanPcesMgmtNo);
       if (instances == null || instances.isEmpty()) {
-        resultItems.add(resultItem(loanPcesMgmtNo, null, null,
-            "No BPM instance found for loanPcesMgmtNo=" + loanPcesMgmtNo));
+        resultItems.add(resultItem(loanPcesMgmtNo, null, null,"LBM020002"));
         continue;
       }
 
@@ -152,8 +151,7 @@ public class WorkSearchServiceImpl implements WorkSearchService {
             : processInstance.getRootInstId();
         List<WorklistEntity> workItems = worklistRepository.findCurrentWorkItemByInstId(rootInstId);
         if (workItems == null || workItems.isEmpty()) {
-          resultItems.add(resultItem(loanPcesMgmtNo, processInstance, null,
-              "No work item found for BPM instance instId=" + processInstance.getInstId()));
+          resultItems.add(resultItem(loanPcesMgmtNo, processInstance, null,"LBM020003"));
           continue;
         }
 
@@ -173,7 +171,7 @@ public class WorkSearchServiceImpl implements WorkSearchService {
       String resultMessage) {
     RunningWorkByCorrKeyResponseItem item = new RunningWorkByCorrKeyResponseItem();
     item.setLoanPcesMgmtNo(loanPcesMgmtNo);
-    item.setPrcsRsltCntn(resultMessage);
+    item.setPrcsRsltCntn(resultMessage == null ? "LBM000000" : resultMessage);
 
     if (processInstance != null) {
       item.setPrgsSttsNm(processInstance.getStatus());

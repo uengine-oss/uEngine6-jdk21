@@ -4,8 +4,9 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 
 /**
  * ESB 응답 봉투 — {@code { "header": {...}, "payload": {...} }}.
+ *
+ * <p>{@code payload} 는 null 이어도 키를 유지한다({@code "payload": null}).</p>
  */
-@JsonInclude(JsonInclude.Include.NON_NULL)
 public class EsbResponse<T> {
 
     private EsbCommonHeader header;
@@ -44,6 +45,10 @@ public class EsbResponse<T> {
 
     public EsbCommonHeader getHeader() { return header; }
     public void setHeader(EsbCommonHeader header) { this.header = header; }
+
+    /** null 이어도 {@code "payload": null} 로 직렬화한다. */
+    @JsonInclude(JsonInclude.Include.ALWAYS)
     public T getPayload() { return payload; }
+
     public void setPayload(T payload) { this.payload = payload; }
 }

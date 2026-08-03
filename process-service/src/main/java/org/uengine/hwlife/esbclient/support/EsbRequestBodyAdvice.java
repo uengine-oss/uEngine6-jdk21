@@ -26,7 +26,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  * {@code payload} 만 {@code @RequestBody} DTO 로 바인딩한다.
  *
  * <p>적용 대상: {@code org.uengine.hwlife} 패키지의 {@code @RequestBody}
- * 및 {@link org.uengine.five.service.InstanceServiceImpl} (단, {@link String} 제외).
+ * (단, {@link String} 제외).
  * {@code payload} 필드가 없으면 본문을 그대로 통과한다(하위 호환).</p>
  *
  * <p>요청 header 는 {@link #HEADER_ATTR} request attribute 에 보관하며
@@ -41,8 +41,6 @@ public class EsbRequestBodyAdvice implements RequestBodyAdvice {
     public static final String HEADER_ATTR = "esb.header";
 
     private static final String HWLIFE_PACKAGE_PREFIX = "org.uengine.hwlife";
-    private static final String INSTANCE_SERVICE_CLASS =
-            "org.uengine.five.service.InstanceServiceImpl";
 
     private final ObjectMapper objectMapper;
 
@@ -71,11 +69,7 @@ public class EsbRequestBodyAdvice implements RequestBodyAdvice {
         if (String.class.equals(parameter.getParameterType())) {
             return false;
         }
-        Class<?> containing = parameter.getContainingClass();
-        if (INSTANCE_SERVICE_CLASS.equals(containing.getName())) {
-            return true;
-        }
-        Package pkg = containing.getPackage();
+        Package pkg = parameter.getContainingClass().getPackage();
         return pkg != null && pkg.getName().startsWith(HWLIFE_PACKAGE_PREFIX);
     }
 

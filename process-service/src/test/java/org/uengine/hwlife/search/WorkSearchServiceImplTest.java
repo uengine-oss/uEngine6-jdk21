@@ -23,16 +23,22 @@ import java.util.List;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.http.HttpStatus;
+import org.springframework.mock.web.MockHttpServletRequest;
+import org.springframework.web.context.request.RequestAttributes;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 import org.springframework.web.server.ResponseStatusException;
-import org.uengine.contexts.UserContext;
 import org.uengine.five.entity.ProcessInstanceEntity;
 import org.uengine.five.entity.WorklistEntity;
 import org.uengine.five.repository.ProcessInstanceRepository;
 import org.uengine.five.repository.WorklistRepository;
+import org.uengine.hwlife.esbclient.dto.EsbCommonHeader;
+import org.uengine.hwlife.esbclient.support.EsbRequestBodyAdvice;
 import org.uengine.hwlife.search.MyTodoSearchRepository.SearchResult;
 import org.uengine.hwlife.search.dto.MyTodoItem;
 import org.uengine.hwlife.search.dto.MyTodoRequest;
@@ -50,6 +56,8 @@ class WorkSearchServiceImplTest {
 
   private static final long WORK_START = 1_750_000_000_000L;
   private static final long HOPE_DATE = 1_760_000_000_000L;
+  private static final String HEADER_EMNB = "handler";
+  private static final String HEADER_BELN_ORGN_CODE = "GROUP";
 
   private MyTodoSearchRepository searchRepository;
   private OrgRunningSearchRepository orgRunningSearchRepository;
@@ -68,6 +76,12 @@ class WorkSearchServiceImplTest {
         orgRunningSearchRepository,
         processInstanceRepository,
         worklistRepository);
+    bindEsbHeader(HEADER_EMNB, HEADER_BELN_ORGN_CODE);
+  }
+
+  @AfterEach
+  void tearDown() {
+    RequestContextHolder.resetRequestAttributes();
   }
 
   @Test
@@ -77,7 +91,8 @@ class WorkSearchServiceImplTest {
         any(MyTodoRequest.class),
         eq(21L),
         eq(35),
-        any(UserContext.class)))
+        eq(HEADER_EMNB),
+        eq(HEADER_BELN_ORGN_CODE)))
         .thenReturn(new SearchResult(List.of(minimalWorklist(21L)), 25, "122"));
 
     MyTodoResponse response = service.searchMyTodo(request);
@@ -87,7 +102,8 @@ class WorkSearchServiceImplTest {
         requestCaptor.capture(),
         eq(21L),
         eq(35),
-        any(UserContext.class));
+        eq(HEADER_EMNB),
+        eq(HEADER_BELN_ORGN_CODE));
     assertSame(request, requestCaptor.getValue());
     assertEquals(25, response.getTotCont());
     assertEquals("122", response.getNextKey());
@@ -100,11 +116,11 @@ class WorkSearchServiceImplTest {
         any(MyTodoRequest.class),
         isNull(),
         anyInt(),
-        any(UserContext.class)))
+        eq(HEADER_EMNB),
+        eq(HEADER_BELN_ORGN_CODE)))
         .thenReturn(new SearchResult(List.of(), 0));
 
     assertBadRequest(() -> service.searchMyTodo(null));
-    assertBadRequest(() -> service.searchMyTodo(new MyTodoRequest()));
 
     MyTodoRequest zeroSize = requiredMyTodoRequest();
     zeroSize.setPageSize(0);
@@ -117,33 +133,31 @@ class WorkSearchServiceImplTest {
         any(MyTodoRequest.class),
         isNull(),
         eq(1),
-        any(UserContext.class));
+        eq(HEADER_EMNB),
+        eq(HEADER_BELN_ORGN_CODE));
     verify(searchRepository).search(
         any(MyTodoRequest.class),
         isNull(),
         eq(100),
-        any(UserContext.class));
+        eq(HEADER_EMNB),
+        eq(HEADER_BELN_ORGN_CODE));
   }
 
   @Test
-  void returnsEmptyMyTodoResponseForBlankHandlerAndOrganization() {
-    when(searchRepository.search(
+  void requiresHeaderEmnb() {
+    bindEsbHeader(null, HEADER_BELN_ORGN_CODE);
+
+    ResponseStatusException exception = assertThrows(
+        ResponseStatusException.class,
+        () -> service.searchMyTodo(requiredMyTodoRequest()));
+
+    assertEquals(HttpStatus.BAD_REQUEST, exception.getStatusCode());
+    verify(searchRepository, never()).search(
         any(MyTodoRequest.class),
-        isNull(),
-        eq(10),
-        any(UserContext.class)))
-        .thenReturn(new SearchResult(List.of(), 0));
-
-    MyTodoRequest request = new MyTodoRequest();
-    request.setHndrEmnb("");
-    request.setFncgWndwOrgnCode("");
-    request.setPageSize(10);
-
-    MyTodoResponse response = service.searchMyTodo(request);
-
-    assertEquals(0, response.getTotCont());
-    assertNull(response.getNextKey());
-    assertTrue(response.getTodoList().isEmpty());
+        any(),
+        anyInt(),
+        any(),
+        any());
   }
 
   @Test
@@ -190,7 +204,8 @@ class WorkSearchServiceImplTest {
         any(MyTodoRequest.class),
         isNull(),
         eq(20),
-        any(UserContext.class)))
+        eq(HEADER_EMNB),
+        eq(HEADER_BELN_ORGN_CODE)))
         .thenReturn(new SearchResult(List.of(worklist), 1));
 
     MyTodoResponse response = service.searchMyTodo(requiredMyTodoRequest());
@@ -210,13 +225,13 @@ class WorkSearchServiceImplTest {
     assertEquals("Unit work", item.getUworNm());
     assertEquals("Loan process", item.getLoanPcesNm());
     assertEquals("reporter", item.getReptHndrEmnb());
-    assertEquals("SCOPE", item.getReptHndrFncgOrgnCode());
+    assertEquals("INIT-GROUP", item.getReptHndrFncgOrgnCode());
     assertEquals("previous", item.getPrcdHndrEmnb());
     assertEquals("PREV-GROUP", item.getPrcdHndrFncgOrgnCode());
     assertEquals("NEW", item.getFncgBpmUworSttsCntn());
     assertEquals(date(WORK_START - 100), item.getStarDttm());
-    assertEquals("previous", item.getBefrHndrEmnb());
-    assertEquals("PREV-GROUP", item.getBefrFncgOrgnCode());
+    assertEquals("previous", item.getBefoHndrEmnb());
+    assertEquals("PREV-GROUP", item.getBefoFncgOrgnCode());
     assertEquals("handler", item.getHndrEmnb());
     assertEquals("Handler Name", item.getHndrNm());
     assertEquals("SCOPE", item.getHndrOrgnCode());
@@ -375,8 +390,8 @@ class WorkSearchServiceImplTest {
             .map(RunningWorkByCorrKeyResponseItem::getFncgBpmTaskTrcgNm)
             .toList());
     assertEquals(
-        "No BPM instance found for loanPcesMgmtNo=UNKNOWN",
-        response.getBswrList().get(3).getPrcsrsltCntn());
+        "LBM020002",
+        response.getBswrList().get(3).getPrcsRsltCntn());
   }
 
   @Test
@@ -391,10 +406,21 @@ class WorkSearchServiceImplTest {
 
     assertEquals(2, response.getBswrList().size());
     assertNull(response.getBswrList().get(0).getLoanPcesMgmtNo());
-    assertEquals("loanPcesMgmtNo is required", response.getBswrList().get(0).getPrcsrsltCntn());
-    assertEquals(
-        "No work item found for BPM instance instId=21",
-        response.getBswrList().get(1).getPrcsrsltCntn());
+    assertEquals("LBM020001", response.getBswrList().get(0).getPrcsRsltCntn());
+    assertEquals("LBM020003", response.getBswrList().get(1).getPrcsRsltCntn());
+  }
+
+  private static void bindEsbHeader(String emnb, String belnOrgnCode) {
+    MockHttpServletRequest request = new MockHttpServletRequest();
+    ServletRequestAttributes attrs = new ServletRequestAttributes(request);
+    RequestContextHolder.setRequestAttributes(attrs);
+    if (emnb == null && belnOrgnCode == null) {
+      return;
+    }
+    EsbCommonHeader header = new EsbCommonHeader();
+    header.setEmnb(emnb);
+    header.setBelnOrgnCode(belnOrgnCode);
+    attrs.setAttribute(EsbRequestBodyAdvice.HEADER_ATTR, header, RequestAttributes.SCOPE_REQUEST);
   }
 
   private static MyTodoRequest fullRequest() {
@@ -413,7 +439,6 @@ class WorkSearchServiceImplTest {
     request.setHopeStartDate(date(HOPE_DATE));
     request.setHopeEndDate(date(HOPE_DATE));
     request.setFncgWndwOrgnCode("GROUP");
-    request.setHndrEmnb("handler");
     request.setNextKey("21");
     request.setPageSize(35);
     return request;
@@ -421,8 +446,6 @@ class WorkSearchServiceImplTest {
 
   private static MyTodoRequest requiredMyTodoRequest() {
     MyTodoRequest request = new MyTodoRequest();
-    request.setHndrEmnb("handler");
-    request.setFncgWndwOrgnCode("GROUP");
     request.setPageSize(20);
     return request;
   }
@@ -446,6 +469,7 @@ class WorkSearchServiceImplTest {
     instance.setStartedDate(date(WORK_START - 100));
     instance.setDefName("Instance process");
     instance.setInitEp("reporter");
+    instance.setInitGroupCd("INIT-GROUP");
 
     WorklistEntity worklist = new WorklistEntity();
     worklist.setTaskId(taskId);

@@ -84,17 +84,43 @@ public class ExternalIAMService implements IAMService {
 
     /**
      * 그룹 정보 목록 (코드·이름). {@link FncgOrgInfo}는 공통 응답 형태로 재사용합니다.
+     *
+     * <p>TODO: ESB 기관 목록 조회로 교체. 현재는 연동 전 임시 하드코딩.</p>
      */
     public List<FncgOrgInfo> getGroups() {
-        return new ArrayList<>();
+        // TODO: esbClient().send(itfcId, rcveSrvcId, payload, OrgSearchResponse.class)
+        List<FncgOrgInfo> list = new ArrayList<>();
+        list.add(org("00320", "융자관리팀"));
+        return list;
     }
 
     /**
      * 권한 정보 목록 (코드·이름). 그룹과 무관하게 전체 권한을 조회합니다.
      * {@link FncgRoleInfo}는 공통 응답 형태로 재사용합니다.
+     *
+     * <p>TODO: ESB 권한 목록 조회로 교체. 현재는 연동 전 임시 하드코딩.</p>
      */
     public List<FncgRoleInfo> getRoles() {
-        return new ArrayList<>();
+        // TODO: esbClient().send(itfcId, rcveSrvcId, payload, RoleSearchResponse.class)
+        List<FncgRoleInfo> list = new ArrayList<>();
+        list.add(role("FN120", "사업부장"));
+        list.add(role("FN210", "담당부장"));
+        list.add(role("FN230", "대출심사역"));
+        return list;
+    }
+
+    private static FncgOrgInfo org(String code, String name) {
+        FncgOrgInfo info = new FncgOrgInfo();
+        info.setFncgWndwOrgnCode(code);
+        info.setFncgWndwOrgnNm(name);
+        return info;
+    }
+
+    private static FncgRoleInfo role(String id, String name) {
+        FncgRoleInfo info = new FncgRoleInfo();
+        info.setFncgCoreAtrtId(id);
+        info.setFncgCoreAtrtNm(name);
+        return info;
     }
 
     /**

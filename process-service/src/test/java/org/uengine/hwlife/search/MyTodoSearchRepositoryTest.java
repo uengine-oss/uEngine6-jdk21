@@ -13,7 +13,6 @@ import org.hibernate.cfg.Configuration;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.uengine.contexts.UserContext;
 import org.uengine.five.entity.ProcessInstanceEntity;
 import org.uengine.five.entity.RoleMappingEntity;
 import org.uengine.five.entity.WorklistEntity;
@@ -62,19 +61,18 @@ class MyTodoSearchRepositoryTest {
   }
 
   @Test
-  void returnsNextPageFirstInstIdAndKeepsTotalCount() {
+  void returnsNextPageByTaskIdCursorAndKeepsTotalCount() {
     MyTodoRequest request = new MyTodoRequest();
-    request.setHndrEmnb(USER_ID);
 
     SearchResult first = search(request, null, 2);
     SearchResult second = search(request, Long.valueOf(first.nextKey()), 2);
-    SearchResult last = search(request, 1L, 2);
+    SearchResult last = search(request, 101L, 2);
 
     assertEquals(List.of(7L, 6L), instIds(first));
-    assertEquals("5", first.nextKey());
+    assertEquals("105", first.nextKey());
     assertEquals(7, first.totalCount());
     assertEquals(List.of(5L, 4L), instIds(second));
-    assertEquals("3", second.nextKey());
+    assertEquals("103", second.nextKey());
     assertEquals(7, second.totalCount());
     assertEquals(List.of(1L), instIds(last));
     assertEquals(null, last.nextKey());
@@ -84,7 +82,6 @@ class MyTodoSearchRepositoryTest {
   @Test
   void filtersFixedRequestPropertiesAgainstProcessInstance() {
     MyTodoRequest request = new MyTodoRequest();
-    request.setHndrEmnb(USER_ID);
     request.setLoanCntcNo("LOAN-A");
 
     SearchResult result = search(request, null, 10);
@@ -96,7 +93,6 @@ class MyTodoSearchRepositoryTest {
   @Test
   void includesWholeEndDateForWorklistStartDate() {
     MyTodoRequest request = new MyTodoRequest();
-    request.setHndrEmnb(USER_ID);
     request.setStartDate(day(2026, 8, 1));
     request.setEndDate(day(2026, 8, 2));
 
@@ -108,7 +104,6 @@ class MyTodoSearchRepositoryTest {
   @Test
   void filtersLoanHopeDateByInclusiveCalendarDays() {
     MyTodoRequest request = new MyTodoRequest();
-    request.setHndrEmnb(USER_ID);
     request.setHopeStartDate(day(2026, 8, 10));
     request.setHopeEndDate(day(2026, 8, 11));
 
@@ -118,13 +113,8 @@ class MyTodoSearchRepositoryTest {
   }
 
   @Test
-  void usesRequestedHandlerAsOwnWorkCondition() {
+  void usesEmnbAsOwnWorkCondition() {
     MyTodoRequest request = new MyTodoRequest();
-    request.setHndrEmnb("12323");
-    UserContext userContext = UserContext.getThreadLocalInstance();
-    userContext.setUserId("different-user");
-    userContext.setGroups(List.of());
-    userContext.setScopes(List.of());
 
     try (EntityManager entityManager = sessionFactory.createEntityManager()) {
       entityManager.getTransaction().begin();
@@ -137,7 +127,7 @@ class MyTodoSearchRepositoryTest {
       entityManager.getTransaction().commit();
 
       SearchResult result = new MyTodoSearchRepository(entityManager)
-          .search(request, null, 10, userContext);
+          .search(request, null, 10, "12323", null);
 
       assertEquals(List.of(1L), instIds(result));
 
@@ -148,13 +138,8 @@ class MyTodoSearchRepositoryTest {
   }
 
   @Test
-  void usesGroupCdForGroupAccessEvenWhenAssignGroupAndScopeDiffer() {
+  void usesBelnOrgnCodeForClaimableGroupWork() {
     MyTodoRequest request = new MyTodoRequest();
-    request.setFncgWndwOrgnCode("GROUP-ACCESS");
-    UserContext userContext = UserContext.getThreadLocalInstance();
-    userContext.setUserId("different-user");
-    userContext.setGroups(List.of());
-    userContext.setScopes(List.of());
 
     try (EntityManager entityManager = sessionFactory.createEntityManager()) {
       entityManager.getTransaction().begin();
@@ -171,7 +156,7 @@ class MyTodoSearchRepositoryTest {
       entityManager.getTransaction().commit();
 
       SearchResult result = new MyTodoSearchRepository(entityManager)
-          .search(request, null, 10, userContext);
+          .search(request, null, 10, "different-user", "GROUP-ACCESS");
 
       assertEquals(List.of(1L), instIds(result));
 
@@ -180,19 +165,14 @@ class MyTodoSearchRepositoryTest {
       worklist.setDispatchOption(0);
       worklist.setAssignGroup(null);
       worklist.setScope(null);
-      worklist.setGroupCd(null);
+      worklist.setGroupCd("GROUP");
       entityManager.getTransaction().commit();
     }
   }
 
   @Test
-  void usesRequestedHandlerForClaimedDispatchWorkWithoutOrganizationCode() {
+  void usesEmnbForClaimedDispatchWorkWithoutOrganizationCode() {
     MyTodoRequest request = new MyTodoRequest();
-    request.setHndrEmnb("12323");
-    UserContext userContext = UserContext.getThreadLocalInstance();
-    userContext.setUserId("different-user");
-    userContext.setGroups(List.of());
-    userContext.setScopes(List.of());
 
     try (EntityManager entityManager = sessionFactory.createEntityManager()) {
       entityManager.getTransaction().begin();
@@ -207,7 +187,7 @@ class MyTodoSearchRepositoryTest {
       entityManager.getTransaction().commit();
 
       SearchResult result = new MyTodoSearchRepository(entityManager)
-          .search(request, null, 10, userContext);
+          .search(request, null, 10, "12323", null);
 
       assertEquals(List.of(1L), instIds(result));
 
@@ -220,14 +200,8 @@ class MyTodoSearchRepositoryTest {
   }
 
   @Test
-  void combinesOwnAndClaimableWorkWhenHandlerAndOrganizationAreBothProvided() {
+  void combinesOwnAndClaimableWorkWhenEmnbAndBelnOrgnCodeAreBothProvided() {
     MyTodoRequest request = new MyTodoRequest();
-    request.setHndrEmnb("12323");
-    request.setFncgWndwOrgnCode("GROUP-ACCESS");
-    UserContext userContext = UserContext.getThreadLocalInstance();
-    userContext.setUserId("different-user");
-    userContext.setGroups(List.of());
-    userContext.setScopes(List.of());
 
     try (EntityManager entityManager = sessionFactory.createEntityManager()) {
       entityManager.getTransaction().begin();
@@ -260,7 +234,7 @@ class MyTodoSearchRepositoryTest {
       entityManager.getTransaction().commit();
 
       SearchResult result = new MyTodoSearchRepository(entityManager)
-          .search(request, null, 10, userContext);
+          .search(request, null, 10, "12323", "GROUP-ACCESS");
 
       assertEquals(List.of(2L, 1L), instIds(result));
 
@@ -279,16 +253,12 @@ class MyTodoSearchRepositoryTest {
   }
 
   @Test
-  void returnsEmptyWhenRequestAccessValuesAreBlankEvenIfUserContextMatches() {
+  void returnsEmptyWhenEmnbAndBelnOrgnCodeAreBlank() {
     MyTodoRequest request = new MyTodoRequest();
-    UserContext userContext = UserContext.getThreadLocalInstance();
-    userContext.setUserId(USER_ID);
-    userContext.setGroups(List.of("GROUP"));
-    userContext.setScopes(List.of("GROUP"));
 
     try (EntityManager entityManager = sessionFactory.createEntityManager()) {
       SearchResult result = new MyTodoSearchRepository(entityManager)
-          .search(request, null, 10, userContext);
+          .search(request, null, 10, null, null);
 
       assertEquals(List.of(), instIds(result));
       assertEquals(0, result.totalCount());
@@ -296,14 +266,18 @@ class MyTodoSearchRepositoryTest {
   }
 
   private static SearchResult search(MyTodoRequest request, Long cursor, int size) {
-    UserContext userContext = UserContext.getThreadLocalInstance();
-    userContext.setUserId(USER_ID);
-    userContext.setGroups(List.of());
-    userContext.setScopes(List.of());
+    return search(request, cursor, size, USER_ID, null);
+  }
 
+  private static SearchResult search(
+      MyTodoRequest request,
+      Long cursor,
+      int size,
+      String emnb,
+      String belnOrgnCode) {
     try (EntityManager entityManager = sessionFactory.createEntityManager()) {
       return new MyTodoSearchRepository(entityManager)
-          .search(request, cursor, size, userContext);
+          .search(request, cursor, size, emnb, belnOrgnCode);
     }
   }
 

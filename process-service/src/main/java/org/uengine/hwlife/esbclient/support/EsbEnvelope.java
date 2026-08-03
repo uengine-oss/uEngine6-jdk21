@@ -88,6 +88,8 @@ public final class EsbEnvelope {
         EsbCommonHeader header = copyHeader(requestHeader);
         // 응답정보 초기화 후 채움
         clearResponseSection(header);
+        header.setRspnDvsnCode("R");
+
         header.setTlgrRspnDttm(LocalDateTime.now().format(EsbCodes.DTTM));
         header.setPrcsRsltDvsnCode(success ? EsbCodes.PRCS_RSLT_SUCCESS : EsbCodes.PRCS_RSLT_FAILED);
         if (!success && reason != null && !reason.isBlank()) {
