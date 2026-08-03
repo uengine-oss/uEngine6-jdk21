@@ -3,11 +3,14 @@ package org.uengine.hwlife.search.dto;
 import java.time.LocalDateTime;
 import java.util.Date;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
+
 /**
  * 조직 진행 건 검색 결과 항목 — {@link OrgRunningResponse#getOrgnPrgslist()} 요소.
  */
 public class OrgRunningItem {
 
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyyMMddHHmmssSSS")
     private LocalDateTime starDttm;
     private String fncgBswrDvsnCode;
     private String loanCntcNo;
@@ -23,6 +26,7 @@ public class OrgRunningItem {
     private String hndrOrgnCode;
     private String uworNm;
     private String fncgBpmTaskTrcgNm;
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyyMMddHHmmssSSS")
     private LocalDateTime uworStarDttm;
     private String fncgBpmtaskLstId;
     private String fncgBpmPcesIntcId;

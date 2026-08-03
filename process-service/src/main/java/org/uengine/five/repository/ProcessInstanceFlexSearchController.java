@@ -137,7 +137,7 @@ public class ProcessInstanceFlexSearchController {
             addEq(predicates, cb, root.get("prevCurrRsNm"), prevCurrRsNm);
             addEq(predicates, cb, root.get("currEp"), currEp);
             addEq(predicates, cb, root.get("currRsNm"), currRsNm);
-            addEq(predicates, cb, root.get("group"), group);
+            addEq(predicates, cb, root.get("currGroupCd"), group);
 
             addEq(predicates, cb, root.get("initComCd"), initComCd);
             addEq(predicates, cb, root.get("ext1"), ext1);
@@ -159,7 +159,7 @@ public class ProcessInstanceFlexSearchController {
             addLike(predicates, cb, root.get("defId"), defIdLike);
             addLike(predicates, cb, root.get("defName"), defNameLike);
             addLike(predicates, cb, root.get("info"), infoLike);
-            addLike(predicates, cb, root.get("group"), groupLike);
+            addLike(predicates, cb, root.get("currGroupCd"), groupLike);
 
             // ----- date ranges -----
             addDateRange(predicates, cb, root.get("startedDate"), startedDateFrom, startedDateTo);
