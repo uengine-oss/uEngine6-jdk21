@@ -23,6 +23,13 @@ public interface InstanceIntegrationService {
   /**
    * 다중 선점 / 선점 해제 (모든 사용자).
    *
+   * <p>처리자 사번·소속기관은 ESB header.emnb / header.belnOrgnCode 사용.
+   * 선점 대상은 {@code dispatchOption == 1 AND endpoint IS NULL AND groupCd == belnOrgnCode}.</p>
+   *
+   * <p>성공 {@code prcsRsltCodeNm=LBM000000}. 하나라도 실패하면 {@code FAILED},
+   * 사유 코드는 {@code failList[].prcsRsltCntn}({@code LBM05XXXX}).
+   * 코드 목록은 {@link InstanceIntegrationServiceImpl#claimWorkItems} 주석 참고.</p>
+   *
    * <pre>POST /instance/multi-claim</pre>
    */
   @RequestMapping(value = "/multi-claim", method = RequestMethod.POST, produces = "application/json;charset=UTF-8")

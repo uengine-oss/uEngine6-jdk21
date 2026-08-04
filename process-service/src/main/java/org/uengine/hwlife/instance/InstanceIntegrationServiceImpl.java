@@ -1,7 +1,6 @@
 package org.uengine.hwlife.instance;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -18,7 +17,9 @@ import org.uengine.five.dto.*;
 import org.uengine.five.entity.WorklistEntity;
 import org.uengine.five.repository.WorklistRepository;
 import org.uengine.five.service.InstanceServiceImpl;
-import org.uengine.five.spring.SecurityAwareServletFilter;
+import org.uengine.hwlife.esbclient.dto.EsbCommonHeader;
+import org.uengine.hwlife.esbclient.support.EsbRequestBodyAdvice;
+import org.uengine.hwlife.esbclient.support.EsbResponseBodyAdvice;
 import org.uengine.hwlife.instance.dto.*;
 
 /**
@@ -39,48 +40,73 @@ public class InstanceIntegrationServiceImpl implements InstanceIntegrationServic
     this.worklistRepository = worklistRepository;
   }
 
+  /**
+   * 다중 선점 / 선점 해제.
+   *
+   * <p>처리결과 코드({@code prcsRsltCodeNm} / {@code failList[].prcsRsltCntn}):
+   * <ul>
+   *   <li>{@code LBM000000} — 성공(전부 성공 시 prcsRsltCodeNm)</li>
+   *   <li>{@code LBM050001} — request body 없음</li>
+   *   <li>{@code LBM050002} — bswrList 없음/비어 있음</li>
+   *   <li>{@code LBM050003} — header.emnb 없음</li>
+   *   <li>{@code LBM050004} — dvsnVal 이 0(선점)/1(해제) 이 아님</li>
+   *   <li>{@code LBM050005} — 선점 시 header.belnOrgnCode 없음</li>
+   *   <li>{@code LBM050006} — fncgBpmTaskLstId 없음</li>
+   *   <li>{@code LBM050007} — 요청 내 fncgBpmTaskLstId 중복</li>
+   *   <li>{@code LBM050008} — fncgBpmTaskLstId 비숫자</li>
+   *   <li>{@code LBM050009} — work item 없음</li>
+   *   <li>{@code LBM050010} — fncgBpmPcesIntcId 불일치</li>
+   *   <li>{@code LBM050011} — 선점불가(status != NEW)</li>
+   *   <li>{@code LBM050012} — 이미 본인이 선점한 업무</li>
+   *   <li>{@code LBM050013} — 이미 다른 담당자가 선점한 업무</li>
+   *   <li>{@code LBM050014} — 선점규칙 업무가 아님(dispatchOption != 1)</li>
+   *   <li>{@code LBM050015} — 본인 기관이 아닌 업무(groupCd != belnOrgnCode)</li>
+   *   <li>{@code LBM050016} — 선점 해제불가(status != NEW)</li>
+   *   <li>{@code LBM050017} — 이미 선점 해제된 업무</li>
+   *   <li>{@code LBM050018} — 본인 선점 건이 아님(타인 선점)</li>
+   *   <li>{@code LBM050019} — claimWorkItem 업무 예외</li>
+   *   <li>{@code LBM050020} — 기타 예외</li>
+   * </ul>
+   */
   @Override
   @Transactional
   public ClaimResponse claimWorkItems(@RequestBody ClaimRequest request) throws Exception {
-    if (request == null) {
-      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "request body is required");
-    }
-    if (request.getBswrList() == null || request.getBswrList().isEmpty()) {
-      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "bswrList is required");
+    List<ClaimRequestItem> bswrList = request == null ? null : request.getBswrList();
+
+    EsbCommonHeader header = EsbRequestBodyAdvice.currentHeader();
+    String actorEndpoint = trimToNull(header != null ? header.getEmnb() : null);
+    String belnOrgnCode = trimToNull(header != null ? header.getBelnOrgnCode() : null);
+
+    String commonError = resolveCommonClaimError(request, bswrList, actorEndpoint, belnOrgnCode);
+    if (commonError != null) {
+      return failedClaimResponse(bswrList, 0, commonError);
     }
 
-    boolean unclaim = isUnclaim(request.getDvsnVal());
-    String actorEndpoint = resolveClaimActorEndpoint(request.getHndrEmnb());
+    boolean unclaim = "1".equals(trimToNull(request.getDvsnVal()));
     UserContext.getThreadLocalInstance().setUserId(actorEndpoint);
 
-    ClaimResponse response = new ClaimResponse();
     List<ClaimResponseItem> failList = new ArrayList<>();
     Set<String> seenTaskIds = new HashSet<>();
     int successCount = 0;
 
-    for (ClaimRequestItem item : request.getBswrList()) {
+    for (ClaimRequestItem item : bswrList) {
       String taskId = item == null ? null : trimToNull(item.getFncgBpmTaskLstId());
       if (taskId == null) {
-        addClaimFailure(failList, item, "fncgBpmTaskLstId is required");
+        addClaimFailure(failList, item, "LBM050006");
         continue;
       }
       if (!seenTaskIds.add(taskId)) {
-        addClaimFailure(failList, item, "duplicate fncgBpmTaskLstId in request");
+        addClaimFailure(failList, item, "LBM050007");
         continue;
       }
 
       try {
         WorklistEntity worklist = worklistRepository.findByIdForUpdate(Long.parseLong(taskId)).orElse(null);
         if (worklist == null) {
-          addClaimFailure(failList, item, "No such work item where taskId=" + taskId);
+          addClaimFailure(failList, item, "LBM050009");
           continue;
         }
-        if (isAlreadyInRequestedClaimState(worklist, actorEndpoint, unclaim)) {
-          successCount++;
-          continue;
-        }
-
-        String validationError = validateClaimRequest(worklist, item, actorEndpoint, unclaim);
+        String validationError = validateClaimRequest(worklist, item, actorEndpoint, belnOrgnCode, unclaim);
         if (validationError != null) {
           addClaimFailure(failList, item, validationError);
           continue;
@@ -94,110 +120,155 @@ public class InstanceIntegrationServiceImpl implements InstanceIntegrationServic
         instanceService.claimWorkItem(taskId, roleMapping);
         successCount++;
       } catch (NumberFormatException e) {
-        addClaimFailure(failList, item, "fncgBpmTaskLstId must be numeric");
+        addClaimFailure(failList, item, "LBM050008");
       } catch (ResponseStatusException e) {
-        addClaimFailure(failList, item, e.getReason() == null ? e.getMessage() : e.getReason());
+        addClaimFailure(failList, item, "LBM050019");
       } catch (Exception e) {
-        addClaimFailure(failList, item, e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage());
+        addClaimFailure(failList, item, "LBM050020");
       }
     }
 
-    response.setPrcsRsltCodeNm(failList.isEmpty() ? "SUCCESS" : "FAILED");
+    return toClaimResponse(
+        failList.isEmpty() ? ClaimResponse.STATUS_SUCCESS : ClaimResponse.STATUS_FAILED,
+        successCount,
+        failList);
+  }
+
+  /**
+   * 요청 전체 공통 실패 코드.
+   *
+   * <ul>
+   *   <li>{@code LBM050001} — request body 없음</li>
+   *   <li>{@code LBM050002} — bswrList 없음/비어 있음</li>
+   *   <li>{@code LBM050003} — header.emnb 없음</li>
+   *   <li>{@code LBM050004} — dvsnVal 이 0/1 이 아님</li>
+   *   <li>{@code LBM050005} — 선점 시 header.belnOrgnCode 없음</li>
+   * </ul>
+   */
+  private static String resolveCommonClaimError(
+      ClaimRequest request,
+      List<ClaimRequestItem> bswrList,
+      String actorEndpoint,
+      String belnOrgnCode) {
+    if (request == null) {
+      return "LBM050001";
+    }
+    if (bswrList == null || bswrList.isEmpty()) {
+      return "LBM050002";
+    }
+    if (actorEndpoint == null) {
+      return "LBM050003";
+    }
+    String dvsnVal = trimToNull(request.getDvsnVal());
+    if (!"0".equals(dvsnVal) && !"1".equals(dvsnVal)) {
+      return "LBM050004";
+    }
+    if ("0".equals(dvsnVal) && belnOrgnCode == null) {
+      return "LBM050005";
+    }
+    return null;
+  }
+
+  /** 공통 사유 코드로 요청 태스크 전부를 실패 처리한다. */
+  private static ClaimResponse failedClaimResponse(
+      List<ClaimRequestItem> bswrList,
+      int successCount,
+      String sharedReason) {
+    List<ClaimResponseItem> failList = new ArrayList<>();
+    if (bswrList != null) {
+      for (ClaimRequestItem item : bswrList) {
+        addClaimFailure(failList, item, sharedReason);
+      }
+    }
+    if (failList.isEmpty()) {
+      addClaimFailure(failList, null, sharedReason);
+    }
+    return toClaimResponse(ClaimResponse.STATUS_FAILED, successCount, failList);
+  }
+
+  private static ClaimResponse toClaimResponse(
+      String status,
+      int successCount,
+      List<ClaimResponseItem> failList) {
+    if (ClaimResponse.STATUS_FAILED.equals(status)) {
+      String reason = failList == null || failList.isEmpty()
+          ? ClaimResponse.STATUS_FAILED
+          : failList.get(0).getPrcsRsltCntn();
+      EsbResponseBodyAdvice.markFailed(reason);
+    }
+    ClaimResponse response = new ClaimResponse();
+    response.setPrcsRsltCodeNm(status);
     response.setSucsCont(successCount);
-    response.setFailCont(failList.size());
-    response.setFailList(failList);
+    response.setFailCont(failList == null ? 0 : failList.size());
+    response.setFailList(failList == null ? new ArrayList<>() : failList);
     return response;
   }
 
-  private boolean isUnclaim(String dvsnVal) {
-    String normalized = trimToNull(dvsnVal);
-    if ("0".equals(normalized)) return false;
-    if ("1".equals(normalized)) return true;
-    throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "dvsnVal must be 0 (claim) or 1 (unclaim)");
-  }
-
-  private String resolveClaimActorEndpoint(String requestedEndpoint) {
-    String authenticatedActor = resolveAuthenticatedActorEndpoint();
-    if (authenticatedActor == null) {
-      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "authenticated actor is required for claim");
-    }
-    String requested = trimToNull(requestedEndpoint);
-    if (requested != null && !requested.equals(authenticatedActor)) {
-      throw new ResponseStatusException(HttpStatus.FORBIDDEN, "hndrEmnb must match the authenticated actor");
-    }
-    return authenticatedActor;
-  }
-
-  private String resolveAuthenticatedActorEndpoint() {
-    String actorEndpoint = trimToNull(UserContext.getThreadLocalInstance().getUserId());
-    if (actorEndpoint == null) {
-      actorEndpoint = trimToNull(SecurityAwareServletFilter.getUserId());
-    }
-    return actorEndpoint;
-  }
-
+  /**
+   * 단건 선점/선점 해제 검증. 실패 시 LBM 코드, 통과 시 {@code null}.
+   *
+   * <ul>
+   *   <li>{@code LBM050010} — fncgBpmPcesIntcId 불일치</li>
+   *   <li>{@code LBM050011} — 선점불가(status != NEW)</li>
+   *   <li>{@code LBM050012} — 이미 본인이 선점한 업무</li>
+   *   <li>{@code LBM050013} — 이미 다른 담당자가 선점한 업무</li>
+   *   <li>{@code LBM050014} — 선점규칙 업무가 아님(dispatchOption != 1)</li>
+   *   <li>{@code LBM050015} — 본인 기관이 아닌 업무</li>
+   *   <li>{@code LBM050016} — 선점 해제불가(status != NEW)</li>
+   *   <li>{@code LBM050017} — 이미 선점 해제된 업무</li>
+   *   <li>{@code LBM050018} — 본인 선점 건이 아님</li>
+   * </ul>
+   */
   private String validateClaimRequest(
       WorklistEntity worklist,
       ClaimRequestItem requestItem,
       String actorEndpoint,
+      String belnOrgnCode,
       boolean unclaim) {
     String requestedInstanceId = requestItem == null ? null : trimToNull(requestItem.getFncgBpmPcesIntcId());
     if (requestedInstanceId != null
         && !requestedInstanceId.equals(String.valueOf(worklist.getInstId()))
         && !requestedInstanceId.equals(String.valueOf(worklist.getRootInstId()))) {
-      return "fncgBpmPcesIntcId does not match the work item instance";
+      return "LBM050010";
     }
 
     if (!"NEW".equals(trimToNull(worklist.getStatus()))) {
-      return "Task is not claimable because status=" + worklist.getStatus();
+      return unclaim ? "LBM050016" : "LBM050011";
     }
 
     String currentEndpoint = trimToNull(worklist.getEndpoint());
     if (unclaim) {
-      if (currentEndpoint == null || !currentEndpoint.equals(actorEndpoint)) {
-        return "Only the current claimant can unclaim this task";
+      if (currentEndpoint == null) {
+        return "LBM050017";
+      }
+      if (!currentEndpoint.equals(actorEndpoint)) {
+        return "LBM050018";
       }
       return null;
     }
 
+    if (currentEndpoint != null && currentEndpoint.equals(actorEndpoint)) {
+      return "LBM050012";
+    }
     if (currentEndpoint != null) {
-      return currentEndpoint.equals(actorEndpoint)
-          ? "Task is already claimed by the login user"
-          : "Task already claimed by another user. endpoint=" + currentEndpoint;
+      return "LBM050013";
     }
     if (worklist.getDispatchOption() != 1) {
-      return "Task is not a racing claim target. dispatchOption=" + worklist.getDispatchOption();
+      return "LBM050014";
     }
-    if (!isClaimableByCurrentUser(worklist)) {
-      return "No permission to claim this racing task. groupCd=" + worklist.getGroupCd();
+    if (!isSameOrganization(worklist, belnOrgnCode)) {
+      return "LBM050015";
     }
     return null;
   }
 
-  private boolean isAlreadyInRequestedClaimState(
-      WorklistEntity worklist,
-      String actorEndpoint,
-      boolean unclaim) {
-    String currentEndpoint = trimToNull(worklist.getEndpoint());
-    if (unclaim) {
-      return currentEndpoint == null;
-    }
-    return actorEndpoint != null && actorEndpoint.equals(currentEndpoint);
-  }
-
-  private boolean isClaimableByCurrentUser(WorklistEntity worklist) {
-    List<String> groups = UserContext.getThreadLocalInstance().getGroups();
+  /**
+   * 나의 업무함 선점 조건과 동일: {@code groupCd == header.belnOrgnCode}.
+   */
+  private static boolean isSameOrganization(WorklistEntity worklist, String belnOrgnCode) {
     String groupCd = trimToNull(worklist.getGroupCd());
-    return groupCd != null && containsNormalized(groups, groupCd);
-  }
-
-  private static boolean containsNormalized(Collection<String> values, String expected) {
-    String normalizedExpected = trimToNull(expected);
-    if (values == null || normalizedExpected == null) return false;
-    for (String value : values) {
-      if (normalizedExpected.equals(trimToNull(value))) return true;
-    }
-    return false;
+    String organization = trimToNull(belnOrgnCode);
+    return groupCd != null && organization != null && groupCd.equals(organization);
   }
 
   private static void addClaimFailure(
