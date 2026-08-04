@@ -206,8 +206,8 @@ public class WorkSearchServiceImpl implements WorkSearchService {
     item.setLoanPcesNm(firstNonBlank(worklist.getDefName(), instance == null ? null : instance.getDefName()));
     item.setReptHndrEmnb(instance == null ? null : instance.getInitEp());
     item.setReptHndrFncgOrgnCode(instance == null ? null : instance.getInitGroupCd());
-    item.setPrcdHndrEmnb(worklist.getPrevEndpoint());
-    item.setPrcdHndrFncgOrgnCode(worklist.getPrevGroupCd());
+    item.setPrcdHndrEmnb(instance == null ? null : instance.getPrevCurrEp());
+    item.setPrcdHndrFncgOrgnCode(instance == null ? null : instance.getPrevCurrGroupCd());
     item.setFncgBpmUworSttsCntn(worklist.getStatus());
     item.setStarDttm(instance == null ? null : instance.getStartedDate());
     item.setBefoHndrEmnb(worklist.getPrevEndpoint());

@@ -119,8 +119,11 @@ public class WorklistEntity {// implements WorkListDAO {
     String ext4;
     String ext5;
 
+    // TODO: DB 컬럼 추가 후 @Transient 제거
+    @Transient
     Boolean apvlYn; // 결재 유형의 업무 여부
-    Boolean imgeScanYn; // 이미지 스캔 여부 
+    @Transient
+    Boolean imgeScanYn; // 이미지 스캔 여부
 
 
     public Long getTaskId() {
