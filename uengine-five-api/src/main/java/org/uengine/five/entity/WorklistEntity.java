@@ -119,6 +119,10 @@ public class WorklistEntity {// implements WorkListDAO {
     String ext4;
     String ext5;
 
+    Boolean apvlYn; // 결재 유형의 업무 여부
+    Boolean imgeScanYn; // 이미지 스캔 여부 
+
+
     public Long getTaskId() {
         return taskId;
     }
@@ -466,6 +470,22 @@ public class WorklistEntity {// implements WorkListDAO {
 
     public void setPayload(String payload) {
         this.payload = payload;
+    }
+
+    public Boolean getApvlYn() {
+        return apvlYn;
+    }
+
+    public void setApvlYn(Boolean apvlYn) {
+        this.apvlYn = apvlYn;
+    }
+
+    public Boolean getImgeScanYn() {
+        return imgeScanYn;
+    }
+
+    public void setImgeScanYn(Boolean imgeScanYn) {
+        this.imgeScanYn = imgeScanYn;
     }
 
 }

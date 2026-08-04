@@ -37,7 +37,12 @@ public class MyTodoItem {
     private String scrnUrlAddr;
     private String fncgBpmTaskLstId;
     private String fncgBpmPcesIntcId;
-
+    private String dstOptnVal; // 배분 규칙 
+    private String ruleAcmpVal; // 할당 규칙
+    private String mnorExstYn; // 위임여부
+    private String apvlYn; // 결재여부
+    private String imgeScanYn; // 이미지스캔여부
+        
 
     public String getCustId() {
         return custId;
@@ -245,5 +250,45 @@ public class MyTodoItem {
 
     public void setFncgBpmPcesIntcId(String fncgBpmPcesIntcId) {
         this.fncgBpmPcesIntcId = fncgBpmPcesIntcId;
+    }
+
+    public String getDstOptnVal() {
+        return dstOptnVal;
+    }
+
+    public void setDstOptnVal(String dstOptnVal) {
+        this.dstOptnVal = dstOptnVal;
+    }
+
+    public String getRuleAcmpVal() {
+        return ruleAcmpVal;
+    }
+
+    public void setRuleAcmpVal(String ruleAcmpVal) {
+        this.ruleAcmpVal = ruleAcmpVal;
+    }
+
+    public String getMnorExstYn() {
+        return mnorExstYn;
+    }
+
+    public void setMnorExstYn(String mnorExstYn) {
+        this.mnorExstYn = mnorExstYn;
+    }
+
+    public String getApvlYn() {
+        return apvlYn;
+    }
+
+    public void setApvlYn(String apvlYn) {
+        this.apvlYn = apvlYn;
+    }
+
+    public String getImgeScanYn() {
+        return imgeScanYn;
+    }
+
+    public void setImgeScanYn(String imgeScanYn) {
+        this.imgeScanYn = imgeScanYn;
     }
 }
