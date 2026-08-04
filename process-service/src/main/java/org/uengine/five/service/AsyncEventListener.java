@@ -159,6 +159,8 @@ public class AsyncEventListener {
             ProcessInstance instance = instanceServiceImpl
                     .getProcessInstanceLocal(processInstanceEntity.getInstId().toString());
 
+            applyEventValues(instance, eventContent);
+
             activityLoop:
             for (Activity activity : instance.getCurrentRunningActivities()) {
                 for (EventSynchronization sync : activity.getEventSynchronizations()) {
@@ -210,6 +212,14 @@ public class AsyncEventListener {
             variables.add(variable);
         }
         return variables.toArray(new ProcessVariableValue[0]);
+    }
+
+    private static void applyEventValues(ProcessInstance instance, Map<String, Object> eventContent) throws Exception {
+        for (Map.Entry<String, Object> entry : eventContent.entrySet()) {
+            if (entry.getKey() != null && entry.getValue() instanceof Serializable) {
+                instance.set("", entry.getKey(), (Serializable) entry.getValue());
+            }
+        }
     }
 
     private static ObjectMapper eventObjectMapper() {
