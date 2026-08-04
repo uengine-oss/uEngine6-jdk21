@@ -236,6 +236,13 @@ public class InstanceIntegrationServiceImpl implements InstanceIntegrationServic
       return unclaim ? "LBM050016" : "LBM050011";
     }
 
+    if (worklist.getDispatchOption() != 1) {
+      return "LBM050014";
+    }
+    if (!isSameOrganization(worklist, belnOrgnCode)) {
+      return "LBM050015";
+    }
+    
     String currentEndpoint = trimToNull(worklist.getEndpoint());
     if (unclaim) {
       if (currentEndpoint == null) {
@@ -252,12 +259,6 @@ public class InstanceIntegrationServiceImpl implements InstanceIntegrationServic
     }
     if (currentEndpoint != null) {
       return "LBM050013";
-    }
-    if (worklist.getDispatchOption() != 1) {
-      return "LBM050014";
-    }
-    if (!isSameOrganization(worklist, belnOrgnCode)) {
-      return "LBM050015";
     }
     return null;
   }
