@@ -2,6 +2,8 @@ package org.uengine.hwlife.search.dto;
 
 import java.util.Date;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
+
 /**
  * 나의 할일 검색 결과 항목.
  */
@@ -16,6 +18,7 @@ public class MyTodoItem {
     private Date loanHopeDate;
     private String loanPcesMgmtNo;
     private String fncgBpmTaskTrcgNm;
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyyMMddHHmmss", timezone = "Asia/Seoul")
     private Date uworStarDttm;
     private String uworNm;
     private String loanPcesNm;
@@ -24,6 +27,7 @@ public class MyTodoItem {
     private String prcdHndrEmnb;
     private String prcdHndrFncgOrgnCode;
     private String fncgBpmUworSttsCntn;
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyyMMddHHmmss", timezone = "Asia/Seoul")
     private Date starDttm;
     private String befoHndrEmnb;
     private String befoFncgOrgnCode;
