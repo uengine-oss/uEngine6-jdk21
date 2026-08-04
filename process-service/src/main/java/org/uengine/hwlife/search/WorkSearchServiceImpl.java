@@ -180,6 +180,8 @@ public class WorkSearchServiceImpl implements WorkSearchService {
       item.setFncgBpmTaskTrcgNm(workItem.getTrcTag());
       item.setFncgBpmUworSttsCntn(workItem.getStatus());
       item.setHndrEmnb(workItem.getEndpoint());
+      item.setApvlYn(workItem.getApvlYn() == null ? "N" : workItem.getApvlYn() ? "Y" : "N");
+      item.setImgeScanYn(workItem.getImgeScanYn() == null ? "N" : workItem.getImgeScanYn() ? "Y" : "N");
     }
     return item;
   }

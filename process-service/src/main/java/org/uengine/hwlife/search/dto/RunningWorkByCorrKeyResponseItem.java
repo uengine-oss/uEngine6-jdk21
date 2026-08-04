@@ -8,6 +8,8 @@ public class RunningWorkByCorrKeyResponseItem {
     private String prgsSttsNm; // 인스턴스 상태 
     private String prcsRsltCntn; // 실패 사유( 조회 실패시)
     private String hndrEmnb; // 담당자 사번
+    private String apvlYn; // 결재 유형의 업무 여부
+    private String imgeScanYn; // 이미지 스캔 여부 
 
     public String getLoanPcesMgmtNo() {
         return loanPcesMgmtNo;
@@ -55,5 +57,21 @@ public class RunningWorkByCorrKeyResponseItem {
 
     public void setHndrEmnb(String hndrEmnb) {
         this.hndrEmnb = hndrEmnb;
+    }
+
+    public String getApvlYn() {
+        return apvlYn;
+    }
+
+    public void setApvlYn(String apvlYn) {
+        this.apvlYn = apvlYn;
+    }
+
+    public String getImgeScanYn() {
+        return imgeScanYn;
+    }
+
+    public void setImgeScanYn(String imgeScanYn) {
+        this.imgeScanYn = imgeScanYn;
     }
 }
