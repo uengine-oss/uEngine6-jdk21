@@ -69,10 +69,20 @@ public class BoundRoleResolutionContext extends RoleResolutionContext implements
     }
 
     @Override
+    @SuppressWarnings("rawtypes")
     public RoleMapping getActualMapping(ProcessDefinition pd, ProcessInstance instance,
                                         String tracingTag, Map options) throws Exception {
+        String boundEndpoint = getBindingValue(instance, tracingTag, "endpoint");
+        if (boundEndpoint != null) {
+            RoleMapping mapping = RoleMapping.create();
+            mapping.setEndpoint(boundEndpoint);
+            return mapping;
+        }
+
         RoleResolutionContext resolved = resolve(instance, tracingTag);
-        return resolved.getActualMapping(pd, instance, tracingTag, options);
+        RoleMapping mapping = resolved.getActualMapping(pd, instance, tracingTag, options);
+        applyResultBindings(mapping, instance, tracingTag);
+        return mapping;
     }
 
     @Override
@@ -122,6 +132,9 @@ public class BoundRoleResolutionContext extends RoleResolutionContext implements
         for (Map.Entry<String, String> entry : bindings.entrySet()) {
             String property = entry.getKey();
             String varKey = entry.getValue();
+            if ("endpoint".equals(property)) {
+                continue;
+            }
             if (!isNotEmpty(property) || !isNotEmpty(varKey)) {
                 continue;
             }
@@ -131,6 +144,30 @@ public class BoundRoleResolutionContext extends RoleResolutionContext implements
             }
         }
         return clone;
+    }
+
+    private void applyResultBindings(RoleMapping mapping, ProcessInstance instance, String tracingTag)
+            throws Exception {
+        if (mapping == null || bindings == null || bindings.isEmpty()) {
+            return;
+        }
+
+        String endpoint = getBindingValue(instance, tracingTag, "endpoint");
+        if (endpoint != null) {
+            mapping.setEndpoint(endpoint);
+        }
+    }
+
+    private String getBindingValue(ProcessInstance instance, String tracingTag, String propertyName)
+            throws Exception {
+        if (bindings == null || bindings.isEmpty()) {
+            return null;
+        }
+        String varKey = bindings.get(propertyName);
+        if (!isNotEmpty(varKey)) {
+            return null;
+        }
+        return readVar(instance, tracingTag, varKey);
     }
 
     private static String readVar(ProcessInstance instance, String tracingTag, String varKey)
