@@ -13,11 +13,6 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseBodyAdvice;
 import org.uengine.hwlife.esbclient.dto.EsbCommonHeader;
 import org.uengine.hwlife.esbclient.dto.EsbResponse;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-
 /**
  * ESB 인바운드 응답을 {@code { "header": {...}, "payload": {...} }} 봉투로 감싼다.
  *
@@ -29,9 +24,6 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
  * 업무 실패로 {@code prcsRsltDvsnCode=1} 을 내려야 하면
  * {@link #markFailed(String)} 후 payload DTO 를 반환한다.</p>
  *
- * <p>응답 본문을 {@link EsbResponse} POJO 가 아니라 {@link ObjectNode} 로 반환한다.
- * Spring MVC ObjectMapper 가 NON_NULL 이어도 JsonNode 트리는 null 키를 유지한다.</p>
- *
  * <p>on/off: {@code esb.outbound-wrap.enabled} (기본 {@code true}).</p>
  */
 @ControllerAdvice
@@ -41,29 +33,6 @@ public class EsbResponseBodyAdvice implements ResponseBodyAdvice<Object> {
     public static final String FAILED_REASON_ATTR = "esb.failedReason";
 
     private static final String HWLIFE_PACKAGE_PREFIX = "org.uengine.hwlife";
-
-    /** payload: null 필드 키 유지 */
-    private final ObjectMapper payloadMapper;
-
-    /** header: null 필드는 생략(기존 EsbCommonHeader NON_NULL 관례) */
-    private final ObjectMapper headerMapper;
-
-    public EsbResponseBodyAdvice(ObjectMapper objectMapper) {
-        if (objectMapper == null) {
-            throw new IllegalArgumentException("objectMapper is required");
-        }
-        // Spring/Hateoas mixin(NON_NULL on Object) 을 물려받지 않도록 신규 mapper 사용
-        this.payloadMapper = createMapper(JsonInclude.Include.ALWAYS);
-        this.headerMapper = createMapper(JsonInclude.Include.NON_NULL);
-    }
-
-    private static ObjectMapper createMapper(JsonInclude.Include inclusion) {
-        ObjectMapper mapper = new ObjectMapper();
-        mapper.findAndRegisterModules();
-        mapper.setDefaultPropertyInclusion(
-                JsonInclude.Value.construct(inclusion, inclusion));
-        return mapper;
-    }
 
     /**
      * 현재 요청 응답을 ESB 실패({@code prcsRsltDvsnCode=1}) 로 표시한다.
@@ -98,42 +67,22 @@ public class EsbResponseBodyAdvice implements ResponseBodyAdvice<Object> {
             MediaType selectedContentType,
             Class<? extends HttpMessageConverter<?>> selectedConverterType,
             ServerHttpRequest request, ServerHttpResponse response) {
-        if (body instanceof EsbResponse || body instanceof JsonNode) {
+        if (body instanceof EsbResponse) {
             return body;
         }
         if (body instanceof CharSequence || body instanceof byte[]) {
             return body;
         }
 
-        EsbCommonHeader requestHeader = EsbRequestBodyAdvice.currentHeader();
-        if (requestHeader == null) {
+        EsbCommonHeader header = EsbRequestBodyAdvice.currentHeader();
+        if (header == null) {
             return body;
         }
 
         String failedReason = currentFailedReason();
-        EsbResponse<?> wrapped = failedReason != null
-                ? EsbEnvelope.failed(requestHeader, body, failedReason.isBlank() ? null : failedReason)
-                : EsbEnvelope.success(requestHeader, body);
-
-        // POJO 재직렬화(NON_NULL mixin)를 피하고, 완성된 JSON 트리를 그대로 HTTP 본문으로 반환
-        return toEnvelopeNode(wrapped.getHeader(), wrapped.getPayload());
-    }
-
-    ObjectNode toEnvelopeNode(EsbCommonHeader header, Object payload) {
-        ObjectNode envelope = payloadMapper.createObjectNode();
-        envelope.set("header", headerMapper.valueToTree(header != null ? header : new EsbCommonHeader()));
-        envelope.set("payload", toAlwaysIncludePayload(payload));
-        return envelope;
-    }
-
-    /** DTO 를 null 필드 키까지 포함한 JSON 트리로 변환한다({@code "field": null}). */
-    JsonNode toAlwaysIncludePayload(Object body) {
-        if (body == null) {
-            return payloadMapper.nullNode();
+        if (failedReason != null) {
+            return EsbEnvelope.failed(header, body, failedReason.isBlank() ? null : failedReason);
         }
-        if (body instanceof JsonNode) {
-            return (JsonNode) body;
-        }
-        return payloadMapper.valueToTree(body);
+        return EsbEnvelope.success(header, body);
     }
 }
