@@ -93,7 +93,7 @@ class MyTodoSearchRepositoryTest {
   @Test
   void includesWholeEndDateForWorklistStartDate() {
     MyTodoRequest request = new MyTodoRequest();
-    request.setStartDate(day(2026, 8, 1));
+    request.setStarDate(day(2026, 8, 1));
     request.setEndDate(day(2026, 8, 2));
 
     SearchResult result = search(request, null, 10);
@@ -104,7 +104,7 @@ class MyTodoSearchRepositoryTest {
   @Test
   void filtersLoanHopeDateByInclusiveCalendarDays() {
     MyTodoRequest request = new MyTodoRequest();
-    request.setHopeStartDate(day(2026, 8, 10));
+    request.setHopeStarDate(day(2026, 8, 10));
     request.setHopeEndDate(day(2026, 8, 11));
 
     SearchResult result = search(request, null, 10);

@@ -5,6 +5,8 @@ import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.TimeZone;
+import java.util.Calendar;
 
 import org.springframework.stereotype.Repository;
 import org.uengine.five.entity.ProcessInstanceEntity;
@@ -130,7 +132,7 @@ public class OrgRunningSearchRepository {
         instance.get("fncgBswrDvsnCode"),
         request.getFncgBswrDvsnCode());
     addText(builder, predicates, worklist.get("trcTag"), request.getFncgBpmTaskTrcgNm());
-    addRange(
+    addDateRange(
         builder,
         predicates,
         worklist.get("startDate"),
@@ -164,20 +166,38 @@ public class OrgRunningSearchRepository {
     }
   }
 
-  private static void addRange(
+  private static void addDateRange(
       CriteriaBuilder builder,
       List<Predicate> predicates,
       Path<Date> path,
-      LocalDateTime startInclusive,
-      LocalDateTime endInclusive) {
+      Date startInclusive,
+      Date endInclusive) {
+    // 시작일: yyyyMMdd 00:00:00.000 이상
     if (startInclusive != null) {
-      predicates.add(builder.greaterThanOrEqualTo(path, toDate(startInclusive)));
+      predicates.add(builder.greaterThanOrEqualTo(path, startOfDay(startInclusive)));
     }
+    // 종료일: yyyyMMdd 23:59:59.999 이하 (= 익일 00:00:00 미만)
     if (endInclusive != null) {
-      predicates.add(builder.lessThanOrEqualTo(path, toDate(endInclusive)));
+      predicates.add(builder.lessThan(path, startOfNextDay(endInclusive)));
     }
   }
 
+  private static Date startOfDay(Date value) {
+    Calendar calendar = Calendar.getInstance(TimeZone.getTimeZone("Asia/Seoul"));
+    calendar.setTime(value);
+    calendar.set(Calendar.HOUR_OF_DAY, 0);
+    calendar.set(Calendar.MINUTE, 0);
+    calendar.set(Calendar.SECOND, 0);
+    calendar.set(Calendar.MILLISECOND, 0);
+    return calendar.getTime();
+  }
+
+  private static Date startOfNextDay(Date value) {
+    Calendar calendar = Calendar.getInstance(TimeZone.getTimeZone("Asia/Seoul"));
+    calendar.setTime(startOfDay(value));
+    calendar.add(Calendar.DAY_OF_MONTH, 1);
+    return calendar.getTime();
+  }
   /**
    * 요청기관({@code rqstDvsnCode=Y}): {@code bpm_procinst.init_group_cd}<br>
    * 진행기관({@code rqstDvsnCode=N}, 기본): {@code bpm_procinst.curr_group_cd}

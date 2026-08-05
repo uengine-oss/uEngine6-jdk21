@@ -6,7 +6,7 @@ import java.util.Date;
 import com.fasterxml.jackson.annotation.JsonFormat;
 
 /**
- * 조직 진행 건 검색 결과 항목 — {@link OrgRunningResponse#getOrgnPrgslist()} 요소.
+ * 조직 진행 건 검색 결과 항목 — {@link OrgRunningResponse#getOrgnPrgsList()} 요소.
  */
 public class OrgRunningItem {
 

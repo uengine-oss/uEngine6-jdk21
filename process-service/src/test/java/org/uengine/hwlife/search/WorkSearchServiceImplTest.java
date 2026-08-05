@@ -178,8 +178,8 @@ class WorkSearchServiceImplTest {
     request.setNextKey("21");
     request.setPageSize(35);
     request.setSortOrdrVal("START_DATE");
-    request.setStartDate(date(WORK_START));
-    request.setHopeStartDate(date(HOPE_DATE));
+    request.setStarDate(date(WORK_START));
+    request.setHopeStarDate(date(HOPE_DATE));
 
     JsonNode json = new ObjectMapper().valueToTree(request);
 
@@ -257,7 +257,7 @@ class WorkSearchServiceImplTest {
     verify(orgRunningSearchRepository).search(request, 101L, 35);
     assertEquals(40, response.getTotCont());
     assertEquals("103", response.getNextKey());
-    assertEquals("102", response.getOrgnPrgslist().get(0).getFncgBpmtaskLstId());
+    assertEquals("102", response.getOrgnPrgsList().get(0).getFncgBpmtaskLstId());
   }
 
   @Test
@@ -305,7 +305,7 @@ class WorkSearchServiceImplTest {
     OrgRunningResponse response = service.searchOrgRunning(new OrgRunningRequest());
 
     assertEquals(1, response.getTotCont());
-    OrgRunningItem item = response.getOrgnPrgslist().get(0);
+    OrgRunningItem item = response.getOrgnPrgsList().get(0);
     assertEquals("LOAN", item.getFncgBswrDvsnCode());
     assertEquals("CONTACT", item.getLoanCntcNo());
     assertEquals("TARGET", item.getFncgSuptTrgtDvsnCode());
@@ -434,9 +434,9 @@ class WorkSearchServiceImplTest {
     request.setLoanSubjDvsnCode("SUBJECT");
     request.setFncgMneyUsagClsfCode("USAGE");
     request.setFncgBpmTaskTrcgNm("TRACE");
-    request.setStartDate(date(WORK_START));
+    request.setStarDate(date(WORK_START));
     request.setEndDate(date(WORK_START));
-    request.setHopeStartDate(date(HOPE_DATE));
+    request.setHopeStarDate(date(HOPE_DATE));
     request.setHopeEndDate(date(HOPE_DATE));
     request.setFncgWndwOrgnCode("GROUP");
     request.setNextKey("21");

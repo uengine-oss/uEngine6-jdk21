@@ -8,16 +8,16 @@ import java.util.List;
  */
 public class OrgRunningResponse {
 
-    private List<OrgRunningItem> orgnPrgslist = new ArrayList<>();
+    private List<OrgRunningItem> orgnPrgsList = new ArrayList<>();
     private String nextKey;
     private Integer totCont;
 
-    public List<OrgRunningItem> getOrgnPrgslist() {
-        return orgnPrgslist;
+    public List<OrgRunningItem> getOrgnPrgsList() {
+        return orgnPrgsList;
     }
 
-    public void setOrgnPrgslist(List<OrgRunningItem> orgnPrgslist) {
-        this.orgnPrgslist = orgnPrgslist;
+    public void setOrgnPrgsList(List<OrgRunningItem> orgnPrgsList) {
+        this.orgnPrgsList = orgnPrgsList;
     }
 
     public String getNextKey() {

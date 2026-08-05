@@ -1,9 +1,10 @@
 package org.uengine.hwlife.search;
 
-import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
+import java.util.TimeZone;
 import java.util.stream.Collectors;
 
 import org.springframework.http.HttpStatus;
@@ -106,7 +107,7 @@ public class WorkSearchServiceImpl implements WorkSearchService {
     OrgRunningResponse response = new OrgRunningResponse();
     response.setTotCont(result.totalCount());
     response.setNextKey(result.nextKey());
-    response.setOrgnPrgslist(result.items().stream()
+    response.setOrgnPrgsList(result.items().stream()
         .map(this::toOrgRunningItem)
         .collect(Collectors.toList()));
     return response;
@@ -397,26 +398,33 @@ public class WorkSearchServiceImpl implements WorkSearchService {
 
     normalized.setPageSize(normalizePageSize(normalized.getPageSize()));
 
-    LocalDateTime start = normalized.getRqstStarDttm();
-    LocalDateTime end = normalized.getRqstEndDttm();
+    Date start = normalized.getRqstStarDttm();
+    Date end = normalized.getRqstEndDttm();
     if (start == null && end == null) {
-      end = LocalDateTime.now();
-      start = end.minusDays(DEFAULT_DATE_RANGE_DAYS);
+      end = new Date();
+      start = plusDays(end, -DEFAULT_DATE_RANGE_DAYS);
     } else if (start == null) {
-      start = end.minusDays(DEFAULT_DATE_RANGE_DAYS);
+      start = plusDays(end, -DEFAULT_DATE_RANGE_DAYS);
     } else if (end == null) {
-      end = start.plusDays(DEFAULT_DATE_RANGE_DAYS);
+      end = plusDays(start, DEFAULT_DATE_RANGE_DAYS);
     }
     normalized.setRqstStarDttm(start);
     normalized.setRqstEndDttm(end);
     return normalized;
   }
 
+  private static Date plusDays(Date value, int days) {
+    Calendar calendar = Calendar.getInstance(TimeZone.getTimeZone("Asia/Seoul"));
+    calendar.setTime(value);
+    calendar.add(Calendar.DAY_OF_MONTH, days);
+    return calendar.getTime();
+  }
+
   private static OrgRunningResponse emptyOrgRunningResponse() {
     OrgRunningResponse response = new OrgRunningResponse();
     response.setTotCont(0);
     response.setNextKey(null);
-    response.setOrgnPrgslist(List.of());
+    response.setOrgnPrgsList(List.of());
     return response;
   }
 

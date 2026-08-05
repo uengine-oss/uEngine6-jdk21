@@ -152,13 +152,13 @@ public class MyTodoSearchRepository {
         builder,
         predicates,
         worklist.get("startDate"),
-        request.getStartDate(),
+        request.getStarDate(),
         request.getEndDate());
     addDateRange(
         builder,
         predicates,
         instance.get("loanHopeDate"),
-        request.getHopeStartDate(),
+        request.getHopeStarDate(),
         request.getHopeEndDate());
     return predicates.toArray(Predicate[]::new);
   }

@@ -20,18 +20,16 @@ public class MyTodoRequest {
     private String fncgMneyUsagClsfCode;
     private String fncgBpmTaskTrcgNm;
 
-    @JsonAlias("starDate")
-    @JsonFormat(pattern = "yyyyMMdd", timezone = "Asia/Seoul")
-    private Date startDate;
+    @JsonFormat(pattern = "yyyyMMdd")
+    private Date starDate;
 
-    @JsonFormat(pattern = "yyyyMMdd", timezone = "Asia/Seoul")
+    @JsonFormat(pattern = "yyyyMMdd")
     private Date endDate;
 
-    @JsonAlias("hopeStarDate")
-    @JsonFormat(pattern = "yyyyMMdd", timezone = "Asia/Seoul")
-    private Date hopeStartDate;
+    @JsonFormat(pattern = "yyyyMMdd")
+    private Date hopeStarDate;
 
-    @JsonFormat(pattern = "yyyyMMdd", timezone = "Asia/Seoul")
+    @JsonFormat(pattern = "yyyyMMdd")
     private Date hopeEndDate;
 
     /** 요청기관 필터 — {@code bpm_procinst.init_group_cd} 와 일치. */
@@ -112,12 +110,12 @@ public class MyTodoRequest {
         this.fncgBpmTaskTrcgNm = fncgBpmTaskTrcgNm;
     }
 
-    public Date getStartDate() {
-        return startDate;
+    public Date getStarDate() {
+        return starDate;
     }
 
-    public void setStartDate(Date startDate) {
-        this.startDate = startDate;
+    public void setStarDate(Date starDate) {
+        this.starDate = starDate;
     }
 
     public Date getEndDate() {
@@ -128,12 +126,12 @@ public class MyTodoRequest {
         this.endDate = endDate;
     }
 
-    public Date getHopeStartDate() {
-        return hopeStartDate;
+    public Date getHopeStarDate() {
+        return hopeStarDate;
     }
 
-    public void setHopeStartDate(Date hopeStartDate) {
-        this.hopeStartDate = hopeStartDate;
+    public void setHopeStarDate(Date hopeStarDate) {
+        this.hopeStarDate = hopeStarDate;
     }
 
     public Date getHopeEndDate() {

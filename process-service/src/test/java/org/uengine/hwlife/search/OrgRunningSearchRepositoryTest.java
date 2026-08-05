@@ -66,8 +66,8 @@ class OrgRunningSearchRepositoryTest {
   @Test
   void appliesEveryPopulatedFilterWithInclusiveRequestDateBounds() {
     OrgRunningRequest request = fullRequest();
-    request.setRqstStarDttm(JAN_10);
-    request.setRqstEndDttm(JAN_10);
+    request.setRqstStarDttm(date(JAN_10));
+    request.setRqstEndDttm(date(JAN_10));
 
     SearchResult result = search(request, null, 20);
 
