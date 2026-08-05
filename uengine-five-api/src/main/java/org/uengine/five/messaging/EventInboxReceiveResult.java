@@ -3,8 +3,13 @@ package org.uengine.five.messaging;
 /**
  * EventInbox Provider 처리 결과.
  *
- * <p>Provider 구현체마다 응답 DTO 가 다를 수 있어, HTTP 레이어는 {@link #failed} 만으로
- * 상태코드를 결정하고 {@link #body} 를 그대로 직렬화한다.</p>
+ * <p>HTTP 상태는 항상 200 이다. (ESB Adapter 는 HTTP 200 만 정상으로 인정)
+ * 업무 상세는 body(ESB header·payload) 에 담는다.</p>
+ *
+ * <ul>
+ *   <li>{@link #success} — 성공 ({@code prcsRsltDvsnCode=0}, 업무 실패 상세도 payload 에 포함 가능)</li>
+ *   <li>{@link #failed} — 실패 (시스템)</li>
+ * </ul>
  */
 public class EventInboxReceiveResult {
 
@@ -16,14 +21,21 @@ public class EventInboxReceiveResult {
         this.failed = failed;
     }
 
+    /** 성공. */
     public static EventInboxReceiveResult success(Object body) {
         return new EventInboxReceiveResult(body, false);
     }
 
-    public static EventInboxReceiveResult failure(Object body) {
+    /** 실패 (시스템). */
+    public static EventInboxReceiveResult failed(Object body) {
         return new EventInboxReceiveResult(body, true);
     }
 
-    public Object getBody() { return body; }
-    public boolean isFailed() { return failed; }
+    public Object getBody() {
+        return body;
+    }
+
+    public boolean isFailed() {
+        return failed;
+    }
 }

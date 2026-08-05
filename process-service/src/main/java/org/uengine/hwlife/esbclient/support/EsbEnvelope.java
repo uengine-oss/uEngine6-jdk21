@@ -1,12 +1,9 @@
 package org.uengine.hwlife.esbclient.support;
 
 import java.time.LocalDateTime;
-import java.util.Collections;
-import java.util.List;
 
 import org.uengine.hwlife.esbclient.dto.EsbCodes;
 import org.uengine.hwlife.esbclient.dto.EsbCommonHeader;
-import org.uengine.hwlife.esbclient.dto.EsbMessage;
 import org.uengine.hwlife.esbclient.dto.EsbRequest;
 import org.uengine.hwlife.esbclient.dto.EsbResponse;
 
@@ -20,7 +17,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  * <p>응답 header 규칙:
  * <ul>
  *   <li>시스템 공통부 + 요청정보 — 요청 header 를 에코</li>
- *   <li>응답정보/메시지 — 응답 시 채움 ({@code tlgrRspnDttm}, {@code prcsRsltDvsnCode}, {@code msgeList} …)</li>
+ *   <li>응답정보 — 응답 시 채움 ({@code tlgrRspnDttm}, {@code prcsRsltDvsnCode})</li>
+ * </ul>
+ *
+ * <p>처리결과({@code prcsRsltDvsnCode}):
+ * <ul>
+ *   <li>{@link #success} — {@code 0} : 정상 응답 (업무 성공/실패 상세는 payload)</li>
+ *   <li>{@link #failed} — {@code 1} : 시스템 장애로 서비스 응답 자체 불가</li>
  * </ul>
  * 업무 결과 값은 항상 {@code payload} 에 둔다.</p>
  */
@@ -50,18 +53,14 @@ public final class EsbEnvelope {
         return new EsbResponse<>(parsed.header, parsed.payload);
     }
 
-    /** 성공 응답 — 요청 header 에코 + 응답정보({@code prcsRsltDvsnCode=0}) 채움. */
+    /** 성공 응답. {@code prcsRsltDvsnCode=0}. 업무 상세는 payload. */
     public static <R> EsbResponse<R> success(EsbCommonHeader requestHeader, R payload) {
-        return respond(requestHeader, payload, true, null);
+        return respond(requestHeader, payload, EsbCodes.PRCS_RSLT_SUCCESS);
     }
 
-    /**
-     * 실패 응답 — 성공과 동일 봉투.
-     * header 응답정보에 {@code prcsRsltDvsnCode=1}/msgeList 를 채우고,
-     * 업무 실패 메시지는 {@code payload} 에 담는다.
-     */
-    public static <R> EsbResponse<R> failed(EsbCommonHeader requestHeader, R payload, String reason) {
-        return respond(requestHeader, payload, false, reason);
+    /** 실패 응답 (시스템). {@code prcsRsltDvsnCode=1}. */
+    public static <R> EsbResponse<R> failed(EsbCommonHeader requestHeader, R payload) {
+        return respond(requestHeader, payload, EsbCodes.PRCS_RSLT_FAILED);
     }
 
     private static <T> Parsed<T> parse(
@@ -83,22 +82,14 @@ public final class EsbEnvelope {
     }
 
     private static <R> EsbResponse<R> respond(
-            EsbCommonHeader requestHeader, R payload, boolean success, String reason) {
-        // 시스템 공통부 + 요청정보 에코
+            EsbCommonHeader requestHeader,
+            R payload,
+            String prcsRsltDvsnCode) {
         EsbCommonHeader header = copyHeader(requestHeader);
-        // 응답정보 초기화 후 채움
         clearResponseSection(header);
         header.setRspnDvsnCode("R");
-
         header.setTlgrRspnDttm(LocalDateTime.now().format(EsbCodes.DTTM));
-        header.setPrcsRsltDvsnCode(success ? EsbCodes.PRCS_RSLT_SUCCESS : EsbCodes.PRCS_RSLT_FAILED);
-        if (!success && reason != null && !reason.isBlank()) {
-            EsbMessage message = new EsbMessage();
-            message.setMsgeCntn(reason);
-            List<EsbMessage> list = Collections.singletonList(message);
-            header.setMsgeList(list);
-            header.setMsgeListCont(list.size());
-        }
+        header.setPrcsRsltDvsnCode(prcsRsltDvsnCode);
         return new EsbResponse<>(header, payload);
     }
 

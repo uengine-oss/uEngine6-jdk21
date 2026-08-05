@@ -14,8 +14,9 @@ import org.uengine.five.messaging.EventInboxReceiveResult;
 /**
  * Event Inbox HTTP 진입점.
  *
- * <p>요청을 {@link EventInboxProviderFactory#getDefault()} 가 선택한 Provider
- * ({@code default} / {@code external}) 에 위임한다.</p>
+ * <p>요청을 선택된 Provider({@code default} / {@code external}) 에 위임한다.
+ * HTTP 는 항상 200 — 처리 결과는 {@link EventInboxReceiveResult#getOutcome()} 및 body 에 담는다.
+ * (ESB Adapter 는 HTTP 200 만 정상으로 인정)</p>
  */
 @RestController
 @CrossOrigin(origins = "*")
@@ -40,12 +41,7 @@ public class EventInboxController {
 
     @PostMapping("/inbox")
     public ResponseEntity<Object> receiveEvent(@RequestBody(required = false) String body) {
-        // EventInboxReceiveResult result = EventInboxProviderFactory.getDefault().receiveEvent(body);
         EventInboxReceiveResult result = provider.receiveEvent(body);
-        if (result.isFailed()) {
-            return ResponseEntity.badRequest().body(result.getBody());
-        }
-        // ESB HTTP Adapter 는 200 만 정상으로 인정 (202 → status fail)
         return ResponseEntity.ok(result.getBody());
     }
 }

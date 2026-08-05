@@ -19,7 +19,6 @@ import org.uengine.five.repository.WorklistRepository;
 import org.uengine.five.service.InstanceServiceImpl;
 import org.uengine.hwlife.esbclient.dto.EsbCommonHeader;
 import org.uengine.hwlife.esbclient.support.EsbRequestBodyAdvice;
-import org.uengine.hwlife.esbclient.support.EsbResponseBodyAdvice;
 import org.uengine.hwlife.instance.dto.*;
 
 /**
@@ -43,9 +42,9 @@ public class InstanceIntegrationServiceImpl implements InstanceIntegrationServic
   /**
    * 다중 선점 / 선점 해제.
    *
-   * <p>처리결과 코드({@code prcsRsltCodeNm} / {@code failList[].prcsRsltCntn}):
+   * <p>처리결과 코드는 {@code failList[].prcsRsltCntn}({@code LBM05XXXX}).
+   * ESB header {@code prcsRsltDvsnCode} 는 성공 {@code 0} / 시스템실패 {@code 1}.
    * <ul>
-   *   <li>{@code LBM000000} — 성공(전부 성공 시 prcsRsltCodeNm)</li>
    *   <li>{@code LBM050001} — request body 없음</li>
    *   <li>{@code LBM050002} — bswrList 없음/비어 있음</li>
    *   <li>{@code LBM050003} — header.emnb 없음</li>
@@ -128,10 +127,7 @@ public class InstanceIntegrationServiceImpl implements InstanceIntegrationServic
       }
     }
 
-    return toClaimResponse(
-        failList.isEmpty() ? ClaimResponse.STATUS_SUCCESS : ClaimResponse.STATUS_FAILED,
-        successCount,
-        failList);
+    return toClaimResponse(successCount, failList);
   }
 
   /**
@@ -183,21 +179,13 @@ public class InstanceIntegrationServiceImpl implements InstanceIntegrationServic
     if (failList.isEmpty()) {
       addClaimFailure(failList, null, sharedReason);
     }
-    return toClaimResponse(ClaimResponse.STATUS_FAILED, successCount, failList);
+    return toClaimResponse(successCount, failList);
   }
 
   private static ClaimResponse toClaimResponse(
-      String status,
       int successCount,
       List<ClaimResponseItem> failList) {
-    if (ClaimResponse.STATUS_FAILED.equals(status)) {
-      String reason = failList == null || failList.isEmpty()
-          ? ClaimResponse.STATUS_FAILED
-          : failList.get(0).getPrcsRsltCntn();
-      EsbResponseBodyAdvice.markFailed(reason);
-    }
     ClaimResponse response = new ClaimResponse();
-    response.setPrcsRsltCodeNm(status);
     response.setSucsCont(successCount);
     response.setFailCont(failList == null ? 0 : failList.size());
     response.setFailList(failList == null ? new ArrayList<>() : failList);

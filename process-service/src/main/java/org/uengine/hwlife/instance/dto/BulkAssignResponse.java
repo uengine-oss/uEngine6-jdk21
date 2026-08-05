@@ -5,21 +5,14 @@ import java.util.List;
 
 /**
  * 일괄 배정 응답 — PUT /instance/bulk-assign.
+ *
+ * <p>ESB header {@code prcsRsltDvsnCode} 는 성공 {@code 0} / 시스템실패 {@code 1}.</p>
  */
 public class BulkAssignResponse {
 
-    private String prcsRsltCodeNm; // 처리결과:  SUCCESS/ FAILED
-    private Integer sucsCont; // 성공건수 
+    private Integer sucsCont; // 성공건수
     private Integer failCont; // 실패 건수
     private List<BulkAssignResponseItem> failList = new ArrayList<>(); // 실패 목록
-
-    public String getPrcsRsltCodeNm() {
-        return prcsRsltCodeNm;
-    }
-
-    public void setPrcsRsltCodeNm(String prcsRsltCodeNm) {
-        this.prcsRsltCodeNm = prcsRsltCodeNm;
-    }
 
     public Integer getSucsCont() {
         return sucsCont;

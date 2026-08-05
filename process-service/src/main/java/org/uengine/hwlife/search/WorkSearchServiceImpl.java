@@ -48,6 +48,10 @@ public class WorkSearchServiceImpl implements WorkSearchService {
     this.worklistRepository = worklistRepository;
   }
 
+  private static ResponseStatusException notImplemented(String operation) {
+    return new ResponseStatusException(HttpStatus.NOT_IMPLEMENTED, operation + " is not implemented yet");
+  }
+
   @Override
   @Transactional(readOnly = true)
   public MyTodoResponse searchMyTodo(@RequestBody MyTodoRequest request) {
@@ -119,6 +123,17 @@ public class WorkSearchServiceImpl implements WorkSearchService {
     throw notImplemented("searchWorklistByInstId");
   }
 
+  /**
+   * corrKey(대출프로세스관리번호) 기준 진행 중 업무 조회.
+   * <p>
+   * 결과코드(prcsRsltCntn):
+   * <ul>
+   *   <li>LBM000000 - 정상 (워크아이템 조회 성공)</li>
+   *   <li>LBM020001 - 요청 항목의 대출프로세스관리번호(loanPcesMgmtNo)가 없음</li>
+   *   <li>LBM020002 - corrKey로 프로세스 인스턴스를 찾지 못함</li>
+   *   <li>LBM020003 - 인스턴스는 있으나 현재 워크아이템이 없음</li>
+   * </ul>
+   */
   @Override
   @Transactional(readOnly = true)
   public RunningWorkByCorrKeyResponse searchRunningWorkByCorrKey(@RequestBody RunningWorkByCorrKeyRequest request) {
@@ -156,7 +171,7 @@ public class WorkSearchServiceImpl implements WorkSearchService {
         }
 
         for(WorklistEntity workItem : workItems){
-          resultItems.add(resultItem(loanPcesMgmtNo, processInstance, workItem, null));
+          resultItems.add(resultItem(loanPcesMgmtNo, processInstance, workItem, "LBM000000"));
         }
       }
     }
@@ -171,7 +186,7 @@ public class WorkSearchServiceImpl implements WorkSearchService {
       String resultMessage) {
     RunningWorkByCorrKeyResponseItem item = new RunningWorkByCorrKeyResponseItem();
     item.setLoanPcesMgmtNo(loanPcesMgmtNo);
-    item.setPrcsRsltCntn(resultMessage == null ? "LBM000000" : resultMessage);
+    item.setPrcsRsltCntn(resultMessage);
 
     if (processInstance != null) {
       item.setPrgsSttsNm(processInstance.getStatus());
@@ -184,10 +199,6 @@ public class WorkSearchServiceImpl implements WorkSearchService {
       item.setImgeScanYn(workItem.getImgeScanYn() == null ? "N" : workItem.getImgeScanYn() ? "Y" : "N");
     }
     return item;
-  }
-
-  private static ResponseStatusException notImplemented(String operation) {
-    return new ResponseStatusException(HttpStatus.NOT_IMPLEMENTED, operation + " is not implemented yet");
   }
 
   private MyTodoItem toMyTodoItem(WorklistEntity worklist) {

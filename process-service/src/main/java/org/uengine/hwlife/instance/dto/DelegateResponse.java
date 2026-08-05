@@ -5,21 +5,14 @@ import java.util.List;
 
 /**
  * 다중 업무 위임 응답 — POST /instance/multi-delegate.
+ *
+ * <p>ESB header {@code prcsRsltDvsnCode} 는 성공 {@code 0} / 시스템실패 {@code 1}.</p>
  */
 public class DelegateResponse {
 
-    private String prcsRsltCodeNm;
     private Integer sucsCont;
     private Integer failCont;
     private List<DelegateResponseItem> failList = new ArrayList<>();
-
-    public String getPrcsRsltCodeNm() {
-        return prcsRsltCodeNm;
-    }
-
-    public void setPrcsRsltCodeNm(String prcsRsltCodeNm) {
-        this.prcsRsltCodeNm = prcsRsltCodeNm;
-    }
 
     public Integer getSucsCont() {
         return sucsCont;

@@ -45,11 +45,13 @@ public class DefaultEventInboxServiceImpl implements DefaultEventInboxService {
                     new EventInboxRequest(eventName, corrKey, payloadJson));
             DefaultEventInboxResponse response = DefaultEventInboxResponse.from(coreResponse);
             if (EventInboxResponse.STATUS_FAILED.equals(coreResponse.getStatus())) {
-                return EventInboxReceiveResult.failure(response);
+                // 성공(처리 실패) — 멱등 중복 등
+                return EventInboxReceiveResult.success(response);
             }
             return EventInboxReceiveResult.success(response);
         } catch (Exception e) {
-            return EventInboxReceiveResult.failure(
+            // 실패(시스템) — 파싱 불가 등
+            return EventInboxReceiveResult.failed(
                     DefaultEventInboxResponse.failed(eventName, corrKey, "invalid payload: " + e.getMessage()));
         }
     }

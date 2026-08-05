@@ -21,8 +21,8 @@ import org.uengine.hwlife.esbclient.dto.EsbResponse;
  * header 가 없으면 본문을 그대로 통과한다(하위 호환).</p>
  *
  * <p>이미 {@link EsbResponse} 이면 재포장하지 않는다.
- * 업무 실패로 {@code prcsRsltDvsnCode=1} 을 내려야 하면
- * {@link #markFailed(String)} 후 payload DTO 를 반환한다.</p>
+ * 기본은 {@link EsbEnvelope#success}. 시스템 실패는 {@link #markFailed(String)} 후 payload 를 반환한다.
+ * 업무 실패 상세는 payload 에 담고 header 는 성공({@code prcsRsltDvsnCode=0})으로 둔다.</p>
  *
  * <p>on/off: {@code esb.outbound-wrap.enabled} (기본 {@code true}).</p>
  */
@@ -30,13 +30,11 @@ import org.uengine.hwlife.esbclient.dto.EsbResponse;
 @ConditionalOnProperty(name = "esb.outbound-wrap.enabled", havingValue = "true", matchIfMissing = true)
 public class EsbResponseBodyAdvice implements ResponseBodyAdvice<Object> {
 
-    public static final String FAILED_REASON_ATTR = "esb.failedReason";
-
+    private static final String FAILED_REASON_ATTR = "esb.failedReason";
     private static final String HWLIFE_PACKAGE_PREFIX = "org.uengine.hwlife";
 
     /**
-     * 현재 요청 응답을 ESB 실패({@code prcsRsltDvsnCode=1}) 로 표시한다.
-     * {@link #beforeBodyWrite} 가 payload 는 그대로 두고 header 만 실패로 채운다.
+     * 현재 요청 응답을 시스템 실패({@code prcsRsltDvsnCode=1}) 로 표시한다.
      */
     public static void markFailed(String reason) {
         RequestAttributes attrs = RequestContextHolder.getRequestAttributes();
@@ -46,13 +44,12 @@ public class EsbResponseBodyAdvice implements ResponseBodyAdvice<Object> {
         attrs.setAttribute(FAILED_REASON_ATTR, reason != null ? reason : "", RequestAttributes.SCOPE_REQUEST);
     }
 
-    static String currentFailedReason() {
+    static boolean isMarkedFailed() {
         RequestAttributes attrs = RequestContextHolder.getRequestAttributes();
         if (attrs == null) {
-            return null;
+            return false;
         }
-        Object value = attrs.getAttribute(FAILED_REASON_ATTR, RequestAttributes.SCOPE_REQUEST);
-        return value instanceof String ? (String) value : null;
+        return attrs.getAttribute(FAILED_REASON_ATTR, RequestAttributes.SCOPE_REQUEST) != null;
     }
 
     @Override
@@ -79,9 +76,8 @@ public class EsbResponseBodyAdvice implements ResponseBodyAdvice<Object> {
             return body;
         }
 
-        String failedReason = currentFailedReason();
-        if (failedReason != null) {
-            return EsbEnvelope.failed(header, body, failedReason.isBlank() ? null : failedReason);
+        if (isMarkedFailed()) {
+            return EsbEnvelope.failed(header, body);
         }
         return EsbEnvelope.success(header, body);
     }

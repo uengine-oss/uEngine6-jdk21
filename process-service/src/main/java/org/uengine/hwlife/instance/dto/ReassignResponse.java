@@ -5,21 +5,14 @@ import java.util.List;
 
 /**
  * 다중 담당자 변경 응답 — POST /instance/multi-reassign.
+ *
+ * <p>ESB header {@code prcsRsltDvsnCode} 는 성공 {@code 0} / 시스템실패 {@code 1}.</p>
  */
 public class ReassignResponse {
 
-    private String prcsRsltCodeNm;
     private Integer sucsCont;
     private Integer failCont;
     private List<ReassignResponseItem> failList = new ArrayList<>();
-
-    public String getPrcsRsltCodeNm() {
-        return prcsRsltCodeNm;
-    }
-
-    public void setPrcsRsltCodeNm(String prcsRsltCodeNm) {
-        this.prcsRsltCodeNm = prcsRsltCodeNm;
-    }
 
     public Integer getSucsCont() {
         return sucsCont;
