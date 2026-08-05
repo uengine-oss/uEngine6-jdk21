@@ -1,5 +1,6 @@
 package org.uengine.hwlife.search;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -31,6 +32,8 @@ public class WorkSearchServiceImpl implements WorkSearchService {
 
   private static final int DEFAULT_PAGE_SIZE = 20;
   private static final int MAX_PAGE_SIZE = 100;
+  private static final int DEFAULT_DATE_RANGE_DAYS = 30;
+  private static final String DEFAULT_RQST_DVSN_CODE = "N";
 
   private final MyTodoSearchRepository myTodoSearchRepository;
   private final OrgRunningSearchRepository orgRunningSearchRepository;
@@ -90,11 +93,15 @@ public class WorkSearchServiceImpl implements WorkSearchService {
   @Override
   @Transactional(readOnly = true)
   public OrgRunningResponse searchOrgRunning(@RequestBody OrgRunningRequest request) {
-    OrgRunningRequest normalizedRequest = request == null ? new OrgRunningRequest() : request;
+    OrgRunningRequest normalizedRequest = normalizeOrgRunningRequest(request);
+    if (trimToNull(normalizedRequest.getFncgWndwOrgnCode()) == null) {
+      return emptyOrgRunningResponse();
+    }
+
     Long cursorId = parseNextKey(normalizedRequest.getNextKey());
-    int pageSize = normalizePageSize(normalizedRequest.getPageSize());
     OrgRunningSearchRepository.SearchResult result =
-        orgRunningSearchRepository.search(normalizedRequest, cursorId, pageSize);
+        orgRunningSearchRepository.search(
+            normalizedRequest, cursorId, normalizedRequest.getPageSize());
 
     OrgRunningResponse response = new OrgRunningResponse();
     response.setTotCont(result.totalCount());
@@ -117,10 +124,66 @@ public class WorkSearchServiceImpl implements WorkSearchService {
     throw notImplemented("searchBulkAssign");
   }
 
+  /**
+   * 인스턴스 ID({@code fncgBpmPcesIntcId}) 기준 워크리스트(히스토리) 조회.
+   * {@link ProcessInstanceRepository#findAllWorklistsByRootInstId} 와 동일하게
+   * rootInstId 기준으로 서브프로세스 태스크까지 포함한다.
+   */
   @Override
   @Transactional(readOnly = true)
   public WorklistByInstIdResponse searchWorklistByInstId(@RequestBody WorklistByInstIdRequest request) {
-    throw notImplemented("searchWorklistByInstId");
+    WorklistByInstIdResponse response = new WorklistByInstIdResponse();
+    List<WorklistByInstIdResponseItem> resultItems = new ArrayList<>();
+    response.setBswrList(resultItems);
+
+    String instIdText = request == null ? null : trimToNull(request.getFncgBpmPcesIntcId());
+    if (instIdText == null) {
+      return response;
+    }
+
+    Long instId;
+    try {
+      instId = Long.parseLong(instIdText);
+    } catch (NumberFormatException e) {
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST, "fncgBpmPcesIntcId must be a number", e);
+    }
+
+    Long rootInstId = resolveRootInstId(instId);
+    List<WorklistEntity> worklists =
+        processInstanceRepository.findAllWorklistsByRootInstId(rootInstId);
+    if (worklists == null || worklists.isEmpty()) {
+      return response;
+    }
+
+    for (WorklistEntity worklist : worklists) {
+      resultItems.add(toWorklistByInstIdItem(worklist));
+    }
+    return response;
+  }
+
+  /** 요청 인스턴스 ID 를 rootInstId 로 정규화한다. 인스턴스가 없으면 요청 ID 를 그대로 사용. */
+  private Long resolveRootInstId(Long instId) {
+    return processInstanceRepository.findById(instId)
+        .map(pi -> pi.getRootInstId() == null ? pi.getInstId() : pi.getRootInstId())
+        .orElse(instId);
+  }
+
+  private static WorklistByInstIdResponseItem toWorklistByInstIdItem(WorklistEntity worklist) {
+    WorklistByInstIdResponseItem item = new WorklistByInstIdResponseItem();
+    item.setFncgBpmTaskTrcgNm(worklist.getTrcTag());
+    item.setUworNm(worklist.getTitle());
+    item.setHndrEmnb(worklist.getEndpoint());
+    item.setHndrNm(worklist.getResName());
+    item.setHndrOrgnCode(firstNonBlank(worklist.getGroupCd(), worklist.getScope()));
+    item.setUworStarDttm(worklist.getStartDate());
+    item.setUworEndDttm(worklist.getEndDate());
+    item.setFncgBpmUworSttsCntn(worklist.getStatus());
+    item.setFncgBpmTaskLstId(
+        worklist.getTaskId() == null ? null : String.valueOf(worklist.getTaskId()));
+    item.setFncgBpmPcesIntcId(
+        worklist.getInstId() == null ? null : String.valueOf(worklist.getInstId()));
+    return item;
   }
 
   /**
@@ -255,14 +318,16 @@ public class WorkSearchServiceImpl implements WorkSearchService {
     item.setReptHndrEmnb(instance == null ? null : instance.getInitEp());
     item.setReptHndrFncgOrgnCode(instance == null ? null : instance.getInitGroupCd());
     item.setHndrEmnb(worklist.getEndpoint());
-    item.setHndrOrgnCode(trimToNull(worklist.getScope()));
+    item.setHndrOrgnCode(trimToNull(worklist.getGroupCd()));
     item.setUworNm(worklist.getTitle());
     item.setFncgBpmTaskTrcgNm(worklist.getTrcTag());
     item.setUworStarDttm(toLocalDateTime(worklist.getStartDate()));
     item.setFncgBpmtaskLstId(
         worklist.getTaskId() == null ? null : String.valueOf(worklist.getTaskId()));
     item.setFncgBpmPcesIntcId(
-        worklist.getInstId() == null ? null : String.valueOf(worklist.getInstId()));
+        instance == null || instance.getInstId() == null
+            ? null
+            : String.valueOf(instance.getInstId()));
     return item;
   }
 
@@ -305,6 +370,54 @@ public class WorkSearchServiceImpl implements WorkSearchService {
       throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "request body is required");
     }
     return request;
+  }
+
+  /**
+   * 조직 진행 검색 요청 정규화.
+   * <ul>
+   *   <li>기관: {@code fncgWndwOrgnCode} → 없으면 {@code header.belnOrgnCode}</li>
+   *   <li>{@code rqstDvsnCode}: 없으면 {@code N} (진행기관)</li>
+   *   <li>{@code pageSize}: 없으면 {@link #DEFAULT_PAGE_SIZE} (1~{@link #MAX_PAGE_SIZE})</li>
+   *   <li>날짜: 둘 다 없으면 (오늘-30일)~오늘 /
+   *       시작만 없으면 종료-30일 / 종료만 없으면 시작+30일</li>
+   * </ul>
+   */
+  private static OrgRunningRequest normalizeOrgRunningRequest(OrgRunningRequest request) {
+    OrgRunningRequest normalized = request == null ? new OrgRunningRequest() : request;
+
+    EsbCommonHeader header = EsbRequestBodyAdvice.currentHeader();
+    String organizationCode = firstNonBlank(
+        normalized.getFncgWndwOrgnCode(),
+        header != null ? header.getBelnOrgnCode() : null);
+    normalized.setFncgWndwOrgnCode(organizationCode);
+
+    if (trimToNull(normalized.getRqstDvsnCode()) == null) {
+      normalized.setRqstDvsnCode(DEFAULT_RQST_DVSN_CODE);
+    }
+
+    normalized.setPageSize(normalizePageSize(normalized.getPageSize()));
+
+    LocalDateTime start = normalized.getRqstStarDttm();
+    LocalDateTime end = normalized.getRqstEndDttm();
+    if (start == null && end == null) {
+      end = LocalDateTime.now();
+      start = end.minusDays(DEFAULT_DATE_RANGE_DAYS);
+    } else if (start == null) {
+      start = end.minusDays(DEFAULT_DATE_RANGE_DAYS);
+    } else if (end == null) {
+      end = start.plusDays(DEFAULT_DATE_RANGE_DAYS);
+    }
+    normalized.setRqstStarDttm(start);
+    normalized.setRqstEndDttm(end);
+    return normalized;
+  }
+
+  private static OrgRunningResponse emptyOrgRunningResponse() {
+    OrgRunningResponse response = new OrgRunningResponse();
+    response.setTotCont(0);
+    response.setNextKey(null);
+    response.setOrgnPrgslist(List.of());
+    return response;
   }
 
   private static String firstNonBlank(String... values) {

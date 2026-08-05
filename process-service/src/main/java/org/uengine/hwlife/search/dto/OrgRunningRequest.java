@@ -4,6 +4,10 @@ import java.time.LocalDateTime;
 
 /**
  * 조직 진행 건 검색 요청 — POST /search/org-running JSON body.
+ * - 요청기관: 해당 업무를 최초로 시작한 기관 (rqstDvsnCode == Y AND fncgWndwOrgnCode == bpm_procinst.init_group_cd )
+ * - 진행기관: 현재 단위업무를 진행 하고 있는 기관 (rqstDvsnCode == N AND fncgWndwOrgnCode == bpm_procinst.curr_group_cd)
+ * - fncgWndwOrgnCode 가 없으면 header.belnOrgnCode 사용, 둘 다 없으면 빈 목록 응답
+ * - rqstDvsnCode 기본값 N, pageSize 기본값 20, 조회기간 기본값 (오늘-30일)~오늘
  */
 public class OrgRunningRequest {
 

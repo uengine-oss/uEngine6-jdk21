@@ -5,13 +5,13 @@ package org.uengine.hwlife.search.dto;
  */
 public class WorklistByInstIdRequest {
 
-    private String loanPcesMgmtNo;
+    private String fncgBpmPcesIntcId;
 
-    public String getLoanPcesMgmtNo() {
-        return loanPcesMgmtNo;
+    public String getFncgBpmPcesIntcId() {
+        return fncgBpmPcesIntcId;
     }
 
-    public void setLoanPcesMgmtNo(String loanPcesMgmtNo) {
-        this.loanPcesMgmtNo = loanPcesMgmtNo;
+    public void setFncgBpmPcesIntcId(String fncgBpmPcesIntcId) {
+        this.fncgBpmPcesIntcId = fncgBpmPcesIntcId;
     }
 }

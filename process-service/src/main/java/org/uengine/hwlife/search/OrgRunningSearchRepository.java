@@ -149,7 +149,7 @@ public class OrgRunningSearchRepository {
         request.getFncgMneyUsagClsfCode());
     addText(builder, predicates, instance.get("loanCntcNo"), request.getLoanCntcNo());
     addText(builder, predicates, instance.get("custId"), request.getCustId());
-    addOrganization(builder, predicates, worklist, instance, request);
+    addOrganization(builder, predicates, instance, request);
     return predicates.toArray(Predicate[]::new);
   }
 
@@ -178,10 +178,13 @@ public class OrgRunningSearchRepository {
     }
   }
 
+  /**
+   * 요청기관({@code rqstDvsnCode=Y}): {@code bpm_procinst.init_group_cd}<br>
+   * 진행기관({@code rqstDvsnCode=N}, 기본): {@code bpm_procinst.curr_group_cd}
+   */
   private static void addOrganization(
       CriteriaBuilder builder,
       List<Predicate> predicates,
-      Root<WorklistEntity> worklist,
       Join<WorklistEntity, ProcessInstanceEntity> instance,
       OrgRunningRequest request) {
     String organizationCode = trimToNull(request.getFncgWndwOrgnCode());
@@ -189,12 +192,10 @@ public class OrgRunningSearchRepository {
       return;
     }
     if ("Y".equalsIgnoreCase(trimToNull(request.getRqstDvsnCode()))) {
-      predicates.add(builder.equal(instance.get("initComCd"), organizationCode));
+      predicates.add(builder.equal(instance.get("initGroupCd"), organizationCode));
       return;
     }
-
-    Path<String> scope = worklist.get("scope");
-    predicates.add(builder.equal(builder.trim(scope), organizationCode));
+    predicates.add(builder.equal(instance.get("currGroupCd"), organizationCode));
   }
 
   private static Predicate cursorPredicate(
