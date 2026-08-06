@@ -11,6 +11,7 @@ import org.uengine.five.service.IAMService;
 import org.uengine.hwlife.esbclient.client.EsbClient;
 import org.uengine.hwlife.iam.dto.FncgOrgInfo;
 import org.uengine.hwlife.iam.dto.FncgRoleInfo;
+import org.uengine.hwlife.iam.dto.UserSearchResponse;
 
 /**
  * 외부 IAM(ESB·사내 디렉터리 등) 연동 구현체.
@@ -121,6 +122,28 @@ public class ExternalIAMService implements IAMService {
         info.setFncgCoreAtrtId(id);
         info.setFncgCoreAtrtNm(name);
         return info;
+    }
+
+    /**
+     * 사번으로 담당자(사용자) 단건 조회.
+     *
+     * <p>TODO: ESB 사용자 조회로 교체. 현재는 연동 전 임시 하드코딩.</p>
+     */
+    public UserSearchResponse getUser(String employeeNo) {
+        // TODO: esbClient().send(itfcId, rcveSrvcId, payload, UserSearchResponse.class)
+        UserSearchResponse response = new UserSearchResponse();
+        if (!hasText(employeeNo)) {
+            return response;
+        }
+        response.setHndrEmnb(employeeNo);
+        response.setHndrNm("사용자");
+        List<FncgOrgInfo> orgs = new ArrayList<>();
+        orgs.add(org("00320", "융자관리팀"));
+        response.setFncgWndwCodeList(orgs);
+        List<FncgRoleInfo> roles = new ArrayList<>();
+        roles.add(role("FN230", "대출심사역"));
+        response.setFncgCoreAtrtList(roles);
+        return response;
     }
 
     /**

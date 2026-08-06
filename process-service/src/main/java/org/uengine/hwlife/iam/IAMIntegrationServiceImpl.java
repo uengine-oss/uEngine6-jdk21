@@ -36,9 +36,7 @@ public class IAMIntegrationServiceImpl implements IAMIntegrationService {
         if (request == null || request.getHndrEmnb() == null || request.getHndrEmnb().isBlank()) {
             return response;
         }
-
-        
-        return response;
+        return externalIamService.getUser(request.getHndrEmnb());
     }
 
     @Override
