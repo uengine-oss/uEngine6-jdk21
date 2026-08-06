@@ -69,8 +69,8 @@ public class ExternalEventInboxServiceImpl implements ExternalEventInboxService 
         String payloadJson;
         try {
             IncomingEsbRequest incoming = parseIncomingRequest(requestBodyJson);
-            header = incoming.header();
-            payloadJson = incoming.payloadJson();
+            header = incoming.header;
+            payloadJson = incoming.payloadJson;
             payload = objectMapper.readValue(payloadJson, ExternalEventInboxRequest.class);
         } catch (Exception e) {
             // 실패(시스템) — header prcsRsltDvsnCode=1
@@ -189,6 +189,13 @@ public class ExternalEventInboxServiceImpl implements ExternalEventInboxService 
     }
 
     /** parseIncomingRequest 반환용 — header + payload 원문. */
-    private record IncomingEsbRequest(EsbCommonHeader header, String payloadJson) {
+    private static final class IncomingEsbRequest {
+        final EsbCommonHeader header;
+        final String payloadJson;
+
+        IncomingEsbRequest(EsbCommonHeader header, String payloadJson) {
+            this.header = header;
+            this.payloadJson = payloadJson;
+        }
     }
 }
