@@ -11,7 +11,7 @@ public class RoleMappingCommand {
     private String endpoint;
     private String resourceName;
     private String scope;
-    private String assignGroup;
+    private String groupName;
     private Integer assignType;
     private String targetType;
 
@@ -42,12 +42,12 @@ public class RoleMappingCommand {
         this.scope = scope;
     }
 
-    public String getAssignGroup() {
-        return assignGroup;
+    public String getGroupName() {
+        return groupName;
     }
 
-    public void setAssignGroup(String assignGroup) {
-        this.assignGroup = assignGroup;
+    public void setGroupName(String groupName) {
+        this.groupName = groupName;
     }
 
     public Integer getAssignType() {

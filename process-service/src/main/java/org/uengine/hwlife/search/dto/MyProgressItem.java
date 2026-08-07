@@ -21,7 +21,6 @@ public class MyProgressItem {
     private String group;
     private String endpoint;
     private String resName;
-    private String assignGroup;
     private Date startedDate;
     private String taskId;
     private String instId;
@@ -136,14 +135,6 @@ public class MyProgressItem {
 
     public void setResName(String resName) {
         this.resName = resName;
-    }
-
-    public String getAssignGroup() {
-        return assignGroup;
-    }
-
-    public void setAssignGroup(String assignGroup) {
-        this.assignGroup = assignGroup;
     }
 
     public Date getStartedDate() {

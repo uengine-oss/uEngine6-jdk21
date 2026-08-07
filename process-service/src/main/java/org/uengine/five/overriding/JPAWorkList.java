@@ -149,8 +149,8 @@ public class JPAWorkList implements WorkList {
                         Object scope = parameterMap.get("scope");
                         if (scope != null && !UEngineUtil.isNotEmpty(rm.getScope())) rm.setScope(String.valueOf(scope));
 
-                        Object assignGroupParam = parameterMap.get("assignGroup");
-                        if (assignGroupParam != null && !UEngineUtil.isNotEmpty(rm.getAssignGroup())) rm.setAssignGroup(String.valueOf(assignGroupParam));
+                        Object groupName = parameterMap.get("groupName");
+                        if (groupName != null && !UEngineUtil.isNotEmpty(rm.getGroupName())) rm.setGroupName(String.valueOf(groupName));
 
                         Object assignType = parameterMap.get("assignType");
                         if (assignType != null && rm.getAssignType() == 0) {
@@ -171,9 +171,8 @@ public class JPAWorkList implements WorkList {
             Object scopeObj = parameterMap.get("scope");
             String scope = scopeObj == null ? null : String.valueOf(scopeObj);
             wl.setScope(scope);
-            wl.setGroupCd(scope);
-            Object assignGroupForWl = parameterMap.get("assignGroup");
-            wl.setAssignGroup(assignGroupForWl != null ? String.valueOf(assignGroupForWl) : null);
+            Object groupNameObj = parameterMap.get("groupName");
+            wl.setGroupCd(groupNameObj != null ? String.valueOf(groupNameObj) : null);
             wl.setAssignType(Integer.parseInt("" + parameterMap.get("assignType")));
 
             if(parameterMap.containsKey("actType")){
