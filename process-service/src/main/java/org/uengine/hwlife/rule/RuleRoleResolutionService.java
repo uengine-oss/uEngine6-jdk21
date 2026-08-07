@@ -18,9 +18,9 @@ import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.uengine.hwlife.esbclient.client.EsbClient;
-import org.uengine.hwlife.rule.dto.RuleAssignRulesSyncRequest;
-import org.uengine.hwlife.rule.dto.RuleAssignRulesSyncResponse;
-import org.uengine.hwlife.rule.dto.RuleAssignRulesSyncResponseItem;
+import org.uengine.hwlife.rule.dto.RoleAssignRulesSyncRequest;
+import org.uengine.hwlife.rule.dto.RoleAssignRulesSyncResponse;
+import org.uengine.hwlife.rule.dto.RoleAssignRulesSyncResponseItem;
 import org.uengine.hwlife.rule.dto.RuleCandidate;
 import org.uengine.hwlife.rule.entity.BpmRoleAssignRule;
 import org.uengine.hwlife.rule.repository.BpmRoleAssignRuleRepository;
@@ -110,7 +110,7 @@ public class RuleRoleResolutionService {
      * 실패·응답 null 이면 로컬 유지.
      */
     private void trySyncFromEsb(String policyId) {
-        RuleAssignRulesSyncResponse remote;
+        RoleAssignRulesSyncResponse remote;
         try {
             remote = fetchAssignRules(policyId);
         } catch (Exception e) {
@@ -134,17 +134,17 @@ public class RuleRoleResolutionService {
     }
 
     /** 정책(역량명) 기준 역량 기준정보를 ESB 에서 조회. {@code cpabNm} = policyId. */
-    private RuleAssignRulesSyncResponse fetchAssignRules(String policyId) {
-        RuleAssignRulesSyncRequest request = new RuleAssignRulesSyncRequest();
+    private RoleAssignRulesSyncResponse fetchAssignRules(String policyId) {
+        RoleAssignRulesSyncRequest request = new RoleAssignRulesSyncRequest();
         request.setCpabNm(policyId);
-        return esbClient.send("", "", request, RuleAssignRulesSyncResponse.class);
+        return esbClient.send("", "", request, RoleAssignRulesSyncResponse.class);
     }
 
     /**
      * policyId 단위로 기존 규칙을 비활성화한 뒤 ESB 응답을 적재한다.
      * 값이 동일해도 {@code synced_at} 은 현재 시각으로 갱신한다.
      */
-    void persistSyncedRules(String policyId, RuleAssignRulesSyncResponse remote) {
+    void persistSyncedRules(String policyId, RoleAssignRulesSyncResponse remote) {
         Date now = new Date();
         List<BpmRoleAssignRule> existing = ruleRepository.findByPolicyId(policyId);
 
@@ -155,10 +155,10 @@ public class RuleRoleResolutionService {
         }
 
         Set<String> seen = new HashSet<>();
-        List<RuleAssignRulesSyncResponseItem> items =
+        List<RoleAssignRulesSyncResponseItem> items =
                 remote.getCpabList() != null ? remote.getCpabList() : List.of();
 
-        for (RuleAssignRulesSyncResponseItem item : items) {
+        for (RoleAssignRulesSyncResponseItem item : items) {
             if (item == null) {
                 continue;
             }
