@@ -20,6 +20,7 @@ import org.uengine.kernel.RoleResolutionContext;
 public class IAMRoleResolutionContext extends RoleResolutionContext implements IContainsMapping {
 
     private static final long serialVersionUID = org.uengine.kernel.GlobalContext.SERIALIZATION_UID;
+    private static final ThreadLocal<Boolean> dryRunBypass = ThreadLocal.withInitial(() -> false);
 
     private String scope;
     // 그룹 + 권한 교집합 매핑용. scope 없이 단독 지정 시 그룹만으로 매칭.
@@ -84,6 +85,10 @@ public class IAMRoleResolutionContext extends RoleResolutionContext implements I
 
     @Override
     public boolean containsMapping(ProcessInstance instance, RoleMapping testingRoleMapping) throws Exception {
+        if (Boolean.TRUE.equals(dryRunBypass.get())) {
+            return true;
+        }
+
         if (testingRoleMapping == null) {
             return false;
         }
@@ -107,6 +112,14 @@ public class IAMRoleResolutionContext extends RoleResolutionContext implements I
         } catch (Exception e) {
             return false;
         }
+    }
+
+    public static void setDryRunBypass(boolean bypass) {
+        dryRunBypass.set(bypass);
+    }
+
+    public static void clearDryRunBypass() {
+        dryRunBypass.remove();
     }
 }
 /* 기존 코드 (주석 처리)
