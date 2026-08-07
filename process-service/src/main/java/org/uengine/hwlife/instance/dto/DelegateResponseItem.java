@@ -5,16 +5,16 @@ package org.uengine.hwlife.instance.dto;
  */
 public class DelegateResponseItem {
 
-    private String fncgBpmTasklstId;
+    private String fncgBpmTaskLstId;
     private String fncgBpmPcesIntcId;
     private String prcsRsltCntn;
 
-    public String getFncgBpmTasklstId() {
-        return fncgBpmTasklstId;
+    public String getFncgBpmTaskLstId() {
+        return fncgBpmTaskLstId;
     }
 
-    public void setFncgBpmTasklstId(String fncgBpmTasklstId) {
-        this.fncgBpmTasklstId = fncgBpmTasklstId;
+    public void setFncgBpmTaskLstId(String fncgBpmTaskLstId) {
+        this.fncgBpmTaskLstId = fncgBpmTaskLstId;
     }
 
     public String getFncgBpmPcesIntcId() {

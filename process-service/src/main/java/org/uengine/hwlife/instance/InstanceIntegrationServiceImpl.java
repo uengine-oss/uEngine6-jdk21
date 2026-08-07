@@ -349,7 +349,7 @@ public class InstanceIntegrationServiceImpl implements InstanceIntegrationServic
 
     try {
       for (DelegateRequestItem item : bswrList) {
-        String taskId = item == null ? null : trimToNull(item.getFncgBpmTasklstId());
+        String taskId = item == null ? null : trimToNull(item.getFncgBpmTaskLstId());
         if (taskId == null) {
           addDelegateFailure(failList, item, "LBM040007");
           continue;
@@ -532,7 +532,7 @@ public class InstanceIntegrationServiceImpl implements InstanceIntegrationServic
       String reason) {
     DelegateResponseItem failure = new DelegateResponseItem();
     if (source != null) {
-      failure.setFncgBpmTasklstId(source.getFncgBpmTasklstId());
+      failure.setFncgBpmTaskLstId(source.getFncgBpmTaskLstId());
       failure.setFncgBpmPcesIntcId(source.getFncgBpmPcesIntcId());
     }
     failure.setPrcsRsltCntn(reason);
