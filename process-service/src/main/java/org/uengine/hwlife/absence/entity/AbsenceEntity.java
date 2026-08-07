@@ -22,35 +22,19 @@ public class AbsenceEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "absence_seq_gen")
-    @Column(name = "ABSE_ID")
     private Long abseId;
 
-    /** 부재자 사용자 ID (Keycloak/IAM principal.userId 와 동일한 형식) */
-    @Column(name = "USER_ID", nullable = false, length = 255)
     private String userId;
-    /** 대결자(Agent) 사용자 ID */
-    @Column(name = "AGENT_USER_ID", nullable = false, length = 255)
+
     private String agentUserId;
-    /** 대결자 그룹 코드 */
-    @Column(name = "AGENT_GROUP_CD", length = 50)
     private String agentGroupCd;
 
-    @Temporal(TemporalType.TIMESTAMP)
-    @Column(name = "ABSC_STAR_DTTM", nullable = false)
     private Date abscStarDttm;
-
-    /** NULL 인 경우 종료일 미정 (수동 종료 전까지 유지) */
-    @Temporal(TemporalType.TIMESTAMP)
-    @Column(name = "ABSC_END_DTTM")
     private Date abscEndDttm;
 
-    /** 조기 종료(해제) 시각. NULL 이면 활성 부재 */
-    @Temporal(TemporalType.TIMESTAMP)
     @Column(name = "ABSC_CNCE_DTTM")
     private Date abscRscsDttm;
-
-    @Temporal(TemporalType.TIMESTAMP)
-    @Column(name = "ABSC_CRET_DTTM", nullable = false, updatable = false)
+    @Column(name = "ABSC_CRET_DTTM")
     private Date abscStupDttm;
 
     @PrePersist
