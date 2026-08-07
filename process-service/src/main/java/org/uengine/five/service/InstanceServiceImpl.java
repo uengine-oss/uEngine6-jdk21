@@ -2424,6 +2424,20 @@ public class InstanceServiceImpl implements InstanceService {
     @ProcessTransactional
     @RequestMapping(value = "/dry-run", method = RequestMethod.POST, produces = "application/json;charset=UTF-8")
     public Object dryRun(@RequestBody ProcessExecutionCommand command) throws Exception {
+        boolean dryRunBypass = "true".equalsIgnoreCase(System.getenv("HLI_EXTERNAL_OSS_BYPASS"))
+                || Boolean.getBoolean("hli.externalOssBypass");
+        if (dryRunBypass) {
+            IAMRoleResolutionContext.setDryRunBypass(true);
+        }
+
+        try {
+            return doDryRun(command);
+        } finally {
+            IAMRoleResolutionContext.clearDryRunBypass();
+        }
+    }
+
+    private Object doDryRun(ProcessExecutionCommand command) throws Exception {
         ProcessExecutionCommand processCommand = new ProcessExecutionCommand();
         processCommand.setProcessDefinitionId(command.getProcessDefinitionId());
 
