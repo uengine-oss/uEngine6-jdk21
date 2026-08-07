@@ -998,6 +998,23 @@ public class DefaultProcessInstance extends AbstractProcessInstance {
 				String[] rolesAndRoleName = key.replace('.', '@').split("@");
 				if (rolesAndRoleName.length > 1) {
 					String roleName = rolesAndRoleName[1];
+					String rolePropertyName = rolesAndRoleName.length > 2 ? rolesAndRoleName[2] : null;
+
+                    if (rolePropertyName != null && isLaneBindingProperty(rolePropertyName)) {
+                        String bindingValue = unwrapMapperValue(value);
+                        if (!UEngineUtil.isNotEmpty(bindingValue)) {
+                            return;
+                        }
+                        RoleMapping rm = getRoleMapping(roleName);
+                        if (rm == null) {
+                            rm = RoleMapping.create();
+                            rm.setName(roleName);
+                        }
+                        applyLaneBindingProperty(rm, rolePropertyName, bindingValue);
+                        applyLaneAssignType(rm);
+                        putRoleMapping(roleName, rm);
+                        return;
+                    }
 
 					// 매퍼(JsonBuild 등)는 String JSON("{...}") 형태로 출력 가능 — Map 으로 파싱하여 처리
 					java.util.Map<?,?> mapForRole = null;
@@ -1098,6 +1115,38 @@ public class DefaultProcessInstance extends AbstractProcessInstance {
 
 		} catch (Exception e) {
 			throw new RuntimeException(e);
+		}
+	}
+
+	private static boolean isLaneBindingProperty(String propertyName) {
+		return "endpoint".equals(propertyName)
+				|| "groupName".equals(propertyName)
+				|| "scope".equals(propertyName);
+	}
+
+	private static void applyLaneBindingProperty(RoleMapping rm, String propertyName, String value) {
+		String bindingValue = value != null ? value.trim() : null;
+		if ("endpoint".equals(propertyName)) {
+			rm.setEndpoint(bindingValue);
+		} else if ("groupName".equals(propertyName)) {
+			rm.setAssignGroup(bindingValue);
+		} else if ("scope".equals(propertyName)) {
+			rm.setScope(bindingValue);
+		}
+	}
+
+	private static void applyLaneAssignType(RoleMapping rm) {
+		boolean hasEndpoint = UEngineUtil.isNotEmpty(rm.getEndpoint());
+		boolean hasScope = UEngineUtil.isNotEmpty(rm.getScope());
+		boolean hasGroup = UEngineUtil.isNotEmpty(rm.getAssignGroup());
+		if (hasEndpoint) {
+			rm.setAssignType(Role.ASSIGNTYPE_USER);
+		} else if (hasScope && hasGroup) {
+			rm.setAssignType(Role.ASSIGNTYPE_GROUP_ROLE);
+		} else if (hasScope) {
+			rm.setAssignType(Role.ASSIGNTYPE_ROLE);
+		} else if (hasGroup) {
+			rm.setAssignType(Role.ASSIGNTYPE_GROUP);
 		}
 	}
 

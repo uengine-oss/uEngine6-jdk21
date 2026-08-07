@@ -6,6 +6,7 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -50,7 +51,7 @@ public class BoundRoleResolutionContext extends RoleResolutionContext implements
      * 속성명 → 프로세스 변수 키.
      * 예: scope → TroubleScope, groupName → OrgCode, endpoint → EmpNo
      */
-    private Map<String, String> bindings = new LinkedHashMap<>();
+    private LinkedHashMap<String, String> bindings = new LinkedHashMap<>();
 
     public RoleResolutionContext getBase() {
         return base;
@@ -60,11 +61,11 @@ public class BoundRoleResolutionContext extends RoleResolutionContext implements
         this.base = base;
     }
 
-    public Map<String, String> getBindings() {
+    public LinkedHashMap<String, String> getBindings() {
         return bindings;
     }
 
-    public void setBindings(Map<String, String> bindings) {
+    public void setBindings(LinkedHashMap<String, String> bindings) {
         this.bindings = bindings != null ? bindings : new LinkedHashMap<>();
     }
 
@@ -92,7 +93,9 @@ public class BoundRoleResolutionContext extends RoleResolutionContext implements
         if (resolved instanceof IContainsMapping) {
             return ((IContainsMapping) resolved).containsMapping(instance, testingRoleMapping);
         }
-        return false;
+        RoleMapping actualMapping = resolved.getActualMapping(null, instance, null, Collections.emptyMap());
+        return hasSameEndpoint(actualMapping, testingRoleMapping)
+                || hasSameResourceName(actualMapping, testingRoleMapping);
     }
 
     @Override
@@ -222,5 +225,23 @@ public class BoundRoleResolutionContext extends RoleResolutionContext implements
 
     private static boolean isNotEmpty(String s) {
         return s != null && !s.trim().isEmpty();
+    }
+
+    private static boolean hasSameEndpoint(RoleMapping actualMapping, RoleMapping testingRoleMapping) {
+        if (actualMapping == null || testingRoleMapping == null) {
+            return false;
+        }
+        String actualEndpoint = actualMapping.getEndpoint();
+        String testingEndpoint = testingRoleMapping.getEndpoint();
+        return isNotEmpty(actualEndpoint) && actualEndpoint.equals(testingEndpoint);
+    }
+
+    private static boolean hasSameResourceName(RoleMapping actualMapping, RoleMapping testingRoleMapping) {
+        if (actualMapping == null || testingRoleMapping == null) {
+            return false;
+        }
+        String actualResourceName = actualMapping.getResourceName();
+        String testingResourceName = testingRoleMapping.getResourceName();
+        return isNotEmpty(actualResourceName) && actualResourceName.equals(testingResourceName);
     }
 }
