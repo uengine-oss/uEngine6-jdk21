@@ -1,5 +1,6 @@
 package org.uengine.hwlife.events.dto;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 
@@ -116,7 +117,8 @@ public class ExternalEventInboxRequest {
     /** 상위기관코드 */
     private String hgrnOrgnCode;
 
-    /** 대출희망일자 */
+    /** 대출희망일자 (ESB: yyyyMMdd) */
+    @JsonFormat(pattern = "yyyyMMdd")
     private Date loanHopeDate;
 
     /** 역량난이도레벨명 */

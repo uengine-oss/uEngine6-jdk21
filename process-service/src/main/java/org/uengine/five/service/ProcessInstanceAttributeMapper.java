@@ -1,10 +1,8 @@
 package org.uengine.five.service;
 
-import java.time.Instant;
 import java.time.LocalDate;
-import java.time.OffsetDateTime;
 import java.time.ZoneId;
-import java.time.format.DateTimeParseException;
+import java.time.format.DateTimeFormatter;
 import java.util.Date;
 import java.util.Map;
 
@@ -13,6 +11,8 @@ import org.uengine.five.entity.ProcessInstanceEntity;
 
 @Component
 public class ProcessInstanceAttributeMapper {
+
+    private static final DateTimeFormatter YMD = DateTimeFormatter.ofPattern("yyyyMMdd");
 
     public void apply(ProcessInstanceEntity instance, Map<String, Object> payload) {
         if (instance == null || payload == null || payload.isEmpty()) {
@@ -41,31 +41,16 @@ public class ProcessInstanceAttributeMapper {
         return text.isEmpty() ? null : text;
     }
 
+    /** yyyyMMdd (예: 20260807) */
     private static Date date(Object value) {
-        if (value instanceof Date) {
-            return (Date) value;
-        }
-        if (value instanceof Number) {
-            return new Date(((Number) value).longValue());
-        }
-
         String text = text(value);
         if (text == null) {
             return null;
         }
         try {
-            return Date.from(Instant.parse(text));
-        } catch (DateTimeParseException ignored) {
-        }
-        try {
-            return Date.from(OffsetDateTime.parse(text).toInstant());
-        } catch (DateTimeParseException ignored) {
-        }
-        try {
-            return Date.from(LocalDate.parse(text)
-                    .atStartOfDay(ZoneId.systemDefault())
-                    .toInstant());
-        } catch (DateTimeParseException ignored) {
+            LocalDate localDate = LocalDate.parse(text, YMD);
+            return Date.from(localDate.atStartOfDay(ZoneId.systemDefault()).toInstant());
+        } catch (Exception e) {
             return null;
         }
     }
