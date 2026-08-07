@@ -1,6 +1,6 @@
 package org.uengine.hwlife.rule.dto;
 
-public class RoleAssignSyncResponseItem {
+public class RoleAssignRulesSyncResponseItem {
 
     private String hndrEmnb;
     private String cpabLvdfLvelNm;

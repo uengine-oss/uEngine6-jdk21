@@ -99,7 +99,10 @@ public class RuleBasedRoleResolutionContext extends RoleResolutionContext {
         return mapping;
     }
 
-    /** 배정 규칙 동기화 — 실제 DB/외부 호출은 서비스가 담당. */
+    /**
+     * 배정 규칙 동기화 후 후보 조회.
+     * <p>policyId 기준 일 1회 ESB 동기화·적재는 {@link RuleRoleResolutionService} 가 담당.</p>
+     */
     List<RuleCandidate> syncRoleAssignRules(String policyId, String difficulty) {
         return RuleRoleResolutionSupport.get().syncRoleAssignRules(policyId, difficulty);
     }

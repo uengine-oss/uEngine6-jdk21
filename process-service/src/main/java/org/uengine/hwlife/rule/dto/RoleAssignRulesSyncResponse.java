@@ -2,10 +2,10 @@ package org.uengine.hwlife.rule.dto;
 
 import java.util.List;
 
-public class RoleAssignSyncResponse {
+public class RoleAssignRulesSyncResponse {
 
     private String cpabNm;
-    private List<RoleAssignSyncResponseItem> cpabList;
+    private List<RoleAssignRulesSyncResponseItem> cpabList;
 
     public String getCpabNm() {
         return cpabNm;
@@ -15,11 +15,11 @@ public class RoleAssignSyncResponse {
         this.cpabNm = cpabNm;
     }
 
-    public List<RoleAssignSyncResponseItem> getCpabList() {
+    public List<RoleAssignRulesSyncResponseItem> getCpabList() {
         return cpabList;
     }
 
-    public void setCpabList(List<RoleAssignSyncResponseItem> cpabList) {
+    public void setCpabList(List<RoleAssignRulesSyncResponseItem> cpabList) {
         this.cpabList = cpabList;
     }
 }

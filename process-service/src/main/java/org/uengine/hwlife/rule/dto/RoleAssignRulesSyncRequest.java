@@ -1,6 +1,6 @@
 package org.uengine.hwlife.rule.dto;
 
-public class RoleAssignSyncRequest {
+public class RoleAssignRulesSyncRequest {
 
     private String cpabNm;
 
