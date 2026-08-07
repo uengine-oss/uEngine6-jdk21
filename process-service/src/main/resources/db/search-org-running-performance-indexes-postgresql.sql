@@ -2,9 +2,6 @@
 create index if not exists idx_bpm_worklist_org_running_status_start
     on bpm_worklist (status, start_date, task_id);
 
-create index if not exists idx_bpm_worklist_org_running_assign_group
-    on bpm_worklist (assign_group);
-
 create index if not exists idx_bpm_worklist_org_running_scope
     on bpm_worklist (scope);
 

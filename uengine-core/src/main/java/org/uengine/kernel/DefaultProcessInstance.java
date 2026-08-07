@@ -1032,14 +1032,14 @@ public class DefaultProcessInstance extends AbstractProcessInstance {
 					}
 
 					if (mapForRole != null) {
-						// { group, role, endpoint? } (또는 assignGroup/scope) 키 인식
+						// { groupName, scope, endpoint? } 키 인식
 						// 매퍼가 ProcessVariable wrapper { name, value } 를 그대로 넣었을 경우 value 키 자동 추출
 						RoleMapping rm = RoleMapping.create();
 						rm.setName(roleName);
 						String roleStr = unwrapMapperValue(mapForRole.get("role"));
 						if (roleStr == null) roleStr = unwrapMapperValue(mapForRole.get("scope"));
-						String groupStr = unwrapMapperValue(mapForRole.get("group"));
-						if (groupStr == null) groupStr = unwrapMapperValue(mapForRole.get("assignGroup"));
+						String groupStr = unwrapMapperValue(mapForRole.get("groupName"));
+						if (groupStr == null) groupStr = unwrapMapperValue(mapForRole.get("group"));
 						String endpointStr = unwrapMapperValue(mapForRole.get("endpoint"));
 
 						// 매퍼가 null/빈 값을 보낸 항목은 Lane 정의의 기본값으로 fallback
@@ -1048,7 +1048,7 @@ public class DefaultProcessInstance extends AbstractProcessInstance {
 						if ((groupStr == null || groupStr.trim().isEmpty()) && defaults[1] != null) groupStr = defaults[1];
 
 						if (roleStr != null && !roleStr.trim().isEmpty()) rm.setScope(roleStr);
-						if (groupStr != null && !groupStr.trim().isEmpty()) rm.setAssignGroup(groupStr);
+						if (groupStr != null && !groupStr.trim().isEmpty()) rm.setGroupName(groupStr);
 						if (endpointStr != null) rm.setEndpoint(endpointStr);
 						boolean hasRole = roleStr != null && !roleStr.trim().isEmpty();
 						boolean hasGroup = groupStr != null && !groupStr.trim().isEmpty();
@@ -1129,7 +1129,7 @@ public class DefaultProcessInstance extends AbstractProcessInstance {
 		if ("endpoint".equals(propertyName)) {
 			rm.setEndpoint(bindingValue);
 		} else if ("groupName".equals(propertyName)) {
-			rm.setAssignGroup(bindingValue);
+			rm.setGroupName(bindingValue);
 		} else if ("scope".equals(propertyName)) {
 			rm.setScope(bindingValue);
 		}
@@ -1138,7 +1138,7 @@ public class DefaultProcessInstance extends AbstractProcessInstance {
 	private static void applyLaneAssignType(RoleMapping rm) {
 		boolean hasEndpoint = UEngineUtil.isNotEmpty(rm.getEndpoint());
 		boolean hasScope = UEngineUtil.isNotEmpty(rm.getScope());
-		boolean hasGroup = UEngineUtil.isNotEmpty(rm.getAssignGroup());
+		boolean hasGroup = UEngineUtil.isNotEmpty(rm.getGroupName());
 		if (hasEndpoint) {
 			rm.setAssignType(Role.ASSIGNTYPE_USER);
 		} else if (hasScope && hasGroup) {

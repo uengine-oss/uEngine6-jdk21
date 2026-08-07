@@ -47,8 +47,6 @@ public abstract class RoleMapping implements java.io.Serializable, Cloneable, Co
 	protected String groupId;
 	protected String groupName;
 	protected String scope;
-	// Lane 할당 대상 그룹. scope(=권한)과 함께 지정되면 두 조건 모두 만족하는 사용자만 후보.
-	protected String assignGroup;
 	protected String userPortrait;
 	protected String userLastName;
 	protected String userMiddleName;
@@ -182,14 +180,6 @@ public abstract class RoleMapping implements java.io.Serializable, Cloneable, Co
 
 	public void setScope(String scope) {
 		getCurrentRoleMapping().scope = scope;
-	}
-
-	public String getAssignGroup() {
-		return getCurrentRoleMapping().assignGroup;
-	}
-
-	public void setAssignGroup(String assignGroup) {
-		getCurrentRoleMapping().assignGroup = assignGroup;
 	}
 
 	public String getGroupId() {

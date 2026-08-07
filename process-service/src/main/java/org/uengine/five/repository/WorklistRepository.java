@@ -39,9 +39,7 @@ public interface WorklistRepository extends JpaRepository<WorklistEntity, Long> 
     @Query("select wl from WorklistEntity wl " +
             "where (" +
             "   (wl.endpoint = ?#{principal.userId} or wl.endpoint in ?#{principal.scopes})" +
-            "   or (wl.dispatchOption = 1 and wl.endpoint is null and (wl.assignGroup is null or wl.assignGroup = 'null') and wl.scope in ?#{principal.groups})" +
-            "   or (wl.dispatchOption = 1 and wl.endpoint is null and (wl.assignGroup is null or wl.assignGroup = 'null') and wl.scope in ?#{principal.scopes})" +
-            "   or (wl.dispatchOption = 1 and wl.endpoint is null and wl.assignGroup in ?#{principal.groups} and (wl.scope is null or wl.scope = 'null' or wl.scope in ?#{principal.scopes}))" +
+            "   or (wl.dispatchOption = 1 and wl.endpoint is null and wl.groupCd in ?#{principal.groups} and (wl.scope is null or wl.scope = 'null' or wl.scope in ?#{principal.scopes}))" +
             "   or (wl.dispatchOption = 1 and wl.endpoint is null and wl.groupCd in ?#{T(org.uengine.contexts.UserContext).getThreadLocalInstance().getGroups()})" +
             ") and (wl.status != 'COMPLETED') ")
     public List<WorklistEntity> findToDo();
@@ -89,14 +87,14 @@ public interface WorklistRepository extends JpaRepository<WorklistEntity, Long> 
             "where ( (wl.rootInstId = :rootInstId) or (wl.rootInstId is null and wl.instId = :rootInstId) ) " +
             "  and wl.roleName = :roleName " +
             "  and ( (:scope is null and wl.scope is null) or (:scope is not null and wl.scope = :scope) ) " +
-            "  and ( (:assignGroup is null and wl.assignGroup is null) or (:assignGroup is not null and wl.assignGroup = :assignGroup) ) " +
+            "  and ( (:groupCd is null and wl.groupCd is null) or (:groupCd is not null and wl.groupCd = :groupCd) ) " +
             "  and wl.assignType = :assignType " +
             "  and (wl.status = 'NEW' or wl.status = 'RUNNING') " +
             "  and ( (:endpoint is null and wl.endpoint is null) or (:endpoint is not null and wl.endpoint = :endpoint) ) ")
     public List<WorklistEntity> findSiblingsForClaimState(@Param("rootInstId") Long rootInstId,
             @Param("roleName") String roleName,
             @Param("scope") String scope,
-            @Param("assignGroup") String assignGroup,
+            @Param("groupCd") String groupCd,
             @Param("assignType") Integer assignType,
             @Param("endpoint") String endpoint);
 
@@ -105,14 +103,14 @@ public interface WorklistRepository extends JpaRepository<WorklistEntity, Long> 
      *
      * <ul>
      *   <li>{@code requestYn = 'Y'} — 요청기관 {@code pi.initComCd}</li>
-     *   <li>{@code requestYn != 'Y'} — 진행기관 {@code wl.assignGroup}</li>
+     *   <li>{@code requestYn != 'Y'} — 진행기관 {@code wl.groupCd}</li>
      *   <li>{@code defId} — 업무구분 (null 이면 무시)</li>
      * </ul>
      */
     @Query("select wl from WorklistEntity wl join wl.processInstance pi " +
             "where (:groupCode is null " +
             "   or ((:requestYn = 'Y' and pi.initComCd = :groupCode) " +
-            "       or (:requestYn <> 'Y' and wl.assignGroup = :groupCode))) " +
+            "       or (:requestYn <> 'Y' and wl.groupCd = :groupCode))) " +
             "and (:defId is null or wl.defId = :defId) " +
             "order by wl.startDate desc")
     Page<WorklistEntity> findByGroupCode(
