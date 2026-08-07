@@ -38,7 +38,11 @@ public interface InstanceIntegrationService {
   /**
    * 다중 업무 위임 — 본인 담당 업무만 (모든 사용자).
    *
-   * <p>단일 위임은 {@code POST /work-item/{taskId}/delegate}.</p>
+   * <p>위임자는 ESB header.emnb, 처리자는 body {@code hndrEmnb}(기관은 IAM 조회).
+   * 단일 위임은 {@code POST /work-item/{taskId}/delegate}.
+   * 건별 실패 사유는 {@code failList[].prcsRsltCntn}({@code LBM04XXXX}),
+   * 성공은 {@code LBM000000}. 코드 목록은
+   * {@link InstanceIntegrationServiceImpl#delegateWorkItems} 주석 참고.</p>
    *
    * <pre>POST /instance/multi-delegate</pre>
    */

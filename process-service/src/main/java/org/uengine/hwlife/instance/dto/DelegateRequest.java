@@ -4,20 +4,14 @@ import java.util.List;
 
 /**
  * 다중 업무 위임 요청 — POST /instance/multi-delegate JSON body.
+ *
+ * <p>위임자 사번은 body 가 아니라 ESB header.emnb 를 사용한다.
+ * 처리자 사번은 {@code hndrEmnb} 이며, 기관코드는 IAM 조회로 확인한다.</p>
  */
 public class DelegateRequest {
 
-    private String mnorEmnb;
     private String hndrEmnb;
     private List<DelegateRequestItem> bswrList;
-
-    public String getMnorEmnb() {
-        return mnorEmnb;
-    }
-
-    public void setMnorEmnb(String mnorEmnb) {
-        this.mnorEmnb = mnorEmnb;
-    }
 
     public String getHndrEmnb() {
         return hndrEmnb;

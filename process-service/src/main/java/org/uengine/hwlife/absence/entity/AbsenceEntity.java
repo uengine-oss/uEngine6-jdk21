@@ -25,16 +25,12 @@ public class AbsenceEntity {
     private Long abseId;
 
     private String userId;
-
     private String agentUserId;
     private String agentGroupCd;
 
     private Date abscStarDttm;
     private Date abscEndDttm;
-
-    @Column(name = "ABSC_CNCE_DTTM")
     private Date abscRscsDttm;
-    @Column(name = "ABSC_CRET_DTTM")
     private Date abscStupDttm;
 
     @PrePersist

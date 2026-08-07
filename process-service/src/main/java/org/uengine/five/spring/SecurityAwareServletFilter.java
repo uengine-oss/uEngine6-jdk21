@@ -26,7 +26,12 @@ public class SecurityAwareServletFilter implements Filter {
 
     static public String getUserId() {
         return userId;
-    };
+    }
+
+    /** ESB 등 JWT 없는 경로에서 업무 API 권한 검사에 쓸 사용자 ID를 설정한다. */
+    static public void setUserId(String userId) {
+        SecurityAwareServletFilter.userId = userId;
+    }
 
     @Override
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
