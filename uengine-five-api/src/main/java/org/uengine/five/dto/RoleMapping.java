@@ -6,7 +6,6 @@ public class RoleMapping {
     String[] endpoints;
     String group;
     String groupName;
-    String assignGroup;
     String scope;
     Integer assignType;
 
@@ -50,14 +49,6 @@ public class RoleMapping {
         this.groupName = groupName;
     }
 
-    public String getAssignGroup() {
-        return assignGroup;
-    }
-
-    public void setAssignGroup(String assignGroup) {
-        this.assignGroup = assignGroup;
-    }
-
     public String getScope() {
         return scope;
     }
@@ -78,9 +69,9 @@ public class RoleMapping {
         org.uengine.kernel.RoleMapping kernelRoleMapping = org.uengine.kernel.RoleMapping.create();
         kernelRoleMapping.setName(name);
 
-        String resolvedGroup = firstNotEmpty(assignGroup, groupName, group);
+        String resolvedGroup = firstNotEmpty(groupName, group);
         if (resolvedGroup != null) {
-            kernelRoleMapping.setAssignGroup(resolvedGroup);
+            kernelRoleMapping.setGroupName(resolvedGroup);
         }
         if (scope != null && !scope.trim().isEmpty()) {
             kernelRoleMapping.setScope(scope.trim());

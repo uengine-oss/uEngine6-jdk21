@@ -4,9 +4,6 @@ create index if not exists idx_bpm_worklist_process_instance
 create index if not exists idx_bpm_worklist_endpoint
     on bpm_worklist (endpoint);
 
-create index if not exists idx_bpm_worklist_assign_group
-    on bpm_worklist (assign_group);
-
 create index if not exists idx_bpm_worklist_scope
     on bpm_worklist (scope);
 
