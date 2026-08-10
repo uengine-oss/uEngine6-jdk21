@@ -315,7 +315,7 @@ public class InstanceServiceImpl implements InstanceService {
                 if (group != null) {
                     RoleMapping groupRoleMapping = RoleMapping.create();
                     groupRoleMapping.setName("group");
-                    groupRoleMapping.setAssignGroup(group);
+                    groupRoleMapping.setGroupName(group);
                     instance.putRoleMapping("group", groupRoleMapping);
                 }
 
@@ -1107,13 +1107,13 @@ public class InstanceServiceImpl implements InstanceService {
             // endpoint, resourceName 은 null 도 의미 있는 값 ("선점 해제") 이라 그대로 적용
             rm.setEndpoint(roleMapping.getEndpoint());
             rm.setResourceName(roleMapping.getResourceName());
-            // scope, assignGroup, assignType 은 미지정 시 기존 값 보존 (역할 해석 컨텍스트 유실 방지)
+            // scope, groupName, assignType 은 미지정 시 기존 값 보존 (역할 해석 컨텍스트 유실 방지)
             rm.setScope(roleMapping.getScope() != null
                     ? roleMapping.getScope()
                     : (existing != null ? existing.getScope() : null));
-            rm.setAssignGroup(roleMapping.getAssignGroup() != null
-                    ? roleMapping.getAssignGroup()
-                    : (existing != null ? existing.getAssignGroup() : null));
+            rm.setGroupName(roleMapping.getGroupName() != null
+                    ? roleMapping.getGroupName()
+                    : (existing != null ? existing.getGroupName() : null));
             rm.setAssignType(roleMapping.getAssignType() != null
                     ? roleMapping.getAssignType()
                     : (existing != null ? existing.getAssignType() : 0));
@@ -1169,7 +1169,7 @@ public class InstanceServiceImpl implements InstanceService {
             if (roleMapping.getEndpoint() != null) currentMapping.setEndpoint(roleMapping.getEndpoint());
             if (roleMapping.getResourceName() != null) currentMapping.setResourceName(roleMapping.getResourceName());
             if (roleMapping.getScope() != null) currentMapping.setScope(roleMapping.getScope());
-            if (roleMapping.getAssignGroup() != null) currentMapping.setAssignGroup(roleMapping.getAssignGroup());
+            if (roleMapping.getGroupName() != null) currentMapping.setGroupName(roleMapping.getGroupName());
             if (roleMapping.getAssignType() != null) currentMapping.setAssignType(roleMapping.getAssignType());
         }
 
@@ -2686,7 +2686,7 @@ public class InstanceServiceImpl implements InstanceService {
         Long rootInstId = worklistEntity.getRootInstId() == null ? worklistEntity.getInstId() : worklistEntity.getRootInstId().longValue();
         String roleName = worklistEntity.getRoleName();
         String scope = worklistEntity.getScope();
-        String assignGroup = worklistEntity.getAssignGroup();
+        String groupCd = worklistEntity.getGroupCd();
         Integer assignType = worklistEntity.getAssignType();
 
         if (unclaim) {
@@ -2701,7 +2701,7 @@ public class InstanceServiceImpl implements InstanceService {
             worklistRepository.save(worklistEntity);
 
             if (rootInstId != null && roleName != null && assignType != null) {
-                List<WorklistEntity> siblings = worklistRepository.findSiblingsForClaimState(rootInstId, roleName, scope, assignGroup, assignType, actorEndpoint);
+                List<WorklistEntity> siblings = worklistRepository.findSiblingsForClaimState(rootInstId, roleName, scope, groupCd, assignType, actorEndpoint);
                 if (siblings != null) {
                     for (WorklistEntity wl : siblings) {
                         if (wl == null) continue;
@@ -2721,9 +2721,9 @@ public class InstanceServiceImpl implements InstanceService {
                 bpmLifecycleService.onTaskAssigned(worklistEntity);
             }
 
-            // 2) 동일 역할 + 동일 scope/assignGroup/assignType 그룹의 다른 workitem들도 함께 소유자 세팅
+            // 2) 동일 역할 + 동일 groupCd/scope/assignType 그룹의 다른 workitem들도 함께 소유자 세팅
             if (rootInstId != null && roleName != null && assignType != null) {
-                List<WorklistEntity> siblings = worklistRepository.findSiblingsForClaimState(rootInstId, roleName, scope, assignGroup, assignType, null);
+                List<WorklistEntity> siblings = worklistRepository.findSiblingsForClaimState(rootInstId, roleName, scope, groupCd, assignType, null);
                 if (siblings != null) {
                     for (WorklistEntity wl : siblings) {
                         if (wl == null) continue;
@@ -2749,7 +2749,7 @@ public class InstanceServiceImpl implements InstanceService {
                 if (rm != null) {
                     rm.setEndpoint(wl.getEndpoint());
                     if (UEngineUtil.isNotEmpty(wl.getScope())) rm.setScope(wl.getScope());
-                    if (UEngineUtil.isNotEmpty(wl.getAssignGroup())) rm.setAssignGroup(wl.getAssignGroup());
+                    if (UEngineUtil.isNotEmpty(wl.getGroupCd())) rm.setGroupName(wl.getGroupCd());
                     rm.setAssignType(wl.getAssignType());
                     rm.fill();
                     String filled = rm.getResourceName();
@@ -2795,8 +2795,8 @@ public class InstanceServiceImpl implements InstanceService {
             return;
         }
         if ("GROUP".equals(targetType)) {
-            if (!hasText(command.getAssignGroup())) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "delegatedRoleMapping.assignGroup is required");
+            if (!hasText(command.getGroupName())) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "delegatedRoleMapping.groupName is required");
             }
             return;
         }
@@ -2807,8 +2807,8 @@ public class InstanceServiceImpl implements InstanceService {
             return;
         }
         if ("GROUP_ROLE".equals(targetType) || "GROUPROLE".equals(targetType)) {
-            if (!hasText(command.getAssignGroup()) || !hasText(command.getScope())) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "delegatedRoleMapping.assignGroup and scope are required");
+            if (!hasText(command.getGroupName()) || !hasText(command.getScope())) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "delegatedRoleMapping.groupName and scope are required");
             }
             return;
         }
@@ -2821,7 +2821,7 @@ public class InstanceServiceImpl implements InstanceService {
             ProcessInstance instance,
             HumanActivity humanActivity,
             String laneScope,
-            String laneAssignGroup,
+            String laneGroupName,
             int laneAssignType) throws Exception {
         String targetType = normalizeDelegateTargetType(command);
 
@@ -2836,10 +2836,10 @@ public class InstanceServiceImpl implements InstanceService {
                 delegated.setScope(laneScope);
             }
 
-            if (command.getAssignGroup() != null) {
-                delegated.setAssignGroup(command.getAssignGroup());
-            } else if (UEngineUtil.isNotEmpty(laneAssignGroup) && !"null".equalsIgnoreCase(laneAssignGroup)) {
-                delegated.setAssignGroup(laneAssignGroup);
+            if (command.getGroupName() != null) {
+                delegated.setGroupName(command.getGroupName());
+            } else if (UEngineUtil.isNotEmpty(laneGroupName) && !"null".equalsIgnoreCase(laneGroupName)) {
+                delegated.setGroupName(laneGroupName);
             }
 
             if (command.getAssignType() != null) {
@@ -2859,10 +2859,10 @@ public class InstanceServiceImpl implements InstanceService {
             return delegated;
         }
 
-        String targetAssignGroup = command.getAssignGroup();
-        if (!hasText(targetAssignGroup) && "ROLE".equals(targetType)
-                && UEngineUtil.isNotEmpty(laneAssignGroup) && !"null".equalsIgnoreCase(laneAssignGroup)) {
-            targetAssignGroup = laneAssignGroup;
+        String targetGroupName = command.getGroupName();
+        if (!hasText(targetGroupName) && "ROLE".equals(targetType)
+                && UEngineUtil.isNotEmpty(laneGroupName) && !"null".equalsIgnoreCase(laneGroupName)) {
+            targetGroupName = laneGroupName;
         }
 
         String targetScope = command.getScope();
@@ -2872,8 +2872,8 @@ public class InstanceServiceImpl implements InstanceService {
         }
 
         IAMRoleResolutionContext resolutionContext = new IAMRoleResolutionContext();
-        if (hasText(targetAssignGroup)) {
-            resolutionContext.setGroupName(targetAssignGroup.trim());
+        if (hasText(targetGroupName)) {
+            resolutionContext.setGroupName(targetGroupName.trim());
         }
         if (hasText(targetScope)) {
             resolutionContext.setScope(targetScope.trim());
@@ -2885,13 +2885,13 @@ public class InstanceServiceImpl implements InstanceService {
                 humanActivity != null ? humanActivity.getTracingTag() : null,
                 new HashMap());
 
-        boolean hasTargetAssignGroup = hasText(targetAssignGroup);
+        boolean hasTargetGroupName = hasText(targetGroupName);
         boolean hasTargetScope = hasText(targetScope);
         if (command.getAssignType() != null) {
             delegated.setAssignType(command.getAssignType());
-        } else if (hasTargetAssignGroup && hasTargetScope) {
+        } else if (hasTargetGroupName && hasTargetScope) {
             delegated.setAssignType(Role.ASSIGNTYPE_GROUP_ROLE);
-        } else if (hasTargetAssignGroup) {
+        } else if (hasTargetGroupName) {
             delegated.setAssignType(Role.ASSIGNTYPE_GROUP);
         } else if (hasTargetScope) {
             delegated.setAssignType(Role.ASSIGNTYPE_ROLE);
@@ -2979,7 +2979,7 @@ public class InstanceServiceImpl implements InstanceService {
 
         // DelegateTest의 동작과 동일하게 kernel 메서드 호출
         String laneScope = worklistEntity.getScope();
-        String laneAssignGroup = worklistEntity.getAssignGroup();
+        String laneGroupName = worklistEntity.getGroupCd();
         int laneAssignType = worklistEntity.getAssignType();
         // 위임자(A) 정보 — updateWorkItem 이 동일 엔티티 endpoint 를 B 로 바꾸기 전에 캡처
         String prevEndpoint = UEngineUtil.isNotEmpty(currentOwner) ? currentOwner.trim() : null;
@@ -2991,7 +2991,7 @@ public class InstanceServiceImpl implements InstanceService {
                 instance,
                 humanActivity,
                 laneScope,
-                laneAssignGroup,
+                laneGroupName,
                 laneAssignType);
         humanActivity.delegate(instance, delegated, delegateOnlyForWorkitem);
 
@@ -3005,23 +3005,23 @@ public class InstanceServiceImpl implements InstanceService {
                     String targetEndpoint = delegated != null ? delegated.getEndpoint() : null;
                     String targetResName = delegated != null ? delegated.getResourceName() : null;
                     String targetScope = delegated != null ? delegated.getScope() : null;
-                    String targetAssignGroup = delegated != null ? delegated.getAssignGroup() : null;
+                    String targetGroupName = delegated != null ? delegated.getGroupName() : null;
                     int targetAssignType = delegated != null ? delegated.getAssignType() : 0;
 
                     for (WorklistEntity wl : currents) {
                         if (wl == null) continue;
                         if (laneRoleName == null || !laneRoleName.equals(wl.getRoleName())) continue;
 
-                        // 기존 Lane 속성 유지(위임 후 생성된 신규 workitem이 scope/assignGroup/assignType을 잃는 문제 보정 포함)
+                        // 기존 Lane 속성 유지(위임 후 생성된 신규 workitem이 groupCd/scope/assignType을 잃는 문제 보정 포함)
                         if (UEngineUtil.isNotEmpty(targetScope) && !"null".equalsIgnoreCase(targetScope)) {
                             wl.setScope(targetScope);
                         } else if (!UEngineUtil.isNotEmpty(wl.getScope()) || "null".equalsIgnoreCase(wl.getScope())) {
                             if (UEngineUtil.isNotEmpty(laneScope) && !"null".equalsIgnoreCase(laneScope)) wl.setScope(laneScope);
                         }
-                        if (UEngineUtil.isNotEmpty(targetAssignGroup) && !"null".equalsIgnoreCase(targetAssignGroup)) {
-                            wl.setAssignGroup(targetAssignGroup);
-                        } else if (!UEngineUtil.isNotEmpty(wl.getAssignGroup()) || "null".equalsIgnoreCase(wl.getAssignGroup())) {
-                            if (UEngineUtil.isNotEmpty(laneAssignGroup) && !"null".equalsIgnoreCase(laneAssignGroup)) wl.setAssignGroup(laneAssignGroup);
+                        if (UEngineUtil.isNotEmpty(targetGroupName) && !"null".equalsIgnoreCase(targetGroupName)) {
+                            wl.setGroupCd(targetGroupName);
+                        } else if (!UEngineUtil.isNotEmpty(wl.getGroupCd()) || "null".equalsIgnoreCase(wl.getGroupCd())) {
+                            if (UEngineUtil.isNotEmpty(laneGroupName) && !"null".equalsIgnoreCase(laneGroupName)) wl.setGroupCd(laneGroupName);
                         }
                         if (targetAssignType != 0) {
                             wl.setAssignType(targetAssignType);
@@ -3087,7 +3087,21 @@ public class InstanceServiceImpl implements InstanceService {
     public WorkItemResource reassignWorkItem(
         @PathVariable("taskId") String taskId,
         @RequestBody RoleMappingCommand assignment) throws Exception {
-                        
+        if (taskId == null || taskId.equals("null") || assignment == null || assignment.getEndpoint() == null || assignment.getEndpoint().trim().isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "taskId and assignment endpoint are required");
+        }
+        WorklistEntity worklist = worklistRepository.findById(Long.parseLong(taskId)).orElse(null);
+        if (worklist == null) throw new ResponseStatusException(HttpStatus.NOT_FOUND, "No such work item where taskId = " + taskId);
+        if (!"NEW".equalsIgnoreCase(worklist.getStatus()) && !"RUNNING".equalsIgnoreCase(worklist.getStatus())) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Only active work items can be reassigned");
+        }
+        worklist.setPrevEndpoint(worklist.getEndpoint());
+        worklist.setPrevUserName(worklist.getResName());
+        worklist.setPrevGroupCd(worklist.getGroupCd());
+        worklist.setEndpoint(assignment.getEndpoint().trim());
+        if (assignment.getResourceName() != null) worklist.setResName(assignment.getResourceName());
+        worklistRepository.save(worklist);
+        if (bpmLifecycleService != null) bpmLifecycleService.onTaskAssignmentChanged(worklist, worklist.getPrevEndpoint());
         return getWorkItem(taskId);
     }
 

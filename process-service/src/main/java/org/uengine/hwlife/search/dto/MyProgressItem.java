@@ -24,7 +24,6 @@ public class MyProgressItem {
     private String group;
     private String endpoint;
     private String resName;
-    private String assignGroup;
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyyMMddHHmmssSSS")
     private Date startedDate;
     private String taskId;
@@ -140,14 +139,6 @@ public class MyProgressItem {
 
     public void setResName(String resName) {
         this.resName = resName;
-    }
-
-    public String getAssignGroup() {
-        return assignGroup;
-    }
-
-    public void setAssignGroup(String assignGroup) {
-        this.assignGroup = assignGroup;
     }
 
     public Date getStartedDate() {

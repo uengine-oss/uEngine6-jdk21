@@ -1,7 +1,6 @@
 package org.uengine.hwlife.overriding;
 
 import java.util.ArrayList;
-import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
 
@@ -37,7 +36,6 @@ public class RuleBasedRoleResolutionContext extends RoleResolutionContext {
 
     /** 모델러에서 직접 지정하는 정책 ID. 비어 있으면 인스턴스 변수 POLICY_ID 로 대체. */
     private String policyId;
-    private PayloadAssignment dynamicAssignment;
 
     public String getPolicyId() {
         return policyId;
@@ -45,14 +43,6 @@ public class RuleBasedRoleResolutionContext extends RoleResolutionContext {
 
     public void setPolicyId(String policyId) {
         this.policyId = policyId;
-    }
-
-    public PayloadAssignment getDynamicAssignment() {
-        return dynamicAssignment;
-    }
-
-    public void setDynamicAssignment(PayloadAssignment dynamicAssignment) {
-        this.dynamicAssignment = dynamicAssignment;
     }
 
     @Override
@@ -90,8 +80,6 @@ public class RuleBasedRoleResolutionContext extends RoleResolutionContext {
         RoleMapping mapping = RoleMapping.create();
         mapping.setEndpoint(chosen);
         mapping.setAssignType(Role.ASSIGNTYPE_USER);
-
-        applyPayloadAssignment(mapping, instance, tracingTag);
 
         // 7) 배정 메타(정책/난이도/REF_ID) 적재 → 코어가 BPM_ROLEMAPPING 저장 시 함께 보존
         saveMapping(mapping, resolvedPolicyId, difficulty, refId);
@@ -186,55 +174,6 @@ public class RuleBasedRoleResolutionContext extends RoleResolutionContext {
             v = instance.getProperty(tracingTag, key);
         }
         return v != null ? String.valueOf(v) : null;
-    }
-
-    void applyPayloadAssignment(RoleMapping mapping, ProcessInstance instance, String tracingTag) throws Exception {
-        if (mapping == null || dynamicAssignment == null || !dynamicAssignment.isEnabled()) {
-            return;
-        }
-
-        String endpoint = readVar(instance, tracingTag, dynamicAssignment.getPayloadKey());
-        String groupCode = readVar(instance, tracingTag, dynamicAssignment.getGroupCodeKey());
-        if (isNotEmpty(endpoint)) {
-            mapping.setEndpoint(endpoint);
-        } else if (isNotEmpty(groupCode)) {
-            mapping.setEndpoint(null);
-        }
-        if (isNotEmpty(groupCode)) {
-            mapping.setScope(groupCode);
-        }
-    }
-
-    public static class PayloadAssignment implements Serializable {
-        private static final long serialVersionUID = GlobalContext.SERIALIZATION_UID;
-
-        private boolean enabled;
-        private String payloadKey;
-        private String groupCodeKey;
-
-        public boolean isEnabled() {
-            return enabled;
-        }
-
-        public void setEnabled(boolean enabled) {
-            this.enabled = enabled;
-        }
-
-        public String getPayloadKey() {
-            return payloadKey;
-        }
-
-        public void setPayloadKey(String payloadKey) {
-            this.payloadKey = payloadKey;
-        }
-
-        public String getGroupCodeKey() {
-            return groupCodeKey;
-        }
-
-        public void setGroupCodeKey(String groupCodeKey) {
-            this.groupCodeKey = groupCodeKey;
-        }
     }
 
     private static boolean isNotEmpty(String s) {

@@ -575,7 +575,40 @@ public class InstanceIntegrationServiceImpl implements InstanceIntegrationServic
   @Transactional
   public ReassignResponse reassignWorkItems(@RequestBody ReassignRequest request)
       throws Exception {
-    throw notImplemented("reassignWorkItems");
+    List<ReassignRequestItem> items = request == null ? null : request.getBswrList();
+    ReassignResponse response = new ReassignResponse();
+    List<ReassignResponseItem> failures = new ArrayList<>();
+    int success = 0;
+    Set<String> seen = new HashSet<>();
+    String actor = trimToNull(EsbRequestBodyAdvice.currentHeader() == null ? null : EsbRequestBodyAdvice.currentHeader().getEmnb());
+    if (items == null || items.isEmpty() || actor == null) {
+      for (ReassignRequestItem item : items == null ? new ArrayList<ReassignRequestItem>() : items) failures.add(reassignFailure(item, actor == null ? "LBM060003" : "LBM060002"));
+    } else {
+      String previousUser = SecurityAwareServletFilter.getUserId();
+      try {
+        SecurityAwareServletFilter.setUserId(actor);
+        for (ReassignRequestItem item : items) {
+          String taskId = item == null ? null : trimToNull(item.getFncgBpmTaskLstId());
+          String target = item == null ? null : trimToNull(item.getHndrEmnb());
+          try {
+            if (taskId == null || target == null || !seen.add(taskId)) throw new IllegalArgumentException();
+            WorklistEntity worklist = worklistRepository.findByIdForUpdate(Long.parseLong(taskId)).orElse(null);
+            if (worklist == null || (trimToNull(item.getFncgBpmPcesIntcId()) != null && !item.getFncgBpmPcesIntcId().equals(String.valueOf(worklist.getInstId())))) throw new IllegalArgumentException();
+            RoleMappingCommand mapping = new RoleMappingCommand();
+            mapping.setEndpoint(target);
+            mapping.setResourceName(target);
+            instanceService.reassignWorkItem(taskId, mapping); success++;
+          } catch (Exception e) { failures.add(reassignFailure(item, "LBM060008")); }
+        }
+      } finally { SecurityAwareServletFilter.setUserId(previousUser); }
+    }
+    response.setSucsCont(success); response.setFailCont(failures.size()); response.setFailList(failures); return response;
+  }
+
+  private static ReassignResponseItem reassignFailure(ReassignRequestItem source, String reason) {
+    ReassignResponseItem failure = new ReassignResponseItem();
+    if (source != null) { failure.setFncgBpmTaskLstId(source.getFncgBpmTaskLstId()); failure.setFncgBpmPcesIntcId(source.getFncgBpmPcesIntcId()); }
+    failure.setPrcsRsltCntn(reason); return failure;
   }
 
   @Override
