@@ -1,6 +1,6 @@
 package org.uengine.hwlife.absence.dto;
 
-import java.time.LocalDateTime;
+import java.util.Date;
 
 /**
  * 부재 이력 항목 — {@link AbsenceHistoryResponse#getAbscList()} 요소.
@@ -11,10 +11,10 @@ public class AbsenceHistoryItem {
     private String abscEmnb;
     private String agntEmnb;
     private String agntFncgOrgnCode;
-    private LocalDateTime abscStarDttm;
-    private LocalDateTime abscEndDttm;
-    private LocalDateTime abscRscsDttm;
-    private LocalDateTime abscStupDttm;
+    private Date abscStarDttm;
+    private Date abscEndDttm;
+    private Date abscRscsDttm;
+    private Date abscStupDttm;
 
     public String getFncgBpmAbstSqno() {
         return fncgBpmAbstSqno;
@@ -48,35 +48,35 @@ public class AbsenceHistoryItem {
         this.agntFncgOrgnCode = agntFncgOrgnCode;
     }
 
-    public LocalDateTime getAbscStarDttm() {
+    public Date getAbscStarDttm() {
         return abscStarDttm;
     }
 
-    public void setAbscStarDttm(LocalDateTime abscStarDttm) {
+    public void setAbscStarDttm(Date abscStarDttm) {
         this.abscStarDttm = abscStarDttm;
     }
 
-    public LocalDateTime getAbscEndDttm() {
+    public Date getAbscEndDttm() {
         return abscEndDttm;
     }
 
-    public void setAbscEndDttm(LocalDateTime abscEndDttm) {
+    public void setAbscEndDttm(Date abscEndDttm) {
         this.abscEndDttm = abscEndDttm;
     }
 
-    public LocalDateTime getAbscRscsDttm() {
+    public Date getAbscRscsDttm() {
         return abscRscsDttm;
     }
 
-    public void setAbscRscsDttm(LocalDateTime abscRscsDttm) {
+    public void setAbscRscsDttm(Date abscRscsDttm) {
         this.abscRscsDttm = abscRscsDttm;
     }
 
-    public LocalDateTime getAbscStupDttm() {
+    public Date getAbscStupDttm() {
         return abscStupDttm;
     }
 
-    public void setAbscStupDttm(LocalDateTime abscStupDttm) {
+    public void setAbscStupDttm(Date abscStupDttm) {
         this.abscStupDttm = abscStupDttm;
     }
 }

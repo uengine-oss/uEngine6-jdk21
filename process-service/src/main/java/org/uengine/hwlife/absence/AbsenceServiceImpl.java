@@ -1,6 +1,6 @@
 package org.uengine.hwlife.absence;
 
-import java.time.LocalDateTime;
+
 import java.time.ZoneId;
 import java.util.Date;
 import java.util.List;
@@ -60,8 +60,8 @@ public class AbsenceServiceImpl implements AbsenceService {
         entity.setUserId(request.getAbscEmnb());
         entity.setAgentUserId(request.getAgntEmnb());
         entity.setAgentGroupCd(request.getAgntFncgOrgnCode());
-        entity.setAbscStarDttm(toDate(request.getAbscStarDttm()));
-        entity.setAbscEndDttm(toDate(request.getAbscEndDttm()));
+        entity.setAbscStarDttm(request.getAbscStarDttm());
+        entity.setAbscEndDttm(request.getAbscEndDttm());
 
         validate(entity);
         ensureNoOverlap(entity, null);
@@ -116,10 +116,10 @@ public class AbsenceServiceImpl implements AbsenceService {
         item.setAbscEmnb(entity.getUserId());
         item.setAgntEmnb(entity.getAgentUserId());
         item.setAgntFncgOrgnCode(entity.getAgentGroupCd());
-        item.setAbscStarDttm(toLocalDateTime(entity.getAbscStarDttm()));
-        item.setAbscEndDttm(toLocalDateTime(entity.getAbscEndDttm()));
-        item.setAbscRscsDttm(toLocalDateTime(entity.getAbscRscsDttm()));
-        item.setAbscStupDttm(toLocalDateTime(entity.getAbscCretDttm()));
+        item.setAbscStarDttm(entity.getAbscStarDttm());
+        item.setAbscEndDttm(entity.getAbscEndDttm());
+        item.setAbscRscsDttm(entity.getAbscRscsDttm());
+        item.setAbscStupDttm(entity.getAbscCretDttm());
         return item;
     }
 
@@ -131,8 +131,8 @@ public class AbsenceServiceImpl implements AbsenceService {
         response.setAbscEmnb(entity.getUserId());
         response.setAgntEmnb(entity.getAgentUserId());
         response.setAgntFncgOrgnCode(entity.getAgentGroupCd());
-        response.setAbscStarDttm(toLocalDateTime(entity.getAbscStarDttm()));
-        response.setAbscEndDttm(toLocalDateTime(entity.getAbscEndDttm()));
+        response.setAbscStarDttm(entity.getAbscStarDttm());
+        response.setAbscEndDttm(entity.getAbscEndDttm());
         return response;
     }
 
@@ -174,19 +174,6 @@ public class AbsenceServiceImpl implements AbsenceService {
         }
     }
 
-    private static Date toDate(LocalDateTime value) {
-        if (value == null) {
-            return null;
-        }
-        return Date.from(value.atZone(ZoneId.systemDefault()).toInstant());
-    }
-
-    private static LocalDateTime toLocalDateTime(Date value) {
-        if (value == null) {
-            return null;
-        }
-        return LocalDateTime.ofInstant(value.toInstant(), ZoneId.systemDefault());
-    }
 
     private void ensureNoOverlap(AbsenceEntity target, Long excludeAbseId) {
         List<AbsenceEntity> overlapping = absenceRepository.findOverlappingActive(

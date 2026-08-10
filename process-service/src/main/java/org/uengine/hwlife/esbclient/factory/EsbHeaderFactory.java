@@ -2,7 +2,8 @@ package org.uengine.hwlife.esbclient.factory;
 
 import java.net.InetAddress;
 import java.security.SecureRandom;
-import java.time.LocalDateTime;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -70,7 +71,7 @@ public class EsbHeaderFactory {
     }
 
     private String now() {
-        return LocalDateTime.now().format(EsbCodes.DTTM);
+        return new SimpleDateFormat(EsbCodes.DTTM).format(new Date());
     }
 
     private String localIp() {

@@ -1,6 +1,5 @@
 package org.uengine.hwlife.search.dto;
 
-import java.time.LocalDateTime;
 import java.util.Date;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
@@ -11,7 +10,7 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 public class OrgRunningItem {
 
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyyMMddHHmmssSSS")
-    private LocalDateTime starDttm;
+    private Date starDttm;
     private String fncgBswrDvsnCode;
     private String loanCntcNo;
     private String fncgSuptTrgtDvsnCode;
@@ -27,15 +26,15 @@ public class OrgRunningItem {
     private String uworNm;
     private String fncgBpmTaskTrcgNm;
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyyMMddHHmmssSSS")
-    private LocalDateTime uworStarDttm;
+    private Date uworStarDttm;
     private String fncgBpmtaskLstId;
     private String fncgBpmPcesIntcId;
 
-    public LocalDateTime getStarDttm() {
+    public Date getStarDttm() {
         return starDttm;
     }
 
-    public void setStarDttm(LocalDateTime starDttm) {
+    public void setStarDttm(Date starDttm) {
         this.starDttm = starDttm;
     }
 
@@ -151,11 +150,11 @@ public class OrgRunningItem {
         this.fncgBpmTaskTrcgNm = fncgBpmTaskTrcgNm;
     }
 
-    public LocalDateTime getUworStarDttm() {
+    public Date getUworStarDttm() {
         return uworStarDttm;
     }
 
-    public void setUworStarDttm(LocalDateTime uworStarDttm) {
+    public void setUworStarDttm(Date uworStarDttm) {
         this.uworStarDttm = uworStarDttm;
     }
 

@@ -1,6 +1,7 @@
 package org.uengine.hwlife.esbclient.support;
 
-import java.time.LocalDateTime;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
 import org.uengine.hwlife.esbclient.dto.EsbCodes;
 import org.uengine.hwlife.esbclient.dto.EsbCommonHeader;
@@ -88,7 +89,7 @@ public final class EsbEnvelope {
         EsbCommonHeader header = copyHeader(requestHeader);
         clearResponseSection(header);
         header.setRspnDvsnCode("R");
-        header.setTlgrRspnDttm(LocalDateTime.now().format(EsbCodes.DTTM));
+        header.setTlgrRspnDttm(new SimpleDateFormat(EsbCodes.DTTM).format(new Date()));
         header.setPrcsRsltDvsnCode(prcsRsltDvsnCode);
         return new EsbResponse<>(header, payload);
     }

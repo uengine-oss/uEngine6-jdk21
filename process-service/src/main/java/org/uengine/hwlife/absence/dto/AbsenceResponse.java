@@ -1,6 +1,6 @@
 package org.uengine.hwlife.absence.dto;
 
-import java.time.LocalDateTime;
+import java.util.Date;
 
 /**
  * 부재 설정/해제 응답 — POST /absences.
@@ -11,8 +11,8 @@ public class AbsenceResponse {
     private String abscEmnb;
     private String agntEmnb;
     private String agntFncgOrgnCode;
-    private LocalDateTime abscStarDttm;
-    private LocalDateTime abscEndDttm;
+    private Date abscStarDttm;
+    private Date abscEndDttm;
 
     public String getFncgBpmAbstSqno() {
         return fncgBpmAbstSqno;
@@ -46,19 +46,19 @@ public class AbsenceResponse {
         this.agntFncgOrgnCode = agntFncgOrgnCode;
     }
 
-    public LocalDateTime getAbscStarDttm() {
+    public Date getAbscStarDttm() {
         return abscStarDttm;
     }
 
-    public void setAbscStarDttm(LocalDateTime abscStarDttm) {
+    public void setAbscStarDttm(Date abscStarDttm) {
         this.abscStarDttm = abscStarDttm;
     }
 
-    public LocalDateTime getAbscEndDttm() {
+    public Date getAbscEndDttm() {
         return abscEndDttm;
     }
 
-    public void setAbscEndDttm(LocalDateTime abscEndDttm) {
+    public void setAbscEndDttm(Date abscEndDttm) {
         this.abscEndDttm = abscEndDttm;
     }
 }

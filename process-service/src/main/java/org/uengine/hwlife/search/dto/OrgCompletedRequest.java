@@ -1,6 +1,8 @@
 package org.uengine.hwlife.search.dto;
 
-import java.time.LocalDateTime;
+import java.util.Date;
+
+import com.fasterxml.jackson.annotation.JsonFormat;
 
 /**
  * 조직 완료 건 검색 요청 — POST /search/org-completed JSON body.
@@ -9,8 +11,10 @@ public class OrgCompletedRequest {
 
     private String bpmBswrClsfCode;
     private String fncgBswrDvsnCode;
-    private LocalDateTime rqstStarDttm;
-    private LocalDateTime rqstEndDttm;
+    @JsonFormat(pattern = "yyyyMMdd")
+    private Date rqstStarDttm;
+    @JsonFormat(pattern = "yyyyMMdd")
+    private Date rqstEndDttm;
     private String fncgSuptTrgtDvsnCode;
     private String loanSubjDvsnCode;
     private String loanCntcNo;
@@ -37,19 +41,19 @@ public class OrgCompletedRequest {
         this.fncgBswrDvsnCode = fncgBswrDvsnCode;
     }
 
-    public LocalDateTime getRqstStarDttm() {
+    public Date getRqstStarDttm() {
         return rqstStarDttm;
     }
 
-    public void setRqstStarDttm(LocalDateTime rqstStarDttm) {
+    public void setRqstStarDttm(Date rqstStarDttm) {
         this.rqstStarDttm = rqstStarDttm;
     }
 
-    public LocalDateTime getRqstEndDttm() {
+    public Date getRqstEndDttm() {
         return rqstEndDttm;
     }
 
-    public void setRqstEndDttm(LocalDateTime rqstEndDttm) {
+    public void setRqstEndDttm(Date rqstEndDttm) {
         this.rqstEndDttm = rqstEndDttm;
     }
 

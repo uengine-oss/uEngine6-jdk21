@@ -1,7 +1,5 @@
 package org.uengine.hwlife.esbclient.dto;
 
-import java.time.format.DateTimeFormatter;
-
 /**
  * ESB 전문에서 공통으로 쓰는 코드·포맷 상수.
  */
@@ -20,8 +18,7 @@ public final class EsbCodes {
     public static final String MSGE_CODE_SYSTEM_FAILED = "LBM999999";
 
     /** ESB 일시 포맷 ({@code tlgrCretDttm}, {@code rqstDttm}, {@code tlgrRspnDttm} …) */
-    public static final DateTimeFormatter DTTM =
-            DateTimeFormatter.ofPattern("yyyyMMddHHmmssSSS");
+    public static final String DTTM = "yyyyMMddHHmmssSSS";
 
     private EsbCodes() {
     }

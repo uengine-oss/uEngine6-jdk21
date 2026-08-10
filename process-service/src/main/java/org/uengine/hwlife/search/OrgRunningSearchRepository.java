@@ -1,12 +1,10 @@
 package org.uengine.hwlife.search;
 
-import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.TimeZone;
-import java.util.Calendar;
 
 import org.springframework.stereotype.Repository;
 import org.uengine.five.entity.ProcessInstanceEntity;
@@ -281,10 +279,6 @@ public class OrgRunningSearchRepository {
       case WORK_STARTED_DATE -> worklist.get("startDate");
       case TASK_ID -> throw new IllegalArgumentException("taskId is not a date sort field");
     };
-  }
-
-  private static Date toDate(LocalDateTime value) {
-    return Date.from(value.atZone(ZoneId.systemDefault()).toInstant());
   }
 
   private static String trimToNull(String value) {

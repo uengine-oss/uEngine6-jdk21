@@ -15,10 +15,11 @@ public class MyTodoItem {
     private String fncgSuptTrgtDvsnCode;
     private String loanSubjDvsnCode;
     private String fncgMneyUsagClsfCode;
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyyMMdd")
     private Date loanHopeDate;
     private String loanPcesMgmtNo;
     private String fncgBpmTaskTrcgNm;
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyyMMddHHmmss", timezone = "Asia/Seoul")
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyyMMddHHmmss")
     private Date uworStarDttm;
     private String uworNm;
     private String loanPcesNm;
@@ -27,7 +28,7 @@ public class MyTodoItem {
     private String prcdHndrEmnb;
     private String prcdHndrFncgOrgnCode;
     private String fncgBpmUworSttsCntn;
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyyMMddHHmmss", timezone = "Asia/Seoul")
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyyMMddHHmmss")
     private Date starDttm;
     private String befoHndrEmnb;
     private String befoFncgOrgnCode;

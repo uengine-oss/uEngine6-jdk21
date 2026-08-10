@@ -1,6 +1,5 @@
 package org.uengine.hwlife.search.dto;
 
-import java.time.LocalDateTime;
 import java.util.Date;
 
 /**
@@ -8,7 +7,7 @@ import java.util.Date;
  */
 public class OrgCompletedItem {
 
-    private LocalDateTime starDttm;
+    private Date starDttm;
     private String fncgBswrDvsnCode;
     private String loanCntcNo;
     private String fncgSuptTrgtDvsnCode;
@@ -19,15 +18,15 @@ public class OrgCompletedItem {
     private String loanPcesMgmtNo;
     private String reptHndrEmnb;
     private String reptHndrFncgOrgnCode;
-    private LocalDateTime endDttm;
+    private Date endDttm;
     private String fncgBpmtaskLstId;
     private String fncgBpmPcesIntcId;
 
-    public LocalDateTime getStarDttm() {
+    public Date getStarDttm() {
         return starDttm;
     }
 
-    public void setStarDttm(LocalDateTime starDttm) {
+    public void setStarDttm(Date starDttm) {
         this.starDttm = starDttm;
     }
 
@@ -111,11 +110,11 @@ public class OrgCompletedItem {
         this.reptHndrFncgOrgnCode = reptHndrFncgOrgnCode;
     }
 
-    public LocalDateTime getEndDttm() {
+    public Date getEndDttm() {
         return endDttm;
     }
 
-    public void setEndDttm(LocalDateTime endDttm) {
+    public void setEndDttm(Date endDttm) {
         this.endDttm = endDttm;
     }
 

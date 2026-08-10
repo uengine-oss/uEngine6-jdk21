@@ -307,7 +307,7 @@ public class WorkSearchServiceImpl implements WorkSearchService {
     ProcessInstanceEntity instance = worklist.getProcessInstance();
     OrgRunningItem item = new OrgRunningItem();
 
-    item.setStarDttm(toLocalDateTime(instance == null ? null : instance.getStartedDate()));
+    item.setStarDttm(instance == null ? null : instance.getStartedDate());
     item.setFncgBswrDvsnCode(instance == null ? null : instance.getFncgBswrDvsnCode());
     item.setLoanCntcNo(instance == null ? null : instance.getLoanCntcNo());
     item.setFncgSuptTrgtDvsnCode(instance == null ? null : instance.getFncgSuptTrgtDvsnCode());
@@ -322,7 +322,7 @@ public class WorkSearchServiceImpl implements WorkSearchService {
     item.setHndrOrgnCode(trimToNull(worklist.getGroupCd()));
     item.setUworNm(worklist.getTitle());
     item.setFncgBpmTaskTrcgNm(worklist.getTrcTag());
-    item.setUworStarDttm(toLocalDateTime(worklist.getStartDate()));
+    item.setUworStarDttm(worklist.getStartDate());
     item.setFncgBpmtaskLstId(
         worklist.getTaskId() == null ? null : String.valueOf(worklist.getTaskId()));
     item.setFncgBpmPcesIntcId(
@@ -330,14 +330,6 @@ public class WorkSearchServiceImpl implements WorkSearchService {
             ? null
             : String.valueOf(instance.getInstId()));
     return item;
-  }
-
-  private static java.time.LocalDateTime toLocalDateTime(Date value) {
-    return value == null
-        ? null
-        : java.time.LocalDateTime.ofInstant(
-            java.time.Instant.ofEpochMilli(value.getTime()),
-            java.time.ZoneId.systemDefault());
   }
 
   private static Long parseNextKey(String nextKey) {
