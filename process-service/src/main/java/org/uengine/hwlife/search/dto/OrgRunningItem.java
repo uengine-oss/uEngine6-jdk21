@@ -17,6 +17,7 @@ public class OrgRunningItem {
     private String loanSubjDvsnCode;
     private String custId;
     private String fncgMneyUsagClsfCode;
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyyMMdd")
     private Date loanHopeDate;
     private String loanPcesMgmtNo;
     private String reptHndrEmnb;

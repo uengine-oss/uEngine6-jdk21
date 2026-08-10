@@ -2,11 +2,13 @@ package org.uengine.hwlife.search.dto;
 
 import java.util.Date;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 /**
  * 조직 완료 건 검색 결과 항목 — {@link OrgCompletedResponse#getOrgnCpltlist()} 요소.
  */
 public class OrgCompletedItem {
 
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyyMMddHHmmssSSS")
     private Date starDttm;
     private String fncgBswrDvsnCode;
     private String loanCntcNo;
@@ -14,10 +16,12 @@ public class OrgCompletedItem {
     private String loanSubjDvsnCode;
     private String custId;
     private String fncgMneyUsagClsfCode;
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyyMMdd")
     private Date loanHopeDate;
     private String loanPcesMgmtNo;
     private String reptHndrEmnb;
     private String reptHndrFncgOrgnCode;
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyyMMddHHmmssSSS")
     private Date endDttm;
     private String fncgBpmtaskLstId;
     private String fncgBpmPcesIntcId;

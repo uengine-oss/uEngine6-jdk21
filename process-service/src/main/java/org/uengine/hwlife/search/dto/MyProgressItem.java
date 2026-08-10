@@ -2,6 +2,8 @@ package org.uengine.hwlife.search.dto;
 
 import java.util.Date;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
+
 /**
  * 나의 진행 검색 결과 항목 — {@link MyProgressResponse#getTodoPrgsList()} 요소.
  */
@@ -12,6 +14,7 @@ public class MyProgressItem {
     private String fncgSuptTrgtDvsnCode;
     private String loanSubjDvsnCode;
     private String fncgMneyUsagClsfCode;
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyyMMdd")
     private Date loanHopeDate;
     private String custId;
     private String corrKey;
@@ -22,6 +25,7 @@ public class MyProgressItem {
     private String endpoint;
     private String resName;
     private String assignGroup;
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyyMMddHHmmssSSS")
     private Date startedDate;
     private String taskId;
     private String instId;
