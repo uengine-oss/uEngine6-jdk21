@@ -3071,7 +3071,21 @@ public class InstanceServiceImpl implements InstanceService {
     public WorkItemResource reassignWorkItem(
         @PathVariable("taskId") String taskId,
         @RequestBody RoleMappingCommand assignment) throws Exception {
-                        
+        if (taskId == null || taskId.equals("null") || assignment == null || assignment.getEndpoint() == null || assignment.getEndpoint().trim().isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "taskId and assignment endpoint are required");
+        }
+        WorklistEntity worklist = worklistRepository.findById(Long.parseLong(taskId)).orElse(null);
+        if (worklist == null) throw new ResponseStatusException(HttpStatus.NOT_FOUND, "No such work item where taskId = " + taskId);
+        if (!"NEW".equalsIgnoreCase(worklist.getStatus()) && !"RUNNING".equalsIgnoreCase(worklist.getStatus())) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Only active work items can be reassigned");
+        }
+        worklist.setPrevEndpoint(worklist.getEndpoint());
+        worklist.setPrevUserName(worklist.getResName());
+        worklist.setPrevGroupCd(worklist.getGroupCd());
+        worklist.setEndpoint(assignment.getEndpoint().trim());
+        if (assignment.getResourceName() != null) worklist.setResName(assignment.getResourceName());
+        worklistRepository.save(worklist);
+        if (bpmLifecycleService != null) bpmLifecycleService.onTaskAssignmentChanged(worklist, worklist.getPrevEndpoint());
         return getWorkItem(taskId);
     }
 

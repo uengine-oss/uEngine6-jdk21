@@ -150,7 +150,6 @@ class MyTodoSearchRepositoryTest {
           .getSingleResult();
       worklist.setEndpoint(null);
       worklist.setDispatchOption(1);
-      worklist.setAssignGroup("RETIRED-GROUP");
       worklist.setScope("SCOPE-ACCESS");
       worklist.setGroupCd("GROUP-ACCESS");
       entityManager.getTransaction().commit();
@@ -163,7 +162,6 @@ class MyTodoSearchRepositoryTest {
       entityManager.getTransaction().begin();
       worklist.setEndpoint(USER_ID);
       worklist.setDispatchOption(0);
-      worklist.setAssignGroup(null);
       worklist.setScope(null);
       worklist.setGroupCd("GROUP");
       entityManager.getTransaction().commit();

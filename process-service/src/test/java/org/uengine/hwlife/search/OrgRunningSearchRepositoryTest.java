@@ -206,7 +206,7 @@ class OrgRunningSearchRepositoryTest {
     worklist.setProcessInstance(managedInstance);
     worklist.setStatus(status);
     worklist.setStartDate(date(workStartedDate));
-    worklist.setAssignGroup(processingOrganization);
+    worklist.setGroupCd(processingOrganization);
     worklist.setScope(scope);
     worklist.setTrcTag("TRACE");
     worklist.setEndpoint("handler");

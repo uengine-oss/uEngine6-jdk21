@@ -189,10 +189,10 @@ class WorkSearchServiceImplTest {
     assertTrue(json.has("nextKey"));
     assertTrue(json.has("pageSize"));
     assertTrue(json.has("sortOrdrVal"));
-    assertTrue(json.has("startDate"));
-    assertTrue(json.has("hopeStartDate"));
-    assertFalse(json.has("starDate"));
-    assertFalse(json.has("hopeStarDate"));
+    assertTrue(json.has("starDate"));
+    assertTrue(json.has("hopeStarDate"));
+    assertFalse(json.has("startDate"));
+    assertFalse(json.has("hopeStartDate"));
     assertFalse(json.has("cursor"));
     assertFalse(json.has("size"));
   }
@@ -234,7 +234,7 @@ class WorkSearchServiceImplTest {
     assertEquals("PREV-GROUP", item.getBefoFncgOrgnCode());
     assertEquals("handler", item.getHndrEmnb());
     assertEquals("Handler Name", item.getHndrNm());
-    assertEquals("SCOPE", item.getHndrOrgnCode());
+    assertEquals("GROUP", item.getHndrOrgnCode());
     assertEquals("form", item.getScrnUrlAddr());
     assertEquals("101", item.getFncgBpmTaskLstId());
     assertEquals("201", item.getFncgBpmPcesIntcId());
@@ -317,21 +317,13 @@ class WorkSearchServiceImplTest {
     assertEquals("reporter", item.getReptHndrEmnb());
     assertEquals("REQUEST-GROUP", item.getReptHndrFncgOrgnCode());
     assertEquals("handler", item.getHndrEmnb());
-    assertEquals("SCOPE", item.getHndrOrgnCode());
+    assertEquals("GROUP", item.getHndrOrgnCode());
     assertEquals("Unit work", item.getUworNm());
     assertEquals("TRACE", item.getFncgBpmTaskTrcgNm());
     assertEquals("101", item.getFncgBpmtaskLstId());
     assertEquals("201", item.getFncgBpmPcesIntcId());
-    assertEquals(
-        java.time.LocalDateTime.ofInstant(
-            date(WORK_START - 100).toInstant(),
-            java.time.ZoneId.systemDefault()),
-        item.getStarDttm());
-    assertEquals(
-        java.time.LocalDateTime.ofInstant(
-            date(WORK_START).toInstant(),
-            java.time.ZoneId.systemDefault()),
-        item.getUworStarDttm());
+    assertEquals(date(WORK_START - 100), item.getStarDttm());
+    assertEquals(new java.sql.Date(WORK_START), item.getUworStarDttm());
   }
 
   @Test
@@ -457,6 +449,7 @@ class WorkSearchServiceImplTest {
 
   private static WorklistEntity completeWorklist(long taskId, long startDate) {
     ProcessInstanceEntity instance = new ProcessInstanceEntity();
+    instance.setInstId(201L);
     instance.setBswrClsfCode("BSWR");
     instance.setCustId("CUST");
     instance.setFncgBswrDvsnCode("LOAN");
@@ -470,6 +463,8 @@ class WorkSearchServiceImplTest {
     instance.setDefName("Instance process");
     instance.setInitEp("reporter");
     instance.setInitGroupCd("INIT-GROUP");
+    instance.setPrevCurrEp("previous");
+    instance.setPrevCurrGroupCd("PREV-GROUP");
 
     WorklistEntity worklist = new WorklistEntity();
     worklist.setTaskId(taskId);
@@ -479,7 +474,7 @@ class WorkSearchServiceImplTest {
     worklist.setStartDate(date(startDate));
     worklist.setTitle("Unit work");
     worklist.setDefName("Loan process");
-    worklist.setAssignGroup("GROUP");
+    worklist.setGroupCd("GROUP");
     worklist.setScope("SCOPE");
     worklist.setPrevEndpoint("previous");
     worklist.setPrevGroupCd("PREV-GROUP");
