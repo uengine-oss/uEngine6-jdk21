@@ -2981,6 +2981,10 @@ public class InstanceServiceImpl implements InstanceService {
         String laneScope = worklistEntity.getScope();
         String laneAssignGroup = worklistEntity.getAssignGroup();
         int laneAssignType = worklistEntity.getAssignType();
+        // 위임자(A) 정보 — updateWorkItem 이 동일 엔티티 endpoint 를 B 로 바꾸기 전에 캡처
+        String prevEndpoint = UEngineUtil.isNotEmpty(currentOwner) ? currentOwner.trim() : null;
+        String prevGroupCd = worklistEntity.getGroupCd();
+        String prevUserName = worklistEntity.getResName();
 
         RoleMapping delegated = createDelegateRoleMapping(
                 delegatedRoleMapping,
@@ -3031,6 +3035,18 @@ public class InstanceServiceImpl implements InstanceService {
 
                             // 혹시 resName이 비어있으면 endpoint 기반 fill로 보강
                             applyActorToWorklistIfEmpty(wl, targetEndpoint);
+
+                            // A→B 위임: 현재 처리자=B, 이전 처리자=A (값 존재 시에만 prev* 세팅)
+                            if (UEngineUtil.isNotEmpty(prevEndpoint)) {
+                                wl.setPrevEndpoint(prevEndpoint);
+                            }
+                            if (UEngineUtil.isNotEmpty(prevGroupCd)) {
+                                wl.setPrevGroupCd(prevGroupCd);
+                            }
+                            if (UEngineUtil.isNotEmpty(prevUserName)) {
+                                wl.setPrevUserName(prevUserName);
+                            }
+                            wl.setDelegated(Boolean.TRUE);
                         } else {
                             wl.setEndpoint(null);
                             wl.setResName(null);
