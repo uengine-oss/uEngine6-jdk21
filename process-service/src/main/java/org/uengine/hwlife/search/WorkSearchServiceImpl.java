@@ -95,9 +95,6 @@ public class WorkSearchServiceImpl implements WorkSearchService {
   @Transactional(readOnly = true)
   public OrgRunningResponse searchOrgRunning(@RequestBody OrgRunningRequest request) {
     OrgRunningRequest normalizedRequest = normalizeOrgRunningRequest(request);
-    if (trimToNull(normalizedRequest.getFncgWndwOrgnCode()) == null) {
-      return emptyOrgRunningResponse();
-    }
 
     Long cursorId = parseNextKey(normalizedRequest.getNextKey());
     OrgRunningSearchRepository.SearchResult result =
@@ -377,12 +374,6 @@ public class WorkSearchServiceImpl implements WorkSearchService {
    */
   private static OrgRunningRequest normalizeOrgRunningRequest(OrgRunningRequest request) {
     OrgRunningRequest normalized = request == null ? new OrgRunningRequest() : request;
-
-    EsbCommonHeader header = EsbRequestBodyAdvice.currentHeader();
-    String organizationCode = firstNonBlank(
-        normalized.getFncgWndwOrgnCode(),
-        header != null ? header.getBelnOrgnCode() : null);
-    normalized.setFncgWndwOrgnCode(organizationCode);
 
     if (trimToNull(normalized.getRqstDvsnCode()) == null) {
       normalized.setRqstDvsnCode(DEFAULT_RQST_DVSN_CODE);
