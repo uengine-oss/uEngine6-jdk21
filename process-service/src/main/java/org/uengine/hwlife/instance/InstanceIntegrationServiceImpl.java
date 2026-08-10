@@ -309,6 +309,10 @@ public class InstanceIntegrationServiceImpl implements InstanceIntegrationServic
    *   <li>{@code LBM040019} — delegateWorkItem 업무 예외</li>
    *   <li>{@code LBM040020} — 기타 예외</li>
    * </ul>
+   *
+   * <p>엔진 위임은 완전 이관({@code delegateOnlyForWorkitem=false}).
+   * 검증을 모두 끝낸 뒤 건별 호출하며, 엔진 sibling sync 로 이미
+   * {@code endpoint=hndrEmnb} 인 건은 재호출 없이 성공으로 집계한다.</p>
    */
   @Override
   @Transactional
@@ -342,10 +346,9 @@ public class InstanceIntegrationServiceImpl implements InstanceIntegrationServic
 
     List<DelegateResponseItem> failList = new ArrayList<>();
     Set<String> seenTaskIds = new HashSet<>();
-    int successCount = 0;
-
-    RoleMappingCommand delegated = new RoleMappingCommand();
-    delegated.setEndpoint(hndrEmnb);
+    // 완전 이관(false): sibling sync 는 엔진(InstanceServiceImpl)에 맡긴다.
+    // 검증은 위임 전에 모두 끝내고, 호출 직전에 endpoint 만 재조회한다.
+    List<String> validatedTaskIds = new ArrayList<>();
 
     try {
       for (DelegateRequestItem item : bswrList) {
@@ -365,26 +368,37 @@ public class InstanceIntegrationServiceImpl implements InstanceIntegrationServic
             addDelegateFailure(failList, item, "LBM040010");
             continue;
           }
-          // 완전 이관(delegateOnlyForWorkitem=false) 시 동일 Lane 형제가 이미 hndrEmnb 로
-          // 바뀌었으면 재호출 없이 성공 처리한다.
-          if (hndrEmnb.equals(trimToNull(worklist.getEndpoint()))) {
-            successCount++;
-            continue;
-          }
           String validationError = validateDelegateRequest(worklist, item, actorEndpoint, handler);
           if (validationError != null) {
             addDelegateFailure(failList, item, validationError);
             continue;
           }
-
-          instanceService.delegateWorkItem(taskId, delegated, false);
-          successCount++;
+          validatedTaskIds.add(taskId);
         } catch (NumberFormatException e) {
           addDelegateFailure(failList, item, "LBM040009");
-        } catch (ResponseStatusException e) {
-          addDelegateFailure(failList, item, "LBM040019");
         } catch (Exception e) {
           addDelegateFailure(failList, item, "LBM040020");
+        }
+      }
+
+      RoleMappingCommand delegated = new RoleMappingCommand();
+      delegated.setEndpoint(hndrEmnb);
+
+      int successCount = 0;
+      for (String taskId : validatedTaskIds) {
+        // 앞선 완전 이관의 엔진 sibling sync 로 이미 처리자면 재호출하지 않는다.
+        WorklistEntity current = worklistRepository.findById(Long.parseLong(taskId)).orElse(null);
+        if (current != null && hndrEmnb.equals(trimToNull(current.getEndpoint()))) {
+          successCount++;
+          continue;
+        }
+        try {
+          instanceService.delegateWorkItem(taskId, delegated, false);
+          successCount++;
+        } catch (ResponseStatusException e) {
+          addDelegateFailure(failList, findRequestItem(bswrList, taskId), "LBM040019");
+        } catch (Exception e) {
+          addDelegateFailure(failList, findRequestItem(bswrList, taskId), "LBM040020");
         }
       }
 
@@ -392,6 +406,18 @@ public class InstanceIntegrationServiceImpl implements InstanceIntegrationServic
     } finally {
       SecurityAwareServletFilter.setUserId(previousFilterUserId);
     }
+  }
+
+  private static DelegateRequestItem findRequestItem(List<DelegateRequestItem> bswrList, String taskId) {
+    if (bswrList == null || taskId == null) {
+      return null;
+    }
+    for (DelegateRequestItem item : bswrList) {
+      if (item != null && taskId.equals(trimToNull(item.getFncgBpmTaskLstId()))) {
+        return item;
+      }
+    }
+    return null;
   }
 
   /**

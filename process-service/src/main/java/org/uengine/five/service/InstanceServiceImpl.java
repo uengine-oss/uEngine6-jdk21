@@ -2942,6 +2942,10 @@ public class InstanceServiceImpl implements InstanceService {
         String instanceId = worklistEntity.getInstId().toString();
         ProcessInstance instance = getProcessInstanceLocal(instanceId);
 
+        // completeWorkItem 과 동일: worklist.execScope 를 항상 맞춤(null 포함).
+        // 캐시된 인스턴스에 이전 스코프가 남으면 getTaskIds() 가 다른 브랜치 taskId 를 읽을 수 있다.
+        instance.setExecutionScope(worklistEntity.getExecScope());
+
         HumanActivity humanActivity = ((HumanActivity) instance.getProcessDefinition()
                 .getActivity(worklistEntity.getTrcTag()));
 
@@ -2968,6 +2972,10 @@ public class InstanceServiceImpl implements InstanceService {
             throw new UEngineException("Illegal delegation for workitem [" + humanActivity + ":"
                     + humanActivity.getStatus(instance) + "]: Already closed or illegal status.");
         }
+
+        // HumanActivity.delegate 는 인스턴스 속성의 taskId[0] 만 갱신하므로,
+        // 요청 taskId 로 항상 pin 한다(스코프 불일치·유실·다른 taskId 잔존 방지).
+        humanActivity.setTaskIds(instance, new String[] { taskId });
 
         // DelegateTest의 동작과 동일하게 kernel 메서드 호출
         String laneScope = worklistEntity.getScope();

@@ -139,6 +139,7 @@ public class ExternalIAMService implements IAMService {
         response.setHndrNm("사용자");
         List<FncgOrgInfo> orgs = new ArrayList<>();
         orgs.add(org("00320", "융자관리팀"));
+        orgs.add(org("00025", "00025"));
         response.setFncgWndwCodeList(orgs);
         List<FncgRoleInfo> roles = new ArrayList<>();
         roles.add(role("FN230", "대출심사역"));
