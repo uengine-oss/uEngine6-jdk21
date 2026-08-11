@@ -28,7 +28,6 @@ import org.uengine.five.repository.ProcessInstanceRepository;
 import org.uengine.five.repository.WorklistRepository;
 import org.uengine.kernel.Activity;
 import org.uengine.kernel.DefaultProcessInstance;
-import org.uengine.kernel.GlobalContext;
 import org.uengine.kernel.HumanActivity;
 import org.uengine.kernel.ProcessInstance;
 import org.uengine.kernel.ReceiveActivity;
@@ -70,16 +69,6 @@ public class AsyncEventListener {
     @Transactional(rollbackFor = { Exception.class })
     @ProcessTransactional
     public void wheneverEvent(String eventBody, String typeHeader, String inboxCorrKey) {
-        wheneverEvent(eventBody, typeHeader, inboxCorrKey, null);
-    }
-
-    @Transactional(rollbackFor = { Exception.class })
-    @ProcessTransactional
-    public void wheneverEvent(
-            String eventBody,
-            String typeHeader,
-            String inboxCorrKey,
-            String requesterEmnb) {
         log.info("[BPM] wheneverEvent called, typeHeader={}, inboxCorrKey={}", typeHeader, inboxCorrKey);
         try {
             String eventType = typeHeader;
@@ -100,7 +89,7 @@ public class AsyncEventListener {
                 throw new IllegalStateException("EventMappingEntity is null for eventType: " + eventType);
             }
 
-            processEventMappings(eventMappings, eventType, eventContent, inboxCorrKey, requesterEmnb);
+            processEventMappings(eventMappings, eventType, eventContent, inboxCorrKey);
         } catch (Exception e) {
             throw new RuntimeException("Error wheneverEvent :" + e.getMessage(), e);
         }
@@ -110,8 +99,7 @@ public class AsyncEventListener {
             List<EventMappingEntity> eventMappings,
             String eventType,
             HashMap<String, Object> eventContent,
-            String inboxCorrKey,
-            String requesterEmnb) throws Exception {
+            String inboxCorrKey) throws Exception {
         Set<String> receiveCorrelationValues = new LinkedHashSet<>();
         Set<String> startedDefinitions = new LinkedHashSet<>();
         int startFailures = 0;
@@ -147,7 +135,7 @@ public class AsyncEventListener {
 
         for (String correlationValue : receiveCorrelationValues) {
             triggerReceiveActivitiesByCorrKeyAndEventType(
-                    correlationValue, eventType, eventContent, requesterEmnb);
+                    correlationValue, eventType, eventContent);
         }
 
         if (!startedDefinitions.isEmpty() && startFailures == startedDefinitions.size()) {
@@ -194,8 +182,7 @@ public class AsyncEventListener {
     private void triggerReceiveActivitiesByCorrKeyAndEventType(
             String correlationValue,
             String eventType,
-            HashMap<String, Object> eventContent,
-            String requesterEmnb) throws Exception {
+            HashMap<String, Object> eventContent) throws Exception {
         List<ProcessInstanceEntity> processInstances =
                 processInstanceRepository.findByCorrKeyAndStatus(correlationValue, "Running");
         for (ProcessInstanceEntity processInstanceEntity : processInstances) {
@@ -208,17 +195,12 @@ public class AsyncEventListener {
             for (Activity activity : instance.getCurrentRunningActivities()) {
                 for (EventSynchronization sync : activity.getEventSynchronizations()) {
                     if (sync != null && eventType.equals(sync.getEventType())) {
-                        String previousUserId = GlobalContext.getUserId();
-                        try {
-                            validateHumanActivityCompletion(instance, activity, requesterEmnb);
-                            ((DefaultProcessInstance) instance).set(
-                                    activity.getTracingTag(),
-                                    DefaultProcessInstance.EVENT_DATA,
-                                    (Serializable) eventContent);
-                            ((ReceiveActivity) activity).fireReceived(instance, eventContent);
-                        } finally {
-                            GlobalContext.setUserId(previousUserId);
-                        }
+                        validateHumanActivityCompletion(instance, activity);
+                        ((DefaultProcessInstance) instance).set(
+                                activity.getTracingTag(),
+                                DefaultProcessInstance.EVENT_DATA,
+                                (Serializable) eventContent);
+                        ((ReceiveActivity) activity).fireReceived(instance, eventContent);
                         break activityLoop;
                     }
                 }
@@ -228,19 +210,14 @@ public class AsyncEventListener {
 
     void validateHumanActivityCompletion(
             ProcessInstance instance,
-            Activity activity,
-            String requesterEmnb) throws Exception {
+            Activity activity) throws Exception {
         if (!(activity instanceof HumanActivity)) {
             return;
-        }
-        if (!UEngineUtil.isNotEmpty(requesterEmnb)) {
-            throw new NonRetryableInboxException("header.emnb is required to complete a work item");
         }
 
         HumanActivity humanActivity = (HumanActivity) activity;
         String[] taskIds = humanActivity.getTaskIds(instance);
-        WorklistEntity owned = null;
-        boolean unclaimed = false;
+        WorklistEntity claimed = null;
         if (taskIds != null) {
             for (String taskId : taskIds) {
                 if (!UEngineUtil.isNotEmpty(taskId)) {
@@ -250,24 +227,19 @@ public class AsyncEventListener {
                 if (worklist == null) {
                     continue;
                 }
-                if (!UEngineUtil.isNotEmpty(worklist.getEndpoint())) {
-                    unclaimed = true;
-                } else if (worklist.getEndpoint().equals(requesterEmnb.trim())) {
-                    owned = worklist;
+                if (UEngineUtil.isNotEmpty(worklist.getEndpoint())) {
+                    claimed = worklist;
                     break;
                 }
             }
         }
 
-        if (owned == null) {
-            throw new NonRetryableInboxException(unclaimed
-                    ? "Work item must be claimed before completion"
-                    : "Only the current work item owner can complete this task");
+        if (claimed == null) {
+            throw new NonRetryableInboxException("Work item must be claimed before completion");
         }
 
         instance.setProperty(activity.getTracingTag(), HumanActivity.PVKEY_TASKID,
-                String.valueOf(owned.getTaskId()));
-        GlobalContext.setUserId(requesterEmnb.trim());
+                String.valueOf(claimed.getTaskId()));
     }
 
     private void triggerWaitingEvents(String eventType) throws Exception {

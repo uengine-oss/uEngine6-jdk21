@@ -49,9 +49,6 @@ public class EventInbox {
     @Column(name = "PAYLOAD", nullable = false, columnDefinition = "TEXT")
     private String payload;
 
-    @Column(name = "REQUESTER_EMNB")
-    private String requesterEmnb;
-
     private Instant createdAt = Instant.now();
 
     private Instant processedAt;
@@ -79,9 +76,6 @@ public class EventInbox {
 
     public String getPayload() { return payload; }
     public void setPayload(String payload) { this.payload = payload; }
-
-    public String getRequesterEmnb() { return requesterEmnb; }
-    public void setRequesterEmnb(String requesterEmnb) { this.requesterEmnb = requesterEmnb; }
 
     public String getCorrKey() { return corrKey; }
     public void setCorrKey(String corrKey) { this.corrKey = corrKey; }
