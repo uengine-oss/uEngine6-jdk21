@@ -89,6 +89,11 @@ public class BoundRoleResolutionContext extends RoleResolutionContext implements
     @Override
     public boolean containsMapping(ProcessInstance instance, RoleMapping testingRoleMapping)
             throws Exception {
+        String boundEndpoint = getBindingValue(instance, null, "endpoint");
+        if (boundEndpoint != null) {
+            return testingRoleMapping != null
+                    && boundEndpoint.equals(testingRoleMapping.getEndpoint());
+        }
         RoleResolutionContext resolved = resolve(instance, null);
         if (resolved instanceof IContainsMapping) {
             return ((IContainsMapping) resolved).containsMapping(instance, testingRoleMapping);

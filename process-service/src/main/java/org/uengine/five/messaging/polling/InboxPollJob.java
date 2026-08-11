@@ -19,6 +19,7 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.uengine.five.messaging.EventInbox;
 import org.uengine.five.messaging.EventInboxRepository;
+import org.uengine.five.messaging.NonRetryableInboxException;
 import org.uengine.five.stream.BpmMessageDispatcher;
 import org.uengine.kernel.GlobalContext;
 
@@ -93,11 +94,17 @@ public class InboxPollJob implements Job {
             } catch (Exception e) {
                 String msg = truncate(e.toString() + " | " + rootCauseMessage(e), 2000);
                 ev.setLastError(msg);
-                if (ev.getTryCnt() >= maxTryCnt) {
+                boolean nonRetryable = isNonRetryable(e);
+                if (nonRetryable || ev.getTryCnt() >= maxTryCnt) {
                     ev.setStatus("FAILED");
                     ev.setProcessedAt(now);            // 한도 도달 → dead-letter
-                    log.error("[inbox-poll] id={} type={} reached max try cnt ({}) → dead-letter",
-                              ev.getId(), ev.getEventName(), maxTryCnt, e);
+                    if (nonRetryable) {
+                        log.warn("[inbox-poll] id={} type={} rejected without retry: {}",
+                                ev.getId(), ev.getEventName(), rootCauseMessage(e));
+                    } else {
+                        log.error("[inbox-poll] id={} type={} reached max try cnt ({}) → dead-letter",
+                                ev.getId(), ev.getEventName(), maxTryCnt, e);
+                    }
                 } else {
                     ev.setStatus("PENDING");
                     log.warn("[inbox-poll] id={} type={} try {}/{} failed, will retry",
@@ -130,6 +137,9 @@ public class InboxPollJob implements Job {
             // payload 에 EventMapping.correlationKey 매칭 필드가 없을 때 fallback 으로 사용됨
             builder.setHeader("corrKey", ev.getCorrKey());
         }
+        if (ev.getRequesterEmnb() != null) {
+            builder.setHeader("requesterEmnb", ev.getRequesterEmnb());
+        }
         return builder.build();
     }
 
@@ -142,5 +152,16 @@ public class InboxPollJob implements Job {
         Throwable cur = t;
         while (cur.getCause() != null && cur.getCause() != cur) cur = cur.getCause();
         return cur.getClass().getName() + ": " + cur.getMessage();
+    }
+
+    static boolean isNonRetryable(Throwable error) {
+        Throwable current = error;
+        while (current != null && current.getCause() != current) {
+            if (current instanceof NonRetryableInboxException) {
+                return true;
+            }
+            current = current.getCause();
+        }
+        return false;
     }
 }

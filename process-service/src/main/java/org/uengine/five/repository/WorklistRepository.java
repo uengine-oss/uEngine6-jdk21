@@ -68,6 +68,20 @@ public interface WorklistRepository extends JpaRepository<WorklistEntity, Long> 
     @Query("select wl from WorklistEntity wl where (wl.rootInstId = :rootInstId and (wl.status = 'NEW' or wl.status = 'RUNNING')) order by wl.startDate desc, wl.taskId desc")
     public List<WorklistEntity> findCurrentWorkItemByInstId(@Param(value = "rootInstId") Long rootInstId);
 
+    @Query("select wl from WorklistEntity wl " +
+            "where ((wl.rootInstId = :rootInstId) or (wl.rootInstId is null and wl.instId = :rootInstId)) " +
+            "and (wl.status = 'NEW' or wl.status = 'RUNNING') " +
+            "order by wl.taskId asc")
+    List<WorklistEntity> findActiveByRootOrInstance(@Param("rootInstId") Long rootInstId);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select wl from WorklistEntity wl " +
+            "where wl.instId = :instId and wl.roleName = :roleName " +
+            "and (wl.status = 'NEW' or wl.status = 'RUNNING') " +
+            "order by wl.taskId asc")
+    List<WorklistEntity> findActiveLaneForUpdate(
+            @Param("instId") Long instId, @Param("roleName") String roleName);
+
     @Query("select wl from WorklistEntity wl "
             + "where wl.rootInstId in :rootInstIds "
             + "and (wl.status = 'NEW' or wl.status = 'RUNNING') "

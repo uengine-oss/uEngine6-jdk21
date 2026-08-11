@@ -163,6 +163,9 @@ public class InstanceServiceImpl implements InstanceService {
     @Autowired
     WorklistRepository worklistRepository;
 
+    @Autowired
+    WorkItemAssignmentStateService assignmentStateService;
+
     @Autowired(required = false)
     BpmLifecycleService bpmLifecycleService;
 
@@ -1120,30 +1123,9 @@ public class InstanceServiceImpl implements InstanceService {
         }
 
         instance.putRoleMapping(roleName, rm);
-        syncCurrEpFromRoleMapping(instance, rm);
+        assignmentStateService.synchronize(Long.valueOf(instanceId));
 
         return rm;
-    }
-
-    /**
-     * RoleMapping 변경 시 BPM_PROCINST 의 curr_ep / curr_rs_nm 를 동기화한다.
-     * endpoint 가 null 이면 (unclaim) 컬럼도 비운다. prev_curr_ep 에는 이전 값이 보존된다.
-     */
-    private void syncCurrEpFromRoleMapping(ProcessInstance instance, RoleMapping rm) {
-        if (!(instance instanceof org.uengine.five.overriding.JPAProcessInstance)) return;
-        org.uengine.five.entity.ProcessInstanceEntity pe =
-                ((org.uengine.five.overriding.JPAProcessInstance) instance).getProcessInstanceEntity();
-        if (pe == null) return;
-
-        pe.setPrevCurrEp(pe.getCurrEp());
-        pe.setPrevCurrRsNm(pe.getCurrRsNm());
-        pe.setPrevCurrGroupCd(pe.getCurrGroupCd());
-        pe.setCurrEp(rm != null ? rm.getEndpoint() : null);          // null 이면 컬럼도 비움
-        pe.setCurrRsNm(rm != null ? rm.getResourceName() : null);
-        pe.setCurrGroupCd(rm != null
-                ? org.uengine.five.overriding.ProcessInstanceHandlerFields.resolveGroup(rm)
-                : null);
-
     }
 
     @RequestMapping(value = "/instance/{instanceId}/role-mapping/{roleName}", method = RequestMethod.PUT, produces = "application/json; charset=UTF-8")
@@ -1177,7 +1159,7 @@ public class InstanceServiceImpl implements InstanceService {
         instance.putRoleMapping(roleName, currentMapping);
 
         // BPM_PROCINST.curr_ep 동기화 (POST/PUT 공용 헬퍼)
-        syncCurrEpFromRoleMapping(instance, currentMapping);
+        assignmentStateService.synchronize(Long.valueOf(instanceId));
 
         return currentMapping;
     }
@@ -1896,21 +1878,12 @@ public class InstanceServiceImpl implements InstanceService {
     @Transactional(rollbackFor = { Exception.class })
     void completeWorkItemInternal(String taskId, WorkItemResource workItem, String isSimulate) throws Exception {
         System.out.println("[InstanceServiceImpl] completeWorkItemInternal: starting for taskId=" + taskId);
-        WorklistEntity worklistEntity = worklistRepository.findById(new Long(taskId)).get();
-
-        // 완료/스킵 시점에도 사용자 정보(endpoint/resName)가 비어있는 케이스가 있어 보정
-        try {
-            String actorEndpoint = UserContext.getThreadLocalInstance().getUserId();
-            if (actorEndpoint == null || actorEndpoint.trim().isEmpty()) {
-                actorEndpoint = SecurityAwareServletFilter.getUserId();
-            }
-            if (actorEndpoint != null && actorEndpoint.trim().length() > 0) {
-                GlobalContext.setUserId(actorEndpoint);
-                applyActorToWorklistIfEmpty(worklistEntity, actorEndpoint);
-                worklistRepository.save(worklistEntity);
-            }
-        } catch (Exception ignore) {
-        }
+        WorklistEntity worklistEntity = worklistRepository.findByIdForUpdate(Long.valueOf(taskId))
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        "No such work item where taskId = " + taskId));
+        String actorEndpoint = currentActorEndpoint();
+        validateCompletionOwner(worklistEntity, actorEndpoint);
+        GlobalContext.setUserId(actorEndpoint);
 
         String instanceId = worklistEntity.getInstId().toString();
         ProcessInstance instance = getProcessInstanceLocal(instanceId);
@@ -2657,7 +2630,7 @@ public class InstanceServiceImpl implements InstanceService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "taskId is required");
         }
 
-        WorklistEntity worklistEntity = worklistRepository.findById(new Long(taskId)).orElse(null);
+        WorklistEntity worklistEntity = worklistRepository.findByIdForUpdate(Long.valueOf(taskId)).orElse(null);
         if (worklistEntity == null) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "No such work item where taskId = " + taskId);
         }
@@ -2688,6 +2661,8 @@ public class InstanceServiceImpl implements InstanceService {
         String scope = worklistEntity.getScope();
         String groupCd = worklistEntity.getGroupCd();
         Integer assignType = worklistEntity.getAssignType();
+        WorkItemAssignmentStateService.AssignmentChangeContext assignmentContext =
+                assignmentStateService.begin(worklistEntity);
 
         if (unclaim) {
             // 본인 소유의 건만 해제 허용
@@ -2696,6 +2671,8 @@ public class InstanceServiceImpl implements InstanceService {
                         "No permission to unclaim this task. endpoint=" + worklistEntity.getEndpoint() + ", userId=" + actorEndpoint);
             }
 
+            assignmentStateService.rememberPreviousIfChanged(
+                    worklistEntity, null, null, worklistEntity.getGroupCd());
             worklistEntity.setEndpoint(null);
             worklistEntity.setResName(null);
             worklistRepository.save(worklistEntity);
@@ -2705,6 +2682,8 @@ public class InstanceServiceImpl implements InstanceService {
                 if (siblings != null) {
                     for (WorklistEntity wl : siblings) {
                         if (wl == null) continue;
+                        assignmentStateService.rememberPreviousIfChanged(
+                                wl, null, null, wl.getGroupCd());
                         wl.setEndpoint(null);
                         wl.setResName(null);
                         worklistRepository.save(wl);
@@ -2712,7 +2691,15 @@ public class InstanceServiceImpl implements InstanceService {
                 }
             }
         } else {
+            if (UEngineUtil.isNotEmpty(worklistEntity.getEndpoint())) {
+                if (actorEndpoint.equals(worklistEntity.getEndpoint())) {
+                    return;
+                }
+                throw new ResponseStatusException(HttpStatus.CONFLICT,
+                        "Work item is already claimed by " + worklistEntity.getEndpoint());
+            }
             // 1) 현재 taskId의 endpoint/resName 보강
+            assignmentStateService.rememberPrevious(worklistEntity);
             applyActorToWorklistIfEmpty(worklistEntity, actorEndpoint);
             worklistRepository.save(worklistEntity);
 
@@ -2727,6 +2714,7 @@ public class InstanceServiceImpl implements InstanceService {
                 if (siblings != null) {
                     for (WorklistEntity wl : siblings) {
                         if (wl == null) continue;
+                        assignmentStateService.rememberPrevious(wl);
                         applyActorToWorklistIfEmpty(wl, actorEndpoint);
                         worklistRepository.save(wl);
                     }
@@ -2734,6 +2722,7 @@ public class InstanceServiceImpl implements InstanceService {
             }
 
         }
+        assignmentStateService.finish(assignmentContext);
     }
 
     private void applyActorToWorklistIfEmpty(WorklistEntity wl, String actorEndpoint) {
@@ -2993,6 +2982,11 @@ public class InstanceServiceImpl implements InstanceService {
                 laneScope,
                 laneGroupName,
                 laneAssignType);
+        WorkItemAssignmentStateService.AssignmentChangeContext assignmentContext =
+                assignmentStateService.begin(worklistEntity);
+        assignmentStateService.rememberPrevious(worklistEntity);
+        worklistEntity.setDelegated(Boolean.TRUE);
+        worklistRepository.save(worklistEntity);
         humanActivity.delegate(instance, delegated, delegateOnlyForWorkitem);
 
         // 같은 Lane(roleName)의 병렬 태스크들도 동일 사용자로 재할당(NEW/RUNNING만)
@@ -3011,6 +3005,22 @@ public class InstanceServiceImpl implements InstanceService {
                     for (WorklistEntity wl : currents) {
                         if (wl == null) continue;
                         if (laneRoleName == null || !laneRoleName.equals(wl.getRoleName())) continue;
+
+                        String targetWorkitemEndpoint = UEngineUtil.isNotEmpty(targetEndpoint)
+                                ? targetEndpoint
+                                : null;
+                        String targetWorkitemResName = UEngineUtil.isNotEmpty(targetEndpoint)
+                                ? (UEngineUtil.isNotEmpty(targetResName) ? targetResName : targetEndpoint)
+                                : null;
+                        String targetWorkitemGroupCd = UEngineUtil.isNotEmpty(targetGroupName)
+                                && !"null".equalsIgnoreCase(targetGroupName)
+                                ? targetGroupName
+                                : wl.getGroupCd();
+                        assignmentStateService.rememberPreviousIfChanged(
+                                wl,
+                                targetWorkitemEndpoint,
+                                targetWorkitemResName,
+                                targetWorkitemGroupCd);
 
                         // 기존 Lane 속성 유지(위임 후 생성된 신규 workitem이 groupCd/scope/assignType을 잃는 문제 보정 포함)
                         if (UEngineUtil.isNotEmpty(targetScope) && !"null".equalsIgnoreCase(targetScope)) {
@@ -3031,7 +3041,7 @@ public class InstanceServiceImpl implements InstanceService {
 
                         if (UEngineUtil.isNotEmpty(targetEndpoint)) {
                             wl.setEndpoint(targetEndpoint);
-                            if (UEngineUtil.isNotEmpty(targetResName)) wl.setResName(targetResName);
+                            wl.setResName(UEngineUtil.isNotEmpty(targetResName) ? targetResName : targetEndpoint);
 
                             // 혹시 resName이 비어있으면 endpoint 기반 fill로 보강
                             applyActorToWorklistIfEmpty(wl, targetEndpoint);
@@ -3057,6 +3067,7 @@ public class InstanceServiceImpl implements InstanceService {
             }
         } catch (Exception ignore) {
         }
+        assignmentStateService.finish(assignmentContext);
 
         // 완전 이관이면 새 taskId가 생길 수 있으므로, 현재 taskIds 기준으로 리턴
         String resultTaskId = taskId;
@@ -3080,7 +3091,7 @@ public class InstanceServiceImpl implements InstanceService {
     }
 
     /**
-     * 관리자 담당자 재배정 (USER/endpoint, GROUP/scope 등).
+     * 관리자 레인 담당자 재배정 (기존 DTO의 taskId로 인스턴스와 레인을 식별).
     */
     @RequestMapping(value = "/work-item/{taskId}/reassignment", method = RequestMethod.POST, produces = "application/json;charset=UTF-8")
     @ProcessTransactional // important!
@@ -3095,14 +3106,79 @@ public class InstanceServiceImpl implements InstanceService {
         if (!"NEW".equalsIgnoreCase(worklist.getStatus()) && !"RUNNING".equalsIgnoreCase(worklist.getStatus())) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Only active work items can be reassigned");
         }
-        worklist.setPrevEndpoint(worklist.getEndpoint());
-        worklist.setPrevUserName(worklist.getResName());
-        worklist.setPrevGroupCd(worklist.getGroupCd());
-        worklist.setEndpoint(assignment.getEndpoint().trim());
-        if (assignment.getResourceName() != null) worklist.setResName(assignment.getResourceName());
-        worklistRepository.save(worklist);
-        if (bpmLifecycleService != null) bpmLifecycleService.onTaskAssignmentChanged(worklist, worklist.getPrevEndpoint());
+        if (!hasText(worklist.getRoleName())) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Work item lane role is required for reassignment");
+        }
+        WorkItemAssignmentStateService.AssignmentChangeContext assignmentContext =
+                assignmentStateService.begin(worklist);
+        String targetEndpoint = assignment.getEndpoint().trim();
+        String targetResName = hasText(assignment.getResourceName())
+                ? assignment.getResourceName().trim()
+                : targetEndpoint;
+        String targetGroupCd = assignment.getGroupName();
+
+        ProcessInstance instance = getProcessInstanceLocal(String.valueOf(worklist.getInstId()));
+        RoleMapping laneMapping = instance.getRoleMapping(worklist.getRoleName());
+        if (laneMapping == null) {
+            laneMapping = RoleMapping.create();
+            laneMapping.setName(worklist.getRoleName());
+            laneMapping.setScope(worklist.getScope());
+            laneMapping.setGroupName(worklist.getGroupCd());
+            laneMapping.setAssignType(worklist.getAssignType());
+        }
+        laneMapping.setEndpoint(targetEndpoint);
+        laneMapping.setResourceName(targetResName);
+        if (targetGroupCd != null) {
+            laneMapping.setGroupName(targetGroupCd);
+        }
+        instance.putRoleMapping(worklist.getRoleName(), laneMapping);
+
+        List<WorklistEntity> changed = assignmentStateService.reassignActiveLane(
+                worklist.getInstId(),
+                worklist.getRoleName(),
+                targetEndpoint,
+                targetResName,
+                targetGroupCd);
+        if (changed.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "No active work items found in the lane");
+        }
+        if (bpmLifecycleService != null) {
+            for (WorklistEntity changedWorkitem : changed) {
+                bpmLifecycleService.onTaskAssignmentChanged(changedWorkitem, changedWorkitem.getPrevEndpoint());
+            }
+        }
+        assignmentStateService.finish(assignmentContext);
         return getWorkItem(taskId);
+    }
+
+    static void validateCompletionOwner(WorklistEntity worklist, String actorEndpoint) {
+        if (worklist == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Work item not found");
+        }
+        if (!UEngineUtil.isNotEmpty(worklist.getEndpoint())) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "Work item must be claimed before completion");
+        }
+        if (!UEngineUtil.isNotEmpty(actorEndpoint)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Completion actor is required");
+        }
+        if (!worklist.getEndpoint().equals(actorEndpoint.trim())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                    "Only the current work item owner can complete this task");
+        }
+    }
+
+    private static String currentActorEndpoint() {
+        String actorEndpoint = null;
+        UserContext userContext = UserContext.getThreadLocalInstance();
+        if (userContext != null) {
+            actorEndpoint = userContext.getUserId();
+        }
+        if (!UEngineUtil.isNotEmpty(actorEndpoint)) {
+            actorEndpoint = SecurityAwareServletFilter.getUserId();
+        }
+        return UEngineUtil.isNotEmpty(actorEndpoint) ? actorEndpoint.trim() : null;
     }
 
 

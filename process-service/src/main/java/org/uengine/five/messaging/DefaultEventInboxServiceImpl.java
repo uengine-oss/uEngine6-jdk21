@@ -69,4 +69,5 @@ public class DefaultEventInboxServiceImpl implements DefaultEventInboxService {
         }
         return objectMapper.writeValueAsString(payload);
     }
+
 }
