@@ -6,11 +6,10 @@ package org.uengine.hwlife.search.dto;
 public class BulkAssignSearchResponseItem {
 
     private String bpmBswrClsfCode; // 업무분류 코드
-    private String fncgBswrDvsnCode; //융자 구분코드 
     private String fncgBpmTaskLstId;
     private String fncgBpmPcesIntcId;
     private String uworNm; // 태스크 명
-    private String loanPcesNm; // 대출프로세스명 ( defName )
+    private String fncgBpmPcesId; // root.defId
 
     public String getBpmBswrClsfCode() {
         return bpmBswrClsfCode;
@@ -18,14 +17,6 @@ public class BulkAssignSearchResponseItem {
 
     public void setBpmBswrClsfCode(String bpmBswrClsfCode) {
         this.bpmBswrClsfCode = bpmBswrClsfCode;
-    }
-
-    public String getFncgBswrDvsnCode() {
-        return fncgBswrDvsnCode;
-    }
-
-    public void setFncgBswrDvsnCode(String fncgBswrDvsnCode) {
-        this.fncgBswrDvsnCode = fncgBswrDvsnCode;
     }
 
     public String getFncgBpmTaskLstId() {
@@ -52,11 +43,11 @@ public class BulkAssignSearchResponseItem {
         this.uworNm = uworNm;
     }
 
-    public String getLoanPcesNm() {
-        return loanPcesNm;
+    public String getFncgBpmPcesId() {
+        return fncgBpmPcesId;
     }
 
-    public void setLoanPcesNm(String loanPcesNm) {
-        this.loanPcesNm = loanPcesNm;
+    public void setFncgBpmPcesId(String fncgBpmPcesId) {
+        this.fncgBpmPcesId = fncgBpmPcesId;
     }
 }

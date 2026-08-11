@@ -10,7 +10,6 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 public class MyTodoItem {
 
     private String custId;
-    private String fncgBswrDvsnCode;
     private String loanCntcNo;
     private String fncgSuptTrgtDvsnCode;
     private String loanSubjDvsnCode;
@@ -22,7 +21,6 @@ public class MyTodoItem {
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyyMMddHHmmss")
     private Date uworStarDttm;
     private String uworNm;
-    private String loanPcesNm;
     private String reptHndrEmnb;
     private String reptHndrFncgOrgnCode;
     private String prcdHndrEmnb;
@@ -41,8 +39,10 @@ public class MyTodoItem {
     private String dstOptnVal; // 배분 규칙 
     private String ruleAcmpVal; // 할당 규칙
     private String mnorExstYn; // 위임여부
+    private String bpmBswrClsfCode;
     private String apvlYn; // 결재여부
     private String imgeScanYn; // 이미지스캔여부
+    private String fncgBpmPcesId; // root.defId
         
 
     public String getCustId() {
@@ -51,14 +51,6 @@ public class MyTodoItem {
 
     public void setCustId(String custId) {
         this.custId = custId;
-    }
-
-    public String getFncgBswrDvsnCode() {
-        return fncgBswrDvsnCode;
-    }
-
-    public void setFncgBswrDvsnCode(String fncgBswrDvsnCode) {
-        this.fncgBswrDvsnCode = fncgBswrDvsnCode;
     }
 
     public String getLoanCntcNo() {
@@ -131,14 +123,6 @@ public class MyTodoItem {
 
     public void setUworNm(String uworNm) {
         this.uworNm = uworNm;
-    }
-
-    public String getLoanPcesNm() {
-        return loanPcesNm;
-    }
-
-    public void setLoanPcesNm(String loanPcesNm) {
-        this.loanPcesNm = loanPcesNm;
     }
 
     public String getReptHndrEmnb() {
@@ -277,6 +261,14 @@ public class MyTodoItem {
         this.mnorExstYn = mnorExstYn;
     }
 
+    public String getBpmBswrClsfCode() {
+        return bpmBswrClsfCode;
+    }
+
+    public void setBpmBswrClsfCode(String bpmBswrClsfCode) {
+        this.bpmBswrClsfCode = bpmBswrClsfCode;
+    }
+
     public String getApvlYn() {
         return apvlYn;
     }
@@ -291,5 +283,13 @@ public class MyTodoItem {
 
     public void setImgeScanYn(String imgeScanYn) {
         this.imgeScanYn = imgeScanYn;
+    }
+
+    public String getFncgBpmPcesId() {
+        return fncgBpmPcesId;
+    }
+
+    public void setFncgBpmPcesId(String fncgBpmPcesId) {
+        this.fncgBpmPcesId = fncgBpmPcesId;
     }
 }

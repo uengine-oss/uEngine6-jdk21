@@ -14,13 +14,11 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 public class OrgRunningRequest {
 
     private String bpmBswrClsfCode;
-    private String fncgBswrDvsnCode;
-    private String fncgBpmTaskTrcgNm;
 
     @JsonFormat(pattern = "yyyyMMdd")
-    private Date rqstStarDttm;
+    private Date rqstStarDate;
     @JsonFormat(pattern = "yyyyMMdd")
-    private Date rqstEndDttm;
+    private Date rqstEndDate;
 
     private String fncgSuptTrgtDvsnCode;
     private String loanSubjDvsnCode;
@@ -30,6 +28,8 @@ public class OrgRunningRequest {
     private String fncgWndwOrgnCode;
     private String rqstDvsnCode;
     private String sortOrdrVal;
+    private String fncgBpmPcesId;
+    private String uworNm;
 
     private String nextKey;
     private Integer pageSize;
@@ -42,36 +42,20 @@ public class OrgRunningRequest {
         this.bpmBswrClsfCode = bpmBswrClsfCode;
     }
 
-    public String getFncgBswrDvsnCode() {
-        return fncgBswrDvsnCode;
+    public Date getRqstStarDate() {
+        return rqstStarDate;
     }
 
-    public void setFncgBswrDvsnCode(String fncgBswrDvsnCode) {
-        this.fncgBswrDvsnCode = fncgBswrDvsnCode;
+    public void setRqstStarDate(Date rqstStarDate) {
+        this.rqstStarDate = rqstStarDate;
     }
 
-    public String getFncgBpmTaskTrcgNm() {
-        return fncgBpmTaskTrcgNm;
+    public Date getRqstEndDate() {
+        return rqstEndDate;
     }
 
-    public void setFncgBpmTaskTrcgNm(String fncgBpmTaskTrcgNm) {
-        this.fncgBpmTaskTrcgNm = fncgBpmTaskTrcgNm;
-    }
-
-    public Date getRqstStarDttm() {
-        return rqstStarDttm;
-    }
-
-    public void setRqstStarDttm(Date rqstStarDttm) {
-        this.rqstStarDttm = rqstStarDttm;
-    }
-
-    public Date getRqstEndDttm() {
-        return rqstEndDttm;
-    }
-
-    public void setRqstEndDttm(Date rqstEndDttm) {
-        this.rqstEndDttm = rqstEndDttm;
+    public void setRqstEndDate(Date rqstEndDate) {
+        this.rqstEndDate = rqstEndDate;
     }
 
     public String getFncgSuptTrgtDvsnCode() {
@@ -136,6 +120,21 @@ public class OrgRunningRequest {
 
     public void setSortOrdrVal(String sortOrdrVal) {
         this.sortOrdrVal = sortOrdrVal;
+    }
+    public String getFncgBpmPcesId() {
+        return fncgBpmPcesId;
+    }
+
+    public void setFncgBpmPcesId(String fncgBpmPcesId) {
+        this.fncgBpmPcesId = fncgBpmPcesId;
+    }
+
+    public String getUworNm() {
+        return uworNm;
+    }
+
+    public void setUworNm(String uworNm) {
+        this.uworNm = uworNm;
     }
 
     public String getNextKey() {

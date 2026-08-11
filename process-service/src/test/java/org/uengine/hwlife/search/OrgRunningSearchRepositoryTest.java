@@ -66,8 +66,8 @@ class OrgRunningSearchRepositoryTest {
   @Test
   void appliesEveryPopulatedFilterWithInclusiveRequestDateBounds() {
     OrgRunningRequest request = fullRequest();
-    request.setRqstStarDttm(date(JAN_10));
-    request.setRqstEndDttm(date(JAN_10));
+    request.setRqstStarDate(date(JAN_10));
+    request.setRqstEndDate(date(JAN_10));
 
     SearchResult result = search(request, null, 20);
 
@@ -151,8 +151,7 @@ class OrgRunningSearchRepositoryTest {
   private static OrgRunningRequest fullRequest() {
     OrgRunningRequest request = new OrgRunningRequest();
     request.setBpmBswrClsfCode("BSWR");
-    request.setFncgBswrDvsnCode("LOAN");
-    request.setFncgBpmTaskTrcgNm("TRACE");
+    request.setFncgBpmPcesId("ROOT-DEF-ID");
     request.setFncgSuptTrgtDvsnCode("TARGET");
     request.setLoanSubjDvsnCode("SUBJECT");
     request.setFncgMneyUsagClsfCode("USAGE");

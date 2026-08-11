@@ -213,7 +213,6 @@ class WorkSearchServiceImplTest {
     assertEquals(1, response.getTotCont());
     MyTodoItem item = response.getTodoList().get(0);
     assertEquals("CUST", item.getCustId());
-    assertEquals("LOAN", item.getFncgBswrDvsnCode());
     assertEquals("CONTACT", item.getLoanCntcNo());
     assertEquals("TARGET", item.getFncgSuptTrgtDvsnCode());
     assertEquals("SUBJECT", item.getLoanSubjDvsnCode());
@@ -223,7 +222,6 @@ class WorkSearchServiceImplTest {
     assertEquals("TRACE", item.getFncgBpmTaskTrcgNm());
     assertEquals(date(WORK_START), item.getUworStarDttm());
     assertEquals("Unit work", item.getUworNm());
-    assertEquals("Loan process", item.getLoanPcesNm());
     assertEquals("reporter", item.getReptHndrEmnb());
     assertEquals("INIT-GROUP", item.getReptHndrFncgOrgnCode());
     assertEquals("previous", item.getPrcdHndrEmnb());
@@ -238,6 +236,7 @@ class WorkSearchServiceImplTest {
     assertEquals("form", item.getScrnUrlAddr());
     assertEquals("101", item.getFncgBpmTaskLstId());
     assertEquals("201", item.getFncgBpmPcesIntcId());
+    assertEquals("line_1", item.getFncgBpmPcesId());
   }
 
   @Test
@@ -306,7 +305,6 @@ class WorkSearchServiceImplTest {
 
     assertEquals(1, response.getTotCont());
     OrgRunningItem item = response.getOrgnPrgsList().get(0);
-    assertEquals("LOAN", item.getFncgBswrDvsnCode());
     assertEquals("CONTACT", item.getLoanCntcNo());
     assertEquals("TARGET", item.getFncgSuptTrgtDvsnCode());
     assertEquals("SUBJECT", item.getLoanSubjDvsnCode());
@@ -324,6 +322,36 @@ class WorkSearchServiceImplTest {
     assertEquals("201", item.getFncgBpmPcesIntcId());
     assertEquals(date(WORK_START - 100), item.getStarDttm());
     assertEquals(new java.sql.Date(WORK_START), item.getUworStarDttm());
+    assertEquals("line_1", item.getFncgBpmPcesId());
+  }
+
+  @Test
+  void mapsFncgBpmPcesIdFromRootInstanceDefIdForSubProcessWorklist() {
+    WorklistEntity worklist = completeWorklist(101L, WORK_START);
+    ProcessInstanceEntity subInstance = worklist.getProcessInstance();
+    subInstance.setInstId(202L);
+    subInstance.setRootInstId(100L);
+    subInstance.setDefId("line_2");
+    worklist.setInstId(202L);
+
+    ProcessInstanceEntity rootInstance = new ProcessInstanceEntity();
+    rootInstance.setInstId(100L);
+    rootInstance.setRootInstId(100L);
+    rootInstance.setDefId("line_1");
+    when(processInstanceRepository.findAllById(any()))
+        .thenReturn(List.of(rootInstance));
+    when(searchRepository.search(
+        any(MyTodoRequest.class),
+        isNull(),
+        eq(20),
+        eq(HEADER_EMNB),
+        eq(HEADER_BELN_ORGN_CODE)))
+        .thenReturn(new SearchResult(List.of(worklist), 1));
+
+    MyTodoResponse response = service.searchMyTodo(requiredMyTodoRequest());
+
+    assertEquals("line_1", response.getTodoList().get(0).getFncgBpmPcesId());
+    assertEquals("202", response.getTodoList().get(0).getFncgBpmPcesIntcId());
   }
 
   @Test
@@ -419,13 +447,11 @@ class WorkSearchServiceImplTest {
     MyTodoRequest request = new MyTodoRequest();
     request.setBpmBswrClsfCode("BSWR");
     request.setCustId("CUST");
-    request.setFncgBswrDvsnCode("LOAN");
     request.setLoanCntcNo("CONTACT");
     request.setLoanPcesMgmtNo("CORR-101");
     request.setFncgSuptTrgtDvsnCode("TARGET");
     request.setLoanSubjDvsnCode("SUBJECT");
     request.setFncgMneyUsagClsfCode("USAGE");
-    request.setFncgBpmTaskTrcgNm("TRACE");
     request.setStarDate(date(WORK_START));
     request.setEndDate(date(WORK_START));
     request.setHopeStarDate(date(HOPE_DATE));
@@ -450,6 +476,8 @@ class WorkSearchServiceImplTest {
   private static WorklistEntity completeWorklist(long taskId, long startDate) {
     ProcessInstanceEntity instance = new ProcessInstanceEntity();
     instance.setInstId(201L);
+    instance.setRootInstId(201L);
+    instance.setDefId("line_1");
     instance.setBswrClsfCode("BSWR");
     instance.setCustId("CUST");
     instance.setFncgBswrDvsnCode("LOAN");

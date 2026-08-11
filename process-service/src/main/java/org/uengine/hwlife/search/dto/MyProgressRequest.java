@@ -2,7 +2,7 @@ package org.uengine.hwlife.search.dto;
 
 import java.util.Date;
 
-import org.springframework.format.annotation.DateTimeFormat;
+import com.fasterxml.jackson.annotation.JsonFormat;
 
 /**
  * 나의 진행 검색 요청 — POST /search/my-progress JSON body.
@@ -10,18 +10,19 @@ import org.springframework.format.annotation.DateTimeFormat;
 public class MyProgressRequest {
 
     private String bpmBswrClsfCode;
-    private String fncgBswrDvsnCode;
-    private String trcTag;
+    @JsonFormat(pattern = "yyyyMMdd")
     private Date rqstStarDate;
+    @JsonFormat(pattern = "yyyyMMdd")
     private Date rqstEndDate;
     private String fncgSuptTrgtDvsnCode;
     private String loanSubjDvsnCode;
     private String fncgMneyUsagClsfCode;
     private String custId;
     private String loanCntcNo;
-    private String group;
+    private String fncgWndwOrgnCode;
     private String sortOrdrVal;
-    private String endpoint;
+    private String fncgBpmPcesId;
+    private String uworNm;
 
     private String nextKey;
     private Integer pageSize;
@@ -32,22 +33,6 @@ public class MyProgressRequest {
 
     public void setBpmBswrClsfCode(String bpmBswrClsfCode) {
         this.bpmBswrClsfCode = bpmBswrClsfCode;
-    }
-
-    public String getFncgBswrDvsnCode() {
-        return fncgBswrDvsnCode;
-    }
-
-    public void setFncgBswrDvsnCode(String fncgBswrDvsnCode) {
-        this.fncgBswrDvsnCode = fncgBswrDvsnCode;
-    }
-
-    public String getTrcTag() {
-        return trcTag;
-    }
-
-    public void setTrcTag(String trcTag) {
-        this.trcTag = trcTag;
     }
 
     public Date getRqstStarDate() {
@@ -69,7 +54,7 @@ public class MyProgressRequest {
     public String getFncgSuptTrgtDvsnCode() {
         return fncgSuptTrgtDvsnCode;
     }
-
+    
     public void setFncgSuptTrgtDvsnCode(String fncgSuptTrgtDvsnCode) {
         this.fncgSuptTrgtDvsnCode = fncgSuptTrgtDvsnCode;
     }
@@ -77,71 +62,79 @@ public class MyProgressRequest {
     public String getLoanSubjDvsnCode() {
         return loanSubjDvsnCode;
     }
-
+    
     public void setLoanSubjDvsnCode(String loanSubjDvsnCode) {
         this.loanSubjDvsnCode = loanSubjDvsnCode;
     }
-
+    
     public String getFncgMneyUsagClsfCode() {
         return fncgMneyUsagClsfCode;
     }
-
+    
     public void setFncgMneyUsagClsfCode(String fncgMneyUsagClsfCode) {
         this.fncgMneyUsagClsfCode = fncgMneyUsagClsfCode;
     }
-
+    
     public String getCustId() {
         return custId;
     }
-
+    
     public void setCustId(String custId) {
         this.custId = custId;
     }
-
+    
     public String getLoanCntcNo() {
         return loanCntcNo;
     }
-
+    
     public void setLoanCntcNo(String loanCntcNo) {
         this.loanCntcNo = loanCntcNo;
     }
-
-    public String getGroup() {
-        return group;
+    
+    public String getFncgWndwOrgnCode() {
+        return fncgWndwOrgnCode;
     }
-
-    public void setGroup(String group) {
-        this.group = group;
+    
+    public void setFncgWndwOrgnCode(String fncgWndwOrgnCode) {
+        this.fncgWndwOrgnCode = fncgWndwOrgnCode;
     }
-
+    
     public String getSortOrdrVal() {
         return sortOrdrVal;
     }
-
+    
     public void setSortOrdrVal(String sortOrdrVal) {
         this.sortOrdrVal = sortOrdrVal;
     }
-
-    public String getEndpoint() {
-        return endpoint;
+    
+    public String getFncgBpmPcesId() {
+        return fncgBpmPcesId;
+    }
+    
+    public void setFncgBpmPcesId(String fncgBpmPcesId) {
+        this.fncgBpmPcesId = fncgBpmPcesId;
+    }
+    
+    public String getUworNm() {
+        return uworNm;
+    }
+    
+    public void setUworNm(String uworNm) {
+        this.uworNm = uworNm;
     }
 
-    public void setEndpoint(String endpoint) {
-        this.endpoint = endpoint;
-    }
-  
     public String getNextKey() {
         return nextKey;
     }
-
+    
     public void setNextKey(String nextKey) {
         this.nextKey = nextKey;
     }
-
+    
     public Integer getPageSize() {
         return pageSize;
     }
-
+    
     public void setPageSize(Integer pageSize) {
         this.pageSize = pageSize;
     }
