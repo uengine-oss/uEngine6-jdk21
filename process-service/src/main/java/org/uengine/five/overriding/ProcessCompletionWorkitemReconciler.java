@@ -6,6 +6,7 @@ import java.util.List;
 import org.springframework.stereotype.Component;
 import org.uengine.five.entity.WorklistEntity;
 import org.uengine.five.repository.WorklistRepository;
+import org.uengine.five.service.WorkItemAssignmentStateService;
 import org.uengine.webservices.worklist.DefaultWorkList;
 
 @Component
@@ -14,9 +15,13 @@ public class ProcessCompletionWorkitemReconciler {
     private static final List<String> ACTIVE_STATUSES = List.of("NEW", "RUNNING");
 
     private final WorklistRepository worklistRepository;
+    private final WorkItemAssignmentStateService assignmentStateService;
 
-    public ProcessCompletionWorkitemReconciler(WorklistRepository worklistRepository) {
+    public ProcessCompletionWorkitemReconciler(
+            WorklistRepository worklistRepository,
+            WorkItemAssignmentStateService assignmentStateService) {
         this.worklistRepository = worklistRepository;
+        this.assignmentStateService = assignmentStateService;
     }
 
     public int reconcile(Long instanceId) {
@@ -27,6 +32,7 @@ public class ProcessCompletionWorkitemReconciler {
         List<WorklistEntity> activeWork =
                 worklistRepository.findByInstIdAndStatusIn(instanceId, ACTIVE_STATUSES);
         if (activeWork.isEmpty()) {
+            assignmentStateService.synchronize(instanceId);
             return 0;
         }
 
@@ -38,6 +44,7 @@ public class ProcessCompletionWorkitemReconciler {
             }
         }
         worklistRepository.saveAll(activeWork);
+        assignmentStateService.synchronize(instanceId);
         return activeWork.size();
     }
 }

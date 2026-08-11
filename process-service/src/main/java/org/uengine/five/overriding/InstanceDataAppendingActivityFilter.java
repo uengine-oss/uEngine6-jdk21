@@ -3,6 +3,7 @@
  */
 package org.uengine.five.overriding;
 
+import org.uengine.five.service.WorkItemAssignmentStateService;
 import org.uengine.kernel.*;
 import org.uengine.kernel.bpmn.ServiceTask;
 import org.uengine.webservices.worklist.WorkList;
@@ -16,6 +17,11 @@ import java.util.ArrayList;
 public class InstanceDataAppendingActivityFilter implements ActivityFilter, Serializable {
 
 	private static final long serialVersionUID = org.uengine.kernel.GlobalContext.SERIALIZATION_UID;
+	private final transient WorkItemAssignmentStateService assignmentStateService;
+
+	public InstanceDataAppendingActivityFilter(WorkItemAssignmentStateService assignmentStateService) {
+		this.assignmentStateService = assignmentStateService;
+	}
 
 	public void afterExecute(Activity activity, final ProcessInstance instance)
 			throws Exception {
@@ -86,9 +92,6 @@ public class InstanceDataAppendingActivityFilter implements ActivityFilter, Seri
 					jpaProcessInstance.getProcessInstanceEntity().setInitComCd(rm.getCompanyId());
 
 					jpaProcessInstance.setNewInstance(false);
-				} else {
-					ProcessInstanceHandlerFields.updateCurrent(
-							jpaProcessInstance.getProcessInstanceEntity(), rm);
 				}
 
 				if (activity instanceof ServiceTask || activity instanceof ScriptActivity) {
@@ -115,6 +118,8 @@ public class InstanceDataAppendingActivityFilter implements ActivityFilter, Seri
 					worklist.completeWorkItem(taskId, paramArray, instance.getProcessTransactionContext());
 					((DefaultActivity) activity).setTaskIds(instance, new String[] { taskId });
 				}
+
+				assignmentStateService.synchronize(Long.valueOf(instance.getRootProcessInstanceId()));
 
 			} catch (Exception e) {
 				e.printStackTrace();
@@ -208,24 +213,8 @@ public class InstanceDataAppendingActivityFilter implements ActivityFilter, Seri
 					ProcessInstanceHandlerFields.initialize(
 							processInstance.getProcessInstanceEntity(), rm);
 					processInstance.getProcessInstanceEntity().setInitComCd(rm.getCompanyId());
-				} else {
-					StringBuffer endpoint = new StringBuffer();
-					StringBuffer resourceName = new StringBuffer();
-					do {
-						if (endpoint.length() > 0)
-							endpoint.append(";");
-						endpoint.append(rm.getEndpoint());
-
-						if (resourceName.length() > 0)
-							resourceName.append(";");
-						resourceName.append(rm.getResourceName());
-					} while (rm.next());
-
-					processInstance.getProcessInstanceEntity().setCurrEp(endpoint.toString());
-					processInstance.getProcessInstanceEntity().setCurrRsNm(resourceName.toString());
-					processInstance.getProcessInstanceEntity()
-							.setCurrGroupCd(ProcessInstanceHandlerFields.resolveGroup(rm));
 				}
+				assignmentStateService.synchronize(Long.valueOf(instance.getRootProcessInstanceId()));
 			} catch (Exception e) {
 				e.printStackTrace();
 			}

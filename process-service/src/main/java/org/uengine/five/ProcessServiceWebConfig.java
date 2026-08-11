@@ -13,6 +13,7 @@ import org.uengine.five.overriding.CLOBProcessInstance;
 import org.uengine.five.overriding.EmailServiceLocalImpl;
 // import org.uengine.five.overriding.AuditActivityFilter;
 import org.uengine.five.overriding.InstanceDataAppendingActivityFilter;
+import org.uengine.five.service.WorkItemAssignmentStateService;
 import org.uengine.five.overriding.InstanceServiceLocalImpl;
 import org.uengine.five.overriding.JPAProcessInstance;
 import org.uengine.five.overriding.JPAWorkList;
@@ -119,8 +120,8 @@ public class ProcessServiceWebConfig {
     }
 
     @Bean
-    public ActivityFilter instanceDataAppendingFilter() {
-        return new InstanceDataAppendingActivityFilter();
+    public ActivityFilter instanceDataAppendingFilter(WorkItemAssignmentStateService assignmentStateService) {
+        return new InstanceDataAppendingActivityFilter(assignmentStateService);
     }
 
     @Bean

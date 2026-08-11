@@ -31,19 +31,6 @@ public final class ProcessInstanceHandlerFields {
         instance.setCurrGroupCd(resolveGroup(roleMapping));
     }
 
-    public static void updateCurrent(ProcessInstanceEntity instance, RoleMapping roleMapping) {
-        if (instance == null || roleMapping == null) {
-            return;
-        }
-
-        instance.setPrevCurrEp(instance.getCurrEp());
-        instance.setPrevCurrRsNm(instance.getCurrRsNm());
-        instance.setPrevCurrGroupCd(instance.getCurrGroupCd());
-        instance.setCurrEp(roleMapping.getEndpoint());
-        instance.setCurrRsNm(roleMapping.getResourceName());
-        instance.setCurrGroupCd(resolveGroup(roleMapping));
-    }
-
     public static String resolveGroup(RoleMapping roleMapping) {
         if (roleMapping == null) {
             return null;
