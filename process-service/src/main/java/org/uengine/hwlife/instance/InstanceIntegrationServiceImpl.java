@@ -305,7 +305,7 @@ public class InstanceIntegrationServiceImpl implements InstanceIntegrationServic
    *   <li>{@code LBM040012} — 진행중 아님(status not in NEW,RUNNING)</li>
    *   <li>{@code LBM040013} — 선점규칙 업무 미선점(dispatchOption==1 and endpoint 없음)</li>
    *   <li>{@code LBM040014} — 본인 업무 아님(endpoint != header.emnb)</li>
-   *   <li>{@code LBM040015} — 처리자 기관코드와 업무 기관코드 불일치(groupCd)</li>
+   *   <li>{@code LBM040015} — 처리자 기관코드와 업무 기관코드 불일치(groupCd) — 현재 비활성</li>
    *   <li>{@code LBM040019} — delegateWorkItem 업무 예외</li>
    *   <li>{@code LBM040020} — 기타 예외</li>
    * </ul>
@@ -489,7 +489,7 @@ public class InstanceIntegrationServiceImpl implements InstanceIntegrationServic
    *   <li>{@code LBM040012} — 진행중 아님</li>
    *   <li>{@code LBM040013} — 선점규칙 업무 미선점</li>
    *   <li>{@code LBM040014} — 본인 업무 아님</li>
-   *   <li>{@code LBM040015} — 처리자 기관코드와 업무 기관코드 불일치</li>
+   *   <li>{@code LBM040015} — 처리자 기관코드와 업무 기관코드 불일치 — 현재 비활성</li>
    * </ul>
    */
   private String validateDelegateRequest(
@@ -517,9 +517,10 @@ public class InstanceIntegrationServiceImpl implements InstanceIntegrationServic
       return "LBM040014";
     }
 
-    if (!isHandlerSameOrganization(worklist, handler)) {
-      return "LBM040015";
-    }
+    // TODO: 동일 기관에서만 위임 가능 — 우선 비활성화
+    // if (!isHandlerSameOrganization(worklist, handler)) {
+    //   return "LBM040015";
+    // }
     return null;
   }
 
