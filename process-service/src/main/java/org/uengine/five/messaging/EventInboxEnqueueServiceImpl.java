@@ -30,10 +30,14 @@ public class EventInboxEnqueueServiceImpl implements EventInboxEnqueueService {
 
     @Override
     public EventInboxResponse enqueue(EventInboxRequest request) {
+        return enqueue(request, null);
+    }
+
+    @Override
+    public EventInboxResponse enqueue(EventInboxRequest request, String requesterEmnb) {
         String eventName = request != null ? request.getEventName() : null;
         String corrKey = request != null ? request.getCorrKey() : null;
         String payloadJson = request != null ? request.getPayloadJson() : null;
-        String requesterEmnb = request != null ? request.getRequesterEmnb() : null;
         String normalizedPayload = payloadJson != null ? payloadJson : "{}";
 
         EventInbox ev = new EventInbox();

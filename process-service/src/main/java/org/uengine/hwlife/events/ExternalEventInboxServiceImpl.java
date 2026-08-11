@@ -92,8 +92,8 @@ public class ExternalEventInboxServiceImpl implements ExternalEventInboxService 
         }
 
         EventInboxResponse coreResponse = enqueueService.enqueue(
-                new EventInboxRequest(evntNm, loanPcesMgmtNo, payloadJson,
-                        header != null ? header.getEmnb() : null));
+                new EventInboxRequest(evntNm, loanPcesMgmtNo, payloadJson),
+                header != null ? header.getEmnb() : null);
         if (EventInboxResponse.STATUS_FAILED.equals(coreResponse.getStatus())) {
             // 성공 응답 + payload 업무 실패 (멱등 중복 LBM010003)
             return EventInboxReceiveResult.success(

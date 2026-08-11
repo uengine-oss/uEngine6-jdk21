@@ -15,4 +15,8 @@ import org.uengine.five.dto.EventInboxResponse;
 public interface EventInboxEnqueueService {
 
     EventInboxResponse enqueue(EventInboxRequest request);
+
+    default EventInboxResponse enqueue(EventInboxRequest request, String requesterEmnb) {
+        return enqueue(request);
+    }
 }
