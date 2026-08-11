@@ -20,13 +20,19 @@ import org.uengine.five.dto.ProcessExecutionCommand;
 import org.uengine.five.dto.ProcessVariableValue;
 import org.uengine.five.entity.EventMappingEntity;
 import org.uengine.five.entity.ProcessInstanceEntity;
+import org.uengine.five.entity.WorklistEntity;
 import org.uengine.five.framework.ProcessTransactional;
+import org.uengine.five.messaging.NonRetryableInboxException;
 import org.uengine.five.repository.EventMappingRepository;
 import org.uengine.five.repository.ProcessInstanceRepository;
+import org.uengine.five.repository.WorklistRepository;
 import org.uengine.kernel.Activity;
 import org.uengine.kernel.DefaultProcessInstance;
+import org.uengine.kernel.GlobalContext;
+import org.uengine.kernel.HumanActivity;
 import org.uengine.kernel.ProcessInstance;
 import org.uengine.kernel.ReceiveActivity;
+import org.uengine.util.UEngineUtil;
 import org.uengine.kernel.bpmn.Event;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
@@ -54,6 +60,9 @@ public class AsyncEventListener {
     @Autowired
     EventMappingRepository eventMappingRepository;
 
+    @Autowired
+    WorklistRepository worklistRepository;
+
     public void whatever(String eventString) {
         System.out.println("\n\n##### listener whatever : " + eventString + "\n\n");
     }
@@ -61,6 +70,16 @@ public class AsyncEventListener {
     @Transactional(rollbackFor = { Exception.class })
     @ProcessTransactional
     public void wheneverEvent(String eventBody, String typeHeader, String inboxCorrKey) {
+        wheneverEvent(eventBody, typeHeader, inboxCorrKey, null);
+    }
+
+    @Transactional(rollbackFor = { Exception.class })
+    @ProcessTransactional
+    public void wheneverEvent(
+            String eventBody,
+            String typeHeader,
+            String inboxCorrKey,
+            String actorEndpoint) {
         log.info("[BPM] wheneverEvent called, typeHeader={}, inboxCorrKey={}", typeHeader, inboxCorrKey);
         try {
             String eventType = typeHeader;
@@ -81,7 +100,7 @@ public class AsyncEventListener {
                 throw new IllegalStateException("EventMappingEntity is null for eventType: " + eventType);
             }
 
-            processEventMappings(eventMappings, eventType, eventContent, inboxCorrKey);
+            processEventMappings(eventMappings, eventType, eventContent, inboxCorrKey, actorEndpoint);
         } catch (Exception e) {
             throw new RuntimeException("Error wheneverEvent :" + e.getMessage(), e);
         }
@@ -91,7 +110,8 @@ public class AsyncEventListener {
             List<EventMappingEntity> eventMappings,
             String eventType,
             HashMap<String, Object> eventContent,
-            String inboxCorrKey) throws Exception {
+            String inboxCorrKey,
+            String actorEndpoint) throws Exception {
         Set<String> receiveCorrelationValues = new LinkedHashSet<>();
         Set<String> startedDefinitions = new LinkedHashSet<>();
         int startFailures = 0;
@@ -107,7 +127,9 @@ public class AsyncEventListener {
             if (Boolean.TRUE.equals(mapping.isStartEvent())
                     && startedDefinitions.add(mapping.getDefinitionId())) {
                 try {
-                    startMappedDefinition(mapping, correlationValue, eventContent);
+                    if (!hasRunningMappedDefinition(mapping, correlationValue)) {
+                        startMappedDefinition(mapping, correlationValue, eventContent);
+                    }
                 } catch (Exception e) {
                     startFailures++;
                     log.error("[BPM] Failed to start mapped definition: eventType={}, definitionId={}",
@@ -125,7 +147,7 @@ public class AsyncEventListener {
 
         for (String correlationValue : receiveCorrelationValues) {
             triggerReceiveActivitiesByCorrKeyAndEventType(
-                    correlationValue, eventType, eventContent);
+                    correlationValue, eventType, eventContent, actorEndpoint);
         }
 
         if (!startedDefinitions.isEmpty() && startFailures == startedDefinitions.size()) {
@@ -149,10 +171,31 @@ public class AsyncEventListener {
         instanceService.start(command);
     }
 
+    boolean hasRunningMappedDefinition(EventMappingEntity mapping, String correlationValue) {
+        if (!UEngineUtil.isNotEmpty(correlationValue)) {
+            return false;
+        }
+        String mappedDefinition = withoutBpmnExtension(mapping.getDefinitionId());
+        return processInstanceRepository.findByCorrKeyAndStatus(correlationValue, "Running").stream()
+                .map(ProcessInstanceEntity::getDefId)
+                .map(AsyncEventListener::withoutBpmnExtension)
+                .anyMatch(mappedDefinition::equals);
+    }
+
+    private static String withoutBpmnExtension(String definitionId) {
+        if (definitionId == null) {
+            return "";
+        }
+        return definitionId.endsWith(".bpmn")
+                ? definitionId.substring(0, definitionId.length() - ".bpmn".length())
+                : definitionId;
+    }
+
     private void triggerReceiveActivitiesByCorrKeyAndEventType(
             String correlationValue,
             String eventType,
-            HashMap<String, Object> eventContent) throws Exception {
+            HashMap<String, Object> eventContent,
+            String actorEndpoint) throws Exception {
         List<ProcessInstanceEntity> processInstances =
                 processInstanceRepository.findByCorrKeyAndStatus(correlationValue, "Running");
         for (ProcessInstanceEntity processInstanceEntity : processInstances) {
@@ -165,16 +208,66 @@ public class AsyncEventListener {
             for (Activity activity : instance.getCurrentRunningActivities()) {
                 for (EventSynchronization sync : activity.getEventSynchronizations()) {
                     if (sync != null && eventType.equals(sync.getEventType())) {
-                        ((DefaultProcessInstance) instance).set(
-                                activity.getTracingTag(),
-                                DefaultProcessInstance.EVENT_DATA,
-                                (Serializable) eventContent);
-                        ((ReceiveActivity) activity).fireReceived(instance, eventContent);
+                        String previousUserId = GlobalContext.getUserId();
+                        try {
+                            validateHumanActivityCompletion(instance, activity, actorEndpoint);
+                            ((DefaultProcessInstance) instance).set(
+                                    activity.getTracingTag(),
+                                    DefaultProcessInstance.EVENT_DATA,
+                                    (Serializable) eventContent);
+                            ((ReceiveActivity) activity).fireReceived(instance, eventContent);
+                        } finally {
+                            GlobalContext.setUserId(previousUserId);
+                        }
                         break activityLoop;
                     }
                 }
             }
         }
+    }
+
+    void validateHumanActivityCompletion(
+            ProcessInstance instance,
+            Activity activity,
+            String actorEndpoint) throws Exception {
+        if (!(activity instanceof HumanActivity)) {
+            return;
+        }
+        if (!UEngineUtil.isNotEmpty(actorEndpoint)) {
+            throw new NonRetryableInboxException("header.emnb is required to complete a work item");
+        }
+
+        HumanActivity humanActivity = (HumanActivity) activity;
+        String[] taskIds = humanActivity.getTaskIds(instance);
+        WorklistEntity owned = null;
+        boolean unclaimed = false;
+        if (taskIds != null) {
+            for (String taskId : taskIds) {
+                if (!UEngineUtil.isNotEmpty(taskId)) {
+                    continue;
+                }
+                WorklistEntity worklist = worklistRepository.findByIdForUpdate(Long.valueOf(taskId)).orElse(null);
+                if (worklist == null) {
+                    continue;
+                }
+                if (!UEngineUtil.isNotEmpty(worklist.getEndpoint())) {
+                    unclaimed = true;
+                } else if (worklist.getEndpoint().equals(actorEndpoint.trim())) {
+                    owned = worklist;
+                    break;
+                }
+            }
+        }
+
+        if (owned == null) {
+            throw new NonRetryableInboxException(unclaimed
+                    ? "Work item must be claimed before completion"
+                    : "Only the current work item owner can complete this task");
+        }
+
+        instance.setProperty(activity.getTracingTag(), HumanActivity.PVKEY_TASKID,
+                String.valueOf(owned.getTaskId()));
+        GlobalContext.setUserId(actorEndpoint.trim());
     }
 
     private void triggerWaitingEvents(String eventType) throws Exception {

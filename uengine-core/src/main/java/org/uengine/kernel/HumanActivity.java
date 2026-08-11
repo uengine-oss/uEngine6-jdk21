@@ -929,17 +929,6 @@ public class HumanActivity extends ReceiveActivity {
 	}
 
 	protected void onReceive(ProcessInstance instance, Object payload) throws Exception {
-		// 외부 inbox 이벤트(HashMap payload + eventSynchronization 선언) 인 경우
-		// worklist 완료 게이팅(onComplete)을 우회하고 ReceiveActivity.onReceive 로
-		// 직접 진입시켜 mappingContext 실행 + fireComplete 가 일어나게 한다.
-		boolean isExternalEventPayload = (payload instanceof java.util.Map)
-				&& !(payload instanceof ResultPayload)
-				&& getEventSynchronizations() != null
-				&& getEventSynchronizations().length > 0;
-		if (isExternalEventPayload) {
-			super.onReceive(instance, payload);
-			return;
-		}
 		if (onComplete(instance, payload) && !isNotificationWorkitem()) {// only when the completion logic is ok, fire
 																			// completion message
 			setCompletedRoleMapping(instance, getActualMapping(instance));
@@ -1410,15 +1399,21 @@ public class HumanActivity extends ReceiveActivity {
 		}
 
 		WorkList wl = instance.getWorkList();
-		ResultPayload rp = new ResultPayload();
-		rp.setExtendedValue(
-				new KeyedParameter(KeyedParameter.DEFAULT_STATUS, DefaultWorkList.WORKITEM_STATUS_DELEGATED));
-		rp.setExtendedValue(new KeyedParameter("endDate", new Date()));
-		rp.setExtendedValue(new KeyedParameter(KeyedParameter.DISPATCHINGOPTION, "" + Role.DISPATCHINGOPTION_ALL));
-		rp.setExtendedValue(new KeyedParameter("dispatchParam1", ""));
+		KeyedParameter[] delegationParameters;
+		if (delegateOnlyForWorkitem) {
+			delegationParameters = new KeyedParameter[0];
+		} else {
+			ResultPayload rp = new ResultPayload();
+			rp.setExtendedValue(
+					new KeyedParameter(KeyedParameter.DEFAULT_STATUS, DefaultWorkList.WORKITEM_STATUS_DELEGATED));
+			rp.setExtendedValue(new KeyedParameter("endDate", new Date()));
+			rp.setExtendedValue(new KeyedParameter(KeyedParameter.DISPATCHINGOPTION, "" + Role.DISPATCHINGOPTION_ALL));
+			rp.setExtendedValue(new KeyedParameter("dispatchParam1", ""));
+			delegationParameters = rp.getExtendedValues();
+		}
 
 		// workitem의 endpoint를 위임된 사용자로 변경
-		wl.updateWorkItem(taskIds[0], roleMapping, rp.getExtendedValues(), instance.getProcessTransactionContext());
+		wl.updateWorkItem(taskIds[0], roleMapping, delegationParameters, instance.getProcessTransactionContext());
 		
 		// 원소유 유지 모드: workitem의 endpoint를 저장 (테스트에서 확인용)
 		if (delegateOnlyForWorkitem) {

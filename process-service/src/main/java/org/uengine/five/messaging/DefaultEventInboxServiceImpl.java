@@ -42,7 +42,7 @@ public class DefaultEventInboxServiceImpl implements DefaultEventInboxService {
             corrKey = request.getCorrKey();
             String payloadJson = serializePayload(request.getPayload());
             EventInboxResponse coreResponse = enqueueService.enqueue(
-                    new EventInboxRequest(eventName, corrKey, payloadJson));
+                    new EventInboxRequest(eventName, corrKey, payloadJson, request.getActorEndpoint()));
             DefaultEventInboxResponse response = DefaultEventInboxResponse.from(coreResponse);
             if (EventInboxResponse.STATUS_FAILED.equals(coreResponse.getStatus())) {
                 // 성공(처리 실패) — 멱등 중복 등
@@ -69,4 +69,5 @@ public class DefaultEventInboxServiceImpl implements DefaultEventInboxService {
         }
         return objectMapper.writeValueAsString(payload);
     }
+
 }

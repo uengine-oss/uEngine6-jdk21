@@ -49,6 +49,9 @@ public class EventInbox {
     @Column(name = "PAYLOAD", nullable = false, columnDefinition = "TEXT")
     private String payload;
 
+    @Column(name = "ACTOR_ENDPOINT")
+    private String actorEndpoint;
+
     private Instant createdAt = Instant.now();
 
     private Instant processedAt;
@@ -76,6 +79,9 @@ public class EventInbox {
 
     public String getPayload() { return payload; }
     public void setPayload(String payload) { this.payload = payload; }
+
+    public String getActorEndpoint() { return actorEndpoint; }
+    public void setActorEndpoint(String actorEndpoint) { this.actorEndpoint = actorEndpoint; }
 
     public String getCorrKey() { return corrKey; }
     public void setCorrKey(String corrKey) { this.corrKey = corrKey; }

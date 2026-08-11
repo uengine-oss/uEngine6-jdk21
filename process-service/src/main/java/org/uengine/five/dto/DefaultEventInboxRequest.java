@@ -29,6 +29,8 @@ public class DefaultEventInboxRequest {
 
     private JsonNode payload;
 
+    private String actorEndpoint;
+
     public String getEventName() { return eventName; }
     public void setEventName(String eventName) { this.eventName = eventName; }
 
@@ -37,4 +39,7 @@ public class DefaultEventInboxRequest {
 
     public JsonNode getPayload() { return payload; }
     public void setPayload(JsonNode payload) { this.payload = payload; }
+
+    public String getActorEndpoint() { return actorEndpoint; }
+    public void setActorEndpoint(String actorEndpoint) { this.actorEndpoint = actorEndpoint; }
 }

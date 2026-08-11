@@ -33,17 +33,31 @@ public class EventInboxEnqueueServiceImpl implements EventInboxEnqueueService {
         String eventName = request != null ? request.getEventName() : null;
         String corrKey = request != null ? request.getCorrKey() : null;
         String payloadJson = request != null ? request.getPayloadJson() : null;
+        String actorEndpoint = request != null ? request.getActorEndpoint() : null;
         String normalizedPayload = payloadJson != null ? payloadJson : "{}";
 
         EventInbox ev = new EventInbox();
         ev.setEventName(eventName);
         ev.setPayload(normalizedPayload);
         ev.setCorrKey(corrKey);
+        ev.setActorEndpoint(actorEndpoint);
 
         try {
             repo.save(ev);
         } catch (DataIntegrityViolationException dup) {
             EventInbox existing = findExistingInboxForDuplicate(corrKey, eventName);
+            if (isRejectedCompletion(existing)) {
+                existing.setPayload(normalizedPayload);
+                existing.setActorEndpoint(actorEndpoint);
+                existing.setProcessedAt(null);
+                existing.setTryCnt(0);
+                existing.setLastError(null);
+                existing.setStatus("PENDING");
+                repo.save(existing);
+                log.info("[inbox] explicitly resubmitted rejected completion (corrKey={}, eventName={}, id={})",
+                        corrKey, eventName, existing.getId());
+                return EventInboxResponse.success(eventName, corrKey, existing.getCreatedAt());
+            }
             Long existingId = existing != null ? existing.getId() : null;
             log.info("[inbox] duplicate (corrKey={}, eventName={}, existingId={}), treated as idempotent failure",
                     corrKey, eventName, existingId);
@@ -61,5 +75,12 @@ public class EventInboxEnqueueServiceImpl implements EventInboxEnqueueService {
             return null;
         }
         return repo.findFirstByCorrKeyAndEventName(corrKey, eventName).orElse(null);
+    }
+
+    private static boolean isRejectedCompletion(EventInbox existing) {
+        return existing != null
+                && "FAILED".equals(existing.getStatus())
+                && existing.getLastError() != null
+                && existing.getLastError().contains(NonRetryableInboxException.class.getName());
     }
 }

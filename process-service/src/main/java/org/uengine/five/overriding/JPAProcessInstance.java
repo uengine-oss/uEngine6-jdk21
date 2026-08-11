@@ -96,6 +96,11 @@ public class JPAProcessInstance extends DefaultProcessInstance implements Transa
         this.newInstance = newInstance;
     }
 
+    @Override
+    public boolean isNew() {
+        return isNewInstance();
+    }
+
     boolean prototype;
 
     public boolean isPrototype() {
