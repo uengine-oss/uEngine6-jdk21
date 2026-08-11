@@ -293,7 +293,6 @@ public class WorkSearchServiceImpl implements WorkSearchService {
     MyTodoItem item = new MyTodoItem();
 
     item.setCustId(instance == null ? null : instance.getCustId());
-    item.setFncgBswrDvsnCode(instance == null ? null : instance.getFncgBswrDvsnCode());
     item.setLoanCntcNo(instance == null ? null : instance.getLoanCntcNo());
     item.setFncgSuptTrgtDvsnCode(instance == null ? null : instance.getFncgSuptTrgtDvsnCode());
     item.setLoanSubjDvsnCode(instance == null ? null : instance.getLoanSubjDvsnCode());
@@ -334,7 +333,6 @@ public class WorkSearchServiceImpl implements WorkSearchService {
     OrgRunningItem item = new OrgRunningItem();
 
     item.setStarDttm(instance == null ? null : instance.getStartedDate());
-    item.setFncgBswrDvsnCode(instance == null ? null : instance.getFncgBswrDvsnCode());
     item.setLoanCntcNo(instance == null ? null : instance.getLoanCntcNo());
     item.setFncgSuptTrgtDvsnCode(instance == null ? null : instance.getFncgSuptTrgtDvsnCode());
     item.setLoanSubjDvsnCode(instance == null ? null : instance.getLoanSubjDvsnCode());
@@ -363,7 +361,6 @@ public class WorkSearchServiceImpl implements WorkSearchService {
   MyProgressItem toMyProgressItem(WorklistEntity worklist, Map<Long, String> rootDefIdsByInstId) {
     ProcessInstanceEntity instance = worklist.getProcessInstance();
     MyProgressItem item = new MyProgressItem();
-    item.setFncgBswrDvsnCode(instance == null ? null : instance.getFncgBswrDvsnCode());
     item.setLoanCntcNo(instance == null ? null : instance.getLoanCntcNo());
     item.setFncgSuptTrgtDvsnCode(instance == null ? null : instance.getFncgSuptTrgtDvsnCode());
     item.setLoanSubjDvsnCode(instance == null ? null : instance.getLoanSubjDvsnCode());
@@ -392,7 +389,6 @@ public class WorkSearchServiceImpl implements WorkSearchService {
     ProcessInstanceEntity instance = worklist.getProcessInstance();
     OrgCompletedItem item = new OrgCompletedItem();
     item.setStarDttm(instance == null ? null : instance.getStartedDate());
-    item.setFncgBswrDvsnCode(instance == null ? null : instance.getFncgBswrDvsnCode());
     item.setLoanCntcNo(instance == null ? null : instance.getLoanCntcNo());
     item.setFncgSuptTrgtDvsnCode(instance == null ? null : instance.getFncgSuptTrgtDvsnCode());
     item.setLoanSubjDvsnCode(instance == null ? null : instance.getLoanSubjDvsnCode());

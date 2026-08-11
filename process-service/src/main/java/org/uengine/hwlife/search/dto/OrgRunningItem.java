@@ -11,7 +11,6 @@ public class OrgRunningItem {
 
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyyMMddHHmmssSSS")
     private Date starDttm;
-    private String fncgBswrDvsnCode;
     private String loanCntcNo;
     private String fncgSuptTrgtDvsnCode;
     private String loanSubjDvsnCode;
@@ -39,14 +38,6 @@ public class OrgRunningItem {
 
     public void setStarDttm(Date starDttm) {
         this.starDttm = starDttm;
-    }
-
-    public String getFncgBswrDvsnCode() {
-        return fncgBswrDvsnCode;
-    }
-
-    public void setFncgBswrDvsnCode(String fncgBswrDvsnCode) {
-        this.fncgBswrDvsnCode = fncgBswrDvsnCode;
     }
 
     public String getLoanCntcNo() {

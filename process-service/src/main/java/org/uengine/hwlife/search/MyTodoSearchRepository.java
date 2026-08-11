@@ -147,7 +147,6 @@ public class MyTodoSearchRepository {
     addText(builder, predicates, worklist.get("title"), request.getUworNm());
     addText(builder, predicates, instance.get("bswrClsfCode"), request.getBpmBswrClsfCode());
     addText(builder, predicates, instance.get("custId"), request.getCustId());
-    addText(builder, predicates, instance.get("fncgBswrDvsnCode"), request.getFncgBswrDvsnCode());
     addText(builder, predicates, instance.get("loanCntcNo"), request.getLoanCntcNo());
     addText(builder, predicates, instance.get("corrKey"), request.getLoanPcesMgmtNo());
     addText(builder, predicates, instance.get("fncgSuptTrgtDvsnCode"), request.getFncgSuptTrgtDvsnCode());

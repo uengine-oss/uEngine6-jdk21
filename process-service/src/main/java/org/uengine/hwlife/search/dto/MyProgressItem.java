@@ -9,7 +9,6 @@ import com.fasterxml.jackson.annotation.JsonFormat;
  */
 public class MyProgressItem {
 
-    private String fncgBswrDvsnCode;
     private String loanCntcNo;
     private String fncgSuptTrgtDvsnCode;
     private String loanSubjDvsnCode;
@@ -29,14 +28,6 @@ public class MyProgressItem {
     private String fncgBpmtaskLstId;
     private String fncgBpmPcesIntcId;
     private String fncgBpmPcesId; // root.defId
-
-    public String getFncgBswrDvsnCode() {
-        return fncgBswrDvsnCode;
-    }
-
-    public void setFncgBswrDvsnCode(String fncgBswrDvsnCode) {
-        this.fncgBswrDvsnCode = fncgBswrDvsnCode;
-    }
 
     public String getLoanCntcNo() {
         return loanCntcNo;

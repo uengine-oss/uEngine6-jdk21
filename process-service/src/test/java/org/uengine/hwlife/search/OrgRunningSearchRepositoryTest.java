@@ -151,7 +151,6 @@ class OrgRunningSearchRepositoryTest {
   private static OrgRunningRequest fullRequest() {
     OrgRunningRequest request = new OrgRunningRequest();
     request.setBpmBswrClsfCode("BSWR");
-    request.setFncgBswrDvsnCode("LOAN");
     request.setFncgBpmPcesId("ROOT-DEF-ID");
     request.setFncgSuptTrgtDvsnCode("TARGET");
     request.setLoanSubjDvsnCode("SUBJECT");

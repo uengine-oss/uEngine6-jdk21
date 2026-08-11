@@ -132,11 +132,6 @@ public class OrgRunningSearchRepository {
     // 단위업무명: worklist.title == uworNm
     addText(builder, predicates, worklist.get("title"), request.getUworNm());
     addText(builder, predicates, instance.get("bswrClsfCode"), request.getBpmBswrClsfCode());
-    addText(
-        builder,
-        predicates,
-        instance.get("fncgBswrDvsnCode"),
-        request.getFncgBswrDvsnCode());
     addDateRange(
         builder,
         predicates,

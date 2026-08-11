@@ -6,7 +6,6 @@ package org.uengine.hwlife.search.dto;
 public class BulkAssignSearchResponseItem {
 
     private String bpmBswrClsfCode; // 업무분류 코드
-    private String fncgBswrDvsnCode; //융자 구분코드 
     private String fncgBpmTaskLstId;
     private String fncgBpmPcesIntcId;
     private String uworNm; // 태스크 명
@@ -18,14 +17,6 @@ public class BulkAssignSearchResponseItem {
 
     public void setBpmBswrClsfCode(String bpmBswrClsfCode) {
         this.bpmBswrClsfCode = bpmBswrClsfCode;
-    }
-
-    public String getFncgBswrDvsnCode() {
-        return fncgBswrDvsnCode;
-    }
-
-    public void setFncgBswrDvsnCode(String fncgBswrDvsnCode) {
-        this.fncgBswrDvsnCode = fncgBswrDvsnCode;
     }
 
     public String getFncgBpmTaskLstId() {

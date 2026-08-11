@@ -10,7 +10,6 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 public class MyProgressRequest {
 
     private String bpmBswrClsfCode;
-    private String fncgBswrDvsnCode;
     @JsonFormat(pattern = "yyyyMMdd")
     private Date rqstStarDate;
     @JsonFormat(pattern = "yyyyMMdd")
@@ -34,14 +33,6 @@ public class MyProgressRequest {
 
     public void setBpmBswrClsfCode(String bpmBswrClsfCode) {
         this.bpmBswrClsfCode = bpmBswrClsfCode;
-    }
-
-    public String getFncgBswrDvsnCode() {
-        return fncgBswrDvsnCode;
-    }
-
-    public void setFncgBswrDvsnCode(String fncgBswrDvsnCode) {
-        this.fncgBswrDvsnCode = fncgBswrDvsnCode;
     }
 
     public Date getRqstStarDate() {

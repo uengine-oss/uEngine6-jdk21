@@ -12,7 +12,6 @@ public class MyTodoRequest {
 
     private String bpmBswrClsfCode;
     private String custId;
-    private String fncgBswrDvsnCode;
     private String loanCntcNo;
     private String loanPcesMgmtNo;
     private String fncgSuptTrgtDvsnCode;
@@ -50,14 +49,6 @@ public class MyTodoRequest {
 
     public void setCustId(String custId) {
         this.custId = custId;
-    }
-
-    public String getFncgBswrDvsnCode() {
-        return fncgBswrDvsnCode;
-    }
-
-    public void setFncgBswrDvsnCode(String fncgBswrDvsnCode) {
-        this.fncgBswrDvsnCode = fncgBswrDvsnCode;
     }
 
     public String getLoanCntcNo() {

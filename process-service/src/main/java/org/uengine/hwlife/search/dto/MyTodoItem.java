@@ -10,7 +10,6 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 public class MyTodoItem {
 
     private String custId;
-    private String fncgBswrDvsnCode;
     private String loanCntcNo;
     private String fncgSuptTrgtDvsnCode;
     private String loanSubjDvsnCode;
@@ -52,14 +51,6 @@ public class MyTodoItem {
 
     public void setCustId(String custId) {
         this.custId = custId;
-    }
-
-    public String getFncgBswrDvsnCode() {
-        return fncgBswrDvsnCode;
-    }
-
-    public void setFncgBswrDvsnCode(String fncgBswrDvsnCode) {
-        this.fncgBswrDvsnCode = fncgBswrDvsnCode;
     }
 
     public String getLoanCntcNo() {
