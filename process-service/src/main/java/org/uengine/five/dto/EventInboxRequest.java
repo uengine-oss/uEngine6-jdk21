@@ -14,7 +14,7 @@ public class EventInboxRequest {
 
     private String payloadJson;
 
-    private String actorEndpoint;
+    private String requesterEmnb;
 
     public EventInboxRequest() {
     }
@@ -23,11 +23,11 @@ public class EventInboxRequest {
         this(eventName, corrKey, payloadJson, null);
     }
 
-    public EventInboxRequest(String eventName, String corrKey, String payloadJson, String actorEndpoint) {
+    public EventInboxRequest(String eventName, String corrKey, String payloadJson, String requesterEmnb) {
         this.eventName = eventName;
         this.corrKey = corrKey;
         this.payloadJson = payloadJson;
-        this.actorEndpoint = actorEndpoint;
+        this.requesterEmnb = requesterEmnb;
     }
 
     public String getEventName() { return eventName; }
@@ -39,6 +39,6 @@ public class EventInboxRequest {
     public String getPayloadJson() { return payloadJson; }
     public void setPayloadJson(String payloadJson) { this.payloadJson = payloadJson; }
 
-    public String getActorEndpoint() { return actorEndpoint; }
-    public void setActorEndpoint(String actorEndpoint) { this.actorEndpoint = actorEndpoint; }
+    public String getRequesterEmnb() { return requesterEmnb; }
+    public void setRequesterEmnb(String requesterEmnb) { this.requesterEmnb = requesterEmnb; }
 }

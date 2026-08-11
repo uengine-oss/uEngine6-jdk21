@@ -49,8 +49,8 @@ public class EventInbox {
     @Column(name = "PAYLOAD", nullable = false, columnDefinition = "TEXT")
     private String payload;
 
-    @Column(name = "ACTOR_ENDPOINT")
-    private String actorEndpoint;
+    @Column(name = "REQUESTER_EMNB")
+    private String requesterEmnb;
 
     private Instant createdAt = Instant.now();
 
@@ -80,8 +80,8 @@ public class EventInbox {
     public String getPayload() { return payload; }
     public void setPayload(String payload) { this.payload = payload; }
 
-    public String getActorEndpoint() { return actorEndpoint; }
-    public void setActorEndpoint(String actorEndpoint) { this.actorEndpoint = actorEndpoint; }
+    public String getRequesterEmnb() { return requesterEmnb; }
+    public void setRequesterEmnb(String requesterEmnb) { this.requesterEmnb = requesterEmnb; }
 
     public String getCorrKey() { return corrKey; }
     public void setCorrKey(String corrKey) { this.corrKey = corrKey; }
