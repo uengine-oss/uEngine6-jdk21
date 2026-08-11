@@ -10,6 +10,7 @@ public class AbsenceHistoryResponse {
 
     private List<AbsenceHistoryItem> abscList = new ArrayList<>();
     private Integer totCont;
+    private String nextKey;
 
     public List<AbsenceHistoryItem> getAbscList() {
         return abscList;
@@ -25,5 +26,13 @@ public class AbsenceHistoryResponse {
 
     public void setTotCont(Integer totCont) {
         this.totCont = totCont;
+    }
+
+    public String getNextKey() {
+        return nextKey;
+    }
+
+    public void setNextKey(String nextKey) {
+        this.nextKey = nextKey;
     }
 }
