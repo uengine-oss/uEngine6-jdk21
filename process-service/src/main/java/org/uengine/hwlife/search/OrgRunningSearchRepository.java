@@ -15,14 +15,17 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import jakarta.persistence.Tuple;
 import jakarta.persistence.TypedQuery;
+import jakarta.persistence.criteria.AbstractQuery;
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.CriteriaQuery;
+import jakarta.persistence.criteria.Expression;
 import jakarta.persistence.criteria.Fetch;
 import jakarta.persistence.criteria.Join;
 import jakarta.persistence.criteria.JoinType;
 import jakarta.persistence.criteria.Path;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Root;
+import jakarta.persistence.criteria.Subquery;
 
 @Repository
 public class OrgRunningSearchRepository {
@@ -49,7 +52,7 @@ public class OrgRunningSearchRepository {
     Root<WorklistEntity> worklist = dataQuery.from(WorklistEntity.class);
     Join<WorklistEntity, ProcessInstanceEntity> instance = fetchProcessInstance(worklist);
     List<Predicate> dataPredicates =
-        new ArrayList<>(List.of(predicates(builder, worklist, instance, request)));
+        new ArrayList<>(List.of(predicates(builder, dataQuery, worklist, instance, request)));
     if (cursor != null) {
       dataPredicates.add(
           cursorPredicate(builder, worklist, instance, sortField, cursor));
@@ -76,7 +79,7 @@ public class OrgRunningSearchRepository {
     Join<WorklistEntity, ProcessInstanceEntity> countInstance =
         countWorklist.join("processInstance", JoinType.LEFT);
     countQuery.select(builder.count(countWorklist))
-        .where(predicates(builder, countWorklist, countInstance, request));
+        .where(predicates(builder, countQuery, countWorklist, countInstance, request));
     long totalCount = entityManager.createQuery(countQuery).getSingleResult();
     return new SearchResult(items, Math.toIntExact(totalCount), nextKey);
   }
@@ -118,24 +121,28 @@ public class OrgRunningSearchRepository {
 
   private static Predicate[] predicates(
       CriteriaBuilder builder,
+      AbstractQuery<?> query,
       Root<WorklistEntity> worklist,
       Join<WorklistEntity, ProcessInstanceEntity> instance,
       OrgRunningRequest request) {
     List<Predicate> predicates = new ArrayList<>();
     predicates.add(builder.upper(worklist.get("status")).in("NEW", "RUNNING"));
+    // root_inst_id 기준 루트 인스턴스 def_id == fncgBpmPcesId
+    addRootDefId(builder, query, predicates, instance, request.getFncgBpmPcesId());
+    // 단위업무명: worklist.title == uworNm
+    addText(builder, predicates, worklist.get("title"), request.getUworNm());
     addText(builder, predicates, instance.get("bswrClsfCode"), request.getBpmBswrClsfCode());
     addText(
         builder,
         predicates,
         instance.get("fncgBswrDvsnCode"),
         request.getFncgBswrDvsnCode());
-    addText(builder, predicates, worklist.get("trcTag"), request.getFncgBpmTaskTrcgNm());
     addDateRange(
         builder,
         predicates,
         worklist.get("startDate"),
-        request.getRqstStarDttm(),
-        request.getRqstEndDttm());
+        request.getRqstStarDate(),
+        request.getRqstEndDate());
     addText(
         builder,
         predicates,
@@ -151,6 +158,31 @@ public class OrgRunningSearchRepository {
     addText(builder, predicates, instance.get("custId"), request.getCustId());
     addOrganization(builder, predicates, instance, request);
     return predicates.toArray(Predicate[]::new);
+  }
+
+  /**
+   * 서브프로세스 단위업무도 루트 프로세스 정의로 필터링한다.
+   * {@code coalesce(instance.rootInstId, instance.instId)} 의 {@code defId == fncgBpmPcesId}.
+   */
+  private static void addRootDefId(
+      CriteriaBuilder builder,
+      AbstractQuery<?> query,
+      List<Predicate> predicates,
+      Join<WorklistEntity, ProcessInstanceEntity> instance,
+      String fncgBpmPcesId) {
+    String value = trimToNull(fncgBpmPcesId);
+    if (value == null) {
+      return;
+    }
+    Subquery<Long> rootMatch = query.subquery(Long.class);
+    Root<ProcessInstanceEntity> rootInstance = rootMatch.from(ProcessInstanceEntity.class);
+    Expression<Long> rootInstId =
+        builder.coalesce(instance.get("rootInstId"), instance.get("instId"));
+    rootMatch.select(rootInstance.get("instId"))
+        .where(
+            builder.equal(rootInstance.get("instId"), rootInstId),
+            builder.equal(rootInstance.get("defId"), value));
+    predicates.add(builder.exists(rootMatch));
   }
 
   private static void addText(

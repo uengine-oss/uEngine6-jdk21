@@ -23,8 +23,10 @@ public class OrgCompletedItem {
     private String reptHndrFncgOrgnCode;
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyyMMddHHmmssSSS")
     private Date endDttm;
+    private String bpmBswrClsfCode;
     private String fncgBpmtaskLstId;
     private String fncgBpmPcesIntcId;
+    private String fncgBpmPcesId; // root.defId
 
     public Date getStarDttm() {
         return starDttm;
@@ -122,6 +124,14 @@ public class OrgCompletedItem {
         this.endDttm = endDttm;
     }
 
+    public String getBpmBswrClsfCode() {
+        return bpmBswrClsfCode;
+    }
+
+    public void setBpmBswrClsfCode(String bpmBswrClsfCode) {
+        this.bpmBswrClsfCode = bpmBswrClsfCode;
+    }
+
     public String getFncgBpmtaskLstId() {
         return fncgBpmtaskLstId;
     }
@@ -136,5 +146,13 @@ public class OrgCompletedItem {
 
     public void setFncgBpmPcesIntcId(String fncgBpmPcesIntcId) {
         this.fncgBpmPcesIntcId = fncgBpmPcesIntcId;
+    }
+
+    public String getFncgBpmPcesId() {
+        return fncgBpmPcesId;
+    }
+
+    public void setFncgBpmPcesId(String fncgBpmPcesId) {
+        this.fncgBpmPcesId = fncgBpmPcesId;
     }
 }

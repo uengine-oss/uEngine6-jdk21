@@ -17,17 +17,18 @@ public class MyProgressItem {
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyyMMdd")
     private Date loanHopeDate;
     private String custId;
-    private String corrKey;
-    private String title;
-    private String trcTag;
-    private String initEp;
-    private String group;
-    private String endpoint;
-    private String resName;
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyyMMddHHmmssSSS")
-    private Date startedDate;
-    private String taskId;
-    private String instId;
+    private String loanPcesMgmtNo;
+    private String uworNm;
+    private String fncgBpmTaskTrcgNm;
+    private String reptHndrEmnb;
+    private String reptHndrFncgOrgnCode;
+    private String hndrEmnb;
+    private String hndrOrgnCode;
+    private String starDttm; // instance.startedDate
+    private String bpmBswrClsfCode;
+    private String fncgBpmtaskLstId;
+    private String fncgBpmPcesIntcId;
+    private String fncgBpmPcesId; // root.defId
 
     public String getFncgBswrDvsnCode() {
         return fncgBswrDvsnCode;
@@ -85,83 +86,99 @@ public class MyProgressItem {
         this.custId = custId;
     }
 
-    public String getCorrKey() {
-        return corrKey;
+    public String getLoanPcesMgmtNo() {
+        return loanPcesMgmtNo;
     }
 
-    public void setCorrKey(String corrKey) {
-        this.corrKey = corrKey;
+    public void setLoanPcesMgmtNo(String loanPcesMgmtNo) {
+        this.loanPcesMgmtNo = loanPcesMgmtNo;
     }
 
-    public String getTitle() {
-        return title;
+    public String getUworNm() {
+        return uworNm;
     }
 
-    public void setTitle(String title) {
-        this.title = title;
+    public void setUworNm(String uworNm) {
+        this.uworNm = uworNm;
     }
 
-    public String getTrcTag() {
-        return trcTag;
+    public String getFncgBpmTaskTrcgNm() {
+        return fncgBpmTaskTrcgNm;
     }
 
-    public void setTrcTag(String trcTag) {
-        this.trcTag = trcTag;
+    public void setFncgBpmTaskTrcgNm(String fncgBpmTaskTrcgNm) {
+        this.fncgBpmTaskTrcgNm = fncgBpmTaskTrcgNm;
     }
 
-    public String getInitEp() {
-        return initEp;
+    public String getReptHndrEmnb() {
+        return reptHndrEmnb;
     }
 
-    public void setInitEp(String initEp) {
-        this.initEp = initEp;
+    public void setReptHndrEmnb(String reptHndrEmnb) {
+        this.reptHndrEmnb = reptHndrEmnb;
     }
 
-    public String getGroup() {
-        return group;
+    public String getReptHndrFncgOrgnCode() {
+        return reptHndrFncgOrgnCode;
     }
 
-    public void setGroup(String group) {
-        this.group = group;
+    public void setReptHndrFncgOrgnCode(String reptHndrFncgOrgnCode) {
+        this.reptHndrFncgOrgnCode = reptHndrFncgOrgnCode;
     }
 
-    public String getEndpoint() {
-        return endpoint;
+    public String getHndrEmnb() {
+        return hndrEmnb;
     }
 
-    public void setEndpoint(String endpoint) {
-        this.endpoint = endpoint;
+    public void setHndrEmnb(String hndrEmnb) {
+        this.hndrEmnb = hndrEmnb;
     }
 
-    public String getResName() {
-        return resName;
+    public String getHndrOrgnCode() {
+        return hndrOrgnCode;
     }
 
-    public void setResName(String resName) {
-        this.resName = resName;
+    public void setHndrOrgnCode(String hndrOrgnCode) {
+        this.hndrOrgnCode = hndrOrgnCode;
     }
 
-    public Date getStartedDate() {
-        return startedDate;
+    public String getStarDttm() {
+        return starDttm;
     }
 
-    public void setStartedDate(Date startedDate) {
-        this.startedDate = startedDate;
+    public void setStarDttm(String starDttm) {
+        this.starDttm = starDttm;
     }
 
-    public String getTaskId() {
-        return taskId;
+    public String getBpmBswrClsfCode() {
+        return bpmBswrClsfCode;
     }
 
-    public void setTaskId(String taskId) {
-        this.taskId = taskId;
+    public void setBpmBswrClsfCode(String bpmBswrClsfCode) {
+        this.bpmBswrClsfCode = bpmBswrClsfCode;
     }
 
-    public String getInstId() {
-        return instId;
+    public String getFncgBpmtaskLstId() {
+        return fncgBpmtaskLstId;
     }
 
-    public void setInstId(String instId) {
-        this.instId = instId;
+    public void setFncgBpmtaskLstId(String fncgBpmtaskLstId) {
+        this.fncgBpmtaskLstId = fncgBpmtaskLstId;
+    }
+
+    public String getFncgBpmPcesIntcId() {
+        return fncgBpmPcesIntcId;
+    }
+
+    public void setFncgBpmPcesIntcId(String fncgBpmPcesIntcId) {
+        this.fncgBpmPcesIntcId = fncgBpmPcesIntcId;
+    }
+
+    public String getFncgBpmPcesId() {
+        return fncgBpmPcesId;
+    }
+
+    public void setFncgBpmPcesId(String fncgBpmPcesId) {
+        this.fncgBpmPcesId = fncgBpmPcesId;
     }
 }

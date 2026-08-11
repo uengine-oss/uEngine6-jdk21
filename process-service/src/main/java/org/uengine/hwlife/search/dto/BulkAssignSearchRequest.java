@@ -2,25 +2,31 @@ package org.uengine.hwlife.search.dto;
 
 import java.util.Date;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
+
 /**
  * 일괄 배정 대상 검색 요청 — POST /search/bulk-assign JSON body.
  */
 public class BulkAssignSearchRequest {
 
     private String bpmBswrClsfCode;
-    private String custId;
     private String fncgBswrDvsnCode;
+
+    @JsonFormat(pattern = "yyyyMMdd")
+    private Date rqstStarDate;
+    @JsonFormat(pattern = "yyyyMMdd")
+    private Date rqstEndDate;
+
+    private String fncgSuptTrgtDvsnCode;
     private String loanSubjDvsnCode;
     private String fncgMneyUsagClsfCode;
-    private String fncgBpmTaskTrcgNm;
-    private Date statDate;
-    private Date endDate;
-    private Date hopeStarDate;
-    private Date hopeEndDate;
+    private String loanCntcNo;
+    private String custId;
     private String fncgWndwOrgnCode;
-    private String hndrEmnb;
-    private String nextKey;
-    private Integer pageSize;
+    private String rqstDvsnCode;
+    private String sortOrdrVal;
+    private String fncgBpmPcesId;
+    private String uworNm;
 
     public String getBpmBswrClsfCode() {
         return bpmBswrClsfCode;
@@ -30,20 +36,36 @@ public class BulkAssignSearchRequest {
         this.bpmBswrClsfCode = bpmBswrClsfCode;
     }
 
-    public String getCustId() {
-        return custId;
-    }
-
-    public void setCustId(String custId) {
-        this.custId = custId;
-    }
-
     public String getFncgBswrDvsnCode() {
         return fncgBswrDvsnCode;
     }
 
     public void setFncgBswrDvsnCode(String fncgBswrDvsnCode) {
         this.fncgBswrDvsnCode = fncgBswrDvsnCode;
+    }
+
+    public Date getRqstStarDate() {
+        return rqstStarDate;
+    }
+
+    public void setRqstStarDate(Date rqstStarDate) {
+        this.rqstStarDate = rqstStarDate;
+    }
+
+    public Date getRqstEndDate() {
+        return rqstEndDate;
+    }
+
+    public void setRqstEndDate(Date rqstEndDate) {
+        this.rqstEndDate = rqstEndDate;
+    }
+
+    public String getFncgSuptTrgtDvsnCode() {
+        return fncgSuptTrgtDvsnCode;
+    }
+
+    public void setFncgSuptTrgtDvsnCode(String fncgSuptTrgtDvsnCode) {
+        this.fncgSuptTrgtDvsnCode = fncgSuptTrgtDvsnCode;
     }
 
     public String getLoanSubjDvsnCode() {
@@ -62,44 +84,20 @@ public class BulkAssignSearchRequest {
         this.fncgMneyUsagClsfCode = fncgMneyUsagClsfCode;
     }
 
-    public String getFncgBpmTaskTrcgNm() {
-        return fncgBpmTaskTrcgNm;
+    public String getLoanCntcNo() {
+        return loanCntcNo;
     }
 
-    public void setFncgBpmTaskTrcgNm(String fncgBpmTaskTrcgNm) {
-        this.fncgBpmTaskTrcgNm = fncgBpmTaskTrcgNm;
+    public void setLoanCntcNo(String loanCntcNo) {
+        this.loanCntcNo = loanCntcNo;
     }
 
-    public Date getStatDate() {
-        return statDate;
+    public String getCustId() {
+        return custId;
     }
 
-    public void setStatDate(Date statDate) {
-        this.statDate = statDate;
-    }
-
-    public Date getEndDate() {
-        return endDate;
-    }
-
-    public void setEndDate(Date endDate) {
-        this.endDate = endDate;
-    }
-
-    public Date getHopeStarDate() {
-        return hopeStarDate;
-    }
-
-    public void setHopeStarDate(Date hopeStarDate) {
-        this.hopeStarDate = hopeStarDate;
-    }
-
-    public Date getHopeEndDate() {
-        return hopeEndDate;
-    }
-
-    public void setHopeEndDate(Date hopeEndDate) {
-        this.hopeEndDate = hopeEndDate;
+    public void setCustId(String custId) {
+        this.custId = custId;
     }
 
     public String getFncgWndwOrgnCode() {
@@ -110,27 +108,35 @@ public class BulkAssignSearchRequest {
         this.fncgWndwOrgnCode = fncgWndwOrgnCode;
     }
 
-    public String getHndrEmnb() {
-        return hndrEmnb;
+    public String getRqstDvsnCode() {
+        return rqstDvsnCode;
     }
 
-    public void setHndrEmnb(String hndrEmnb) {
-        this.hndrEmnb = hndrEmnb;
+    public void setRqstDvsnCode(String rqstDvsnCode) {
+        this.rqstDvsnCode = rqstDvsnCode;
     }
 
-    public String getNextKey() {
-        return nextKey;
+    public String getSortOrdrVal() {
+        return sortOrdrVal;
     }
 
-    public void setNextKey(String nextKey) {
-        this.nextKey = nextKey;
+    public void setSortOrdrVal(String sortOrdrVal) {
+        this.sortOrdrVal = sortOrdrVal;
     }
 
-    public Integer getPageSize() {
-        return pageSize;
+    public String getFncgBpmPcesId() {
+        return fncgBpmPcesId;
     }
 
-    public void setPageSize(Integer pageSize) {
-        this.pageSize = pageSize;
-    } 
+    public void setFncgBpmPcesId(String fncgBpmPcesId) {
+        this.fncgBpmPcesId = fncgBpmPcesId;
+    }
+
+    public String getUworNm() {
+        return uworNm;
+    }
+
+    public void setUworNm(String uworNm) {
+        this.uworNm = uworNm;
+    }
 }

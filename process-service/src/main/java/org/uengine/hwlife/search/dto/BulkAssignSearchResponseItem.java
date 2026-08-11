@@ -10,7 +10,7 @@ public class BulkAssignSearchResponseItem {
     private String fncgBpmTaskLstId;
     private String fncgBpmPcesIntcId;
     private String uworNm; // 태스크 명
-    private String loanPcesNm; // 대출프로세스명 ( defName )
+    private String fncgBpmPcesId; // root.defId
 
     public String getBpmBswrClsfCode() {
         return bpmBswrClsfCode;
@@ -52,11 +52,11 @@ public class BulkAssignSearchResponseItem {
         this.uworNm = uworNm;
     }
 
-    public String getLoanPcesNm() {
-        return loanPcesNm;
+    public String getFncgBpmPcesId() {
+        return fncgBpmPcesId;
     }
 
-    public void setLoanPcesNm(String loanPcesNm) {
-        this.loanPcesNm = loanPcesNm;
+    public void setFncgBpmPcesId(String fncgBpmPcesId) {
+        this.fncgBpmPcesId = fncgBpmPcesId;
     }
 }

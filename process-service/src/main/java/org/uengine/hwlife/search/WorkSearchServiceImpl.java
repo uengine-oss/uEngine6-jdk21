@@ -2,8 +2,13 @@ package org.uengine.hwlife.search;
 
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Collection;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.TimeZone;
 import java.util.stream.Collectors;
 
@@ -18,13 +23,32 @@ import org.uengine.five.entity.ProcessInstanceEntity;
 import org.uengine.five.entity.WorklistEntity;
 import org.uengine.five.repository.ProcessInstanceRepository;
 import org.uengine.five.repository.WorklistRepository;
-import org.uengine.hwlife.search.dto.*;
 import org.uengine.hwlife.esbclient.dto.EsbCommonHeader;
 import org.uengine.hwlife.esbclient.support.EsbRequestBodyAdvice;
-
+import org.uengine.hwlife.search.dto.BulkAssignSearchRequest;
+import org.uengine.hwlife.search.dto.BulkAssignSearchResponse;
+import org.uengine.hwlife.search.dto.MyProgressItem;
+import org.uengine.hwlife.search.dto.MyProgressRequest;
+import org.uengine.hwlife.search.dto.MyProgressResponse;
+import org.uengine.hwlife.search.dto.MyTodoItem;
+import org.uengine.hwlife.search.dto.MyTodoRequest;
+import org.uengine.hwlife.search.dto.MyTodoResponse;
+import org.uengine.hwlife.search.dto.OrgCompletedItem;
+import org.uengine.hwlife.search.dto.OrgCompletedRequest;
+import org.uengine.hwlife.search.dto.OrgCompletedResponse;
+import org.uengine.hwlife.search.dto.OrgRunningItem;
+import org.uengine.hwlife.search.dto.OrgRunningRequest;
+import org.uengine.hwlife.search.dto.OrgRunningResponse;
+import org.uengine.hwlife.search.dto.RunningWorkByCorrKeyRequest;
+import org.uengine.hwlife.search.dto.RunningWorkByCorrKeyRequestItem;
+import org.uengine.hwlife.search.dto.RunningWorkByCorrKeyResponse;
+import org.uengine.hwlife.search.dto.RunningWorkByCorrKeyResponseItem;
+import org.uengine.hwlife.search.dto.WorklistByInstIdRequest;
+import org.uengine.hwlife.search.dto.WorklistByInstIdResponse;
+import org.uengine.hwlife.search.dto.WorklistByInstIdResponseItem;
 
 /**
- * BPM 통합 검색 REST API 구현. Repository 연동은 추후 구현.
+ * BPM 통합 검색 REST API 구현.
  */
 @RestController
 @CrossOrigin(origins = "*")
@@ -76,11 +100,12 @@ public class WorkSearchServiceImpl implements WorkSearchService {
         emnb,
         belnOrgnCode);
 
+    Map<Long, String> rootDefIds = loadRootDefIdsByInstId(result.items());
     MyTodoResponse response = new MyTodoResponse();
     response.setTotCont(result.totalCount());
     response.setNextKey(result.nextKey());
     response.setTodoList(result.items().stream()
-        .map(this::toMyTodoItem)
+        .map(worklist -> toMyTodoItem(worklist, rootDefIds))
         .collect(Collectors.toList()));
     return response;
   }
@@ -101,11 +126,12 @@ public class WorkSearchServiceImpl implements WorkSearchService {
         orgRunningSearchRepository.search(
             normalizedRequest, cursorId, normalizedRequest.getPageSize());
 
+    Map<Long, String> rootDefIds = loadRootDefIdsByInstId(result.items());
     OrgRunningResponse response = new OrgRunningResponse();
     response.setTotCont(result.totalCount());
     response.setNextKey(result.nextKey());
     response.setOrgnPrgsList(result.items().stream()
-        .map(this::toOrgRunningItem)
+        .map(worklist -> toOrgRunningItem(worklist, rootDefIds))
         .collect(Collectors.toList()));
     return response;
   }
@@ -197,7 +223,8 @@ public class WorkSearchServiceImpl implements WorkSearchService {
    */
   @Override
   @Transactional(readOnly = true)
-  public RunningWorkByCorrKeyResponse searchRunningWorkByCorrKey(@RequestBody RunningWorkByCorrKeyRequest request) {
+  public RunningWorkByCorrKeyResponse searchRunningWorkByCorrKey(
+      @RequestBody RunningWorkByCorrKeyRequest request) {
     RunningWorkByCorrKeyResponse response = new RunningWorkByCorrKeyResponse();
     List<RunningWorkByCorrKeyResponseItem> resultItems = new ArrayList<>();
     response.setBswrList(resultItems);
@@ -213,11 +240,10 @@ public class WorkSearchServiceImpl implements WorkSearchService {
         continue;
       }
 
-      // 인스턴스 상태와 무관하게 corrKey 로 조회
       List<ProcessInstanceEntity> instances =
           processInstanceRepository.findByCorrKeyOrderByStartedDateDescInstIdDesc(loanPcesMgmtNo);
       if (instances == null || instances.isEmpty()) {
-        resultItems.add(resultItem(loanPcesMgmtNo, null, null,"LBM020002"));
+        resultItems.add(resultItem(loanPcesMgmtNo, null, null, "LBM020002"));
         continue;
       }
 
@@ -227,11 +253,11 @@ public class WorkSearchServiceImpl implements WorkSearchService {
             : processInstance.getRootInstId();
         List<WorklistEntity> workItems = worklistRepository.findCurrentWorkItemByInstId(rootInstId);
         if (workItems == null || workItems.isEmpty()) {
-          resultItems.add(resultItem(loanPcesMgmtNo, processInstance, null,"LBM020003"));
+          resultItems.add(resultItem(loanPcesMgmtNo, processInstance, null, "LBM020003"));
           continue;
         }
 
-        for(WorklistEntity workItem : workItems){
+        for (WorklistEntity workItem : workItems) {
           resultItems.add(resultItem(loanPcesMgmtNo, processInstance, workItem, "LBM000000"));
         }
       }
@@ -256,13 +282,13 @@ public class WorkSearchServiceImpl implements WorkSearchService {
       item.setFncgBpmTaskTrcgNm(workItem.getTrcTag());
       item.setFncgBpmUworSttsCntn(workItem.getStatus());
       item.setHndrEmnb(workItem.getEndpoint());
-      item.setApvlYn(workItem.getApvlYn() == null ? "N" : workItem.getApvlYn() ? "Y" : "N");
-      item.setImgeScanYn(workItem.getImgeScanYn() == null ? "N" : workItem.getImgeScanYn() ? "Y" : "N");
+      item.setApvlYn(toYn(workItem.getApvlYn()));
+      item.setImgeScanYn(toYn(workItem.getImgeScanYn()));
     }
     return item;
   }
 
-  private MyTodoItem toMyTodoItem(WorklistEntity worklist) {
+  private MyTodoItem toMyTodoItem(WorklistEntity worklist, Map<Long, String> rootDefIdsByInstId) {
     ProcessInstanceEntity instance = worklist.getProcessInstance();
     MyTodoItem item = new MyTodoItem();
 
@@ -277,7 +303,6 @@ public class WorkSearchServiceImpl implements WorkSearchService {
     item.setFncgBpmTaskTrcgNm(worklist.getTrcTag());
     item.setUworStarDttm(worklist.getStartDate());
     item.setUworNm(worklist.getTitle());
-    item.setLoanPcesNm(firstNonBlank(worklist.getDefName(), instance == null ? null : instance.getDefName()));
     item.setReptHndrEmnb(instance == null ? null : instance.getInitEp());
     item.setReptHndrFncgOrgnCode(instance == null ? null : instance.getInitGroupCd());
     item.setPrcdHndrEmnb(instance == null ? null : instance.getPrevCurrEp());
@@ -290,17 +315,21 @@ public class WorkSearchServiceImpl implements WorkSearchService {
     item.setHndrNm(worklist.getResName());
     item.setHndrOrgnCode(firstNonBlank(worklist.getGroupCd(), worklist.getScope()));
     item.setScrnUrlAddr(worklist.getTool());
-    item.setFncgBpmTaskLstId(worklist.getTaskId() == null ? null : String.valueOf(worklist.getTaskId()));
-    item.setFncgBpmPcesIntcId(worklist.getInstId() == null ? null : String.valueOf(worklist.getInstId()));
+    item.setFncgBpmTaskLstId(
+        worklist.getTaskId() == null ? null : String.valueOf(worklist.getTaskId()));
+    item.setFncgBpmPcesIntcId(
+        worklist.getInstId() == null ? null : String.valueOf(worklist.getInstId()));
+    item.setFncgBpmPcesId(rootDefIdOf(instance, rootDefIdsByInstId));
     item.setDstOptnVal(String.valueOf(worklist.getDispatchOption()));
     item.setRuleAcmpVal(String.valueOf(worklist.getAssignType()));
-    item.setMnorExstYn(worklist.getDelegated() == null ? "N" : worklist.getDelegated() ? "Y" : "N");
-    item.setApvlYn(worklist.getApvlYn() == null ? "N" : worklist.getApvlYn() ? "Y" : "N");
-    item.setImgeScanYn(worklist.getImgeScanYn() == null ? "N" : worklist.getImgeScanYn() ? "Y" : "N");
+    item.setMnorExstYn(toYn(worklist.getDelegated()));
+    item.setApvlYn(toYn(worklist.getApvlYn()));
+    item.setImgeScanYn(toYn(worklist.getImgeScanYn()));
     return item;
   }
 
-  private OrgRunningItem toOrgRunningItem(WorklistEntity worklist) {
+  private OrgRunningItem toOrgRunningItem(
+      WorklistEntity worklist, Map<Long, String> rootDefIdsByInstId) {
     ProcessInstanceEntity instance = worklist.getProcessInstance();
     OrgRunningItem item = new OrgRunningItem();
 
@@ -326,7 +355,121 @@ public class WorkSearchServiceImpl implements WorkSearchService {
         instance == null || instance.getInstId() == null
             ? null
             : String.valueOf(instance.getInstId()));
+    item.setFncgBpmPcesId(rootDefIdOf(instance, rootDefIdsByInstId));
     return item;
+  }
+
+  /** MyProgress 매핑 — {@code fncgBpmPcesId} 는 root 인스턴스 {@code defId}. */
+  MyProgressItem toMyProgressItem(WorklistEntity worklist, Map<Long, String> rootDefIdsByInstId) {
+    ProcessInstanceEntity instance = worklist.getProcessInstance();
+    MyProgressItem item = new MyProgressItem();
+    item.setFncgBswrDvsnCode(instance == null ? null : instance.getFncgBswrDvsnCode());
+    item.setLoanCntcNo(instance == null ? null : instance.getLoanCntcNo());
+    item.setFncgSuptTrgtDvsnCode(instance == null ? null : instance.getFncgSuptTrgtDvsnCode());
+    item.setLoanSubjDvsnCode(instance == null ? null : instance.getLoanSubjDvsnCode());
+    item.setFncgMneyUsagClsfCode(instance == null ? null : instance.getFncgMneyUsagClsfCode());
+    item.setLoanHopeDate(instance == null ? null : instance.getLoanHopeDate());
+    item.setCustId(instance == null ? null : instance.getCustId());
+    item.setLoanPcesMgmtNo(instance == null ? null : instance.getCorrKey());
+    item.setUworNm(worklist.getTitle());
+    item.setFncgBpmTaskTrcgNm(worklist.getTrcTag());
+    item.setReptHndrEmnb(instance == null ? null : instance.getInitEp());
+    item.setReptHndrFncgOrgnCode(instance == null ? null : instance.getInitGroupCd());
+    item.setHndrEmnb(worklist.getEndpoint());
+    item.setHndrOrgnCode(trimToNull(worklist.getGroupCd()));
+    item.setBpmBswrClsfCode(instance == null ? null : instance.getBswrClsfCode());
+    item.setFncgBpmtaskLstId(
+        worklist.getTaskId() == null ? null : String.valueOf(worklist.getTaskId()));
+    item.setFncgBpmPcesIntcId(
+        worklist.getInstId() == null ? null : String.valueOf(worklist.getInstId()));
+    item.setFncgBpmPcesId(rootDefIdOf(instance, rootDefIdsByInstId));
+    return item;
+  }
+
+  /** OrgCompleted 매핑 — {@code fncgBpmPcesId} 는 root 인스턴스 {@code defId}. */
+  OrgCompletedItem toOrgCompletedItem(
+      WorklistEntity worklist, Map<Long, String> rootDefIdsByInstId) {
+    ProcessInstanceEntity instance = worklist.getProcessInstance();
+    OrgCompletedItem item = new OrgCompletedItem();
+    item.setStarDttm(instance == null ? null : instance.getStartedDate());
+    item.setFncgBswrDvsnCode(instance == null ? null : instance.getFncgBswrDvsnCode());
+    item.setLoanCntcNo(instance == null ? null : instance.getLoanCntcNo());
+    item.setFncgSuptTrgtDvsnCode(instance == null ? null : instance.getFncgSuptTrgtDvsnCode());
+    item.setLoanSubjDvsnCode(instance == null ? null : instance.getLoanSubjDvsnCode());
+    item.setCustId(instance == null ? null : instance.getCustId());
+    item.setFncgMneyUsagClsfCode(instance == null ? null : instance.getFncgMneyUsagClsfCode());
+    item.setLoanHopeDate(instance == null ? null : instance.getLoanHopeDate());
+    item.setLoanPcesMgmtNo(instance == null ? null : instance.getCorrKey());
+    item.setReptHndrEmnb(instance == null ? null : instance.getInitEp());
+    item.setReptHndrFncgOrgnCode(instance == null ? null : instance.getInitGroupCd());
+    item.setEndDttm(instance == null ? null : instance.getFinishedDate());
+    item.setBpmBswrClsfCode(instance == null ? null : instance.getBswrClsfCode());
+    item.setFncgBpmtaskLstId(
+        worklist.getTaskId() == null ? null : String.valueOf(worklist.getTaskId()));
+    item.setFncgBpmPcesIntcId(
+        worklist.getInstId() == null ? null : String.valueOf(worklist.getInstId()));
+    item.setFncgBpmPcesId(rootDefIdOf(instance, rootDefIdsByInstId));
+    return item;
+  }
+
+  /**
+   * 워크리스트들의 rootInstId 에 해당하는 루트 인스턴스 {@code defId} 맵.
+   * 현재 인스턴스가 루트이면 추가 조회 없이 {@code instance.defId} 를 사용한다.
+   */
+  Map<Long, String> loadRootDefIdsByInstId(Collection<WorklistEntity> worklists) {
+    Map<Long, String> rootDefIds = new HashMap<>();
+    Set<Long> missingRootIds = new HashSet<>();
+    if (worklists == null) {
+      return rootDefIds;
+    }
+    for (WorklistEntity worklist : worklists) {
+      ProcessInstanceEntity instance = worklist == null ? null : worklist.getProcessInstance();
+      Long rootInstId = rootInstIdOf(instance);
+      if (rootInstId == null) {
+        continue;
+      }
+      if (rootInstId.equals(instance.getInstId())) {
+        rootDefIds.put(rootInstId, instance.getDefId());
+      } else {
+        missingRootIds.add(rootInstId);
+      }
+    }
+    missingRootIds.removeAll(rootDefIds.keySet());
+    if (!missingRootIds.isEmpty()) {
+      for (ProcessInstanceEntity root : processInstanceRepository.findAllById(missingRootIds)) {
+        if (root.getInstId() != null) {
+          rootDefIds.put(root.getInstId(), root.getDefId());
+        }
+      }
+    }
+    return rootDefIds;
+  }
+
+  private static Long rootInstIdOf(ProcessInstanceEntity instance) {
+    if (instance == null) {
+      return null;
+    }
+    return instance.getRootInstId() == null ? instance.getInstId() : instance.getRootInstId();
+  }
+
+  private static String rootDefIdOf(
+      ProcessInstanceEntity instance,
+      Map<Long, String> rootDefIdsByInstId) {
+    Long rootInstId = rootInstIdOf(instance);
+    if (rootInstId == null) {
+      return null;
+    }
+    if (rootDefIdsByInstId != null && rootDefIdsByInstId.containsKey(rootInstId)) {
+      return rootDefIdsByInstId.get(rootInstId);
+    }
+    if (rootInstId.equals(instance.getInstId())) {
+      return instance.getDefId();
+    }
+    return null;
+  }
+
+  private static String toYn(Boolean value) {
+    return value == null ? "N" : value ? "Y" : "N";
   }
 
   private static Long parseNextKey(String nextKey) {
@@ -365,7 +508,6 @@ public class WorkSearchServiceImpl implements WorkSearchService {
   /**
    * 조직 진행 검색 요청 정규화.
    * <ul>
-   *   <li>기관: {@code fncgWndwOrgnCode} → 없으면 {@code header.belnOrgnCode}</li>
    *   <li>{@code rqstDvsnCode}: 없으면 {@code N} (진행기관)</li>
    *   <li>{@code pageSize}: 없으면 {@link #DEFAULT_PAGE_SIZE} (1~{@link #MAX_PAGE_SIZE})</li>
    *   <li>날짜: 둘 다 없으면 (오늘-30일)~오늘 /
@@ -381,8 +523,8 @@ public class WorkSearchServiceImpl implements WorkSearchService {
 
     normalized.setPageSize(normalizePageSize(normalized.getPageSize()));
 
-    Date start = normalized.getRqstStarDttm();
-    Date end = normalized.getRqstEndDttm();
+    Date start = normalized.getRqstStarDate();
+    Date end = normalized.getRqstEndDate();
     if (start == null && end == null) {
       end = new Date();
       start = plusDays(end, -DEFAULT_DATE_RANGE_DAYS);
@@ -391,8 +533,8 @@ public class WorkSearchServiceImpl implements WorkSearchService {
     } else if (end == null) {
       end = plusDays(start, DEFAULT_DATE_RANGE_DAYS);
     }
-    normalized.setRqstStarDttm(start);
-    normalized.setRqstEndDttm(end);
+    normalized.setRqstStarDate(start);
+    normalized.setRqstEndDate(end);
     return normalized;
   }
 
@@ -401,14 +543,6 @@ public class WorkSearchServiceImpl implements WorkSearchService {
     calendar.setTime(value);
     calendar.add(Calendar.DAY_OF_MONTH, days);
     return calendar.getTime();
-  }
-
-  private static OrgRunningResponse emptyOrgRunningResponse() {
-    OrgRunningResponse response = new OrgRunningResponse();
-    response.setTotCont(0);
-    response.setNextKey(null);
-    response.setOrgnPrgsList(List.of());
-    return response;
   }
 
   private static String firstNonBlank(String... values) {

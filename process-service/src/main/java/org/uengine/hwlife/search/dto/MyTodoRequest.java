@@ -18,23 +18,21 @@ public class MyTodoRequest {
     private String fncgSuptTrgtDvsnCode;
     private String loanSubjDvsnCode;
     private String fncgMneyUsagClsfCode;
-    private String fncgBpmTaskTrcgNm;
-
     @JsonFormat(pattern = "yyyyMMdd")
     private Date starDate;
-
     @JsonFormat(pattern = "yyyyMMdd")
     private Date endDate;
-
     @JsonFormat(pattern = "yyyyMMdd")
     private Date hopeStarDate;
-
     @JsonFormat(pattern = "yyyyMMdd")
     private Date hopeEndDate;
 
     /** 요청기관 필터 — {@code bpm_procinst.init_group_cd} 와 일치. */
     private String fncgWndwOrgnCode;
     private String sortOrdrVal;
+    private String fncgBpmPcesId;
+    private String uworNm;
+
     private String nextKey;
     private Integer pageSize;
 
@@ -102,12 +100,20 @@ public class MyTodoRequest {
         this.fncgMneyUsagClsfCode = fncgMneyUsagClsfCode;
     }
 
-    public String getFncgBpmTaskTrcgNm() {
-        return fncgBpmTaskTrcgNm;
+    public String getUworNm() {
+        return uworNm;
     }
 
-    public void setFncgBpmTaskTrcgNm(String fncgBpmTaskTrcgNm) {
-        this.fncgBpmTaskTrcgNm = fncgBpmTaskTrcgNm;
+    public void setUworNm(String uworNm) {
+        this.uworNm = uworNm;
+    }
+
+    public String getFncgBpmPcesId() {
+        return fncgBpmPcesId;
+    }
+
+    public void setFncgBpmPcesId(String fncgBpmPcesId) {
+        this.fncgBpmPcesId = fncgBpmPcesId;
     }
 
     public Date getStarDate() {

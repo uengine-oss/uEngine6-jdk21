@@ -15,14 +15,17 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import jakarta.persistence.Tuple;
 import jakarta.persistence.TypedQuery;
+import jakarta.persistence.criteria.AbstractQuery;
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.CriteriaQuery;
+import jakarta.persistence.criteria.Expression;
 import jakarta.persistence.criteria.Fetch;
 import jakarta.persistence.criteria.Join;
 import jakarta.persistence.criteria.JoinType;
 import jakarta.persistence.criteria.Path;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Root;
+import jakarta.persistence.criteria.Subquery;
 
 @Repository
 public class MyTodoSearchRepository {
@@ -54,7 +57,7 @@ public class MyTodoSearchRepository {
     Root<WorklistEntity> worklist = dataQuery.from(WorklistEntity.class);
     Join<WorklistEntity, ProcessInstanceEntity> instance = fetchProcessInstance(worklist);
     List<Predicate> dataPredicates = new ArrayList<>(
-        List.of(predicates(builder, worklist, instance, request, emnb, belnOrgnCode)));
+        List.of(predicates(builder, dataQuery, worklist, instance, request, emnb, belnOrgnCode)));
     // nextKey(taskId)는 정렬·비즈니스 필터가 아니라, 정렬된 결과의 페이지 커서다.
     if (cursor != null) {
       dataPredicates.add(cursorPredicate(builder, worklist, instance, sortKey, cursor));
@@ -83,7 +86,7 @@ public class MyTodoSearchRepository {
     Join<WorklistEntity, ProcessInstanceEntity> countInstance =
         countWorklist.join("processInstance", JoinType.LEFT);
     countQuery.select(builder.count(countWorklist))
-        .where(predicates(builder, countWorklist, countInstance, request, emnb, belnOrgnCode));
+        .where(predicates(builder, countQuery, countWorklist, countInstance, request, emnb, belnOrgnCode));
     long totalCount = entityManager.createQuery(countQuery).getSingleResult();
 
     return new SearchResult(items, Math.toIntExact(totalCount), nextKey);
@@ -126,6 +129,7 @@ public class MyTodoSearchRepository {
 
   private static Predicate[] predicates(
       CriteriaBuilder builder,
+      AbstractQuery<?> query,
       Root<WorklistEntity> worklist,
       Join<WorklistEntity, ProcessInstanceEntity> instance,
       MyTodoRequest request,
@@ -137,6 +141,10 @@ public class MyTodoSearchRepository {
     // 2) 본인 할당 건 OR 3) 소속기관 선점 미선점 건
     predicates.add(accessPredicate(builder, worklist, emnb, belnOrgnCode));
 
+    // root_inst_id 기준 루트 인스턴스 def_id == fncgBpmPcesId
+    addRootDefId(builder, query, predicates, instance, request.getFncgBpmPcesId());
+    // 단위업무명: worklist.title == uworNm
+    addText(builder, predicates, worklist.get("title"), request.getUworNm());
     addText(builder, predicates, instance.get("bswrClsfCode"), request.getBpmBswrClsfCode());
     addText(builder, predicates, instance.get("custId"), request.getCustId());
     addText(builder, predicates, instance.get("fncgBswrDvsnCode"), request.getFncgBswrDvsnCode());
@@ -145,7 +153,6 @@ public class MyTodoSearchRepository {
     addText(builder, predicates, instance.get("fncgSuptTrgtDvsnCode"), request.getFncgSuptTrgtDvsnCode());
     addText(builder, predicates, instance.get("loanSubjDvsnCode"), request.getLoanSubjDvsnCode());
     addText(builder, predicates, instance.get("fncgMneyUsagClsfCode"), request.getFncgMneyUsagClsfCode());
-    addText(builder, predicates, worklist.get("trcTag"), request.getFncgBpmTaskTrcgNm());
     // 요청기관 필터 (fncgWndwOrgnCode → bpm_procinst.init_group_cd)
     addText(builder, predicates, instance.get("initGroupCd"), request.getFncgWndwOrgnCode());
     addDateRange(
@@ -161,6 +168,31 @@ public class MyTodoSearchRepository {
         request.getHopeStarDate(),
         request.getHopeEndDate());
     return predicates.toArray(Predicate[]::new);
+  }
+
+  /**
+   * 서브프로세스 단위업무도 루트 프로세스 정의로 필터링한다.
+   * {@code coalesce(instance.rootInstId, instance.instId)} 의 {@code defId == fncgBpmPcesId}.
+   */
+  private static void addRootDefId(
+      CriteriaBuilder builder,
+      AbstractQuery<?> query,
+      List<Predicate> predicates,
+      Join<WorklistEntity, ProcessInstanceEntity> instance,
+      String fncgBpmPcesId) {
+    String value = trimToNull(fncgBpmPcesId);
+    if (value == null) {
+      return;
+    }
+    Subquery<Long> rootMatch = query.subquery(Long.class);
+    Root<ProcessInstanceEntity> rootInstance = rootMatch.from(ProcessInstanceEntity.class);
+    Expression<Long> rootInstId =
+        builder.coalesce(instance.get("rootInstId"), instance.get("instId"));
+    rootMatch.select(rootInstance.get("instId"))
+        .where(
+            builder.equal(rootInstance.get("instId"), rootInstId),
+            builder.equal(rootInstance.get("defId"), value));
+    predicates.add(builder.exists(rootMatch));
   }
 
   private Predicate cursorPredicate(
