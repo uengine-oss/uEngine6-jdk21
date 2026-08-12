@@ -27,6 +27,7 @@ import org.uengine.hwlife.esbclient.dto.EsbCommonHeader;
 import org.uengine.hwlife.esbclient.support.EsbRequestBodyAdvice;
 import org.uengine.hwlife.search.dto.BulkAssignSearchRequest;
 import org.uengine.hwlife.search.dto.BulkAssignSearchResponse;
+import org.uengine.hwlife.search.dto.BulkAssignSearchResponseItem;
 import org.uengine.hwlife.search.dto.MyProgressItem;
 import org.uengine.hwlife.search.dto.MyProgressRequest;
 import org.uengine.hwlife.search.dto.MyProgressResponse;
@@ -62,16 +63,19 @@ public class WorkSearchServiceImpl implements WorkSearchService {
 
   private final MyTodoSearchRepository myTodoSearchRepository;
   private final OrgRunningSearchRepository orgRunningSearchRepository;
+  private final BulkAssignSearchRepository bulkAssignSearchRepository;
   private final ProcessInstanceRepository processInstanceRepository;
   private final WorklistRepository worklistRepository;
 
   public WorkSearchServiceImpl(
       MyTodoSearchRepository myTodoSearchRepository,
       OrgRunningSearchRepository orgRunningSearchRepository,
+      BulkAssignSearchRepository bulkAssignSearchRepository,
       ProcessInstanceRepository processInstanceRepository,
       WorklistRepository worklistRepository) {
     this.myTodoSearchRepository = myTodoSearchRepository;
     this.orgRunningSearchRepository = orgRunningSearchRepository;
+    this.bulkAssignSearchRepository = bulkAssignSearchRepository;
     this.processInstanceRepository = processInstanceRepository;
     this.worklistRepository = worklistRepository;
   }
@@ -145,7 +149,28 @@ public class WorkSearchServiceImpl implements WorkSearchService {
   @Override
   @Transactional(readOnly = true)
   public BulkAssignSearchResponse searchBulkAssign(@RequestBody BulkAssignSearchRequest request) {
-    throw notImplemented("searchBulkAssign");
+    BulkAssignSearchRepository.SearchResult result = bulkAssignSearchRepository.search(request);
+    Map<Long, String> rootDefIds = loadRootDefIdsByInstId(result.items());
+    BulkAssignSearchResponse response = new BulkAssignSearchResponse();
+    response.setTotCont(result.totalCount());
+    response.setBswrList(result.items().stream()
+        .map(worklist -> toBulkAssignItem(worklist, rootDefIds))
+        .collect(Collectors.toList()));
+    return response;
+  }
+
+  private BulkAssignSearchResponseItem toBulkAssignItem(
+      WorklistEntity worklist,
+      Map<Long, String> rootDefIdsByInstId) {
+    ProcessInstanceEntity instance = worklist.getProcessInstance();
+    BulkAssignSearchResponseItem item = new BulkAssignSearchResponseItem();
+    item.setBpmBswrClsfCode(instance == null ? null : instance.getBswrClsfCode());
+    item.setFncgBpmTaskLstId(worklist.getTaskId() == null ? null : String.valueOf(worklist.getTaskId()));
+    item.setFncgBpmPcesIntcId(worklist.getInstId() == null ? null : String.valueOf(worklist.getInstId()));
+    item.setUworNm(worklist.getTitle());
+    item.setFncgBpmPcesId(worklist.getDefId());
+    item.setBswrDvsnVal(rootDefIdOf(instance, rootDefIdsByInstId));
+    return item;
   }
 
   /**

@@ -9,7 +9,8 @@ public class BulkAssignSearchResponseItem {
     private String fncgBpmTaskLstId;
     private String fncgBpmPcesIntcId;
     private String uworNm; // 태스크 명
-    private String fncgBpmPcesId; // root.defId
+    private String fncgBpmPcesId; // 현재 단위업무 worklist.defId
+    private String bswrDvsnVal; // root instance.defId
 
     public String getBpmBswrClsfCode() {
         return bpmBswrClsfCode;
@@ -49,5 +50,13 @@ public class BulkAssignSearchResponseItem {
 
     public void setFncgBpmPcesId(String fncgBpmPcesId) {
         this.fncgBpmPcesId = fncgBpmPcesId;
+    }
+
+    public String getBswrDvsnVal() {
+        return bswrDvsnVal;
+    }
+
+    public void setBswrDvsnVal(String bswrDvsnVal) {
+        this.bswrDvsnVal = bswrDvsnVal;
     }
 }

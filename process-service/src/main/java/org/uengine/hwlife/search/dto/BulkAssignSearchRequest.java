@@ -27,7 +27,8 @@ public class BulkAssignSearchRequest {
 
     /** 요청기관 필터 — {@code bpm_procinst.init_group_cd} 와 일치. */
     private String fncgWndwOrgnCode;
-    private String fncgBpmPcesId;
+    /** 업무구분값 — 해당 인스턴스의 root instance {@code defId}. */
+    private String bswrDvsnVal;
     private String uworNm;
 
     public String getBpmBswrClsfCode() {
@@ -102,11 +103,11 @@ public class BulkAssignSearchRequest {
     public void setFncgWndwOrgnCode(String fncgWndwOrgnCode) {
         this.fncgWndwOrgnCode = fncgWndwOrgnCode;
     }
-    public String getFncgBpmPcesId() {
-        return fncgBpmPcesId;
+    public String getBswrDvsnVal() {
+        return bswrDvsnVal;
     }
-    public void setFncgBpmPcesId(String fncgBpmPcesId) {
-        this.fncgBpmPcesId = fncgBpmPcesId;
+    public void setBswrDvsnVal(String bswrDvsnVal) {
+        this.bswrDvsnVal = bswrDvsnVal;
     }
     public String getUworNm() {
         return uworNm;
