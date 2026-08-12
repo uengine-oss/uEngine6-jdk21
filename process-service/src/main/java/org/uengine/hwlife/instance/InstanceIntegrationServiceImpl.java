@@ -77,9 +77,11 @@ public class InstanceIntegrationServiceImpl implements InstanceIntegrationServic
    *   <li>{@code LBM050019} — claimWorkItem 업무 예외</li>
    *   <li>{@code LBM050020} — 기타 예외</li>
    * </ul>
+   *
+   * <p>건별 성공/실패를 독립 처리하므로 바깥 {@code @Transactional} 을 두지 않는다
+   * (내부 {@code claimWorkItem} 예외 시 rollback-only → UnexpectedRollbackException 방지).</p>
    */
   @Override
-  @Transactional
   public ClaimResponse claimWorkItems(@RequestBody ClaimRequest request) throws Exception {
     List<ClaimRequestItem> bswrList = request == null ? null : request.getBswrList();
 
@@ -111,7 +113,7 @@ public class InstanceIntegrationServiceImpl implements InstanceIntegrationServic
       }
 
       try {
-        WorklistEntity worklist = worklistRepository.findByIdForUpdate(Long.parseLong(taskId)).orElse(null);
+        WorklistEntity worklist = worklistRepository.findById(Long.parseLong(taskId)).orElse(null);
         if (worklist == null) {
           addClaimFailure(failList, item, "LBM050009");
           continue;
@@ -319,9 +321,11 @@ public class InstanceIntegrationServiceImpl implements InstanceIntegrationServic
    * <p>엔진 위임은 완전 이관({@code delegateOnlyForWorkitem=false}).
    * 검증을 모두 끝낸 뒤 건별 호출하며, 엔진 sibling sync 로 이미
    * {@code endpoint=hndrEmnb} 인 건은 재호출 없이 성공으로 집계한다.</p>
+   *
+   * <p>건별 성공/실패를 독립 처리하므로 바깥 {@code @Transactional} 을 두지 않는다
+   * (내부 {@code delegateWorkItem} 예외 시 rollback-only → UnexpectedRollbackException 방지).</p>
    */
   @Override
-  @Transactional
   public DelegateResponse delegateWorkItems(@RequestBody DelegateRequest request)
       throws Exception {
     List<DelegateRequestItem> bswrList = request == null ? null : request.getBswrList();
@@ -369,7 +373,7 @@ public class InstanceIntegrationServiceImpl implements InstanceIntegrationServic
         }
 
         try {
-          WorklistEntity worklist = worklistRepository.findByIdForUpdate(Long.parseLong(taskId)).orElse(null);
+          WorklistEntity worklist = worklistRepository.findById(Long.parseLong(taskId)).orElse(null);
           if (worklist == null) {
             addDelegateFailure(failList, item, "LBM040010");
             continue;
@@ -583,6 +587,8 @@ public class InstanceIntegrationServiceImpl implements InstanceIntegrationServic
    *
    * <p>처리자 사번·기관은 body 각 항목 {@code hndrEmnb} / {@code hndrOrgnCode},
    * 요청자 사번은 ESB header.emnb.
+   * 건별 성공/실패를 독립 처리하므로 바깥 {@code @Transactional} 을 두지 않는다
+   * (내부 {@code reassignWorkItem} 예외 시 rollback-only → UnexpectedRollbackException 방지).</p>
    * 처리결과 코드는 {@code failList[].prcsRsltCntn}({@code LBM06XXXX}).
    * ESB header {@code prcsRsltDvsnCode} 는 성공 {@code 0} / 시스템실패 {@code 1}.
    * <ul>
@@ -604,7 +610,6 @@ public class InstanceIntegrationServiceImpl implements InstanceIntegrationServic
    * </ul>
    */
   @Override
-  @Transactional
   public ReassignResponse reassignWorkItems(@RequestBody ReassignRequest request)
       throws Exception {
     List<ReassignRequestItem> bswrList = request == null ? null : request.getBswrList();
@@ -645,7 +650,7 @@ public class InstanceIntegrationServiceImpl implements InstanceIntegrationServic
       }
 
       try {
-        WorklistEntity worklist = worklistRepository.findByIdForUpdate(Long.parseLong(taskId)).orElse(null);
+        WorklistEntity worklist = worklistRepository.findById(Long.parseLong(taskId)).orElse(null);
         if (worklist == null) {
           failList.add(reassignFailure(item, "LBM060010"));
           continue;
@@ -659,16 +664,9 @@ public class InstanceIntegrationServiceImpl implements InstanceIntegrationServic
         RoleMappingCommand mapping = new RoleMappingCommand();
         mapping.setEndpoint(hndrEmnb);
         mapping.setGroupName(hndrOrgnCode);
-        try {
-          RoleMapping filled = RoleMapping.create();
-          if (filled != null) {
-            filled.setEndpoint(hndrEmnb);
-            filled.fill(); // IAMCompanyRoleMapping.doFill (flyweight cache)
-            if (trimToNull(filled.getResourceName()) != null) {
-              mapping.setResourceName(filled.getResourceName());
-            }
-          }
-        } catch (Exception ignore) {
+        String resourceName = resolveAssigneeResourceName(hndrEmnb);
+        if (resourceName != null) {
+          mapping.setResourceName(resourceName);
         }
         instanceService.reassignWorkItem(taskId, mapping);
         successCount++;
@@ -722,6 +720,29 @@ public class InstanceIntegrationServiceImpl implements InstanceIntegrationServic
     // XxxAuthResponse response = esbClient.send("ITFC_ID", "RCVE_SRVC_ID", payload, XxxAuthResponse.class);
     // return response != null && response.isAuthorized();
     return true;
+  }
+
+  /**
+   * 처리자 표시명 조회 — {@link org.uengine.five.service.IAMCompanyRoleMapping#doFill()} (flyweight cache).
+   *
+   * <p>ESB/hwlife 경로에서는 {@code iam.provider=external} 로 Keycloak Admin API 호출을 피한다.</p>
+   */
+  private static String resolveAssigneeResourceName(String hndrEmnb) {
+    String endpoint = trimToNull(hndrEmnb);
+    if (endpoint == null) {
+      return null;
+    }
+    try {
+      RoleMapping roleMapping = RoleMapping.create();
+      if (roleMapping == null) {
+        return null;
+      }
+      roleMapping.setEndpoint(endpoint);
+      roleMapping.fill();
+      return trimToNull(roleMapping.getResourceName());
+    } catch (Exception ignore) {
+      return null;
+    }
   }
 
   /**

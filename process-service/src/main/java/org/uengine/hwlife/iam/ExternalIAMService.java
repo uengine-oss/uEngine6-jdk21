@@ -1,6 +1,7 @@
 package org.uengine.hwlife.iam;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -56,9 +57,17 @@ public class ExternalIAMService implements IAMService {
 
     @Override
     public Map<String, Object> getUserById(String userId) throws Exception {
-        return findUserByEmployeeNo(userId)
-                .map(this::toUserMap)
-                .orElse(null);
+        if (!hasText(userId)) {
+            return null;
+        }
+        UserSearchResponse user = getUser(userId.trim());
+        if (user == null || !hasText(user.getHndrEmnb())) {
+            return null;
+        }
+        String username = hasText(user.getHndrNm()) ? user.getHndrNm().trim() : user.getHndrEmnb().trim();
+        Map<String, Object> map = new HashMap<>();
+        map.put("username", username);
+        return map;
     }
 
 
