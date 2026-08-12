@@ -30,7 +30,8 @@ public class OrgRunningItem {
     private String bpmBswrClsfCode;
     private String fncgBpmtaskLstId;
     private String fncgBpmPcesIntcId;
-    private String fncgBpmPcesId; // root.defId
+    private String bswrDvsnVal; // root.defId (메인/서브)
+    private String fncgBpmPcesId; // worklist.defId
 
     public Date getStarDttm() {
         return starDttm;
@@ -174,6 +175,14 @@ public class OrgRunningItem {
 
     public void setFncgBpmPcesIntcId(String fncgBpmPcesIntcId) {
         this.fncgBpmPcesIntcId = fncgBpmPcesIntcId;
+    }
+
+    public String getBswrDvsnVal() {
+        return bswrDvsnVal;
+    }
+
+    public void setBswrDvsnVal(String bswrDvsnVal) {
+        this.bswrDvsnVal = bswrDvsnVal;
     }
 
     public String getFncgBpmPcesId() {

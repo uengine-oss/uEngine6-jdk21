@@ -318,7 +318,8 @@ public class WorkSearchServiceImpl implements WorkSearchService {
         worklist.getTaskId() == null ? null : String.valueOf(worklist.getTaskId()));
     item.setFncgBpmPcesIntcId(
         worklist.getInstId() == null ? null : String.valueOf(worklist.getInstId()));
-    item.setFncgBpmPcesId(rootDefIdOf(instance, rootDefIdsByInstId));
+    item.setBswrDvsnVal(rootDefIdOf(instance, rootDefIdsByInstId));
+    item.setFncgBpmPcesId(worklist.getDefId());
     item.setDstOptnVal(String.valueOf(worklist.getDispatchOption()));
     item.setRuleAcmpVal(String.valueOf(worklist.getAssignType()));
     item.setMnorExstYn(toYn(worklist.getDelegated()));
@@ -353,11 +354,12 @@ public class WorkSearchServiceImpl implements WorkSearchService {
         instance == null || instance.getInstId() == null
             ? null
             : String.valueOf(instance.getInstId()));
-    item.setFncgBpmPcesId(rootDefIdOf(instance, rootDefIdsByInstId));
+    item.setBswrDvsnVal(rootDefIdOf(instance, rootDefIdsByInstId));
+    item.setFncgBpmPcesId(worklist.getDefId());
     return item;
   }
 
-  /** MyProgress 매핑 — {@code fncgBpmPcesId} 는 root 인스턴스 {@code defId}. */
+  /** MyProgress 매핑 — {@code bswrDvsnVal}=root {@code defId}, {@code fncgBpmPcesId}=worklist {@code defId}. */
   MyProgressItem toMyProgressItem(WorklistEntity worklist, Map<Long, String> rootDefIdsByInstId) {
     ProcessInstanceEntity instance = worklist.getProcessInstance();
     MyProgressItem item = new MyProgressItem();
@@ -379,11 +381,12 @@ public class WorkSearchServiceImpl implements WorkSearchService {
         worklist.getTaskId() == null ? null : String.valueOf(worklist.getTaskId()));
     item.setFncgBpmPcesIntcId(
         worklist.getInstId() == null ? null : String.valueOf(worklist.getInstId()));
-    item.setFncgBpmPcesId(rootDefIdOf(instance, rootDefIdsByInstId));
+    item.setBswrDvsnVal(rootDefIdOf(instance, rootDefIdsByInstId));
+    item.setFncgBpmPcesId(worklist.getDefId());
     return item;
   }
 
-  /** OrgCompleted 매핑 — {@code fncgBpmPcesId} 는 root 인스턴스 {@code defId}. */
+  /** OrgCompleted 매핑 — {@code bswrDvsnVal}=root {@code defId}, {@code fncgBpmPcesId}=worklist {@code defId}. */
   OrgCompletedItem toOrgCompletedItem(
       WorklistEntity worklist, Map<Long, String> rootDefIdsByInstId) {
     ProcessInstanceEntity instance = worklist.getProcessInstance();
@@ -404,12 +407,13 @@ public class WorkSearchServiceImpl implements WorkSearchService {
         worklist.getTaskId() == null ? null : String.valueOf(worklist.getTaskId()));
     item.setFncgBpmPcesIntcId(
         worklist.getInstId() == null ? null : String.valueOf(worklist.getInstId()));
-    item.setFncgBpmPcesId(rootDefIdOf(instance, rootDefIdsByInstId));
+    item.setBswrDvsnVal(rootDefIdOf(instance, rootDefIdsByInstId));
+    item.setFncgBpmPcesId(worklist.getDefId());
     return item;
   }
 
   /**
-   * 워크리스트들의 rootInstId 에 해당하는 루트 인스턴스 {@code defId} 맵.
+   * 워크리스트들의 rootInstId 에 해당하는 루트 인스턴스 {@code defId} 맵 ({@code bswrDvsnVal} 응답용).
    * 현재 인스턴스가 루트이면 추가 조회 없이 {@code instance.defId} 를 사용한다.
    */
   Map<Long, String> loadRootDefIdsByInstId(Collection<WorklistEntity> worklists) {

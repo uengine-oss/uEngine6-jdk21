@@ -141,8 +141,10 @@ public class MyTodoSearchRepository {
     // 2) 본인 할당 건 OR 3) 소속기관 선점 미선점 건
     predicates.add(accessPredicate(builder, worklist, emnb, belnOrgnCode));
 
-    // root_inst_id 기준 루트 인스턴스 def_id == fncgBpmPcesId
-    addRootDefId(builder, query, predicates, instance, request.getFncgBpmPcesId());
+    // root_inst_id 기준 루트 인스턴스 def_id == bswrDvsnVal
+    addRootDefId(builder, query, predicates, instance, request.getBswrDvsnVal());
+    // 현재 단위업무 defId == fncgBpmPcesId
+    addText(builder, predicates, worklist.get("defId"), request.getFncgBpmPcesId());
     // 단위업무명: worklist.title == uworNm
     addText(builder, predicates, worklist.get("title"), request.getUworNm());
     addText(builder, predicates, instance.get("bswrClsfCode"), request.getBpmBswrClsfCode());
@@ -171,15 +173,15 @@ public class MyTodoSearchRepository {
 
   /**
    * 서브프로세스 단위업무도 루트 프로세스 정의로 필터링한다.
-   * {@code coalesce(instance.rootInstId, instance.instId)} 의 {@code defId == fncgBpmPcesId}.
+   * {@code coalesce(instance.rootInstId, instance.instId)} 의 {@code defId == bswrDvsnVal}.
    */
   private static void addRootDefId(
       CriteriaBuilder builder,
       AbstractQuery<?> query,
       List<Predicate> predicates,
       Join<WorklistEntity, ProcessInstanceEntity> instance,
-      String fncgBpmPcesId) {
-    String value = trimToNull(fncgBpmPcesId);
+      String bswrDvsnVal) {
+    String value = trimToNull(bswrDvsnVal);
     if (value == null) {
       return;
     }

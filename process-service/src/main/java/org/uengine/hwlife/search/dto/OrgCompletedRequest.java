@@ -20,6 +20,9 @@ public class OrgCompletedRequest {
     private String custId;
     private String fncgWndwOrgnCode;
     private String sortOrdrVal;
+    /** 메인/서브 루트 인스턴스 {@code defId} 필터. */
+    private String bswrDvsnVal;
+    /** 현재 단위업무 {@code worklist.defId} 필터. */
     private String fncgBpmPcesId;
 
     private String nextKey;
@@ -95,6 +98,14 @@ public class OrgCompletedRequest {
 
     public void setSortOrdrVal(String sortOrdrVal) {
         this.sortOrdrVal = sortOrdrVal;
+    }
+
+    public String getBswrDvsnVal() {
+        return bswrDvsnVal;
+    }
+
+    public void setBswrDvsnVal(String bswrDvsnVal) {
+        this.bswrDvsnVal = bswrDvsnVal;
     }
 
     public String getFncgBpmPcesId() {

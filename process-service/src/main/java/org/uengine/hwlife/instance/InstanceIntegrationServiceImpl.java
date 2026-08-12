@@ -572,6 +572,21 @@ public class InstanceIntegrationServiceImpl implements InstanceIntegrationServic
     throw notImplemented("assignBulk");
   }
 
+  /**
+   * 다중 업무 담당자 변경 — 본인 업무 조건 없음 (권한자).
+   *
+   * <p>처리자는 body 각 항목 {@code hndrEmnb}, 변경 수행자는 ESB header.emnb.
+   * 처리결과 코드는 {@code failList[].prcsRsltCntn}({@code LBM06XXXX}).
+   * ESB header {@code prcsRsltDvsnCode} 는 성공 {@code 0} / 시스템실패 {@code 1}.
+   * <ul>
+   *   <li>{@code LBM060001} — bswrList 없음/비어 있음</li>
+   *   <li>{@code LBM060002} — header.emnb 없음</li>
+   *   <li>{@code LBM060003} — 건별 실패(
+   *       fncgBpmTaskLstId 없음, hndrEmnb 없음, 요청 내 fncgBpmTaskLstId 중복,
+   *       fncgBpmTaskLstId 비숫자, work item 없음, fncgBpmPcesIntcId 불일치,
+   *       reassignWorkItem 예외)</li>
+   * </ul>
+   */
   @Override
   @Transactional
   public ReassignResponse reassignWorkItems(@RequestBody ReassignRequest request)
@@ -583,7 +598,7 @@ public class InstanceIntegrationServiceImpl implements InstanceIntegrationServic
     Set<String> seen = new HashSet<>();
     String actor = trimToNull(EsbRequestBodyAdvice.currentHeader() == null ? null : EsbRequestBodyAdvice.currentHeader().getEmnb());
     if (items == null || items.isEmpty() || actor == null) {
-      for (ReassignRequestItem item : items == null ? new ArrayList<ReassignRequestItem>() : items) failures.add(reassignFailure(item, actor == null ? "LBM060003" : "LBM060002"));
+      for (ReassignRequestItem item : items == null ? new ArrayList<ReassignRequestItem>() : items) failures.add(reassignFailure(item, actor == null ? "LBM060002" : "LBM060001"));
     } else {
       String previousUser = SecurityAwareServletFilter.getUserId();
       try {
@@ -599,7 +614,7 @@ public class InstanceIntegrationServiceImpl implements InstanceIntegrationServic
             mapping.setEndpoint(target);
             mapping.setResourceName(target);
             instanceService.reassignWorkItem(taskId, mapping); success++;
-          } catch (Exception e) { failures.add(reassignFailure(item, "LBM060008")); }
+          } catch (Exception e) { failures.add(reassignFailure(item, "LBM060003")); }
         }
       } finally { SecurityAwareServletFilter.setUserId(previousUser); }
     }

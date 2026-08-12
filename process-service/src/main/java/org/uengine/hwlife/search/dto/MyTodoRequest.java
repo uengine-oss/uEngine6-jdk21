@@ -29,6 +29,9 @@ public class MyTodoRequest {
     /** 요청기관 필터 — {@code bpm_procinst.init_group_cd} 와 일치. */
     private String fncgWndwOrgnCode;
     private String sortOrdrVal;
+    /** 메인/서브 루트 인스턴스 {@code defId} 필터. */
+    private String bswrDvsnVal;
+    /** 현재 단위업무 {@code worklist.defId} 필터. */
     private String fncgBpmPcesId;
     private String uworNm;
 
@@ -97,6 +100,14 @@ public class MyTodoRequest {
 
     public void setUworNm(String uworNm) {
         this.uworNm = uworNm;
+    }
+
+    public String getBswrDvsnVal() {
+        return bswrDvsnVal;
+    }
+
+    public void setBswrDvsnVal(String bswrDvsnVal) {
+        this.bswrDvsnVal = bswrDvsnVal;
     }
 
     public String getFncgBpmPcesId() {

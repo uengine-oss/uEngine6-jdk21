@@ -42,8 +42,8 @@ public class MyTodoItem {
     private String bpmBswrClsfCode;
     private String apvlYn; // 결재여부
     private String imgeScanYn; // 이미지스캔여부
-    private String fncgBpmPcesId; // root.defId
-        
+    private String bswrDvsnVal; // root.defId (메인/서브)
+    private String fncgBpmPcesId; // worklist.defId
 
     public String getCustId() {
         return custId;
@@ -283,6 +283,14 @@ public class MyTodoItem {
 
     public void setImgeScanYn(String imgeScanYn) {
         this.imgeScanYn = imgeScanYn;
+    }
+
+    public String getBswrDvsnVal() {
+        return bswrDvsnVal;
+    }
+
+    public void setBswrDvsnVal(String bswrDvsnVal) {
+        this.bswrDvsnVal = bswrDvsnVal;
     }
 
     public String getFncgBpmPcesId() {
