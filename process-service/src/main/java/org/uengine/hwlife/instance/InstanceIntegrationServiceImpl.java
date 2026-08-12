@@ -5,6 +5,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -35,6 +37,8 @@ import org.uengine.hwlife.instance.dto.*;
 @CrossOrigin(origins = "*")
 @Service
 public class InstanceIntegrationServiceImpl implements InstanceIntegrationService {
+
+  private static final Logger log = LoggerFactory.getLogger(InstanceIntegrationServiceImpl.class);
 
   private final InstanceServiceImpl instanceService;
   private final WorklistRepository worklistRepository;
@@ -673,8 +677,14 @@ public class InstanceIntegrationServiceImpl implements InstanceIntegrationServic
       } catch (NumberFormatException e) {
         failList.add(reassignFailure(item, "LBM060009"));
       } catch (ResponseStatusException e) {
+        log.warn("[reassignWorkItems] LBM060019 taskId={} status={} reason={}",
+            taskId, e.getStatusCode(), e.getReason());
         failList.add(reassignFailure(item, "LBM060019"));
       } catch (Exception e) {
+        log.warn("[reassignWorkItems] LBM060020 taskId={} hndrEmnb={} hndrOrgnCode={} fncgBpmPcesIntcId={}",
+            taskId, hndrEmnb, hndrOrgnCode,
+            item != null ? item.getFncgBpmPcesIntcId() : null,
+            e);
         failList.add(reassignFailure(item, "LBM060020"));
       }
     }
