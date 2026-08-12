@@ -8,6 +8,7 @@ public class ReassignRequestItem {
     private String fncgBpmTaskLstId;
     private String fncgBpmPcesIntcId;
     private String hndrEmnb;
+    private String hndrOrgnCode;
 
     public String getFncgBpmTaskLstId() {
         return fncgBpmTaskLstId;
@@ -31,5 +32,13 @@ public class ReassignRequestItem {
 
     public void setHndrEmnb(String hndrEmnb) {
         this.hndrEmnb = hndrEmnb;
+    }
+
+    public String getHndrOrgnCode() {
+        return hndrOrgnCode;
+    }
+
+    public void setHndrOrgnCode(String hndrOrgnCode) {
+        this.hndrOrgnCode = hndrOrgnCode;
     }
 }

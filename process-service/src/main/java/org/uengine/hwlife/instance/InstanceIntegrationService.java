@@ -60,9 +60,11 @@ public interface InstanceIntegrationService {
   BulkAssignResponse assignBulk(@RequestBody BulkAssignRequest request) throws Exception;
 
   /**
-   * 다중 업무 담당자 변경 — 본인 업무 조건 없음 (권한자).
+   * 다중 업무 담당자 변경 — 권한자가 업무별 처리자({@code hndrEmnb})·기관({@code hndrOrgnCode})을 지정.
    *
-   * <pre>POST /instance/reassign</pre>
+   * <p>요청자 사번은 ESB header.emnb. 본인 업무 조건 없음.</p>
+   *
+   * <pre>POST /instance/multi-reassign</pre>
    */
   @RequestMapping(value = "/multi-reassign", method = RequestMethod.POST, produces = "application/json;charset=UTF-8")
   ReassignResponse reassignWorkItems(@RequestBody ReassignRequest request) throws Exception;

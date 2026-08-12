@@ -19,6 +19,8 @@ import org.uengine.five.repository.WorklistRepository;
 import org.uengine.five.service.InstanceServiceImpl;
 import org.uengine.five.spring.SecurityAwareServletFilter;
 import org.uengine.kernel.GlobalContext;
+import org.uengine.kernel.RoleMapping;
+import org.uengine.hwlife.esbclient.client.EsbClient;
 import org.uengine.hwlife.esbclient.dto.EsbCommonHeader;
 import org.uengine.hwlife.esbclient.support.EsbRequestBodyAdvice;
 import org.uengine.hwlife.iam.ExternalIAMService;
@@ -36,12 +38,16 @@ public class InstanceIntegrationServiceImpl implements InstanceIntegrationServic
 
   private final InstanceServiceImpl instanceService;
   private final WorklistRepository worklistRepository;
+  @SuppressWarnings("unused") // isReassignAuthorized ESB 연동 시 사용
+  private final EsbClient esbClient;
 
   public InstanceIntegrationServiceImpl(
       InstanceServiceImpl instanceService,
-      WorklistRepository worklistRepository) {
+      WorklistRepository worklistRepository,
+      EsbClient esbClient) {
     this.instanceService = instanceService;
     this.worklistRepository = worklistRepository;
+    this.esbClient = esbClient;
   }
 
   /**
@@ -573,58 +579,205 @@ public class InstanceIntegrationServiceImpl implements InstanceIntegrationServic
   }
 
   /**
-   * 다중 업무 담당자 변경 — 본인 업무 조건 없음 (권한자).
+   * 다중 업무 담당자 변경 — 권한자가 업무별 처리자·기관을 지정 (본인 업무 조건 없음).
    *
-   * <p>처리자는 body 각 항목 {@code hndrEmnb}, 변경 수행자는 ESB header.emnb.
+   * <p>처리자 사번·기관은 body 각 항목 {@code hndrEmnb} / {@code hndrOrgnCode},
+   * 요청자 사번은 ESB header.emnb.
    * 처리결과 코드는 {@code failList[].prcsRsltCntn}({@code LBM06XXXX}).
    * ESB header {@code prcsRsltDvsnCode} 는 성공 {@code 0} / 시스템실패 {@code 1}.
    * <ul>
-   *   <li>{@code LBM060001} — bswrList 없음/비어 있음</li>
-   *   <li>{@code LBM060002} — header.emnb 없음</li>
-   *   <li>{@code LBM060003} — 건별 실패(
-   *       fncgBpmTaskLstId 없음, hndrEmnb 없음, 요청 내 fncgBpmTaskLstId 중복,
-   *       fncgBpmTaskLstId 비숫자, work item 없음, fncgBpmPcesIntcId 불일치,
-   *       reassignWorkItem 예외)</li>
+   *   <li>{@code LBM060001} — request body 없음</li>
+   *   <li>{@code LBM060002} — bswrList 없음/비어 있음</li>
+   *   <li>{@code LBM060003} — header.emnb 없음</li>
+   *   <li>{@code LBM060004} — 요청자가 권한자가 아님</li>
+   *   <li>{@code LBM060005} — fncgBpmTaskLstId 없음</li>
+   *   <li>{@code LBM060006} — hndrEmnb 없음</li>
+   *   <li>{@code LBM060007} — hndrOrgnCode 없음</li>
+   *   <li>{@code LBM060008} — 요청 내 fncgBpmTaskLstId 중복</li>
+   *   <li>{@code LBM060009} — fncgBpmTaskLstId 비숫자</li>
+   *   <li>{@code LBM060010} — work item 없음</li>
+   *   <li>{@code LBM060011} — fncgBpmPcesIntcId 불일치</li>
+   *   <li>{@code LBM060012} — 진행중 아님(status not in NEW,RUNNING)</li>
+   *   <li>{@code LBM060013} — 레인 roleName 없음</li>
+   *   <li>{@code LBM060019} — reassignWorkItem 업무 예외</li>
+   *   <li>{@code LBM060020} — 기타 예외</li>
    * </ul>
    */
   @Override
   @Transactional
   public ReassignResponse reassignWorkItems(@RequestBody ReassignRequest request)
       throws Exception {
-    List<ReassignRequestItem> items = request == null ? null : request.getBswrList();
-    ReassignResponse response = new ReassignResponse();
-    List<ReassignResponseItem> failures = new ArrayList<>();
-    int success = 0;
-    Set<String> seen = new HashSet<>();
-    String actor = trimToNull(EsbRequestBodyAdvice.currentHeader() == null ? null : EsbRequestBodyAdvice.currentHeader().getEmnb());
-    if (items == null || items.isEmpty() || actor == null) {
-      for (ReassignRequestItem item : items == null ? new ArrayList<ReassignRequestItem>() : items) failures.add(reassignFailure(item, actor == null ? "LBM060002" : "LBM060001"));
-    } else {
-      String previousUser = SecurityAwareServletFilter.getUserId();
-      try {
-        SecurityAwareServletFilter.setUserId(actor);
-        for (ReassignRequestItem item : items) {
-          String taskId = item == null ? null : trimToNull(item.getFncgBpmTaskLstId());
-          String target = item == null ? null : trimToNull(item.getHndrEmnb());
-          try {
-            if (taskId == null || target == null || !seen.add(taskId)) throw new IllegalArgumentException();
-            WorklistEntity worklist = worklistRepository.findByIdForUpdate(Long.parseLong(taskId)).orElse(null);
-            if (worklist == null || (trimToNull(item.getFncgBpmPcesIntcId()) != null && !item.getFncgBpmPcesIntcId().equals(String.valueOf(worklist.getInstId())))) throw new IllegalArgumentException();
-            RoleMappingCommand mapping = new RoleMappingCommand();
-            mapping.setEndpoint(target);
-            mapping.setResourceName(target);
-            instanceService.reassignWorkItem(taskId, mapping); success++;
-          } catch (Exception e) { failures.add(reassignFailure(item, "LBM060003")); }
-        }
-      } finally { SecurityAwareServletFilter.setUserId(previousUser); }
+    List<ReassignRequestItem> bswrList = request == null ? null : request.getBswrList();
+    EsbCommonHeader header = EsbRequestBodyAdvice.currentHeader();
+    String actorEmnb = trimToNull(header != null ? header.getEmnb() : null);
+
+    String commonError = resolveCommonReassignError(request, bswrList, actorEmnb);
+    if (commonError != null) {
+      return failedReassignResponse(bswrList, commonError);
     }
-    response.setSucsCont(success); response.setFailCont(failures.size()); response.setFailList(failures); return response;
+    if (!isReassignAuthorized(actorEmnb)) {
+      return failedReassignResponse(bswrList, "LBM060004");
+    }
+
+    List<ReassignResponseItem> failList = new ArrayList<>();
+    Set<String> seenTaskIds = new HashSet<>();
+    int successCount = 0;
+
+    for (ReassignRequestItem item : bswrList) {
+      String taskId = item == null ? null : trimToNull(item.getFncgBpmTaskLstId());
+      if (taskId == null) {
+        failList.add(reassignFailure(item, "LBM060005"));
+        continue;
+      }
+      String hndrEmnb = item == null ? null : trimToNull(item.getHndrEmnb());
+      if (hndrEmnb == null) {
+        failList.add(reassignFailure(item, "LBM060006"));
+        continue;
+      }
+      String hndrOrgnCode = item == null ? null : trimToNull(item.getHndrOrgnCode());
+      if (hndrOrgnCode == null) {
+        failList.add(reassignFailure(item, "LBM060007"));
+        continue;
+      }
+      if (!seenTaskIds.add(taskId)) {
+        failList.add(reassignFailure(item, "LBM060008"));
+        continue;
+      }
+
+      try {
+        WorklistEntity worklist = worklistRepository.findByIdForUpdate(Long.parseLong(taskId)).orElse(null);
+        if (worklist == null) {
+          failList.add(reassignFailure(item, "LBM060010"));
+          continue;
+        }
+        String validationError = validateReassignRequest(worklist, item);
+        if (validationError != null) {
+          failList.add(reassignFailure(item, validationError));
+          continue;
+        }
+
+        RoleMappingCommand mapping = new RoleMappingCommand();
+        mapping.setEndpoint(hndrEmnb);
+        mapping.setGroupName(hndrOrgnCode);
+        try {
+          RoleMapping filled = RoleMapping.create();
+          if (filled != null) {
+            filled.setEndpoint(hndrEmnb);
+            filled.fill(); // IAMCompanyRoleMapping.doFill (flyweight cache)
+            if (trimToNull(filled.getResourceName()) != null) {
+              mapping.setResourceName(filled.getResourceName());
+            }
+          }
+        } catch (Exception ignore) {
+        }
+        instanceService.reassignWorkItem(taskId, mapping);
+        successCount++;
+      } catch (NumberFormatException e) {
+        failList.add(reassignFailure(item, "LBM060009"));
+      } catch (ResponseStatusException e) {
+        failList.add(reassignFailure(item, "LBM060019"));
+      } catch (Exception e) {
+        failList.add(reassignFailure(item, "LBM060020"));
+      }
+    }
+
+    return toReassignResponse(successCount, failList);
+  }
+
+  /**
+   * 요청 전체 공통 실패 코드.
+   *
+   * <ul>
+   *   <li>{@code LBM060001} — request body 없음</li>
+   *   <li>{@code LBM060002} — bswrList 없음/비어 있음</li>
+   *   <li>{@code LBM060003} — header.emnb 없음</li>
+   * </ul>
+   */
+  private static String resolveCommonReassignError(
+      ReassignRequest request,
+      List<ReassignRequestItem> bswrList,
+      String actorEmnb) {
+    if (request == null) {
+      return "LBM060001";
+    }
+    if (bswrList == null || bswrList.isEmpty()) {
+      return "LBM060002";
+    }
+    if (actorEmnb == null) {
+      return "LBM060003";
+    }
+    return null;
+  }
+
+  /**
+   * 다중 담당자 변경 권한자 여부.
+   *
+   * <p>요청자 사번({@code header.emnb})으로 ESB 권한 조회 예정.
+   * 현재는 연동 전이므로 항상 권한자로 간주한다.</p>
+   */
+  @SuppressWarnings("unused")
+  private boolean isReassignAuthorized(String actorEmnb) {
+    // TODO: ESB 권한자 조회 연동 후 반영
+    // java.util.Map<String, String> payload = java.util.Map.of("emnb", actorEmnb);
+    // XxxAuthResponse response = esbClient.send("ITFC_ID", "RCVE_SRVC_ID", payload, XxxAuthResponse.class);
+    // return response != null && response.isAuthorized();
+    return true;
+  }
+
+  /**
+   * 건별 검증 실패 코드.
+   *
+   * <ul>
+   *   <li>{@code LBM060011} — fncgBpmPcesIntcId 불일치</li>
+   *   <li>{@code LBM060012} — 진행중 아님</li>
+   *   <li>{@code LBM060013} — 레인 roleName 없음</li>
+   * </ul>
+   */
+  private static String validateReassignRequest(WorklistEntity worklist, ReassignRequestItem item) {
+    String requestedInstanceId = item == null ? null : trimToNull(item.getFncgBpmPcesIntcId());
+    if (requestedInstanceId != null
+        && !requestedInstanceId.equals(String.valueOf(worklist.getInstId()))) {
+      return "LBM060011";
+    }
+    String status = trimToNull(worklist.getStatus());
+    if (!"NEW".equalsIgnoreCase(status) && !"RUNNING".equalsIgnoreCase(status)) {
+      return "LBM060012";
+    }
+    if (trimToNull(worklist.getRoleName()) == null) {
+      return "LBM060013";
+    }
+    return null;
+  }
+
+  /** 공통 사유 코드로 요청 태스크 전부를 실패 처리한다. */
+  private static ReassignResponse failedReassignResponse(
+      List<ReassignRequestItem> bswrList,
+      String reason) {
+    List<ReassignResponseItem> failList = new ArrayList<>();
+    if (bswrList != null) {
+      for (ReassignRequestItem item : bswrList) {
+        failList.add(reassignFailure(item, reason));
+      }
+    }
+    return toReassignResponse(0, failList);
+  }
+
+  private static ReassignResponse toReassignResponse(int successCount, List<ReassignResponseItem> failList) {
+    ReassignResponse response = new ReassignResponse();
+    response.setSucsCont(successCount);
+    response.setFailCont(failList == null ? 0 : failList.size());
+    response.setFailList(failList == null ? new ArrayList<>() : failList);
+    return response;
   }
 
   private static ReassignResponseItem reassignFailure(ReassignRequestItem source, String reason) {
     ReassignResponseItem failure = new ReassignResponseItem();
-    if (source != null) { failure.setFncgBpmTaskLstId(source.getFncgBpmTaskLstId()); failure.setFncgBpmPcesIntcId(source.getFncgBpmPcesIntcId()); }
-    failure.setPrcsRsltCntn(reason); return failure;
+    if (source != null) {
+      failure.setFncgBpmTaskLstId(source.getFncgBpmTaskLstId());
+      failure.setFncgBpmPcesIntcId(source.getFncgBpmPcesIntcId());
+    }
+    failure.setPrcsRsltCntn(reason);
+    return failure;
   }
 
   @Override
