@@ -721,10 +721,12 @@ public class InstanceIntegrationServiceImpl implements InstanceIntegrationServic
    * 다중 담당자 변경 권한자 여부.
    *
    * <p>요청자 사번({@code header.emnb})으로 ESB 권한 조회 예정.
-   * 현재는 연동 전이므로 항상 권한자로 간주한다.</p>
+   * 연동 전 임시: 사번이 {@code ESB}로 시작하면 권한 없음으로 처리한다.</p>
    */
-  @SuppressWarnings("unused")
   private boolean isReassignAuthorized(String actorEmnb) {
+    if (actorEmnb != null && actorEmnb.startsWith("ESB")) {
+      return false;
+    }
     // TODO: ESB 권한자 조회 연동 후 반영
     // java.util.Map<String, String> payload = java.util.Map.of("emnb", actorEmnb);
     // XxxAuthResponse response = esbClient.send("ITFC_ID", "RCVE_SRVC_ID", payload, XxxAuthResponse.class);
