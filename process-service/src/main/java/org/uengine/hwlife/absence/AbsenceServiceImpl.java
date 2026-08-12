@@ -1,11 +1,11 @@
 package org.uengine.hwlife.absence;
 
 
-import java.time.ZoneId;
 import java.util.Date;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,6 +31,9 @@ import org.uengine.hwlife.absence.repository.AbsenceRepository;
 @CrossOrigin(origins = "*")
 @Service
 public class AbsenceServiceImpl implements AbsenceService {
+
+    private static final int DEFAULT_PAGE_SIZE = 20;
+    private static final int MAX_PAGE_SIZE = 100;
 
     private final AbsenceRepository absenceRepository;
 
@@ -87,24 +90,21 @@ public class AbsenceServiceImpl implements AbsenceService {
         if (request == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Request body is required");
         }
-        require(request.getAbscEmnb(), "abscEmnb");
+        String userId = require(request.getAbscEmnb(), "abscEmnb");
+        Long nextKey = parseNextKey(request.getNextKey());
+        int pageSize = normalizePageSize(request.getPageSize());
 
-        // List<AbsenceEntity> all = absenceRepository.findByUserId(request.getAbscEmnb().trim());
+        PageRequest pageRequest = PageRequest.of(0, pageSize + 1);
+        List<AbsenceEntity> fetched = nextKey == null
+                ? absenceRepository.findHistoryFirstPage(userId, pageRequest)
+                : absenceRepository.findHistoryPageAfter(userId, nextKey, pageRequest);
         AbsenceHistoryResponse response = new AbsenceHistoryResponse();
-        // response.setTotCont(all.size());
-
-        // int pageSize = 20;
-        // int pageNo = request.getPageNo() == null || request.getPageNo() < 1 ? 1 : request.getPageNo();
-        // int from = (pageNo - 1) * pageSize;
-        // if (from >= all.size()) {
-        //     response.setAbscList(List.of());
-        //     return response;
-        // }
-        // int to = Math.min(from + pageSize, all.size());
-        // List<AbsenceHistoryItem> page = all.subList(from, to).stream()
-        //         .map(this::toHistoryItem)
-        //         .toList();
-        // response.setAbscList(page);
+        response.setTotCont(Math.toIntExact(absenceRepository.countByUserId(userId)));
+        if (fetched.size() > pageSize) {
+            response.setNextKey(String.valueOf(fetched.get(pageSize).getAbseId()));
+            fetched = fetched.subList(0, pageSize);
+        }
+        response.setAbscList(fetched.stream().map(this::toHistoryItem).toList());
         return response;
     }
 
@@ -174,13 +174,37 @@ public class AbsenceServiceImpl implements AbsenceService {
         }
     }
 
+    private Long parseNextKey(String nextKey) {
+        if (nextKey == null || nextKey.trim().isEmpty()) {
+            return null;
+        }
+        try {
+            long parsed = Long.parseLong(nextKey.trim());
+            if (parsed <= 0) {
+                throw new NumberFormatException("nextKey must be positive");
+            }
+            return parsed;
+        } catch (NumberFormatException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "nextKey must be a positive fncgBpmAbstSqno", e);
+        }
+    }
+
+    private int normalizePageSize(Integer pageSize) {
+        if (pageSize == null) {
+            return DEFAULT_PAGE_SIZE;
+        }
+        return Math.max(1, Math.min(pageSize, MAX_PAGE_SIZE));
+    }
+
 
     private void ensureNoOverlap(AbsenceEntity target, Long excludeAbseId) {
-        List<AbsenceEntity> overlapping = absenceRepository.findOverlappingActive(
-                target.getUserId(),
-                target.getAbscStarDttm(),
-                target.getAbscEndDttm(),
-                excludeAbseId == null ? -1L : excludeAbseId);
+        long excludedId = excludeAbseId == null ? -1L : excludeAbseId;
+        List<AbsenceEntity> overlapping = target.getAbscEndDttm() == null
+                ? absenceRepository.findOverlappingActiveWithoutEnd(
+                        target.getUserId(), target.getAbscStarDttm(), excludedId)
+                : absenceRepository.findOverlappingActiveWithEnd(
+                        target.getUserId(), target.getAbscStarDttm(), target.getAbscEndDttm(), excludedId);
         if (!overlapping.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.CONFLICT,
                     "Overlapping active absence already exists for userId=" + target.getUserId()

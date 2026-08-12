@@ -5,6 +5,7 @@ import java.util.List;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.repository.query.Param;
 import org.uengine.hwlife.absence.entity.AbsenceEntity;
 
@@ -21,6 +22,16 @@ public interface AbsenceRepository extends JpaRepository<AbsenceEntity, Long> {
     @Query("select a from AbsenceEntity a where a.userId = :userId order by a.abscStupDttm desc")
     List<AbsenceEntity> findByUserId(@Param("userId") String userId);
 
+    @Query("select a from AbsenceEntity a where a.userId = :userId order by a.abseId desc")
+    List<AbsenceEntity> findHistoryFirstPage(@Param("userId") String userId, Pageable pageable);
+
+    @Query("select a from AbsenceEntity a where a.userId = :userId and a.abseId <= :nextKey order by a.abseId desc")
+    List<AbsenceEntity> findHistoryPageAfter(@Param("userId") String userId,
+                                             @Param("nextKey") Long nextKey,
+                                             Pageable pageable);
+
+    long countByUserId(String userId);
+
     /**
      * 동일 userId 로 기간이 겹치는 활성 부재가 존재하는지 검사 (등록 시 중복 방지용).
      *
@@ -33,10 +44,19 @@ public interface AbsenceRepository extends JpaRepository<AbsenceEntity, Long> {
             "where a.userId = :userId " +
             "  and a.abscRscsDttm is null " +
             "  and a.abseId <> :excludeAbseId " +
-            "  and ( :newAbscEndDttm is null or a.abscStarDttm <= :newAbscEndDttm ) " +
+            "  and a.abscStarDttm <= :newAbscEndDttm " +
             "  and ( a.abscEndDttm is null or a.abscEndDttm >= :newAbscStarDttm )")
-    List<AbsenceEntity> findOverlappingActive(@Param("userId") String userId,
-                                               @Param("newAbscStarDttm") Date newAbscStarDttm,
-                                               @Param("newAbscEndDttm") Date newAbscEndDttm,
-                                               @Param("excludeAbseId") Long excludeAbseId);
+    List<AbsenceEntity> findOverlappingActiveWithEnd(@Param("userId") String userId,
+                                                      @Param("newAbscStarDttm") Date newAbscStarDttm,
+                                                      @Param("newAbscEndDttm") Date newAbscEndDttm,
+                                                      @Param("excludeAbseId") Long excludeAbseId);
+
+    @Query("select a from AbsenceEntity a " +
+            "where a.userId = :userId " +
+            "  and a.abscRscsDttm is null " +
+            "  and a.abseId <> :excludeAbseId " +
+            "  and ( a.abscEndDttm is null or a.abscEndDttm >= :newAbscStarDttm )")
+    List<AbsenceEntity> findOverlappingActiveWithoutEnd(@Param("userId") String userId,
+                                                         @Param("newAbscStarDttm") Date newAbscStarDttm,
+                                                         @Param("excludeAbseId") Long excludeAbseId);
 }
