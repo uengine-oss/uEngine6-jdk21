@@ -6,6 +6,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -16,6 +17,8 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 import org.uengine.five.dto.RoleMappingCommand;
 import org.uengine.five.entity.WorklistEntity;
 import org.uengine.five.repository.WorklistRepository;
@@ -65,7 +68,7 @@ class BulkAssignItemServiceTest {
         BulkAssignItemException.class,
         () -> service.assign(item("101", "201", "kim"), "kim", "Kim"));
 
-    assertEquals("ALREADY_ASSIGNED", exception.getResultCode());
+    assertEquals("LBM070012", exception.getResultCode());
     verify(instanceService, never()).claimWorkItem(any(), any());
   }
 
@@ -73,7 +76,7 @@ class BulkAssignItemServiceTest {
   void returnsStableCodeWhenWorkitemDoesNotExist() throws Exception {
     when(worklistRepository.findByIdForUpdate(101L)).thenReturn(Optional.empty());
 
-    assertCode("WORKITEM_NOT_FOUND", item("101", "201", "kim"));
+    assertCode("LBM070009", item("101", "201", "kim"));
     verify(instanceService, never()).claimWorkItem(any(), any());
   }
 
@@ -81,15 +84,28 @@ class BulkAssignItemServiceTest {
   void validatesInstanceStatusAndDispatchOption() throws Exception {
     WorklistEntity mismatched = worklist(null, "NEW", 1);
     when(worklistRepository.findByIdForUpdate(101L)).thenReturn(Optional.of(mismatched));
-    assertCode("INSTANCE_MISMATCH", item("101", "999", "kim"));
+    assertCode("LBM070010", item("101", "999", "kim"));
 
     WorklistEntity completed = worklist(null, "COMPLETED", 1);
     when(worklistRepository.findByIdForUpdate(101L)).thenReturn(Optional.of(completed));
-    assertCode("WORKITEM_NOT_NEW", item("101", "201", "kim"));
+    assertCode("LBM070011", item("101", "201", "kim"));
 
     WorklistEntity direct = worklist(null, "NEW", 0);
     when(worklistRepository.findByIdForUpdate(101L)).thenReturn(Optional.of(direct));
-    assertCode("NOT_BULK_ASSIGNABLE", item("101", "201", "kim"));
+    assertCode("LBM070013", item("101", "201", "kim"));
+  }
+
+  @Test
+  void mapsClaimBusinessAndUnexpectedExceptions() throws Exception {
+    when(worklistRepository.findByIdForUpdate(101L))
+        .thenReturn(Optional.of(worklist(null, "NEW", 1)));
+    doThrow(new ResponseStatusException(HttpStatus.CONFLICT))
+        .when(instanceService).claimWorkItem(any(), any());
+    assertCode("LBM070019", item("101", "201", "kim"));
+
+    doThrow(new IllegalStateException("unexpected"))
+        .when(instanceService).claimWorkItem(any(), any());
+    assertCode("LBM070020", item("101", "201", "kim"));
   }
 
   private void assertCode(String expected, BulkAssignRequestItem item) {

@@ -5,8 +5,10 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -14,6 +16,7 @@ import java.util.List;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.MockedStatic;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.web.context.request.RequestAttributes;
 import org.springframework.web.context.request.RequestContextHolder;
@@ -23,6 +26,7 @@ import org.uengine.five.service.InstanceServiceImpl;
 import org.uengine.hwlife.esbclient.client.EsbClient;
 import org.uengine.hwlife.esbclient.dto.EsbCommonHeader;
 import org.uengine.hwlife.esbclient.support.EsbRequestBodyAdvice;
+import org.uengine.hwlife.iam.ExternalIAMService;
 import org.uengine.hwlife.instance.BulkAssignItemService.BulkAssignItemException;
 import org.uengine.hwlife.instance.dto.BulkAssignRequest;
 import org.uengine.hwlife.instance.dto.BulkAssignRequestItem;
@@ -65,7 +69,7 @@ class InstanceIntegrationServiceImplBulkAssignTest {
   void preservesSuccessfulItemsWhenOneItemFails() throws Exception {
     BulkAssignRequest request = request(5, "kim");
     BulkAssignRequestItem failing = request.getBswrList().get(2);
-    doThrow(new BulkAssignItemException("ALREADY_ASSIGNED", null))
+    doThrow(new BulkAssignItemException("LBM070012", null))
         .when(itemService).assign(eq(failing), eq("kim"), any());
 
     BulkAssignResponse response = service.assignBulk(request);
@@ -73,7 +77,7 @@ class InstanceIntegrationServiceImplBulkAssignTest {
     assertEquals(4, response.getSucsCont());
     assertEquals(1, response.getFailCont());
     assertEquals(failing.getFncgBpmTaskLstId(), response.getFailList().get(0).getFncgBpmTaskLstId());
-    assertEquals("ALREADY_ASSIGNED", response.getFailList().get(0).getPrcsRsltCntn());
+    assertEquals("LBM070012", response.getFailList().get(0).getPrcsRsltCntn());
   }
 
   @Test
@@ -85,35 +89,69 @@ class InstanceIntegrationServiceImplBulkAssignTest {
 
     assertEquals(1, response.getSucsCont());
     assertEquals(1, response.getFailCont());
-    assertEquals("DUPLICATE_TASK", response.getFailList().get(0).getPrcsRsltCntn());
+    assertEquals("LBM070007", response.getFailList().get(0).getPrcsRsltCntn());
     verify(itemService, times(1)).assign(any(), eq("kim"), any());
   }
 
   @Test
   void returnsStableCodesForMissingRequestListAndHeader() throws Exception {
     BulkAssignResponse missingRequest = service.assignBulk(null);
-    assertEquals("INVALID_REQUEST", missingRequest.getFailList().get(0).getPrcsRsltCntn());
+    assertEquals("LBM070001", missingRequest.getFailList().get(0).getPrcsRsltCntn());
+
+    BulkAssignRequest emptyList = new BulkAssignRequest();
+    emptyList.setBswrList(List.of());
+    assertEquals("LBM070002", service.assignBulk(emptyList).getFailList().get(0).getPrcsRsltCntn());
 
     RequestContextHolder.resetRequestAttributes();
     BulkAssignResponse missingHeader = service.assignBulk(request(1, "kim"));
-    assertEquals("MISSING_ACTOR", missingHeader.getFailList().get(0).getPrcsRsltCntn());
+    assertEquals("LBM070003", missingHeader.getFailList().get(0).getPrcsRsltCntn());
   }
 
   @Test
   void returnsStableCodesForInvalidItemFields() throws Exception {
     BulkAssignRequest missingTask = request(1, "kim");
     missingTask.getBswrList().get(0).setFncgBpmTaskLstId(" ");
-    assertEquals("MISSING_TASK_ID",
+    assertEquals("LBM070006",
         service.assignBulk(missingTask).getFailList().get(0).getPrcsRsltCntn());
 
     BulkAssignRequest invalidTask = request(1, "kim");
     invalidTask.getBswrList().get(0).setFncgBpmTaskLstId("not-a-number");
-    assertEquals("INVALID_TASK_ID",
+    assertEquals("LBM070008",
         service.assignBulk(invalidTask).getFailList().get(0).getPrcsRsltCntn());
 
     BulkAssignRequest missingHandler = request(1, " ");
-    assertEquals("MISSING_HANDLER",
+    assertEquals("LBM070004",
         service.assignBulk(missingHandler).getFailList().get(0).getPrcsRsltCntn());
+  }
+
+  @Test
+  void returnsCodeWhenHandlerCannotBeResolved() throws Exception {
+    ExternalIAMService iamService = mock(ExternalIAMService.class);
+    when(iamService.getUser("unknown")).thenReturn(null);
+
+    try (MockedStatic<ExternalIAMService> externalIam = mockStatic(ExternalIAMService.class)) {
+      externalIam.when(ExternalIAMService::getDefault).thenReturn(iamService);
+
+      BulkAssignResponse response = service.assignBulk(request(1, "unknown"));
+
+      assertEquals("LBM070005", response.getFailList().get(0).getPrcsRsltCntn());
+      verify(itemService, times(0)).assign(any(), any(), any());
+    }
+  }
+
+  @Test
+  void propagatesBusinessAndUnexpectedAssignmentCodes() throws Exception {
+    BulkAssignRequest businessFailure = request(1, "kim");
+    doThrow(new BulkAssignItemException("LBM070019", null))
+        .when(itemService).assign(any(), eq("kim"), any());
+    assertEquals("LBM070019",
+        service.assignBulk(businessFailure).getFailList().get(0).getPrcsRsltCntn());
+
+    BulkAssignRequest unexpectedFailure = request(1, "lee");
+    doThrow(new RuntimeException("unexpected"))
+        .when(itemService).assign(any(), eq("lee"), any());
+    assertEquals("LBM070020",
+        service.assignBulk(unexpectedFailure).getFailList().get(0).getPrcsRsltCntn());
   }
 
   private static BulkAssignRequest request(int count, String handler) {

@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.beans.Introspector;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -32,6 +33,30 @@ class BulkAssignDtoContractTest {
     assertProperties(BulkAssignSearchResponseItem.class,
         "bpmBswrClsfCode", "bswrDvsnVal", "fncgBpmPcesId", "fncgBpmPcesIntcId",
         "fncgBpmTaskLstId", "uworNm");
+  }
+
+  @Test
+  void usesApprovedLbm07FailureCodes() {
+    assertEquals(List.of(
+        "LBM070001", "LBM070002", "LBM070003", "LBM070004", "LBM070005",
+        "LBM070006", "LBM070007", "LBM070008", "LBM070009", "LBM070010",
+        "LBM070011", "LBM070012", "LBM070013", "LBM070019", "LBM070020"),
+        List.of(
+            BulkAssignResultCode.INVALID_REQUEST,
+            BulkAssignResultCode.EMPTY_WORK_LIST,
+            BulkAssignResultCode.MISSING_ACTOR,
+            BulkAssignResultCode.MISSING_HANDLER,
+            BulkAssignResultCode.HANDLER_NOT_FOUND,
+            BulkAssignResultCode.MISSING_TASK_ID,
+            BulkAssignResultCode.DUPLICATE_TASK,
+            BulkAssignResultCode.INVALID_TASK_ID,
+            BulkAssignResultCode.WORKITEM_NOT_FOUND,
+            BulkAssignResultCode.INSTANCE_MISMATCH,
+            BulkAssignResultCode.WORKITEM_NOT_NEW,
+            BulkAssignResultCode.ALREADY_ASSIGNED,
+            BulkAssignResultCode.NOT_BULK_ASSIGNABLE,
+            BulkAssignResultCode.CLAIM_REJECTED,
+            BulkAssignResultCode.ASSIGNMENT_FAILED));
   }
 
   private static void assertProperties(Class<?> type, String... expected) throws Exception {

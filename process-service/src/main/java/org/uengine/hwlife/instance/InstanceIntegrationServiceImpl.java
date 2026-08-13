@@ -588,23 +588,23 @@ public class InstanceIntegrationServiceImpl implements InstanceIntegrationServic
   /**
    * 여러 미배정 업무를 한 요청으로 배정한다.
    *
-   * <p>{@link BulkAssignResponseItem#getPrcsRsltCntn()} 실패 코드:</p>
+   * <p>처리결과 코드는 {@code failList[].prcsRsltCntn}({@code LBM07XXXX}).</p>
    * <ul>
-   *   <li>{@code INVALID_REQUEST}: 요청 body 없음</li>
-   *   <li>{@code EMPTY_WORK_LIST}: 배정 목록 없음</li>
-   *   <li>{@code MISSING_ACTOR}: {@code header.emnb} 없음</li>
-   *   <li>{@code MISSING_HANDLER}: 항목의 담당자 사번 없음</li>
-   *   <li>{@code HANDLER_NOT_FOUND}: IAM에서 담당자를 찾지 못함</li>
-   *   <li>{@code MISSING_TASK_ID}: 항목의 워크아이템 ID 없음</li>
-   *   <li>{@code DUPLICATE_TASK}: 요청 내 워크아이템 ID 중복</li>
-   *   <li>{@code INVALID_TASK_ID}: 워크아이템 ID가 숫자가 아님</li>
-   *   <li>{@code WORKITEM_NOT_FOUND}: 워크아이템 없음</li>
-   *   <li>{@code INSTANCE_MISMATCH}: 요청 인스턴스 ID와 워크아이템 불일치</li>
-   *   <li>{@code WORKITEM_NOT_NEW}: 워크아이템 상태가 NEW가 아님</li>
-   *   <li>{@code ALREADY_ASSIGNED}: 이미 담당자가 지정됨</li>
-   *   <li>{@code NOT_BULK_ASSIGNABLE}: {@code dispatchOption != 1}</li>
-   *   <li>{@code CLAIM_REJECTED}: 기존 claim 처리에서 거절됨</li>
-   *   <li>{@code ASSIGNMENT_FAILED}: 그 밖의 배정 처리 오류</li>
+   *   <li>{@code LBM070001} — request body 없음</li>
+   *   <li>{@code LBM070002} — bswrList 없음/비어 있음</li>
+   *   <li>{@code LBM070003} — header.emnb 없음</li>
+   *   <li>{@code LBM070004} — hndrEmnb 없음</li>
+   *   <li>{@code LBM070005} — 담당자 IAM 조회 실패</li>
+   *   <li>{@code LBM070006} — fncgBpmTaskLstId 없음</li>
+   *   <li>{@code LBM070007} — 요청 내 fncgBpmTaskLstId 중복</li>
+   *   <li>{@code LBM070008} — fncgBpmTaskLstId 비숫자</li>
+   *   <li>{@code LBM070009} — work item 없음</li>
+   *   <li>{@code LBM070010} — fncgBpmPcesIntcId 불일치</li>
+   *   <li>{@code LBM070011} — 배정불가(status != NEW)</li>
+   *   <li>{@code LBM070012} — 이미 담당자가 지정된 업무</li>
+   *   <li>{@code LBM070013} — 일괄배정 대상이 아님(dispatchOption != 1)</li>
+   *   <li>{@code LBM070019} — claimWorkItem 업무 예외</li>
+   *   <li>{@code LBM070020} — 기타 예외</li>
    * </ul>
    */
   @Override
