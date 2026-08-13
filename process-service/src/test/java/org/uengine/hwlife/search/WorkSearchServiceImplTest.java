@@ -448,7 +448,6 @@ class WorkSearchServiceImplTest {
     request.setBpmBswrClsfCode("BSWR");
     request.setCustId("CUST");
     request.setLoanCntcNo("CONTACT");
-    request.setLoanPcesMgmtNo("CORR-101");
     request.setFncgSuptTrgtDvsnCode("TARGET");
     request.setLoanSubjDvsnCode("SUBJECT");
     request.setFncgMneyUsagClsfCode("USAGE");

@@ -2,7 +2,6 @@ package org.uengine.hwlife.search.dto;
 
 import java.util.Date;
 
-import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonFormat;
 
 /**
@@ -10,10 +9,8 @@ import com.fasterxml.jackson.annotation.JsonFormat;
  */
 public class MyTodoRequest {
 
-    private String bpmBswrClsfCode;
     private String custId;
     private String loanCntcNo;
-    private String loanPcesMgmtNo;
     private String fncgSuptTrgtDvsnCode;
     private String loanSubjDvsnCode;
     private String fncgMneyUsagClsfCode;
@@ -25,15 +22,13 @@ public class MyTodoRequest {
     private Date hopeStarDate;
     @JsonFormat(pattern = "yyyyMMdd")
     private Date hopeEndDate;
-
-    /** 요청기관 필터 — {@code bpm_procinst.init_group_cd} 와 일치. */
-    private String fncgWndwOrgnCode;
+    private String fncgWndwOrgnCode; //요청기관 필터 — {@code bpm_procinst.init_group_cd} 와 일치. */
     private String sortOrdrVal;
-    /** 메인/서브 루트 인스턴스 {@code defId} 필터. */
-    private String bswrDvsnVal;
-    /** 현재 단위업무 {@code worklist.defId} 필터. */
-    private String fncgBpmPcesId;
-    private String uworNm;
+
+    private String bpmBswrClsfCode; // 업무분류코드 (inst.bswrClsfCode)
+    private String bswrDvsnVal; // root_inst_id.defId (현 최상 업무 정의 아이디)
+    private String fncgBpmPcesId; // worklist.defId (현 업무 정의 아이디)
+    private String uworNm; // 단위업무명 
 
     private String nextKey;
     private Integer pageSize;
@@ -60,14 +55,6 @@ public class MyTodoRequest {
 
     public void setLoanCntcNo(String loanCntcNo) {
         this.loanCntcNo = loanCntcNo;
-    }
-
-    public String getLoanPcesMgmtNo() {
-        return loanPcesMgmtNo;
-    }
-
-    public void setLoanPcesMgmtNo(String loanPcesMgmtNo) {
-        this.loanPcesMgmtNo = loanPcesMgmtNo;
     }
 
     public String getFncgSuptTrgtDvsnCode() {

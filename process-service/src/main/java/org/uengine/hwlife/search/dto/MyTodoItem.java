@@ -9,41 +9,42 @@ import com.fasterxml.jackson.annotation.JsonFormat;
  */
 public class MyTodoItem {
 
-    private String custId;
-    private String loanCntcNo;
-    private String fncgSuptTrgtDvsnCode;
-    private String loanSubjDvsnCode;
-    private String fncgMneyUsagClsfCode;
+    private String custId; // 고객 아이디 
+    private String loanCntcNo; // 대출게약번호 
+    private String fncgSuptTrgtDvsnCode; // 융자 지원대상 구분코드
+    private String loanSubjDvsnCode; // 대출 과목 구분코드 
+    private String fncgMneyUsagClsfCode; // 융자 자금용도 분류코드 
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyyMMdd")
-    private Date loanHopeDate;
-    private String loanPcesMgmtNo;
-    private String fncgBpmTaskTrcgNm;
+    private Date loanHopeDate; // 대출 희망일자 
+    private String loanPcesMgmtNo; // corrKey (융자업무 관계키 )
+    private String fncgBpmTaskTrcgNm; // 단위업무 트레싱 태그 
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyyMMddHHmmss")
-    private Date uworStarDttm;
-    private String uworNm;
-    private String reptHndrEmnb;
-    private String reptHndrFncgOrgnCode;
-    private String prcdHndrEmnb;
-    private String prcdHndrFncgOrgnCode;
-    private String fncgBpmUworSttsCntn;
+    private Date uworStarDttm; // 단위업무 시작일 
+    private String reptHndrEmnb; // 최초 단위업무 처리자 사원번호 
+    private String reptHndrFncgOrgnCode; // 최초 단위업무 처리자 기관코드 
+    private String prcdHndrEmnb; // 선행(전 단계 단위업무) 처리자 사원번호  
+    private String prcdHndrFncgOrgnCode; // 선행(전 단계 단위업무) 처리자 기관코드 
+    private String fncgBpmUworSttsCntn; // 단위업무 상태 
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyyMMddHHmmss")
-    private Date starDttm;
-    private String befoHndrEmnb;
-    private String befoFncgOrgnCode;
-    private String hndrEmnb;
-    private String hndrNm;
-    private String hndrOrgnCode;
-    private String scrnUrlAddr;
-    private String fncgBpmTaskLstId;
-    private String fncgBpmPcesIntcId;
+    private Date starDttm; // 업무(인스턴스) 시작일 
+    private String befoHndrEmnb; // 이전(위임) 단위업무 처리자 사원번호 
+    private String befoFncgOrgnCode; // 이전(위임) 단위업무 처리자 기관코드 
+    private String hndrEmnb; // 현 단위업무 사원번호 
+    private String hndrNm; // 현 단위업무 처리자 명 
+    private String hndrOrgnCode; // 현 단위업무 기관코드 
+    private String scrnUrlAddr; // tool (url)
+    private String fncgBpmTaskLstId; // 태스크 아이디 
+    private String fncgBpmPcesIntcId; // 인스턴스 아이디 
     private String dstOptnVal; // 배분 규칙 
     private String ruleAcmpVal; // 할당 규칙
     private String mnorExstYn; // 위임여부
-    private String bpmBswrClsfCode;
     private String apvlYn; // 결재여부
     private String imgeScanYn; // 이미지스캔여부
-    private String bswrDvsnVal; // root.defId (메인/서브)
-    private String fncgBpmPcesId; // worklist.defId
+
+    private String bpmBswrClsfCode; // 업무분류코드 (inst.bswrClsfCode)
+    private String bswrDvsnVal; // root_inst_id.defId (현 최상 업무 정의 아이디)
+    private String fncgBpmPcesId; // worklist.defId (현 업무 정의 아이디)
+    private String uworNm; // 단위업무명 
 
     public String getCustId() {
         return custId;

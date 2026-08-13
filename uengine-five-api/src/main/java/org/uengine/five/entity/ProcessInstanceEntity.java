@@ -74,7 +74,7 @@ public class ProcessInstanceEntity {// implements ProcessInstanceDAO {
     @Temporal(TemporalType.DATE) 
     private Date loanHopeDate; // 대출희망일자 (날짜 타입)
     private String fncgMneyUsagClsfCode; // 자금사용구분코드
-    private String bswrClsfCode;    // 업무분류 코드
+    private String bswrClsfCode;    // 업무분류 코드 (10: 일반,20 융자 )
 
 
     public List<DummyWorkList> getDummyWorkLists() {

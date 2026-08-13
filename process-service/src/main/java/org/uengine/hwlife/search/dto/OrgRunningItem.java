@@ -10,7 +10,7 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 public class OrgRunningItem {
 
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyyMMddHHmmssSSS")
-    private Date starDttm;
+    private Date starDttm; // 업무 시작일(inst.startedDate)
     private String loanCntcNo;
     private String fncgSuptTrgtDvsnCode;
     private String loanSubjDvsnCode;
@@ -19,19 +19,22 @@ public class OrgRunningItem {
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyyMMdd")
     private Date loanHopeDate;
     private String loanPcesMgmtNo;
-    private String reptHndrEmnb;
+    private String reptHndrEmnb; //최초 단위업무 처리자 (inst.init_ep)
     private String reptHndrFncgOrgnCode;
     private String hndrEmnb;
     private String hndrOrgnCode;
-    private String uworNm;
     private String fncgBpmTaskTrcgNm;
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyyMMddHHmmssSSS")
     private Date uworStarDttm;
-    private String bpmBswrClsfCode;
-    private String fncgBpmtaskLstId;
-    private String fncgBpmPcesIntcId;
-    private String bswrDvsnVal; // root.defId (메인/서브)
-    private String fncgBpmPcesId; // worklist.defId
+    private String fncgBpmtaskLstId; //태스크 아이디
+    private String fncgBpmPcesIntcId; //인스턴스 아이디 
+    private String apvlYn; // 결재여부
+    private String imgeScanYn; // 이미지스캔여부
+
+    private String bpmBswrClsfCode; // 업무분류코드 (inst.bswrClsfCode)
+    private String bswrDvsnVal; // root_inst_id.defId (현 최상 업무 정의 아이디)
+    private String fncgBpmPcesId; // worklist.defId (현 업무 정의 아이디)
+    private String uworNm; // 단위업무명 
 
     public Date getStarDttm() {
         return starDttm;
@@ -191,5 +194,20 @@ public class OrgRunningItem {
 
     public void setFncgBpmPcesId(String fncgBpmPcesId) {
         this.fncgBpmPcesId = fncgBpmPcesId;
+    }
+    public String getApvlYn() {
+        return apvlYn;
+    }
+
+    public void setApvlYn(String apvlYn) {
+        this.apvlYn = apvlYn;
+    }
+
+    public String getImgeScanYn() {
+        return imgeScanYn;
+    }
+
+    public void setImgeScanYn(String imgeScanYn) {
+        this.imgeScanYn = imgeScanYn;
     }
 }

@@ -125,7 +125,7 @@ public class ExternalEventInboxRequest {
     private String cpabLvdfLvelNm;
 
     /** BPM 업무분류코드 → bpm_procinst.bswr_clsf_code */
-    private String bpmBswrClsfCode;
+    private String bpmBswrClsfCode; // 업무분류코드 (inst.bswrClsfCode)
 
     // /** MI 가입여부 */
     // private String miJoinYn;

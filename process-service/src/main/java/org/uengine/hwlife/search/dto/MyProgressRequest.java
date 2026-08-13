@@ -9,7 +9,6 @@ import com.fasterxml.jackson.annotation.JsonFormat;
  */
 public class MyProgressRequest {
 
-    private String bpmBswrClsfCode;
     @JsonFormat(pattern = "yyyyMMdd")
     private Date rqstStarDate;
     @JsonFormat(pattern = "yyyyMMdd")
@@ -21,11 +20,11 @@ public class MyProgressRequest {
     private String loanCntcNo;
     private String fncgWndwOrgnCode;
     private String sortOrdrVal;
-    /** 메인/서브 루트 인스턴스 {@code defId} 필터. */
-    private String bswrDvsnVal;
-    /** 현재 단위업무 {@code worklist.defId} 필터. */
-    private String fncgBpmPcesId;
-    private String uworNm;
+
+    private String bpmBswrClsfCode; // 업무분류코드 (inst.bswrClsfCode)
+    private String bswrDvsnVal; // root_inst_id.defId (현 최상 업무 정의 아이디)
+    private String fncgBpmPcesId; // worklist.defId (현 업무 정의 아이디)
+    private String uworNm; // 단위업무명 
 
     private String nextKey;
     private Integer pageSize;
