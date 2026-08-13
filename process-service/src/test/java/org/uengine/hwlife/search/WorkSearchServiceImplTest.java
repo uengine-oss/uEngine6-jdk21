@@ -95,13 +95,13 @@ class WorkSearchServiceImplTest {
     rootInstance.setInstId(100L);
     rootInstance.setRootInstId(100L);
     rootInstance.setDefId("line_1");
-    when(bulkAssignSearchRepository.search(request))
+    when(bulkAssignSearchRepository.search(request, HEADER_BELN_ORGN_CODE))
         .thenReturn(new BulkAssignSearchRepository.SearchResult(List.of(worklist), 1));
     when(processInstanceRepository.findAllById(any())).thenReturn(List.of(rootInstance));
 
     BulkAssignSearchResponse response = service.searchBulkAssign(request);
 
-    verify(bulkAssignSearchRepository).search(request);
+    verify(bulkAssignSearchRepository).search(request, HEADER_BELN_ORGN_CODE);
     assertEquals(1, response.getTotCont());
     assertEquals(1, response.getBswrList().size());
     assertEquals("105", response.getBswrList().get(0).getFncgBpmTaskLstId());

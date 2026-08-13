@@ -149,7 +149,13 @@ public class WorkSearchServiceImpl implements WorkSearchService {
   @Override
   @Transactional(readOnly = true)
   public BulkAssignSearchResponse searchBulkAssign(@RequestBody BulkAssignSearchRequest request) {
-    BulkAssignSearchRepository.SearchResult result = bulkAssignSearchRepository.search(request);
+    EsbCommonHeader header = EsbRequestBodyAdvice.currentHeader();
+    String belnOrgnCode = trimToNull(header != null ? header.getBelnOrgnCode() : null);
+    if (belnOrgnCode == null) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "header.belnOrgnCode is required");
+    }
+
+    BulkAssignSearchRepository.SearchResult result = bulkAssignSearchRepository.search(request, belnOrgnCode);
     Map<Long, String> rootDefIds = loadRootDefIdsByInstId(result.items());
     BulkAssignSearchResponse response = new BulkAssignSearchResponse();
     response.setTotCont(result.totalCount());

@@ -53,6 +53,7 @@ public interface InstanceIntegrationService {
    * 일괄 배정 — 여러 선점 대상 업무를 업무별 지정 담당자에게 한 번에 배정 (권한자).
    *
    * <p>조회는 {@link org.uengine.hwlife.search.WorkSearchService#searchBulkAssign}. 본인 선점은 {@link #claimWorkItems}.</p>
+   * <p>요청자 기관은 ESB header.belnOrgnCode — {@code worklist.groupCd} 일치 건만 배정 가능.</p>
    * <p>건별 실패 코드는 {@code failList[].prcsRsltCntn}({@code LBM07XXXX})에 반환하며 코드 목록은
    * {@link InstanceIntegrationServiceImpl#assignBulk} 주석을 참고한다.</p>
    *

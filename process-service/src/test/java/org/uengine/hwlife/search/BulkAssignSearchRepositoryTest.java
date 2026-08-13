@@ -38,11 +38,12 @@ class BulkAssignSearchRepositoryTest {
 
     try (Session session = sessionFactory.openSession()) {
       session.beginTransaction();
-      persist(session, 1L, 101L, "NEW", 1, null, "OTHER");
-      persist(session, 2L, 102L, "NEW", 0, null, "CUST");
-      persist(session, 3L, 103L, "COMPLETED", 1, null, "CUST");
-      persist(session, 4L, 104L, "NEW", 1, "hong", "CUST");
-      persist(session, 5L, 105L, "NEW", 1, "", "CUST");
+      persist(session, 1L, 101L, "NEW", 1, null, "OTHER", "ORG-A");
+      persist(session, 2L, 102L, "NEW", 0, null, "CUST", "ORG-A");
+      persist(session, 3L, 103L, "COMPLETED", 1, null, "CUST", "ORG-A");
+      persist(session, 4L, 104L, "NEW", 1, "hong", "CUST", "ORG-A");
+      persist(session, 5L, 105L, "NEW", 1, "", "CUST", "ORG-A");
+      persist(session, 6L, 106L, "NEW", 1, null, "CUST", "ORG-B");
       session.getTransaction().commit();
     }
   }
@@ -56,10 +57,26 @@ class BulkAssignSearchRepositoryTest {
 
   @Test
   void returnsOnlyNewClaimableUnassignedWorkitems() {
-    BulkAssignSearchRepository.SearchResult result = search(new BulkAssignSearchRequest());
+    BulkAssignSearchRepository.SearchResult result = search(new BulkAssignSearchRequest(), "ORG-A");
 
     assertEquals(List.of(5L, 1L), taskIds(result));
     assertEquals(2, result.totalCount());
+  }
+
+  @Test
+  void filtersByRequesterOrganizationCode() {
+    BulkAssignSearchRepository.SearchResult result = search(new BulkAssignSearchRequest(), "ORG-B");
+
+    assertEquals(List.of(6L), taskIds(result));
+    assertEquals(1, result.totalCount());
+  }
+
+  @Test
+  void returnsEmptyWhenOrganizationCodeMissing() {
+    BulkAssignSearchRepository.SearchResult result = search(new BulkAssignSearchRequest(), null);
+
+    assertEquals(List.of(), taskIds(result));
+    assertEquals(0, result.totalCount());
   }
 
   @Test
@@ -79,15 +96,17 @@ class BulkAssignSearchRepositoryTest {
     request.setBswrDvsnVal("ROOT-DEF");
     request.setUworNm("Unit work 105");
 
-    BulkAssignSearchRepository.SearchResult result = search(request);
+    BulkAssignSearchRepository.SearchResult result = search(request, "ORG-A");
 
     assertEquals(List.of(5L), taskIds(result));
     assertEquals(1, result.totalCount());
   }
 
-  private static BulkAssignSearchRepository.SearchResult search(BulkAssignSearchRequest request) {
+  private static BulkAssignSearchRepository.SearchResult search(
+      BulkAssignSearchRequest request,
+      String belnOrgnCode) {
     try (EntityManager entityManager = sessionFactory.createEntityManager()) {
-      return new BulkAssignSearchRepository(entityManager).search(request);
+      return new BulkAssignSearchRepository(entityManager).search(request, belnOrgnCode);
     }
   }
 
@@ -102,7 +121,8 @@ class BulkAssignSearchRepositoryTest {
       String status,
       int dispatchOption,
       String endpoint,
-      String customerId) {
+      String customerId,
+      String groupCd) {
     ProcessInstanceEntity instance = new ProcessInstanceEntity();
     instance.setInstId(instanceId);
     instance.setDefId("ROOT-DEF");
@@ -126,6 +146,7 @@ class BulkAssignSearchRepositoryTest {
     worklist.setStatus(status);
     worklist.setDispatchOption(dispatchOption);
     worklist.setEndpoint(endpoint);
+    worklist.setGroupCd(groupCd);
     worklist.setStartDate(date(TEST_DATE));
     worklist.setTitle("Unit work " + taskId);
     session.merge(worklist);
