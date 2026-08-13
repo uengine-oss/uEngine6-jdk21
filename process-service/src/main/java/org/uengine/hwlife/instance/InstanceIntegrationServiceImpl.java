@@ -1,8 +1,10 @@
 package org.uengine.hwlife.instance;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.slf4j.Logger;
@@ -44,14 +46,17 @@ public class InstanceIntegrationServiceImpl implements InstanceIntegrationServic
   private final WorklistRepository worklistRepository;
   @SuppressWarnings("unused") // isReassignAuthorized ESB 연동 시 사용
   private final EsbClient esbClient;
+  private final BulkAssignItemService bulkAssignItemService;
 
   public InstanceIntegrationServiceImpl(
       InstanceServiceImpl instanceService,
       WorklistRepository worklistRepository,
-      EsbClient esbClient) {
+      EsbClient esbClient,
+      BulkAssignItemService bulkAssignItemService) {
     this.instanceService = instanceService;
     this.worklistRepository = worklistRepository;
     this.esbClient = esbClient;
+    this.bulkAssignItemService = bulkAssignItemService;
   }
 
   /**
@@ -580,10 +585,139 @@ public class InstanceIntegrationServiceImpl implements InstanceIntegrationServic
     failList.add(failure);
   }
 
+  /**
+   * 여러 미배정 업무를 한 요청으로 배정한다.
+   *
+   * <p>처리결과 코드는 {@code failList[].prcsRsltCntn}({@code LBM07XXXX}).</p>
+   * <ul>
+   *   <li>{@code LBM070001} — request body 없음</li>
+   *   <li>{@code LBM070002} — bswrList 없음/비어 있음</li>
+   *   <li>{@code LBM070003} — header.emnb 없음</li>
+   *   <li>{@code LBM070004} — hndrEmnb 없음</li>
+   *   <li>{@code LBM070005} — 담당자 IAM 조회 실패</li>
+   *   <li>{@code LBM070006} — fncgBpmTaskLstId 없음</li>
+   *   <li>{@code LBM070007} — 요청 내 fncgBpmTaskLstId 중복</li>
+   *   <li>{@code LBM070008} — fncgBpmTaskLstId 비숫자</li>
+   *   <li>{@code LBM070009} — work item 없음</li>
+   *   <li>{@code LBM070010} — fncgBpmPcesIntcId 불일치</li>
+   *   <li>{@code LBM070011} — 배정불가(status != NEW)</li>
+   *   <li>{@code LBM070012} — 이미 담당자가 지정된 업무</li>
+   *   <li>{@code LBM070013} — 일괄배정 대상이 아님(dispatchOption != 1)</li>
+   *   <li>{@code LBM070019} — claimWorkItem 업무 예외</li>
+   *   <li>{@code LBM070020} — 기타 예외</li>
+   * </ul>
+   */
   @Override
-  @Transactional
   public BulkAssignResponse assignBulk(@RequestBody BulkAssignRequest request) throws Exception {
-    throw notImplemented("assignBulk");
+    List<BulkAssignRequestItem> items = request == null ? null : request.getBswrList();
+    String actorEndpoint = trimToNull(
+        EsbRequestBodyAdvice.currentHeader() == null
+            ? null
+            : EsbRequestBodyAdvice.currentHeader().getEmnb());
+    String commonError = request == null
+        ? BulkAssignResultCode.INVALID_REQUEST
+        : items == null || items.isEmpty()
+            ? BulkAssignResultCode.EMPTY_WORK_LIST
+            : actorEndpoint == null ? BulkAssignResultCode.MISSING_ACTOR : null;
+    if (commonError != null) {
+      return failedBulkAssignResponse(items, commonError);
+    }
+
+    List<BulkAssignResponseItem> failures = new ArrayList<>();
+    Set<String> seenTaskIds = new HashSet<>();
+    Map<String, UserSearchResponse> handlers = new HashMap<>();
+    int successCount = 0;
+
+    for (BulkAssignRequestItem item : items) {
+      String taskId = item == null ? null : trimToNull(item.getFncgBpmTaskLstId());
+      String targetEndpoint = item == null ? null : trimToNull(item.getHndrEmnb());
+      if (taskId == null) {
+        addBulkAssignFailure(failures, item, BulkAssignResultCode.MISSING_TASK_ID);
+        continue;
+      }
+      if (!seenTaskIds.add(taskId)) {
+        addBulkAssignFailure(failures, item, BulkAssignResultCode.DUPLICATE_TASK);
+        continue;
+      }
+      if (!isNumeric(taskId)) {
+        addBulkAssignFailure(failures, item, BulkAssignResultCode.INVALID_TASK_ID);
+        continue;
+      }
+      if (targetEndpoint == null) {
+        addBulkAssignFailure(failures, item, BulkAssignResultCode.MISSING_HANDLER);
+        continue;
+      }
+
+      UserSearchResponse handler = handlers.get(targetEndpoint);
+      if (handler == null) {
+        try {
+          handler = ExternalIAMService.getDefault().getUser(targetEndpoint);
+        } catch (Exception exception) {
+          handler = null;
+        }
+        if (handler == null || trimToNull(handler.getHndrEmnb()) == null) {
+          addBulkAssignFailure(failures, item, BulkAssignResultCode.HANDLER_NOT_FOUND);
+          continue;
+        }
+        handlers.put(targetEndpoint, handler);
+      }
+
+      try {
+        bulkAssignItemService.assign(item, targetEndpoint, trimToNull(handler.getHndrNm()));
+        successCount++;
+      } catch (BulkAssignItemService.BulkAssignItemException exception) {
+        addBulkAssignFailure(failures, item, exception.getResultCode());
+      } catch (Exception exception) {
+        addBulkAssignFailure(failures, item, BulkAssignResultCode.ASSIGNMENT_FAILED);
+      }
+    }
+
+    BulkAssignResponse response = new BulkAssignResponse();
+    response.setSucsCont(successCount);
+    response.setFailCont(failures.size());
+    response.setFailList(failures);
+    return response;
+  }
+
+  private static BulkAssignResponse failedBulkAssignResponse(
+      List<BulkAssignRequestItem> items,
+      String reason) {
+    List<BulkAssignResponseItem> failures = new ArrayList<>();
+    if (items != null) {
+      for (BulkAssignRequestItem item : items) {
+        addBulkAssignFailure(failures, item, reason);
+      }
+    }
+    if (failures.isEmpty()) {
+      addBulkAssignFailure(failures, null, reason);
+    }
+    BulkAssignResponse response = new BulkAssignResponse();
+    response.setSucsCont(0);
+    response.setFailCont(failures.size());
+    response.setFailList(failures);
+    return response;
+  }
+
+  private static void addBulkAssignFailure(
+      List<BulkAssignResponseItem> failures,
+      BulkAssignRequestItem source,
+      String reason) {
+    BulkAssignResponseItem failure = new BulkAssignResponseItem();
+    if (source != null) {
+      failure.setFncgBpmTaskLstId(source.getFncgBpmTaskLstId());
+      failure.setFncgBpmPcesIntcId(source.getFncgBpmPcesIntcId());
+    }
+    failure.setPrcsRsltCntn(reason);
+    failures.add(failure);
+  }
+
+  private static boolean isNumeric(String value) {
+    try {
+      Long.parseLong(value);
+      return true;
+    } catch (NumberFormatException exception) {
+      return false;
+    }
   }
 
   /**

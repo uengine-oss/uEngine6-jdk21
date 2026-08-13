@@ -40,6 +40,8 @@ import org.uengine.five.repository.WorklistRepository;
 import org.uengine.hwlife.esbclient.dto.EsbCommonHeader;
 import org.uengine.hwlife.esbclient.support.EsbRequestBodyAdvice;
 import org.uengine.hwlife.search.MyTodoSearchRepository.SearchResult;
+import org.uengine.hwlife.search.dto.BulkAssignSearchRequest;
+import org.uengine.hwlife.search.dto.BulkAssignSearchResponse;
 import org.uengine.hwlife.search.dto.MyTodoItem;
 import org.uengine.hwlife.search.dto.MyTodoRequest;
 import org.uengine.hwlife.search.dto.MyTodoResponse;
@@ -61,6 +63,7 @@ class WorkSearchServiceImplTest {
 
   private MyTodoSearchRepository searchRepository;
   private OrgRunningSearchRepository orgRunningSearchRepository;
+  private BulkAssignSearchRepository bulkAssignSearchRepository;
   private ProcessInstanceRepository processInstanceRepository;
   private WorklistRepository worklistRepository;
   private WorkSearchServiceImpl service;
@@ -69,14 +72,44 @@ class WorkSearchServiceImplTest {
   void setUp() {
     searchRepository = mock(MyTodoSearchRepository.class);
     orgRunningSearchRepository = mock(OrgRunningSearchRepository.class);
+    bulkAssignSearchRepository = mock(BulkAssignSearchRepository.class);
     processInstanceRepository = mock(ProcessInstanceRepository.class);
     worklistRepository = mock(WorklistRepository.class);
     service = new WorkSearchServiceImpl(
         searchRepository,
         orgRunningSearchRepository,
+        bulkAssignSearchRepository,
         processInstanceRepository,
         worklistRepository);
     bindEsbHeader(HEADER_EMNB, HEADER_BELN_ORGN_CODE);
+  }
+
+  @Test
+  void mapsBulkAssignSearchCurrentAndRootDefinitionIds() {
+    BulkAssignSearchRequest request = new BulkAssignSearchRequest();
+    WorklistEntity worklist = completeWorklist(105L, WORK_START);
+    worklist.setDefId("unit_line_1");
+    worklist.getProcessInstance().setRootInstId(100L);
+    worklist.getProcessInstance().setDefId("sub_line_1");
+    ProcessInstanceEntity rootInstance = new ProcessInstanceEntity();
+    rootInstance.setInstId(100L);
+    rootInstance.setRootInstId(100L);
+    rootInstance.setDefId("line_1");
+    when(bulkAssignSearchRepository.search(request))
+        .thenReturn(new BulkAssignSearchRepository.SearchResult(List.of(worklist), 1));
+    when(processInstanceRepository.findAllById(any())).thenReturn(List.of(rootInstance));
+
+    BulkAssignSearchResponse response = service.searchBulkAssign(request);
+
+    verify(bulkAssignSearchRepository).search(request);
+    assertEquals(1, response.getTotCont());
+    assertEquals(1, response.getBswrList().size());
+    assertEquals("105", response.getBswrList().get(0).getFncgBpmTaskLstId());
+    assertEquals("201", response.getBswrList().get(0).getFncgBpmPcesIntcId());
+    assertEquals("Unit work", response.getBswrList().get(0).getUworNm());
+    assertEquals("BSWR", response.getBswrList().get(0).getBpmBswrClsfCode());
+    assertEquals("unit_line_1", response.getBswrList().get(0).getFncgBpmPcesId());
+    assertEquals("line_1", response.getBswrList().get(0).getBswrDvsnVal());
   }
 
   @AfterEach
@@ -501,6 +534,7 @@ class WorkSearchServiceImplTest {
     worklist.setStartDate(date(startDate));
     worklist.setTitle("Unit work");
     worklist.setDefName("Loan process");
+    worklist.setDefId("line_1");
     worklist.setGroupCd("GROUP");
     worklist.setScope("SCOPE");
     worklist.setPrevEndpoint("previous");

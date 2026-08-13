@@ -51,4 +51,5 @@ public class BulkAssignSearchResponseItem {
     public void setBswrDvsnVal(String bswrDvsnVal) {
         this.bswrDvsnVal = bswrDvsnVal;
     }
+
 }
