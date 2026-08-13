@@ -149,13 +149,7 @@ public class WorkSearchServiceImpl implements WorkSearchService {
   @Override
   @Transactional(readOnly = true)
   public BulkAssignSearchResponse searchBulkAssign(@RequestBody BulkAssignSearchRequest request) {
-    EsbCommonHeader header = EsbRequestBodyAdvice.currentHeader();
-    String belnOrgnCode = trimToNull(header != null ? header.getBelnOrgnCode() : null);
-    if (belnOrgnCode == null) {
-      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "header.belnOrgnCode is required");
-    }
-
-    BulkAssignSearchRepository.SearchResult result = bulkAssignSearchRepository.search(request, belnOrgnCode);
+    BulkAssignSearchRepository.SearchResult result = bulkAssignSearchRepository.search(request);
     Map<Long, String> rootDefIds = loadRootDefIdsByInstId(result.items());
     BulkAssignSearchResponse response = new BulkAssignSearchResponse();
     response.setTotCont(result.totalCount());
@@ -174,6 +168,7 @@ public class WorkSearchServiceImpl implements WorkSearchService {
     item.setFncgBpmTaskLstId(worklist.getTaskId() == null ? null : String.valueOf(worklist.getTaskId()));
     item.setFncgBpmPcesIntcId(worklist.getInstId() == null ? null : String.valueOf(worklist.getInstId()));
     item.setUworNm(worklist.getTitle());
+    item.setFncgBpmPcesId(worklist.getDefId());
     item.setBswrDvsnVal(rootDefIdOf(instance, rootDefIdsByInstId));
     return item;
   }
@@ -344,7 +339,6 @@ public class WorkSearchServiceImpl implements WorkSearchService {
     item.setHndrNm(worklist.getResName());
     item.setHndrOrgnCode(firstNonBlank(worklist.getGroupCd(), worklist.getScope()));
     item.setScrnUrlAddr(worklist.getTool());
-    item.setBpmBswrClsfCode(instance == null ? null : instance.getBswrClsfCode());
     item.setFncgBpmTaskLstId(
         worklist.getTaskId() == null ? null : String.valueOf(worklist.getTaskId()));
     item.setFncgBpmPcesIntcId(
@@ -354,35 +348,6 @@ public class WorkSearchServiceImpl implements WorkSearchService {
     item.setDstOptnVal(String.valueOf(worklist.getDispatchOption()));
     item.setRuleAcmpVal(String.valueOf(worklist.getAssignType()));
     item.setMnorExstYn(toYn(worklist.getDelegated()));
-    item.setApvlYn(toYn(worklist.getApvlYn()));
-    item.setImgeScanYn(toYn(worklist.getImgeScanYn()));
-    return item;
-  }
-
-   /** MyProgress 매핑 — {@code bswrDvsnVal}=root {@code defId}, {@code fncgBpmPcesId}=worklist {@code defId}. */
-   MyProgressItem toMyProgressItem(WorklistEntity worklist, Map<Long, String> rootDefIdsByInstId) {
-    ProcessInstanceEntity instance = worklist.getProcessInstance();
-    MyProgressItem item = new MyProgressItem();
-    item.setLoanCntcNo(instance == null ? null : instance.getLoanCntcNo());
-    item.setFncgSuptTrgtDvsnCode(instance == null ? null : instance.getFncgSuptTrgtDvsnCode());
-    item.setLoanSubjDvsnCode(instance == null ? null : instance.getLoanSubjDvsnCode());
-    item.setFncgMneyUsagClsfCode(instance == null ? null : instance.getFncgMneyUsagClsfCode());
-    item.setLoanHopeDate(instance == null ? null : instance.getLoanHopeDate());
-    item.setCustId(instance == null ? null : instance.getCustId());
-    item.setLoanPcesMgmtNo(instance == null ? null : instance.getCorrKey());
-    item.setUworNm(worklist.getTitle());
-    item.setFncgBpmTaskTrcgNm(worklist.getTrcTag());
-    item.setReptHndrEmnb(instance == null ? null : instance.getInitEp());
-    item.setReptHndrFncgOrgnCode(instance == null ? null : instance.getInitGroupCd());
-    item.setHndrEmnb(worklist.getEndpoint());
-    item.setHndrOrgnCode(trimToNull(worklist.getGroupCd()));
-    item.setBpmBswrClsfCode(instance == null ? null : instance.getBswrClsfCode());
-    item.setFncgBpmtaskLstId(
-        worklist.getTaskId() == null ? null : String.valueOf(worklist.getTaskId()));
-    item.setFncgBpmPcesIntcId(
-        worklist.getInstId() == null ? null : String.valueOf(worklist.getInstId()));
-    item.setBswrDvsnVal(rootDefIdOf(instance, rootDefIdsByInstId));
-    item.setFncgBpmPcesId(worklist.getDefId());
     item.setApvlYn(toYn(worklist.getApvlYn()));
     item.setImgeScanYn(toYn(worklist.getImgeScanYn()));
     return item;
@@ -408,7 +373,6 @@ public class WorkSearchServiceImpl implements WorkSearchService {
     item.setUworNm(worklist.getTitle());
     item.setFncgBpmTaskTrcgNm(worklist.getTrcTag());
     item.setUworStarDttm(worklist.getStartDate());
-    item.setBpmBswrClsfCode(instance == null ? null : instance.getBswrClsfCode());
     item.setFncgBpmtaskLstId(
         worklist.getTaskId() == null ? null : String.valueOf(worklist.getTaskId()));
     item.setFncgBpmPcesIntcId(
@@ -417,11 +381,35 @@ public class WorkSearchServiceImpl implements WorkSearchService {
             : String.valueOf(instance.getInstId()));
     item.setBswrDvsnVal(rootDefIdOf(instance, rootDefIdsByInstId));
     item.setFncgBpmPcesId(worklist.getDefId());
-    item.setApvlYn(toYn(worklist.getApvlYn()));
-    item.setImgeScanYn(toYn(worklist.getImgeScanYn()));
     return item;
   }
 
+  /** MyProgress 매핑 — {@code bswrDvsnVal}=root {@code defId}, {@code fncgBpmPcesId}=worklist {@code defId}. */
+  MyProgressItem toMyProgressItem(WorklistEntity worklist, Map<Long, String> rootDefIdsByInstId) {
+    ProcessInstanceEntity instance = worklist.getProcessInstance();
+    MyProgressItem item = new MyProgressItem();
+    item.setLoanCntcNo(instance == null ? null : instance.getLoanCntcNo());
+    item.setFncgSuptTrgtDvsnCode(instance == null ? null : instance.getFncgSuptTrgtDvsnCode());
+    item.setLoanSubjDvsnCode(instance == null ? null : instance.getLoanSubjDvsnCode());
+    item.setFncgMneyUsagClsfCode(instance == null ? null : instance.getFncgMneyUsagClsfCode());
+    item.setLoanHopeDate(instance == null ? null : instance.getLoanHopeDate());
+    item.setCustId(instance == null ? null : instance.getCustId());
+    item.setLoanPcesMgmtNo(instance == null ? null : instance.getCorrKey());
+    item.setUworNm(worklist.getTitle());
+    item.setFncgBpmTaskTrcgNm(worklist.getTrcTag());
+    item.setReptHndrEmnb(instance == null ? null : instance.getInitEp());
+    item.setReptHndrFncgOrgnCode(instance == null ? null : instance.getInitGroupCd());
+    item.setHndrEmnb(worklist.getEndpoint());
+    item.setHndrOrgnCode(trimToNull(worklist.getGroupCd()));
+    item.setBpmBswrClsfCode(instance == null ? null : instance.getBswrClsfCode());
+    item.setFncgBpmtaskLstId(
+        worklist.getTaskId() == null ? null : String.valueOf(worklist.getTaskId()));
+    item.setFncgBpmPcesIntcId(
+        worklist.getInstId() == null ? null : String.valueOf(worklist.getInstId()));
+    item.setBswrDvsnVal(rootDefIdOf(instance, rootDefIdsByInstId));
+    item.setFncgBpmPcesId(worklist.getDefId());
+    return item;
+  }
 
   /** OrgCompleted 매핑 — {@code bswrDvsnVal}=root {@code defId}, {@code fncgBpmPcesId}=worklist {@code defId}. */
   OrgCompletedItem toOrgCompletedItem(
@@ -446,8 +434,6 @@ public class WorkSearchServiceImpl implements WorkSearchService {
         worklist.getInstId() == null ? null : String.valueOf(worklist.getInstId()));
     item.setBswrDvsnVal(rootDefIdOf(instance, rootDefIdsByInstId));
     item.setFncgBpmPcesId(worklist.getDefId());
-    item.setApvlYn(toYn(worklist.getApvlYn()));
-    item.setImgeScanYn(toYn(worklist.getImgeScanYn()));
     return item;
   }
 

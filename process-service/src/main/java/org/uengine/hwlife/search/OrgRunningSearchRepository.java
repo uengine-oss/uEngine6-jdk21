@@ -1,8 +1,10 @@
 package org.uengine.hwlife.search;
 
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
+import java.util.TimeZone;
 
 import org.springframework.stereotype.Repository;
 import org.uengine.five.entity.ProcessInstanceEntity;
@@ -16,12 +18,14 @@ import jakarta.persistence.TypedQuery;
 import jakarta.persistence.criteria.AbstractQuery;
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.CriteriaQuery;
+import jakarta.persistence.criteria.Expression;
 import jakarta.persistence.criteria.Fetch;
 import jakarta.persistence.criteria.Join;
 import jakarta.persistence.criteria.JoinType;
 import jakarta.persistence.criteria.Path;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Root;
+import jakarta.persistence.criteria.Subquery;
 
 @Repository
 public class OrgRunningSearchRepository {
@@ -124,35 +128,103 @@ public class OrgRunningSearchRepository {
     List<Predicate> predicates = new ArrayList<>();
     predicates.add(builder.upper(worklist.get("status")).in("NEW", "RUNNING"));
     // root_inst_id 기준 루트 인스턴스 def_id == bswrDvsnVal
-    SearchPredicates.addRootDefId(builder, query, predicates, instance, request.getBswrDvsnVal());
+    addRootDefId(builder, query, predicates, instance, request.getBswrDvsnVal());
     // 현재 단위업무 defId == fncgBpmPcesId
-    SearchPredicates.addText(builder, predicates, worklist.get("defId"), request.getFncgBpmPcesId());
+    addText(builder, predicates, worklist.get("defId"), request.getFncgBpmPcesId());
     // 단위업무명: worklist.title == uworNm
-    SearchPredicates.addText(builder, predicates, worklist.get("title"), request.getUworNm());
-    SearchPredicates.addText(builder, predicates, instance.get("bswrClsfCode"), request.getBpmBswrClsfCode());
-    SearchDateRanges.addInclusive(
+    addText(builder, predicates, worklist.get("title"), request.getUworNm());
+    addText(builder, predicates, instance.get("bswrClsfCode"), request.getBpmBswrClsfCode());
+    addDateRange(
         builder,
         predicates,
         worklist.get("startDate"),
         request.getRqstStarDate(),
         request.getRqstEndDate());
-    SearchPredicates.addText(
+    addText(
         builder,
         predicates,
         instance.get("fncgSuptTrgtDvsnCode"),
         request.getFncgSuptTrgtDvsnCode());
-    SearchPredicates.addText(builder, predicates, instance.get("loanSubjDvsnCode"), request.getLoanSubjDvsnCode());
-    SearchPredicates.addText(
+    addText(builder, predicates, instance.get("loanSubjDvsnCode"), request.getLoanSubjDvsnCode());
+    addText(
         builder,
         predicates,
         instance.get("fncgMneyUsagClsfCode"),
         request.getFncgMneyUsagClsfCode());
-    SearchPredicates.addText(builder, predicates, instance.get("loanCntcNo"), request.getLoanCntcNo());
-    SearchPredicates.addText(builder, predicates, instance.get("custId"), request.getCustId());
+    addText(builder, predicates, instance.get("loanCntcNo"), request.getLoanCntcNo());
+    addText(builder, predicates, instance.get("custId"), request.getCustId());
     addOrganization(builder, predicates, instance, request);
     return predicates.toArray(Predicate[]::new);
   }
 
+  /**
+   * 서브프로세스 단위업무도 루트 프로세스 정의로 필터링한다.
+   * {@code coalesce(instance.rootInstId, instance.instId)} 의 {@code defId == bswrDvsnVal}.
+   */
+  private static void addRootDefId(
+      CriteriaBuilder builder,
+      AbstractQuery<?> query,
+      List<Predicate> predicates,
+      Join<WorklistEntity, ProcessInstanceEntity> instance,
+      String bswrDvsnVal) {
+    String value = trimToNull(bswrDvsnVal);
+    if (value == null) {
+      return;
+    }
+    Subquery<Long> rootMatch = query.subquery(Long.class);
+    Root<ProcessInstanceEntity> rootInstance = rootMatch.from(ProcessInstanceEntity.class);
+    Expression<Long> rootInstId =
+        builder.coalesce(instance.get("rootInstId"), instance.get("instId"));
+    rootMatch.select(rootInstance.get("instId"))
+        .where(
+            builder.equal(rootInstance.get("instId"), rootInstId),
+            builder.equal(rootInstance.get("defId"), value));
+    predicates.add(builder.exists(rootMatch));
+  }
+
+  private static void addText(
+      CriteriaBuilder builder,
+      List<Predicate> predicates,
+      Path<String> path,
+      String expected) {
+    String value = trimToNull(expected);
+    if (value != null) {
+      predicates.add(builder.equal(path, value));
+    }
+  }
+
+  private static void addDateRange(
+      CriteriaBuilder builder,
+      List<Predicate> predicates,
+      Path<Date> path,
+      Date startInclusive,
+      Date endInclusive) {
+    // 시작일: yyyyMMdd 00:00:00.000 이상
+    if (startInclusive != null) {
+      predicates.add(builder.greaterThanOrEqualTo(path, startOfDay(startInclusive)));
+    }
+    // 종료일: yyyyMMdd 23:59:59.999 이하 (= 익일 00:00:00 미만)
+    if (endInclusive != null) {
+      predicates.add(builder.lessThan(path, startOfNextDay(endInclusive)));
+    }
+  }
+
+  private static Date startOfDay(Date value) {
+    Calendar calendar = Calendar.getInstance(TimeZone.getTimeZone("Asia/Seoul"));
+    calendar.setTime(value);
+    calendar.set(Calendar.HOUR_OF_DAY, 0);
+    calendar.set(Calendar.MINUTE, 0);
+    calendar.set(Calendar.SECOND, 0);
+    calendar.set(Calendar.MILLISECOND, 0);
+    return calendar.getTime();
+  }
+
+  private static Date startOfNextDay(Date value) {
+    Calendar calendar = Calendar.getInstance(TimeZone.getTimeZone("Asia/Seoul"));
+    calendar.setTime(startOfDay(value));
+    calendar.add(Calendar.DAY_OF_MONTH, 1);
+    return calendar.getTime();
+  }
   /**
    * 요청기관({@code rqstDvsnCode=Y}): {@code bpm_procinst.init_group_cd}<br>
    * 진행기관({@code rqstDvsnCode=N}, 기본): {@code bpm_procinst.curr_group_cd}
@@ -162,11 +234,11 @@ public class OrgRunningSearchRepository {
       List<Predicate> predicates,
       Join<WorklistEntity, ProcessInstanceEntity> instance,
       OrgRunningRequest request) {
-    String organizationCode = SearchPredicates.trimToNull(request.getFncgWndwOrgnCode());
+    String organizationCode = trimToNull(request.getFncgWndwOrgnCode());
     if (organizationCode == null) {
       return;
     }
-    if ("Y".equalsIgnoreCase(SearchPredicates.trimToNull(request.getRqstDvsnCode()))) {
+    if ("Y".equalsIgnoreCase(trimToNull(request.getRqstDvsnCode()))) {
       predicates.add(builder.equal(instance.get("initGroupCd"), organizationCode));
       return;
     }
@@ -238,6 +310,14 @@ public class OrgRunningSearchRepository {
     };
   }
 
+  private static String trimToNull(String value) {
+    if (value == null) {
+      return null;
+    }
+    String trimmed = value.trim();
+    return trimmed.isEmpty() ? null : trimmed;
+  }
+
   public record SearchResult(List<WorklistEntity> items, int totalCount, String nextKey) {
 
     public SearchResult {
@@ -259,7 +339,7 @@ public class OrgRunningSearchRepository {
     TASK_ID;
 
     private static SortField from(String propertyName) {
-      String value = SearchPredicates.trimToNull(propertyName);
+      String value = trimToNull(propertyName);
       if ("loanHopeDate".equals(value)) {
         return LOAN_HOPE_DATE;
       }

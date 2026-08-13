@@ -9,8 +9,10 @@ import com.fasterxml.jackson.annotation.JsonFormat;
  */
 public class BulkAssignSearchRequest {
 
+    private String bpmBswrClsfCode;
     private String custId;
     private String loanCntcNo;
+    private String loanPcesMgmtNo;
     private String fncgSuptTrgtDvsnCode;
     private String loanSubjDvsnCode;
     private String fncgMneyUsagClsfCode;
@@ -22,11 +24,12 @@ public class BulkAssignSearchRequest {
     private Date hopeStarDate;
     @JsonFormat(pattern = "yyyyMMdd")
     private Date hopeEndDate;
-    private String fncgWndwOrgnCode; //요청기관 필터 — {@code bpm_procinst.init_group_cd} 와 일치. */
 
-    private String bpmBswrClsfCode; // 업무분류코드 (inst.bswrClsfCode)
-    private String bswrDvsnVal; // root_inst_id.defId (현 최상 업무 정의 아이디)
-    private String uworNm; // 단위업무명 
+    /** 요청기관 필터 — {@code bpm_procinst.init_group_cd} 와 일치. */
+    private String fncgWndwOrgnCode;
+    /** 업무구분값 — 해당 인스턴스의 root instance {@code defId}. */
+    private String bswrDvsnVal;
+    private String uworNm;
 
     public String getBpmBswrClsfCode() {
         return bpmBswrClsfCode;
@@ -45,6 +48,12 @@ public class BulkAssignSearchRequest {
     }
     public void setLoanCntcNo(String loanCntcNo) {
         this.loanCntcNo = loanCntcNo;
+    }
+    public String getLoanPcesMgmtNo() {
+        return loanPcesMgmtNo;
+    }
+    public void setLoanPcesMgmtNo(String loanPcesMgmtNo) {
+        this.loanPcesMgmtNo = loanPcesMgmtNo;
     }
     public String getFncgSuptTrgtDvsnCode() {
         return fncgSuptTrgtDvsnCode;

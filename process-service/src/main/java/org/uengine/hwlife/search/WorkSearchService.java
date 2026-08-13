@@ -19,7 +19,6 @@ import org.uengine.hwlife.search.dto.*;
  *                                    "pageSize": 20, "sortOrdrVal": "startedDate" }
  *   POST /search/org-completed  body: { "custId": "...", "pageNo": "1" }
  *   POST /search/bulk-assign  body: { "custId": "...", "hndrEmnb": "..." }
- *     (요청 기관은 ESB header.belnOrgnCode — worklist.groupCd 일치 건만 조회)
  *   POST /search/worklist-by-inst-id  body: { "loanPcesMgmtNo": "..." }
  *   POST /search/running-by-key  body: { "bswrList": [{ "loanPcesMgmtNo": "..." }] }
  * </pre>
