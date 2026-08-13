@@ -2,10 +2,6 @@ package org.uengine.hwlife.overriding;
 
 import java.io.Serializable;
 
-import org.uengine.five.entity.ProcessInstanceEntity;
-import org.uengine.five.overriding.JPAProcessInstance;
-import org.uengine.hwlife.esbclient.dto.EsbCommonHeader;
-import org.uengine.hwlife.esbclient.support.EsbRequestBodyAdvice;
 import org.uengine.kernel.Activity;
 import org.uengine.kernel.ActivityFilter;
 import org.uengine.kernel.FaultContext;
@@ -23,6 +19,9 @@ import org.uengine.kernel.ProcessInstance;
 public class EsbInitiatorActivityFilter implements ActivityFilter, Serializable {
 
     private static final long serialVersionUID = 1L;
+
+    // ESB header actor is request metadata, not the first unit-work assignee.
+    // BPM_PROCINST init* fields are populated from the first WorkItem/RoleMapping.
 
     @Override
     public void beforeExecute(Activity activity, ProcessInstance instance) throws Exception {
@@ -54,46 +53,6 @@ public class EsbInitiatorActivityFilter implements ActivityFilter, Serializable 
     }
 
     private static void applyFromEsbHeader(ProcessInstance instance) throws Exception {
-        if (instance == null) {
-            return;
-        }
-        ProcessInstance local = instance.getLocalInstance();
-        if (!(local instanceof JPAProcessInstance)) {
-            return;
-        }
-        JPAProcessInstance jpa = (JPAProcessInstance) local;
-        if (!jpa.isNewInstance()) {
-            return;
-        }
-        ProcessInstanceEntity entity = jpa.getProcessInstanceEntity();
-        if (entity == null) {
-            return;
-        }
-
-        EsbCommonHeader header = EsbRequestBodyAdvice.currentHeader();
-        if (header == null) {
-            return;
-        }
-
-        String emnb = trimToNull(header.getEmnb());
-        String belnOrgnCode = trimToNull(header.getBelnOrgnCode());
-        if (emnb != null && !hasText(entity.getInitEp())) {
-            entity.setInitEp(emnb);
-        }
-        if (belnOrgnCode != null && !hasText(entity.getInitGroupCd())) {
-            entity.setInitGroupCd(belnOrgnCode);
-        }
-    }
-
-    private static boolean hasText(String value) {
-        return value != null && !value.trim().isEmpty() && !"null".equalsIgnoreCase(value.trim());
-    }
-
-    private static String trimToNull(String value) {
-        if (value == null) {
-            return null;
-        }
-        String trimmed = value.trim();
-        return trimmed.isEmpty() ? null : trimmed;
+        return;
     }
 }

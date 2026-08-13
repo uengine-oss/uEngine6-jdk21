@@ -35,7 +35,7 @@ public final class ProcessInstanceHandlerFields {
         if (roleMapping == null) {
             return null;
         }
-        return hasText(roleMapping.getScope()) ? roleMapping.getScope() : null;
+        return hasText(roleMapping.getGroupName()) ? roleMapping.getGroupName() : null;
     }
 
     private static boolean hasText(String value) {
