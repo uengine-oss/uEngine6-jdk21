@@ -37,4 +37,5 @@ public class DefaultEventInboxRequest {
 
     public JsonNode getPayload() { return payload; }
     public void setPayload(JsonNode payload) { this.payload = payload; }
+
 }

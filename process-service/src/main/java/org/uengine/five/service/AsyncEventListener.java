@@ -79,7 +79,7 @@ public class AsyncEventListener {
             String eventBody,
             String typeHeader,
             String inboxCorrKey,
-            String requesterEmnb) {
+            String actorEndpoint) {
         log.info("[BPM] wheneverEvent called, typeHeader={}, inboxCorrKey={}", typeHeader, inboxCorrKey);
         try {
             String eventType = typeHeader;
@@ -100,7 +100,7 @@ public class AsyncEventListener {
                 throw new IllegalStateException("EventMappingEntity is null for eventType: " + eventType);
             }
 
-            processEventMappings(eventMappings, eventType, eventContent, inboxCorrKey, requesterEmnb);
+            processEventMappings(eventMappings, eventType, eventContent, inboxCorrKey, actorEndpoint);
         } catch (Exception e) {
             throw new RuntimeException("Error wheneverEvent :" + e.getMessage(), e);
         }
@@ -111,7 +111,7 @@ public class AsyncEventListener {
             String eventType,
             HashMap<String, Object> eventContent,
             String inboxCorrKey,
-            String requesterEmnb) throws Exception {
+            String actorEndpoint) throws Exception {
         Set<String> receiveCorrelationValues = new LinkedHashSet<>();
         Set<String> startedDefinitions = new LinkedHashSet<>();
         int startFailures = 0;
@@ -147,7 +147,7 @@ public class AsyncEventListener {
 
         for (String correlationValue : receiveCorrelationValues) {
             triggerReceiveActivitiesByCorrKeyAndEventType(
-                    correlationValue, eventType, eventContent, requesterEmnb);
+                    correlationValue, eventType, eventContent, actorEndpoint);
         }
 
         if (!startedDefinitions.isEmpty() && startFailures == startedDefinitions.size()) {
@@ -195,7 +195,7 @@ public class AsyncEventListener {
             String correlationValue,
             String eventType,
             HashMap<String, Object> eventContent,
-            String requesterEmnb) throws Exception {
+            String actorEndpoint) throws Exception {
         List<ProcessInstanceEntity> processInstances =
                 processInstanceRepository.findByCorrKeyAndStatus(correlationValue, "Running");
         for (ProcessInstanceEntity processInstanceEntity : processInstances) {
@@ -210,7 +210,7 @@ public class AsyncEventListener {
                     if (sync != null && eventType.equals(sync.getEventType())) {
                         String previousUserId = GlobalContext.getUserId();
                         try {
-                            validateHumanActivityCompletion(instance, activity, requesterEmnb);
+                            validateHumanActivityCompletion(instance, activity, actorEndpoint);
                             ((DefaultProcessInstance) instance).set(
                                     activity.getTracingTag(),
                                     DefaultProcessInstance.EVENT_DATA,
@@ -229,11 +229,11 @@ public class AsyncEventListener {
     void validateHumanActivityCompletion(
             ProcessInstance instance,
             Activity activity,
-            String requesterEmnb) throws Exception {
+            String actorEndpoint) throws Exception {
         if (!(activity instanceof HumanActivity)) {
             return;
         }
-        if (!UEngineUtil.isNotEmpty(requesterEmnb)) {
+        if (!UEngineUtil.isNotEmpty(actorEndpoint)) {
             throw new NonRetryableInboxException("header.emnb is required to complete a work item");
         }
 
@@ -252,7 +252,7 @@ public class AsyncEventListener {
                 }
                 if (!UEngineUtil.isNotEmpty(worklist.getEndpoint())) {
                     unclaimed = true;
-                } else if (worklist.getEndpoint().equals(requesterEmnb.trim())) {
+                } else if (worklist.getEndpoint().equals(actorEndpoint.trim())) {
                     owned = worklist;
                     break;
                 }
@@ -267,7 +267,7 @@ public class AsyncEventListener {
 
         instance.setProperty(activity.getTracingTag(), HumanActivity.PVKEY_TASKID,
                 String.valueOf(owned.getTaskId()));
-        GlobalContext.setUserId(requesterEmnb.trim());
+        GlobalContext.setUserId(actorEndpoint.trim());
     }
 
     private void triggerWaitingEvents(String eventType) throws Exception {
