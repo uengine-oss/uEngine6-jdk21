@@ -168,7 +168,6 @@ public class WorkSearchServiceImpl implements WorkSearchService {
     item.setFncgBpmTaskLstId(worklist.getTaskId() == null ? null : String.valueOf(worklist.getTaskId()));
     item.setFncgBpmPcesIntcId(worklist.getInstId() == null ? null : String.valueOf(worklist.getInstId()));
     item.setUworNm(worklist.getTitle());
-    item.setFncgBpmPcesId(worklist.getDefId());
     item.setBswrDvsnVal(rootDefIdOf(instance, rootDefIdsByInstId));
     return item;
   }

@@ -108,7 +108,6 @@ class WorkSearchServiceImplTest {
     assertEquals("201", response.getBswrList().get(0).getFncgBpmPcesIntcId());
     assertEquals("Unit work", response.getBswrList().get(0).getUworNm());
     assertEquals("BSWR", response.getBswrList().get(0).getBpmBswrClsfCode());
-    assertEquals("unit_line_1", response.getBswrList().get(0).getFncgBpmPcesId());
     assertEquals("line_1", response.getBswrList().get(0).getBswrDvsnVal());
   }
 

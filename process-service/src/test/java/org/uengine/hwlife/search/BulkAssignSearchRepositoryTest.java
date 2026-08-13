@@ -68,7 +68,6 @@ class BulkAssignSearchRepositoryTest {
     request.setBpmBswrClsfCode("BSWR");
     request.setCustId("CUST");
     request.setLoanCntcNo("CONTACT");
-    request.setLoanPcesMgmtNo("CORR-5");
     request.setFncgSuptTrgtDvsnCode("TARGET");
     request.setLoanSubjDvsnCode("SUBJECT");
     request.setFncgMneyUsagClsfCode("USAGE");
