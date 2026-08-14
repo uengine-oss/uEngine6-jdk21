@@ -72,13 +72,13 @@ public class WorklistEntity {// implements WorkListDAO {
     // Number 는 Hibernate 가 Serializable(bytea) 로 매핑함 → PG numeric 컬럼과 충돌.
     Integer priority;
 
-    @Temporal(TemporalType.DATE)
+    @Temporal(TemporalType.TIMESTAMP)
     Date startDate; //업무 시작 시각(배정받은 시각)
 
-    @Temporal(TemporalType.DATE)
+    @Temporal(TemporalType.TIMESTAMP)
     Date endDate; // 업무 종료 시각
 
-    @Temporal(TemporalType.DATE)
+    @Temporal(TemporalType.TIMESTAMP)
     Date saveDate; 
 
     @Temporal(TemporalType.DATE)
