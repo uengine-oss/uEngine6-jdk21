@@ -165,19 +165,6 @@ public class WorkSearchServiceImpl implements WorkSearchService {
     return response;
   }
 
-  private BulkAssignSearchResponseItem toBulkAssignItem(
-      WorklistEntity worklist,
-      Map<Long, String> rootDefIdsByInstId) {
-    ProcessInstanceEntity instance = worklist.getProcessInstance();
-    BulkAssignSearchResponseItem item = new BulkAssignSearchResponseItem();
-    item.setBpmBswrClsfCode(instance == null ? null : instance.getBswrClsfCode());
-    item.setFncgBpmTaskLstId(worklist.getTaskId() == null ? null : String.valueOf(worklist.getTaskId()));
-    item.setFncgBpmPcesIntcId(worklist.getInstId() == null ? null : String.valueOf(worklist.getInstId()));
-    item.setUworNm(worklist.getTitle());
-    item.setBswrDvsnVal(rootDefIdOf(instance, rootDefIdsByInstId));
-    return item;
-  }
-
   /**
    * 인스턴스 ID({@code fncgBpmPcesIntcId}) 기준 워크리스트(히스토리) 조회.
    * {@link ProcessInstanceRepository#findAllWorklistsByRootInstId} 와 동일하게
@@ -216,30 +203,6 @@ public class WorkSearchServiceImpl implements WorkSearchService {
     return response;
   }
 
-  /** 요청 인스턴스 ID 를 rootInstId 로 정규화한다. 인스턴스가 없으면 요청 ID 를 그대로 사용. */
-  private Long resolveRootInstId(Long instId) {
-    return processInstanceRepository.findById(instId)
-        .map(pi -> pi.getRootInstId() == null ? pi.getInstId() : pi.getRootInstId())
-        .orElse(instId);
-  }
-
-  private static WorklistByInstIdResponseItem toWorklistByInstIdItem(WorklistEntity worklist) {
-    WorklistByInstIdResponseItem item = new WorklistByInstIdResponseItem();
-    item.setFncgBpmTaskTrcgNm(worklist.getTrcTag());
-    item.setUworNm(worklist.getTitle());
-    item.setHndrEmnb(worklist.getEndpoint());
-    item.setHndrNm(worklist.getResName());
-    item.setHndrOrgnCode(firstNonBlank(worklist.getGroupCd(), worklist.getScope()));
-    item.setUworStarDttm(worklist.getStartDate());
-    item.setUworEndDttm(worklist.getEndDate());
-    item.setFncgBpmUworSttsCntn(worklist.getStatus());
-    item.setFncgBpmTaskLstId(
-        worklist.getTaskId() == null ? null : String.valueOf(worklist.getTaskId()));
-    item.setFncgBpmPcesIntcId(
-        worklist.getInstId() == null ? null : String.valueOf(worklist.getInstId()));
-    return item;
-  }
-
   /**
    * corrKey(대출프로세스관리번호) 기준 진행 중 업무 조회.
    * <p>
@@ -266,14 +229,14 @@ public class WorkSearchServiceImpl implements WorkSearchService {
     for (RunningWorkByCorrKeyRequestItem requestItem : request.getBswrList()) {
       String loanPcesMgmtNo = requestItem == null ? null : trimToNull(requestItem.getLoanPcesMgmtNo());
       if (loanPcesMgmtNo == null) {
-        resultItems.add(resultItem(null, null, null, "LBM020001"));
+        resultItems.add(toRunningWorkByCorrKeyItem(null, null, null, "LBM020001"));
         continue;
       }
 
       List<ProcessInstanceEntity> instances =
           processInstanceRepository.findByCorrKeyOrderByStartedDateDescInstIdDesc(loanPcesMgmtNo);
       if (instances == null || instances.isEmpty()) {
-        resultItems.add(resultItem(loanPcesMgmtNo, null, null, "LBM020002"));
+        resultItems.add(toRunningWorkByCorrKeyItem(loanPcesMgmtNo, null, null, "LBM020002"));
         continue;
       }
 
@@ -283,39 +246,17 @@ public class WorkSearchServiceImpl implements WorkSearchService {
             : processInstance.getRootInstId();
         List<WorklistEntity> workItems = worklistRepository.findCurrentWorkItemByInstId(rootInstId);
         if (workItems == null || workItems.isEmpty()) {
-          resultItems.add(resultItem(loanPcesMgmtNo, processInstance, null, "LBM020003"));
+          resultItems.add(toRunningWorkByCorrKeyItem(loanPcesMgmtNo, processInstance, null, "LBM020003"));
           continue;
         }
 
         for (WorklistEntity workItem : workItems) {
-          resultItems.add(resultItem(loanPcesMgmtNo, processInstance, workItem, "LBM000000"));
+          resultItems.add(toRunningWorkByCorrKeyItem(loanPcesMgmtNo, processInstance, workItem, "LBM000000"));
         }
       }
     }
 
     return response;
-  }
-
-  private static RunningWorkByCorrKeyResponseItem resultItem(
-      String loanPcesMgmtNo,
-      ProcessInstanceEntity processInstance,
-      WorklistEntity workItem,
-      String resultMessage) {
-    RunningWorkByCorrKeyResponseItem item = new RunningWorkByCorrKeyResponseItem();
-    item.setLoanPcesMgmtNo(loanPcesMgmtNo);
-    item.setPrcsRsltCntn(resultMessage);
-
-    if (processInstance != null) {
-      item.setPrgsSttsNm(processInstance.getStatus());
-    }
-    if (workItem != null) {
-      item.setFncgBpmTaskTrcgNm(workItem.getTrcTag());
-      item.setFncgBpmUworSttsCntn(workItem.getStatus());
-      item.setHndrEmnb(workItem.getEndpoint());
-      item.setApvlYn(toYn(workItem.getApvlYn()));
-      item.setImgeScanYn(toYn(workItem.getImgeScanYn()));
-    }
-    return item;
   }
 
   private MyTodoItem toMyTodoItem(WorklistEntity worklist, Map<Long, String> rootDefIdsByInstId) {
@@ -451,6 +392,69 @@ public class WorkSearchServiceImpl implements WorkSearchService {
     return item;
   }
 
+  private BulkAssignSearchResponseItem toBulkAssignItem(
+    WorklistEntity worklist,
+    Map<Long, String> rootDefIdsByInstId) {
+    ProcessInstanceEntity instance = worklist.getProcessInstance();
+    BulkAssignSearchResponseItem item = new BulkAssignSearchResponseItem();
+    item.setBpmBswrClsfCode(instance == null ? null : instance.getBswrClsfCode());
+    item.setFncgBpmTaskLstId(worklist.getTaskId() == null ? null : String.valueOf(worklist.getTaskId()));
+    item.setFncgBpmPcesIntcId(worklist.getInstId() == null ? null : String.valueOf(worklist.getInstId()));
+    item.setUworNm(worklist.getTitle());
+    item.setBswrDvsnVal(rootDefIdOf(instance, rootDefIdsByInstId));
+
+    return item;
+  }
+
+  private static WorklistByInstIdResponseItem toWorklistByInstIdItem(WorklistEntity worklist) {
+    WorklistByInstIdResponseItem item = new WorklistByInstIdResponseItem();
+    item.setFncgBpmTaskTrcgNm(worklist.getTrcTag());
+    item.setUworNm(worklist.getTitle());
+    item.setHndrEmnb(worklist.getEndpoint());
+    item.setHndrNm(worklist.getResName());
+    item.setHndrOrgnCode(firstNonBlank(worklist.getGroupCd(), worklist.getScope()));
+    item.setUworStarDttm(worklist.getStartDate());
+    item.setUworEndDttm(worklist.getEndDate());
+    item.setFncgBpmUworSttsCntn(worklist.getStatus());
+    item.setFncgBpmTaskLstId(
+        worklist.getTaskId() == null ? null : String.valueOf(worklist.getTaskId()));
+    item.setFncgBpmPcesIntcId(
+        worklist.getInstId() == null ? null : String.valueOf(worklist.getInstId()));
+
+    return item;
+  }
+
+
+  private static RunningWorkByCorrKeyResponseItem toRunningWorkByCorrKeyItem(
+    String loanPcesMgmtNo,
+    ProcessInstanceEntity processInstance,
+    WorklistEntity workItem,
+    String resultMessage) {
+    RunningWorkByCorrKeyResponseItem item = new RunningWorkByCorrKeyResponseItem();
+    item.setLoanPcesMgmtNo(loanPcesMgmtNo);
+    item.setPrcsRsltCntn(resultMessage);
+
+    if (processInstance != null) {
+      item.setPrgsSttsNm(processInstance.getStatus());
+    }
+    if (workItem != null) {
+      item.setFncgBpmTaskTrcgNm(workItem.getTrcTag());
+      item.setFncgBpmUworSttsCntn(workItem.getStatus());
+      item.setHndrEmnb(workItem.getEndpoint());
+      item.setApvlYn(toYn(workItem.getApvlYn()));
+      item.setImgeScanYn(toYn(workItem.getImgeScanYn()));
+    }
+
+    return item;
+  }
+
+  /** 요청 인스턴스 ID 를 rootInstId 로 정규화한다. 인스턴스가 없으면 요청 ID 를 그대로 사용. */
+  private Long resolveRootInstId(Long instId) {
+    return processInstanceRepository.findById(instId)
+        .map(pi -> pi.getRootInstId() == null ? pi.getInstId() : pi.getRootInstId())
+        .orElse(instId);
+  }
+  
   /**
    * 워크리스트들의 rootInstId 에 해당하는 루트 인스턴스 {@code defId} 맵 ({@code bswrDvsnVal} 응답용).
    * 현재 인스턴스가 루트이면 추가 조회 없이 {@code instance.defId} 를 사용한다.
