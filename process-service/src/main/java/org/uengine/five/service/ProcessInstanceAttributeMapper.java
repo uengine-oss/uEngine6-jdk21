@@ -31,6 +31,29 @@ public class ProcessInstanceAttributeMapper {
         if (loanHopeDate != null) {
             instance.setLoanHopeDate(loanHopeDate);
         }
+
+        applyEsbHeaderInitiator(instance, payload);
+    }
+
+    /**
+     * 이벤트 inbox payload 의 {@code esbHeader} 로 최초 담당자(init) 필드를 설정한다.
+     * 인스턴스 생성 시점({@code InstanceServiceImpl#start}) 에만 적용되며,
+     * 워크리스트/RoleMapping 경로에서는 init_ep·init_group_cd 를 채우지 않는다.
+     */
+    @SuppressWarnings("unchecked")
+    private void applyEsbHeaderInitiator(ProcessInstanceEntity instance, Map<String, Object> payload) {
+        Object esbHeaderObj = payload.get("esbHeader");
+        if (!(esbHeaderObj instanceof Map<?, ?> esbHeader)) {
+            return;
+        }
+        String emnb = text(esbHeader.get("emnb"));
+        String belnOrgnCode = text(esbHeader.get("belnOrgnCode"));
+        if (emnb != null) {
+            instance.setInitEp(emnb);
+        }
+        if (belnOrgnCode != null) {
+            instance.setInitGroupCd(belnOrgnCode);
+        }
     }
 
     private static String text(Object value) {

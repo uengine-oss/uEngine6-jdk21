@@ -18,15 +18,17 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 
 
 /**
  * 외부(External) Event Inbox 수신 서비스 구현.
  *
- * <p>ESB {@code { header, payload }} 전문을 받아 payload 업무 필드를 Inbox 에 enqueue 한다.
- * DB {@code payload} 컬럼에는 요청 전문의 {@code payload} 값을 원문 그대로(String) 저장한다.
- * 필수값 검증은 저장할 {@code payload} 원문 문자열을 {@link ExternalEventInboxRequest} 로
- * 한 번 더 파싱해 수행한다(검증·저장 기준 일치).
+ * <p>ESB header/payload 전문을 받아 payload 업무 필드를 Inbox 에 enqueue 한다.
+ * DB {@code payload} 컬럼에는 요청 payload 에 {@code esbHeader}
+ * ({@code emnb}, {@code belnOrgnCode}) 를 추가한 JSON 을 저장한다.
+ * 필수값 검증은 요청 payload 원문 문자열을 {@link ExternalEventInboxRequest} 로
+ * 파싱해 수행한다(검증은 원문 기준, 저장 시에만 header 필드 병합).
  * 성공/실패 모두 동일 응답 형태(HTTP 200 + header/payload)이며,
  * 업무 결과는 항상 {@code payload}({@link ExternalEventInboxResponse}) 에 담는다.</p>
  */
@@ -66,12 +68,12 @@ public class ExternalEventInboxServiceImpl implements ExternalEventInboxService 
     public EventInboxReceiveResult receiveEvent(String requestBodyJson) {
         EsbCommonHeader header;
         ExternalEventInboxRequest payload;
-        String payloadJson;
+        String rawPayloadJson;
         try {
             IncomingEsbRequest incoming = parseIncomingRequest(requestBodyJson);
             header = incoming.header;
-            payloadJson = incoming.payloadJson;
-            payload = objectMapper.readValue(payloadJson, ExternalEventInboxRequest.class);
+            rawPayloadJson = incoming.rawPayloadJson;
+            payload = objectMapper.readValue(rawPayloadJson, ExternalEventInboxRequest.class);
         } catch (Exception e) {
             // 실패(시스템) — header prcsRsltDvsnCode=1
             return EventInboxReceiveResult.failed(
@@ -91,8 +93,19 @@ public class ExternalEventInboxServiceImpl implements ExternalEventInboxService 
                             ExternalEventInboxResponse.failed(loanPcesMgmtNo, evntNm, "LBM010002")));
         }
 
+        String inboxPayload;
+        try {
+            inboxPayload = enrichPayloadWithHeaderFields(rawPayloadJson, header);
+        } catch (Exception e) {
+            return EventInboxReceiveResult.failed(
+                    EsbEnvelope.failed(
+                            header,
+                            ExternalEventInboxResponse.failed(loanPcesMgmtNo, evntNm, "LBM010001")));
+        }
+
         EventInboxResponse coreResponse = enqueueService.enqueue(
-                new EventInboxRequest(evntNm, loanPcesMgmtNo, payloadJson));
+                new EventInboxRequest(evntNm, loanPcesMgmtNo, inboxPayload)
+        );
         if (EventInboxResponse.STATUS_FAILED.equals(coreResponse.getStatus())) {
             // 성공 응답 + payload 업무 실패 (멱등 중복 LBM010003)
             return EventInboxReceiveResult.success(
@@ -113,7 +126,7 @@ public class ExternalEventInboxServiceImpl implements ExternalEventInboxService 
             return new IncomingEsbRequest(null, "{}");
         }
         EsbCommonHeader header = null;
-        String payloadJson = null;
+        String rawPayloadJson = null;
         try (JsonParser parser = objectMapper.createParser(requestBodyJson)) {
             JsonToken token;
             while ((token = parser.nextToken()) != null) {
@@ -134,8 +147,8 @@ public class ExternalEventInboxServiceImpl implements ExternalEventInboxService 
                     continue;
                 }
                 if ("payload".equals(fieldName)) {
-                    if (payloadJson == null) {
-                        payloadJson = sliceJsonValue(requestBodyJson, parser, token);
+                    if (rawPayloadJson == null) {
+                        rawPayloadJson = sliceJsonValue(requestBodyJson, parser, token);
                     } else {
                         skipJsonValue(parser, token);
                     }
@@ -144,7 +157,7 @@ public class ExternalEventInboxServiceImpl implements ExternalEventInboxService 
                 skipJsonValue(parser, token);
             }
         }
-        return new IncomingEsbRequest(header, payloadJson != null ? payloadJson : requestBodyJson);
+        return new IncomingEsbRequest(header, rawPayloadJson != null ? rawPayloadJson : requestBodyJson);
     }
 
     private EsbCommonHeader parseHeaderValue(JsonToken token, JsonParser parser) throws IOException {
@@ -184,6 +197,35 @@ public class ExternalEventInboxServiceImpl implements ExternalEventInboxService 
         }
     }
 
+    /**
+     * Inbox 저장용 payload — 요청 payload 에 {@code esbHeader} 객체를 추가한다.
+     */
+    private String enrichPayloadWithHeaderFields(String payloadJson, EsbCommonHeader header) throws IOException {
+        if (header == null) {
+            return payloadJson;
+        }
+        String emnb = header.getEmnb();
+        String belnOrgnCode = header.getBelnOrgnCode();
+        if (isBlank(emnb) && isBlank(belnOrgnCode)) {
+            return payloadJson;
+        }
+
+        JsonNode root = objectMapper.readTree(payloadJson);
+        if (!root.isObject()) {
+            return payloadJson;
+        }
+        ObjectNode object = (ObjectNode) root;
+        ObjectNode esbHeader = objectMapper.createObjectNode();
+        if (!isBlank(emnb)) {
+            esbHeader.put("emnb", emnb.trim());
+        }
+        if (!isBlank(belnOrgnCode)) {
+            esbHeader.put("belnOrgnCode", belnOrgnCode.trim());
+        }
+        object.set("esbHeader", esbHeader);
+        return objectMapper.writeValueAsString(object);
+    }
+
     private static boolean isBlank(String value) {
         return value == null || value.isBlank();
     }
@@ -191,11 +233,11 @@ public class ExternalEventInboxServiceImpl implements ExternalEventInboxService 
     /** parseIncomingRequest 반환용 — header + payload 원문. */
     private static final class IncomingEsbRequest {
         final EsbCommonHeader header;
-        final String payloadJson;
+        final String rawPayloadJson;
 
-        IncomingEsbRequest(EsbCommonHeader header, String payloadJson) {
+        IncomingEsbRequest(EsbCommonHeader header, String rawPayloadJson) {
             this.header = header;
-            this.payloadJson = payloadJson;
+            this.rawPayloadJson = rawPayloadJson;
         }
     }
 }

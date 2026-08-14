@@ -127,16 +127,8 @@ public class WorkItemAssignmentStateService {
         }
 
         boolean changed = false;
-        if (!hasText(instance.getInitEp()) && hasText(worklist.getEndpoint())) {
-            instance.setInitEp(worklist.getEndpoint().trim());
-            changed = true;
-        }
         if (!hasText(instance.getInitRsNm()) && hasText(worklist.getResName())) {
             instance.setInitRsNm(worklist.getResName().trim());
-            changed = true;
-        }
-        if (!hasText(instance.getInitGroupCd()) && hasText(worklist.getGroupCd())) {
-            instance.setInitGroupCd(worklist.getGroupCd().trim());
             changed = true;
         }
         if (changed) {

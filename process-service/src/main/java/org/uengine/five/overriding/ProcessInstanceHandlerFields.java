@@ -13,14 +13,8 @@ public final class ProcessInstanceHandlerFields {
             return;
         }
 
-        if (!hasText(instance.getInitEp())) {
-            instance.setInitEp(roleMapping.getEndpoint());
-        }
         if (!hasText(instance.getInitRsNm())) {
             instance.setInitRsNm(roleMapping.getResourceName());
-        }
-        if (!hasText(instance.getInitGroupCd())) {
-            instance.setInitGroupCd(resolveGroup(roleMapping));
         }
 
         instance.setPrevCurrEp("");
