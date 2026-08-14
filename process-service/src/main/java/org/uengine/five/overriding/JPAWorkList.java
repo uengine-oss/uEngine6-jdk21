@@ -4,6 +4,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.uengine.five.entity.WorklistEntity;
 import org.uengine.five.lifecycle.BpmLifecycleService;
 import org.uengine.five.repository.WorklistRepository;
+import org.uengine.five.service.WorkItemAssignmentStateService;
 import org.uengine.kernel.KeyedParameter;
 import org.uengine.kernel.RoleMapping;
 import org.uengine.kernel.Role;
@@ -47,6 +48,9 @@ public class JPAWorkList implements WorkList {
 
     @Autowired(required = false)
     BpmLifecycleService bpmLifecycleService;
+
+    @Autowired(required = false)
+    WorkItemAssignmentStateService assignmentStateService;
 
     protected String addWorkItemImpl(String reservedTaskId, RoleMapping roleMapping, Map parameterMap, boolean isReservation, TransactionContext tc) throws RemoteException {
 
@@ -231,6 +235,12 @@ public class JPAWorkList implements WorkList {
 
             worklistRepository.save(wl);
 
+            if (assignmentStateService != null) {
+                Long rootInstId = wl.getRootInstId() != null ? wl.getRootInstId() : wl.getInstId();
+                assignmentStateService.initializeFirstUnitHandler(wl);
+                assignmentStateService.synchronize(rootInstId);
+            }
+
             // ── [HOOK] 업무 배정 (최초) ──────────────────────────────────
             // endpoint 가 있으면 즉시 배정 확정. 경합(endpoint=null)은 claim 시 발행.
             if (bpmLifecycleService != null) {
@@ -326,6 +336,10 @@ public class JPAWorkList implements WorkList {
             wl.setEndDate(new Timestamp(now.getTimeInMillis()));
 
             worklistRepository.save(wl);
+
+            if (assignmentStateService != null) {
+                assignmentStateService.completeUnitWork(wl);
+            }
 
             // ── [HOOK] 업무 종료 (정상 완료) ──────────────────────────────
             if (bpmLifecycleService != null) {

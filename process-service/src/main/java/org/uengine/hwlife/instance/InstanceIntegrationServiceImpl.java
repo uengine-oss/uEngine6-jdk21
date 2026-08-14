@@ -603,9 +603,6 @@ public class InstanceIntegrationServiceImpl implements InstanceIntegrationServic
    *   <li>{@code LBM070011} — 배정불가(status != NEW)</li>
    *   <li>{@code LBM070012} — 이미 담당자가 지정된 업무</li>
    *   <li>{@code LBM070013} — 일괄배정 대상이 아님(dispatchOption != 1)</li>
-   *   <li>{@code LBM070014} — 권한 없음</li>
-   *   <li>{@code LBM070015} — header.belnOrgnCode 없음</li>
-   *   <li>{@code LBM070016} — 본인 기관이 아닌 업무(groupCd != belnOrgnCode)</li>
    *   <li>{@code LBM070019} — claimWorkItem 업무 예외</li>
    *   <li>{@code LBM070020} — 기타 예외</li>
    * </ul>
@@ -613,22 +610,17 @@ public class InstanceIntegrationServiceImpl implements InstanceIntegrationServic
   @Override
   public BulkAssignResponse assignBulk(@RequestBody BulkAssignRequest request) throws Exception {
     List<BulkAssignRequestItem> items = request == null ? null : request.getBswrList();
-    EsbCommonHeader header = EsbRequestBodyAdvice.currentHeader();
-    String actorEndpoint = trimToNull(header == null ? null : header.getEmnb());
-    String belnOrgnCode = trimToNull(header == null ? null : header.getBelnOrgnCode());
+    String actorEndpoint = trimToNull(
+        EsbRequestBodyAdvice.currentHeader() == null
+            ? null
+            : EsbRequestBodyAdvice.currentHeader().getEmnb());
     String commonError = request == null
-        ? "LBM070001"
+        ? BulkAssignResultCode.INVALID_REQUEST
         : items == null || items.isEmpty()
-            ? "LBM070002"
-            : actorEndpoint == null
-                ? "LBM070003"
-                : belnOrgnCode == null ? "LBM070015" : null;
-
+            ? BulkAssignResultCode.EMPTY_WORK_LIST
+            : actorEndpoint == null ? BulkAssignResultCode.MISSING_ACTOR : null;
     if (commonError != null) {
       return failedBulkAssignResponse(items, commonError);
-    }
-    if (!isReassignAuthorized(actorEndpoint)) {
-      return failedBulkAssignResponse(items, "LBM070014");
     }
 
     List<BulkAssignResponseItem> failures = new ArrayList<>();
@@ -640,19 +632,19 @@ public class InstanceIntegrationServiceImpl implements InstanceIntegrationServic
       String taskId = item == null ? null : trimToNull(item.getFncgBpmTaskLstId());
       String targetEndpoint = item == null ? null : trimToNull(item.getHndrEmnb());
       if (taskId == null) {
-        addBulkAssignFailure(failures, item, "LBM070006");
+        addBulkAssignFailure(failures, item, BulkAssignResultCode.MISSING_TASK_ID);
         continue;
       }
       if (!seenTaskIds.add(taskId)) {
-        addBulkAssignFailure(failures, item, "LBM070007");
+        addBulkAssignFailure(failures, item, BulkAssignResultCode.DUPLICATE_TASK);
         continue;
       }
       if (!isNumeric(taskId)) {
-        addBulkAssignFailure(failures, item, "LBM070008");
+        addBulkAssignFailure(failures, item, BulkAssignResultCode.INVALID_TASK_ID);
         continue;
       }
       if (targetEndpoint == null) {
-        addBulkAssignFailure(failures, item, "LBM070004");
+        addBulkAssignFailure(failures, item, BulkAssignResultCode.MISSING_HANDLER);
         continue;
       }
 
@@ -664,20 +656,19 @@ public class InstanceIntegrationServiceImpl implements InstanceIntegrationServic
           handler = null;
         }
         if (handler == null || trimToNull(handler.getHndrEmnb()) == null) {
-          addBulkAssignFailure(failures, item, "LBM070005");
+          addBulkAssignFailure(failures, item, BulkAssignResultCode.HANDLER_NOT_FOUND);
           continue;
         }
         handlers.put(targetEndpoint, handler);
       }
 
       try {
-        bulkAssignItemService.assign(
-            item, targetEndpoint, trimToNull(handler.getHndrNm()), belnOrgnCode);
+        bulkAssignItemService.assign(item, targetEndpoint, trimToNull(handler.getHndrNm()));
         successCount++;
       } catch (BulkAssignItemService.BulkAssignItemException exception) {
         addBulkAssignFailure(failures, item, exception.getResultCode());
       } catch (Exception exception) {
-        addBulkAssignFailure(failures, item, "LBM070020");
+        addBulkAssignFailure(failures, item, BulkAssignResultCode.ASSIGNMENT_FAILED);
       }
     }
 
@@ -861,7 +852,7 @@ public class InstanceIntegrationServiceImpl implements InstanceIntegrationServic
   }
 
   /**
-   * 일괄배정·다중 담당자 변경 권한자 여부.
+   * 다중 담당자 변경 권한자 여부.
    *
    * <p>요청자 사번({@code header.emnb})으로 ESB 권한 조회 예정.
    * 연동 전 임시: 사번이 {@code ESB}로 시작하면 권한 없음으로 처리한다.</p>

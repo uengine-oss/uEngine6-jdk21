@@ -24,39 +24,32 @@ public class BulkAssignItemService {
   }
 
   @Transactional(propagation = Propagation.REQUIRES_NEW)
-  public void assign(
-      BulkAssignRequestItem item,
-      String targetEndpoint,
-      String targetName,
-      String belnOrgnCode) {
+  public void assign(BulkAssignRequestItem item, String targetEndpoint, String targetName) {
     long taskId;
     try {
       taskId = Long.parseLong(item.getFncgBpmTaskLstId().trim());
     } catch (NumberFormatException exception) {
-      throw failure("LBM070008", exception);
+      throw failure(BulkAssignResultCode.INVALID_TASK_ID, exception);
     }
 
     WorklistEntity worklist = worklistRepository.findByIdForUpdate(taskId).orElse(null);
     if (worklist == null) {
-      throw failure("LBM070009");
+      throw failure(BulkAssignResultCode.WORKITEM_NOT_FOUND);
     }
     String requestedInstanceId = trimToNull(item.getFncgBpmPcesIntcId());
     if (requestedInstanceId != null
         && !requestedInstanceId.equals(String.valueOf(worklist.getInstId()))
         && !requestedInstanceId.equals(String.valueOf(worklist.getRootInstId()))) {
-      throw failure("LBM070010");
+      throw failure(BulkAssignResultCode.INSTANCE_MISMATCH);
     }
     if (!"NEW".equalsIgnoreCase(trimToNull(worklist.getStatus()))) {
-      throw failure("LBM070011");
+      throw failure(BulkAssignResultCode.WORKITEM_NOT_NEW);
     }
     if (trimToNull(worklist.getEndpoint()) != null) {
-      throw failure("LBM070012");
+      throw failure(BulkAssignResultCode.ALREADY_ASSIGNED);
     }
     if (worklist.getDispatchOption() != 1) {
-      throw failure("LBM070013");
-    }
-    if (!isSameOrganization(worklist, belnOrgnCode)) {
-      throw failure("LBM070016");
+      throw failure(BulkAssignResultCode.NOT_BULK_ASSIGNABLE);
     }
 
     RoleMappingCommand mapping = new RoleMappingCommand();
@@ -65,17 +58,10 @@ public class BulkAssignItemService {
     try {
       instanceService.claimWorkItem(String.valueOf(taskId), mapping);
     } catch (ResponseStatusException exception) {
-      throw failure("LBM070019", exception);
+      throw failure(BulkAssignResultCode.CLAIM_REJECTED, exception);
     } catch (Exception exception) {
-      throw failure("LBM070020", exception);
+      throw failure(BulkAssignResultCode.ASSIGNMENT_FAILED, exception);
     }
-  }
-
-  /** 기관 일치: {@code worklist.groupCd == belnOrgnCode}. */
-  private static boolean isSameOrganization(WorklistEntity worklist, String belnOrgnCode) {
-    String groupCd = trimToNull(worklist.getGroupCd());
-    String organization = trimToNull(belnOrgnCode);
-    return groupCd != null && organization != null && groupCd.equals(organization);
   }
 
   private static BulkAssignItemException failure(String resultCode) {

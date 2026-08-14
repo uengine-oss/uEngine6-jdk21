@@ -51,6 +51,9 @@ public class WorkItemAssignmentStateService {
         if (worklist == null) {
             return;
         }
+        if (!hasText(worklist.getEndpoint()) && !hasText(worklist.getResName())) {
+            return;
+        }
         worklist.setPrevEndpoint(worklist.getEndpoint());
         worklist.setPrevUserName(worklist.getResName());
         worklist.setPrevGroupCd(worklist.getGroupCd());
@@ -100,12 +103,77 @@ public class WorkItemAssignmentStateService {
         if (context == null) {
             return;
         }
-        ProcessInstanceEntity instance = processInstanceRepository.findById(context.rootInstId()).orElse(null);
+        refreshActiveHandlers(context.rootInstId());
+    }
+
+    public void synchronize(Long rootInstId) {
+        refreshActiveHandlers(rootInstId);
+    }
+
+    public void initializeFirstUnitHandler(WorklistEntity worklist) {
+        if (worklist == null) {
+            return;
+        }
+        if (!isActive(worklist)) {
+            return;
+        }
+        Long rootInstId = rootInstId(worklist);
+        if (rootInstId == null) {
+            return;
+        }
+        ProcessInstanceEntity instance = processInstanceRepository.findById(rootInstId).orElse(null);
         if (instance == null) {
             return;
         }
 
-        List<WorklistEntity> active = worklistRepository.findActiveByRootOrInstance(context.rootInstId());
+        boolean changed = false;
+        if (!hasText(instance.getInitEp()) && hasText(worklist.getEndpoint())) {
+            instance.setInitEp(worklist.getEndpoint().trim());
+            changed = true;
+        }
+        if (!hasText(instance.getInitRsNm()) && hasText(worklist.getResName())) {
+            instance.setInitRsNm(worklist.getResName().trim());
+            changed = true;
+        }
+        if (!hasText(instance.getInitGroupCd()) && hasText(worklist.getGroupCd())) {
+            instance.setInitGroupCd(worklist.getGroupCd().trim());
+            changed = true;
+        }
+        if (changed) {
+            processInstanceRepository.save(instance);
+        }
+    }
+
+    public void completeUnitWork(WorklistEntity completedWorkitem) {
+        if (completedWorkitem == null) {
+            return;
+        }
+        Long rootInstId = rootInstId(completedWorkitem);
+        if (rootInstId == null) {
+            return;
+        }
+        ProcessInstanceEntity instance = processInstanceRepository.findById(rootInstId).orElse(null);
+        if (instance == null) {
+            return;
+        }
+
+        instance.setPrevCurrEp(trimToNull(completedWorkitem.getEndpoint()));
+        instance.setPrevCurrRsNm(trimToNull(completedWorkitem.getResName()));
+        instance.setPrevCurrGroupCd(trimToNull(completedWorkitem.getGroupCd()));
+        processInstanceRepository.save(instance);
+        refreshActiveHandlers(rootInstId);
+    }
+
+    private void refreshActiveHandlers(Long rootInstId) {
+        if (rootInstId == null) {
+            return;
+        }
+        ProcessInstanceEntity instance = processInstanceRepository.findById(rootInstId).orElse(null);
+        if (instance == null) {
+            return;
+        }
+
+        List<WorklistEntity> active = worklistRepository.findActiveByRootOrInstance(rootInstId);
         String currEp = joinDistinct(active, WorklistEntity::getEndpoint);
         String currRsNm = joinDistinct(active, WorklistEntity::getResName);
         String currGroupCd = joinDistinct(active, WorklistEntity::getGroupCd);
@@ -116,18 +184,10 @@ public class WorkItemAssignmentStateService {
             return;
         }
 
-        instance.setPrevCurrEp(context.currEp());
-        instance.setPrevCurrRsNm(context.currRsNm());
-        instance.setPrevCurrGroupCd(context.currGroupCd());
         instance.setCurrEp(currEp);
         instance.setCurrRsNm(currRsNm);
         instance.setCurrGroupCd(currGroupCd);
         processInstanceRepository.save(instance);
-    }
-
-    public void synchronize(Long rootInstId) {
-        AssignmentChangeContext context = begin(rootInstId);
-        finish(context);
     }
 
     private static String joinDistinct(List<WorklistEntity> workitems, Function<WorklistEntity, String> getter) {
@@ -144,6 +204,26 @@ public class WorkItemAssignmentStateService {
             }
         }
         return values.isEmpty() ? null : String.join(";", values);
+    }
+
+    private static Long rootInstId(WorklistEntity worklist) {
+        if (worklist == null) {
+            return null;
+        }
+        return worklist.getRootInstId() != null ? worklist.getRootInstId() : worklist.getInstId();
+    }
+
+    private static boolean hasText(String value) {
+        return value != null && !value.trim().isEmpty() && !"null".equalsIgnoreCase(value.trim());
+    }
+
+    private static String trimToNull(String value) {
+        return hasText(value) ? value.trim() : null;
+    }
+
+    private static boolean isActive(WorklistEntity worklist) {
+        String status = worklist.getStatus();
+        return "NEW".equalsIgnoreCase(status) || "RUNNING".equalsIgnoreCase(status);
     }
 
     public record AssignmentChangeContext(

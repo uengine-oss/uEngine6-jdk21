@@ -137,9 +137,6 @@ public class InboxPollJob implements Job {
             // payload 에 EventMapping.correlationKey 매칭 필드가 없을 때 fallback 으로 사용됨
             builder.setHeader("corrKey", ev.getCorrKey());
         }
-        if (ev.getRequesterEmnb() != null) {
-            builder.setHeader("requesterEmnb", ev.getRequesterEmnb());
-        }
         return builder.build();
     }
 

@@ -33,14 +33,12 @@ public class EventInboxEnqueueServiceImpl implements EventInboxEnqueueService {
         String eventName = request != null ? request.getEventName() : null;
         String corrKey = request != null ? request.getCorrKey() : null;
         String payloadJson = request != null ? request.getPayloadJson() : null;
-        String requesterEmnb = request != null ? request.getRequesterEmnb() : null;
         String normalizedPayload = payloadJson != null ? payloadJson : "{}";
 
         EventInbox ev = new EventInbox();
         ev.setEventName(eventName);
         ev.setPayload(normalizedPayload);
         ev.setCorrKey(corrKey);
-        ev.setRequesterEmnb(requesterEmnb);
 
         try {
             repo.save(ev);
@@ -48,7 +46,6 @@ public class EventInboxEnqueueServiceImpl implements EventInboxEnqueueService {
             EventInbox existing = findExistingInboxForDuplicate(corrKey, eventName);
             if (isRejectedCompletion(existing)) {
                 existing.setPayload(normalizedPayload);
-                existing.setRequesterEmnb(requesterEmnb);
                 existing.setProcessedAt(null);
                 existing.setTryCnt(0);
                 existing.setLastError(null);

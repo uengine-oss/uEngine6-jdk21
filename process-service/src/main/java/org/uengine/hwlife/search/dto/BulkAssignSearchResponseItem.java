@@ -5,12 +5,12 @@ package org.uengine.hwlife.search.dto;
  */
 public class BulkAssignSearchResponseItem {
 
+    private String bpmBswrClsfCode; // 업무분류 코드
     private String fncgBpmTaskLstId;
     private String fncgBpmPcesIntcId;
-    private String bpmBswrClsfCode; // 업무분류코드 (inst.bswrClsfCode)
     private String uworNm; // 태스크 명
-    private String bswrDvsnVal; // root_inst_id.defId (현 최상 업무 정의 아이디)
-    
+    private String fncgBpmPcesId; // 현재 단위업무 worklist.defId
+    private String bswrDvsnVal; // root instance.defId
 
     public String getBpmBswrClsfCode() {
         return bpmBswrClsfCode;
@@ -44,6 +44,14 @@ public class BulkAssignSearchResponseItem {
         this.uworNm = uworNm;
     }
 
+    public String getFncgBpmPcesId() {
+        return fncgBpmPcesId;
+    }
+
+    public void setFncgBpmPcesId(String fncgBpmPcesId) {
+        this.fncgBpmPcesId = fncgBpmPcesId;
+    }
+
     public String getBswrDvsnVal() {
         return bswrDvsnVal;
     }
@@ -51,5 +59,4 @@ public class BulkAssignSearchResponseItem {
     public void setBswrDvsnVal(String bswrDvsnVal) {
         this.bswrDvsnVal = bswrDvsnVal;
     }
-
 }

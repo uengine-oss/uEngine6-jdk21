@@ -13,46 +13,52 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.uengine.five.entity.WorklistEntity;
 import org.uengine.five.repository.WorklistRepository;
+import org.uengine.five.service.WorkItemAssignmentStateService;
 
 class ProcessCompletionWorkitemReconcilerTest {
 
     @Test
     void completesOnlyActiveWorkForExactInstance() {
-        // WorklistRepository repository = mock(WorklistRepository.class);
-        // WorklistEntity newWork = work(11L, "NEW");
-        // WorklistEntity runningWork = work(11L, "RUNNING");
-        // when(repository.findByInstIdAndStatusIn(11L, List.of("NEW", "RUNNING")))
-        //         .thenReturn(List.of(newWork, runningWork));
+        WorklistRepository repository = mock(WorklistRepository.class);
+        WorkItemAssignmentStateService assignmentStateService = mock(WorkItemAssignmentStateService.class);
+        WorklistEntity newWork = work(11L, "NEW");
+        WorklistEntity runningWork = work(11L, "RUNNING");
+        when(repository.findByInstIdAndStatusIn(11L, List.of("NEW", "RUNNING")))
+                .thenReturn(List.of(newWork, runningWork));
 
-        // int changed = new ProcessCompletionWorkitemReconciler(repository).reconcile(11L);
+        int changed = new ProcessCompletionWorkitemReconciler(repository, assignmentStateService).reconcile(11L);
 
-        // assertEquals(2, changed);
-        // assertEquals("COMPLETED", newWork.getStatus());
-        // assertEquals("COMPLETED", runningWork.getStatus());
-        // assertNotNull(newWork.getEndDate());
-        // assertNotNull(runningWork.getEndDate());
-        // verify(repository).saveAll(List.of(newWork, runningWork));
+        assertEquals(2, changed);
+        assertEquals("COMPLETED", newWork.getStatus());
+        assertEquals("COMPLETED", runningWork.getStatus());
+        assertNotNull(newWork.getEndDate());
+        assertNotNull(runningWork.getEndDate());
+        verify(repository).saveAll(List.of(newWork, runningWork));
+        verify(assignmentStateService).synchronize(11L);
     }
 
     @Test
     void isIdempotentWhenNoActiveWorkRemains() {
-        // WorklistRepository repository = mock(WorklistRepository.class);
-        // when(repository.findByInstIdAndStatusIn(12L, List.of("NEW", "RUNNING")))
-        //         .thenReturn(List.of());
+        WorklistRepository repository = mock(WorklistRepository.class);
+        WorkItemAssignmentStateService assignmentStateService = mock(WorkItemAssignmentStateService.class);
+        when(repository.findByInstIdAndStatusIn(12L, List.of("NEW", "RUNNING")))
+                .thenReturn(List.of());
 
-        // int changed = new ProcessCompletionWorkitemReconciler(repository).reconcile(12L);
+        int changed = new ProcessCompletionWorkitemReconciler(repository, assignmentStateService).reconcile(12L);
 
-        // assertEquals(0, changed);
-        // verify(repository, never()).saveAll(anyList());
+        assertEquals(0, changed);
+        verify(repository, never()).saveAll(anyList());
+        verify(assignmentStateService).synchronize(12L);
     }
 
     @Test
     void ignoresMissingInstanceId() {
-        // WorklistRepository repository = mock(WorklistRepository.class);
+        WorklistRepository repository = mock(WorklistRepository.class);
+        WorkItemAssignmentStateService assignmentStateService = mock(WorkItemAssignmentStateService.class);
 
-        // assertEquals(0, new ProcessCompletionWorkitemReconciler(repository).reconcile(null));
+        assertEquals(0, new ProcessCompletionWorkitemReconciler(repository, assignmentStateService).reconcile(null));
 
-        // verify(repository, never()).findByInstIdAndStatusIn(null, List.of("NEW", "RUNNING"));
+        verify(repository, never()).findByInstIdAndStatusIn(null, List.of("NEW", "RUNNING"));
     }
 
     private static WorklistEntity work(Long instanceId, String status) {

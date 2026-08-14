@@ -95,19 +95,20 @@ class WorkSearchServiceImplTest {
     rootInstance.setInstId(100L);
     rootInstance.setRootInstId(100L);
     rootInstance.setDefId("line_1");
-    when(bulkAssignSearchRepository.search(request, HEADER_BELN_ORGN_CODE))
+    when(bulkAssignSearchRepository.search(request))
         .thenReturn(new BulkAssignSearchRepository.SearchResult(List.of(worklist), 1));
     when(processInstanceRepository.findAllById(any())).thenReturn(List.of(rootInstance));
 
     BulkAssignSearchResponse response = service.searchBulkAssign(request);
 
-    verify(bulkAssignSearchRepository).search(request, HEADER_BELN_ORGN_CODE);
+    verify(bulkAssignSearchRepository).search(request);
     assertEquals(1, response.getTotCont());
     assertEquals(1, response.getBswrList().size());
     assertEquals("105", response.getBswrList().get(0).getFncgBpmTaskLstId());
     assertEquals("201", response.getBswrList().get(0).getFncgBpmPcesIntcId());
     assertEquals("Unit work", response.getBswrList().get(0).getUworNm());
     assertEquals("BSWR", response.getBswrList().get(0).getBpmBswrClsfCode());
+    assertEquals("unit_line_1", response.getBswrList().get(0).getFncgBpmPcesId());
     assertEquals("line_1", response.getBswrList().get(0).getBswrDvsnVal());
   }
 
@@ -480,6 +481,7 @@ class WorkSearchServiceImplTest {
     request.setBpmBswrClsfCode("BSWR");
     request.setCustId("CUST");
     request.setLoanCntcNo("CONTACT");
+    request.setLoanPcesMgmtNo("CORR-101");
     request.setFncgSuptTrgtDvsnCode("TARGET");
     request.setLoanSubjDvsnCode("SUBJECT");
     request.setFncgMneyUsagClsfCode("USAGE");
