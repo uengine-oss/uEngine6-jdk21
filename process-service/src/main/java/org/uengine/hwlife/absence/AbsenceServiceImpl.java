@@ -51,13 +51,13 @@ public class AbsenceServiceImpl implements AbsenceService {
      *   <li>{@code LBM030001} — request body 없음</li>
      *   <li>{@code LBM030002} — header.emnb 없음</li>
      *   <li>{@code LBM030003} — agntEmnb 없음</li>
-     *   <li>{@code LBM030004} — abscStarDttm 없음</li>
-     *   <li>{@code LBM030005} — 부재자와 대결자가 동일</li>
-     *   <li>{@code LBM030006} — 종료일시가 시작일시보다 이전</li>
-     *   <li>{@code LBM030007} — 활성 부재 기간 중복</li>
-     *   <li>{@code LBM030008} — fncgBpmAbstSqno 비숫자</li>
-     *   <li>{@code LBM030009} — 부재 건 없음</li>
-     *   <li>{@code LBM030010} — 이미 해제된 부재</li>
+     *   <li>{@code LBM030004} — 부재자와 대결자가 동일</li>
+     *   <li>{@code LBM030005} — 종료일시가 시작일시보다 이전</li>
+     *   <li>{@code LBM030006} — 활성 부재 기간 중복</li>
+     *   <li>{@code LBM030007} — fncgBpmAbstSqno 비숫자</li>
+     *   <li>{@code LBM030008} — 부재 건 없음</li>
+     *   <li>{@code LBM030009} — 이미 해제된 부재</li>
+     *   <li>{@code LBM030010} — 본인 부재 건이 아님</li>
      * </ul>
      */
     @Override
@@ -85,25 +85,23 @@ public class AbsenceServiceImpl implements AbsenceService {
         if (agentUserId == null) {
             return result("LBM030003");
         }
-        if (request.getAbscStarDttm() == null) {
+        Date abscStarDttm = request.getAbscStarDttm() != null ? request.getAbscStarDttm() : new Date();
+        if (userId.equals(agentUserId)) {
             return result("LBM030004");
         }
-        if (userId.equals(agentUserId)) {
+        if (request.getAbscEndDttm() != null && request.getAbscEndDttm().before(abscStarDttm)) {
             return result("LBM030005");
-        }
-        if (request.getAbscEndDttm() != null && request.getAbscEndDttm().before(request.getAbscStarDttm())) {
-            return result("LBM030006");
         }
 
         AbsenceEntity entity = new AbsenceEntity();
         entity.setUserId(userId);
         entity.setAgentUserId(agentUserId);
         entity.setAgentGroupCd(trimToNull(request.getAgntFncgOrgnCode()));
-        entity.setAbscStarDttm(request.getAbscStarDttm());
+        entity.setAbscStarDttm(abscStarDttm);
         entity.setAbscEndDttm(request.getAbscEndDttm());
 
         if (hasOverlap(entity, null)) {
-            return result("LBM030007");
+            return result("LBM030006");
         }
         absenceRepository.save(entity);
         return result("LBM000000");
@@ -114,14 +112,22 @@ public class AbsenceServiceImpl implements AbsenceService {
         try {
             sqno = Long.valueOf(request.getFncgBpmAbstSqno().trim());
         } catch (NumberFormatException e) {
-            return result("LBM030008");
+            return result("LBM030007");
         }
         AbsenceEntity entity = absenceRepository.findById(sqno).orElse(null);
         if (entity == null) {
-            return result("LBM030009");
+            return result("LBM030008");
+        }
+        EsbCommonHeader header = EsbRequestBodyAdvice.currentHeader();
+        String userId = trimToNull(header != null ? header.getEmnb() : null);
+        if (userId == null) {
+            return result("LBM030002");
+        }
+        if (!userId.equals(entity.getUserId())) {
+            return result("LBM030010");
         }
         if (entity.getAbscRscsDttm() != null) {
-            return result("LBM030010");
+            return result("LBM030009");
         }
         entity.setAbscRscsDttm(new Date());
         absenceRepository.save(entity);
