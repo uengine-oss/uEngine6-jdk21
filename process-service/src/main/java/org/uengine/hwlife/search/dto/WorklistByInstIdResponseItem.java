@@ -3,6 +3,7 @@ package org.uengine.hwlife.search.dto;
 import java.util.Date;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import org.uengine.hwlife.esbclient.dto.EsbCodes;
 
 /**
  *  인스턴스 기준  업무 목록  응답
@@ -14,9 +15,9 @@ public class WorklistByInstIdResponseItem {
     private String hndrEmnb; // 처리자 사번 (roleName)
     private String hndrNm; // 처리자 명(endpoint)
     private String hndrOrgnCode; // 처리자 기관코드 
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyyMMddHHmmss")
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = EsbCodes.DTTM_SEC)
     private Date uworStarDttm; // 단위업무 시작일 (WORK-ITEM)
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyyMMddHHmmss")
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = EsbCodes.DTTM_SEC)
     private Date uworEndDttm; // 단위업무 종료일 
     private String fncgBpmUworSttsCntn; // 상태(WORK_ITEM)
     private String fncgBpmTaskLstId; // 태스크ID

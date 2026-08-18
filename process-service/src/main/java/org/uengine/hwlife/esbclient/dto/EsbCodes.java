@@ -20,6 +20,12 @@ public final class EsbCodes {
     /** ESB 일시 포맷 ({@code tlgrCretDttm}, {@code rqstDttm}, {@code tlgrRspnDttm} …) */
     public static final String DTTM = "yyyyMMddHHmmssSSS";
 
+    /** ESB 일시 포맷 — 초 */
+    public static final String DTTM_SEC = "yyyyMMddHHmmss";
+
+    /** ESB 일자 포맷 */
+    public static final String DATE = "yyyyMMdd";
+
     private EsbCodes() {
     }
 

@@ -2,18 +2,26 @@ package org.uengine.hwlife.absence.dto;
 
 import java.util.Date;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
+
+import org.uengine.hwlife.esbclient.dto.EsbCodes;
+
 /**
  * 부재 이력 항목 — {@link AbsenceHistoryResponse#getAbscList()} 요소.
  */
 public class AbsenceHistoryItem {
 
     private String fncgBpmAbstSqno;
-    private String abscEmnb;
+    private String abstEmnb;
     private String agntEmnb;
     private String agntFncgOrgnCode;
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = EsbCodes.DTTM_SEC)
     private Date abscStarDttm;
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = EsbCodes.DTTM_SEC)
     private Date abscEndDttm;
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = EsbCodes.DTTM_SEC)
     private Date abscRscsDttm;
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = EsbCodes.DTTM_SEC)
     private Date abscStupDttm;
 
     public String getFncgBpmAbstSqno() {
@@ -24,12 +32,12 @@ public class AbsenceHistoryItem {
         this.fncgBpmAbstSqno = fncgBpmAbstSqno;
     }
 
-    public String getAbscEmnb() {
-        return abscEmnb;
+    public String getAbstEmnb() {
+        return abstEmnb;
     }
 
-    public void setAbscEmnb(String abscEmnb) {
-        this.abscEmnb = abscEmnb;
+    public void setAbstEmnb(String abstEmnb) {
+        this.abstEmnb = abstEmnb;
     }
 
     public String getAgntEmnb() {

@@ -3,24 +3,25 @@ package org.uengine.hwlife.search.dto;
 import java.util.Date;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import org.uengine.hwlife.esbclient.dto.EsbCodes;
 /**
  * 조직 완료 건 검색 결과 항목 — {@link OrgCompletedResponse#getOrgnCpltlist()} 요소.
  */
 public class OrgCompletedItem {
 
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyyMMddHHmmssSSS")
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = EsbCodes.DTTM_SEC)
     private Date starDttm;
     private String loanCntcNo;
     private String fncgSuptTrgtDvsnCode;
     private String loanSubjDvsnCode;
     private String custId;
     private String fncgMneyUsagClsfCode;
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyyMMdd")
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = EsbCodes.DATE)
     private Date loanHopeDate;
     private String loanPcesMgmtNo;
     private String reptHndrEmnb;
     private String reptHndrFncgOrgnCode;
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyyMMddHHmmssSSS")
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = EsbCodes.DTTM_SEC)
     private Date endDttm;
     private String bpmBswrClsfCode;
     private String fncgBpmtaskLstId;

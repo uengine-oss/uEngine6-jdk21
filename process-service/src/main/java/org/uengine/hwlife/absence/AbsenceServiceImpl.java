@@ -13,7 +13,6 @@ import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 import org.uengine.hwlife.absence.dto.AbsenceHistoryItem;
@@ -23,6 +22,8 @@ import org.uengine.hwlife.absence.dto.AbsenceRequest;
 import org.uengine.hwlife.absence.dto.AbsenceResponse;
 import org.uengine.hwlife.absence.entity.AbsenceEntity;
 import org.uengine.hwlife.absence.repository.AbsenceRepository;
+import org.uengine.hwlife.esbclient.dto.EsbCommonHeader;
+import org.uengine.hwlife.esbclient.support.EsbRequestBodyAdvice;
 
 /**
  * 한화생명 융자차세대 - 부재자/대결자 설정 REST API 구현.
@@ -42,55 +43,104 @@ public class AbsenceServiceImpl implements AbsenceService {
         this.absenceRepository = absenceRepository;
     }
 
+    /**
+     * 부재 설정/해제.
+     *
+     * <p>처리결과 코드는 {@code prcsRsltCntn}({@code LBM03XXXX}). 정상은 {@code LBM000000}.
+     * <ul>
+     *   <li>{@code LBM030001} — request body 없음</li>
+     *   <li>{@code LBM030002} — header.emnb 없음</li>
+     *   <li>{@code LBM030003} — agntEmnb 없음</li>
+     *   <li>{@code LBM030004} — abscStarDttm 없음</li>
+     *   <li>{@code LBM030005} — 부재자와 대결자가 동일</li>
+     *   <li>{@code LBM030006} — 종료일시가 시작일시보다 이전</li>
+     *   <li>{@code LBM030007} — 활성 부재 기간 중복</li>
+     *   <li>{@code LBM030008} — fncgBpmAbstSqno 비숫자</li>
+     *   <li>{@code LBM030009} — 부재 건 없음</li>
+     *   <li>{@code LBM030010} — 이미 해제된 부재</li>
+     * </ul>
+     */
     @Override
     @RequestMapping(value = "/absences", method = RequestMethod.POST)
-    @ResponseStatus(HttpStatus.CREATED)
     @Transactional
     public AbsenceResponse executeAbsence(@RequestBody AbsenceRequest request) throws Exception {
         if (request == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Request body is required");
+            return result("LBM030001");
         }
 
         // fncgBpmAbstSqno 가 있으면 해제, 없으면 설정
         if (request.getFncgBpmAbstSqno() != null && !request.getFncgBpmAbstSqno().trim().isEmpty()) {
-            return toResponse(release(request));
+            return release(request);
         }
-        return toResponse(register(request));
+        return register(request);
     }
 
-    private AbsenceEntity register(AbsenceRequest request) {
+    private AbsenceResponse register(AbsenceRequest request) {
+        EsbCommonHeader header = EsbRequestBodyAdvice.currentHeader();
+        String userId = trimToNull(header != null ? header.getEmnb() : null);
+        String agentUserId = trimToNull(request.getAgntEmnb());
+        if (userId == null) {
+            return result("LBM030002");
+        }
+        if (agentUserId == null) {
+            return result("LBM030003");
+        }
+        if (request.getAbscStarDttm() == null) {
+            return result("LBM030004");
+        }
+        if (userId.equals(agentUserId)) {
+            return result("LBM030005");
+        }
+        if (request.getAbscEndDttm() != null && request.getAbscEndDttm().before(request.getAbscStarDttm())) {
+            return result("LBM030006");
+        }
+
         AbsenceEntity entity = new AbsenceEntity();
-        entity.setUserId(request.getAbscEmnb());
-        entity.setAgentUserId(request.getAgntEmnb());
-        entity.setAgentGroupCd(request.getAgntFncgOrgnCode());
+        entity.setUserId(userId);
+        entity.setAgentUserId(agentUserId);
+        entity.setAgentGroupCd(trimToNull(request.getAgntFncgOrgnCode()));
         entity.setAbscStarDttm(request.getAbscStarDttm());
         entity.setAbscEndDttm(request.getAbscEndDttm());
 
-        validate(entity);
-        ensureNoOverlap(entity, null);
-
-        return absenceRepository.save(entity);
+        if (hasOverlap(entity, null)) {
+            return result("LBM030007");
+        }
+        absenceRepository.save(entity);
+        return result("LBM000000");
     }
 
-    private AbsenceEntity release(AbsenceRequest request) {
-        Long sqno = parseSqno(request.getFncgBpmAbstSqno());
-        AbsenceEntity entity = mustGet(sqno);
+    private AbsenceResponse release(AbsenceRequest request) {
+        Long sqno;
+        try {
+            sqno = Long.valueOf(request.getFncgBpmAbstSqno().trim());
+        } catch (NumberFormatException e) {
+            return result("LBM030008");
+        }
+        AbsenceEntity entity = absenceRepository.findById(sqno).orElse(null);
+        if (entity == null) {
+            return result("LBM030009");
+        }
         if (entity.getAbscRscsDttm() != null) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT,
-                    "Already released absence: " + request.getFncgBpmAbstSqno());
+            return result("LBM030010");
         }
         entity.setAbscRscsDttm(new Date());
-        return absenceRepository.save(entity);
+        absenceRepository.save(entity);
+        return result("LBM000000");
     }
 
     @Override
     @RequestMapping(value = "/absences/history", method = RequestMethod.POST)
     @Transactional(readOnly = true)
     public AbsenceHistoryResponse searchAbsenceHistory(@RequestBody AbsenceHistoryRequest request) throws Exception {
+        EsbCommonHeader header = EsbRequestBodyAdvice.currentHeader();
         if (request == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Request body is required");
         }
-        String userId = require(request.getAbscEmnb(), "abscEmnb");
+        String userId = trimToNull(header != null ? header.getEmnb() : null);
+        if (userId == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "header.emnb is required");
+        }
+       
         Long nextKey = parseNextKey(request.getNextKey());
         int pageSize = normalizePageSize(request.getPageSize());
 
@@ -113,7 +163,7 @@ public class AbsenceServiceImpl implements AbsenceService {
         if (entity.getAbseId() != null) {
             item.setFncgBpmAbstSqno(String.valueOf(entity.getAbseId()));
         }
-        item.setAbscEmnb(entity.getUserId());
+        item.setAbstEmnb(entity.getUserId());
         item.setAgntEmnb(entity.getAgentUserId());
         item.setAgntFncgOrgnCode(entity.getAgentGroupCd());
         item.setAbscStarDttm(entity.getAbscStarDttm());
@@ -123,55 +173,18 @@ public class AbsenceServiceImpl implements AbsenceService {
         return item;
     }
 
-    private AbsenceResponse toResponse(AbsenceEntity entity) {
+    private AbsenceResponse result(String prcsRsltCntn) {
         AbsenceResponse response = new AbsenceResponse();
-        if (entity.getAbseId() != null) {
-            response.setFncgBpmAbstSqno(String.valueOf(entity.getAbseId()));
-        }
-        response.setAbscEmnb(entity.getUserId());
-        response.setAgntEmnb(entity.getAgentUserId());
-        response.setAgntFncgOrgnCode(entity.getAgentGroupCd());
-        response.setAbscStarDttm(entity.getAbscStarDttm());
-        response.setAbscEndDttm(entity.getAbscEndDttm());
+        response.setPrcsRsltCntn(prcsRsltCntn);
         return response;
     }
 
-    private AbsenceEntity mustGet(Long abseId) {
-        return absenceRepository.findById(abseId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
-                        "Absence not found: " + abseId));
-    }
-
-    private void validate(AbsenceEntity e) {
-        require(e.getUserId(), "abscEmnb");
-        require(e.getAgentUserId(), "agntEmnb");
-        if (e.getAbscStarDttm() == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "abscStarDttm is required");
+    private String trimToNull(String value) {
+        if (value == null) {
+            return null;
         }
-        if (e.getUserId().equals(e.getAgentUserId())) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "abscEmnb and agntEmnb must be different");
-        }
-        if (e.getAbscEndDttm() != null && e.getAbscEndDttm().before(e.getAbscStarDttm())) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "abscEndDttm must be after abscStarDttm");
-        }
-    }
-
-    private String require(String v, String field) {
-        if (v == null || v.trim().isEmpty()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, field + " is required");
-        }
-        return v.trim();
-    }
-
-    private Long parseSqno(String sqno) {
-        try {
-            return Long.valueOf(sqno.trim());
-        } catch (NumberFormatException e) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "fncgBpmAbstSqno must be numeric: " + sqno);
-        }
+        String trimmed = value.trim();
+        return trimmed.isEmpty() ? null : trimmed;
     }
 
     private Long parseNextKey(String nextKey) {
@@ -198,17 +211,13 @@ public class AbsenceServiceImpl implements AbsenceService {
     }
 
 
-    private void ensureNoOverlap(AbsenceEntity target, Long excludeAbseId) {
+    private boolean hasOverlap(AbsenceEntity target, Long excludeAbseId) {
         long excludedId = excludeAbseId == null ? -1L : excludeAbseId;
         List<AbsenceEntity> overlapping = target.getAbscEndDttm() == null
                 ? absenceRepository.findOverlappingActiveWithoutEnd(
                         target.getUserId(), target.getAbscStarDttm(), excludedId)
                 : absenceRepository.findOverlappingActiveWithEnd(
                         target.getUserId(), target.getAbscStarDttm(), target.getAbscEndDttm(), excludedId);
-        if (!overlapping.isEmpty()) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT,
-                    "Overlapping active absence already exists for userId=" + target.getUserId()
-                            + " (conflict id=" + overlapping.get(0).getAbseId() + ")");
-        }
+        return !overlapping.isEmpty();
     }
 }

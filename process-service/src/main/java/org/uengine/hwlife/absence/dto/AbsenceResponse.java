@@ -1,64 +1,21 @@
 package org.uengine.hwlife.absence.dto;
 
-import java.util.Date;
-
 /**
  * 부재 설정/해제 응답 — POST /absences.
+ *
+ * <p>{@link #prcsRsltCntn} 에 처리결과 코드({@code LBM000000} / {@code LBM03XXXX})를 담는다.</p>
  */
 public class AbsenceResponse {
 
-    private String fncgBpmAbstSqno;
-    private String abscEmnb;
-    private String agntEmnb;
-    private String agntFncgOrgnCode;
-    private Date abscStarDttm;
-    private Date abscEndDttm;
+    /** 처리결과 코드 */
+    private String prcsRsltCntn;
 
-    public String getFncgBpmAbstSqno() {
-        return fncgBpmAbstSqno;
+    public String getPrcsRsltCntn() {
+        return prcsRsltCntn;
     }
 
-    public void setFncgBpmAbstSqno(String fncgBpmAbstSqno) {
-        this.fncgBpmAbstSqno = fncgBpmAbstSqno;
+    public void setPrcsRsltCntn(String prcsRsltCntn) {
+        this.prcsRsltCntn = prcsRsltCntn;
     }
 
-    public String getAbscEmnb() {
-        return abscEmnb;
-    }
-
-    public void setAbscEmnb(String abscEmnb) {
-        this.abscEmnb = abscEmnb;
-    }
-
-    public String getAgntEmnb() {
-        return agntEmnb;
-    }
-
-    public void setAgntEmnb(String agntEmnb) {
-        this.agntEmnb = agntEmnb;
-    }
-
-    public String getAgntFncgOrgnCode() {
-        return agntFncgOrgnCode;
-    }
-
-    public void setAgntFncgOrgnCode(String agntFncgOrgnCode) {
-        this.agntFncgOrgnCode = agntFncgOrgnCode;
-    }
-
-    public Date getAbscStarDttm() {
-        return abscStarDttm;
-    }
-
-    public void setAbscStarDttm(Date abscStarDttm) {
-        this.abscStarDttm = abscStarDttm;
-    }
-
-    public Date getAbscEndDttm() {
-        return abscEndDttm;
-    }
-
-    public void setAbscEndDttm(Date abscEndDttm) {
-        this.abscEndDttm = abscEndDttm;
-    }
 }

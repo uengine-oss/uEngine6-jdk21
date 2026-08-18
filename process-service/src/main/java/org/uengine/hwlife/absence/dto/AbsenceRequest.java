@@ -2,16 +2,23 @@ package org.uengine.hwlife.absence.dto;
 
 import java.util.Date;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
+
+import org.uengine.hwlife.esbclient.dto.EsbCodes;
+
 /**
  * 부재 설정/해제 요청 — POST /absences JSON body.
+ *
+ * <p>부재자 사번은 body 가 아니라 ESB {@code header.emnb} 를 사용한다.</p>
  */
 public class AbsenceRequest {
 
     private String fncgBpmAbstSqno;
-    private String abscEmnb;
     private String agntEmnb;
     private String agntFncgOrgnCode;
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = EsbCodes.DTTM_SEC)
     private Date abscStarDttm;
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = EsbCodes.DTTM_SEC)
     private Date abscEndDttm;
 
     public String getFncgBpmAbstSqno() {
@@ -20,14 +27,6 @@ public class AbsenceRequest {
 
     public void setFncgBpmAbstSqno(String fncgBpmAbstSqno) {
         this.fncgBpmAbstSqno = fncgBpmAbstSqno;
-    }
-
-    public String getAbscEmnb() {
-        return abscEmnb;
-    }
-
-    public void setAbscEmnb(String abscEmnb) {
-        this.abscEmnb = abscEmnb;
     }
 
     public String getAgntEmnb() {

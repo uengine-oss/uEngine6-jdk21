@@ -3,6 +3,7 @@ package org.uengine.hwlife.search.dto;
 import java.util.Date;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import org.uengine.hwlife.esbclient.dto.EsbCodes;
 
 /**
  * 나의 할일 검색 결과 항목.
@@ -14,11 +15,11 @@ public class MyTodoItem {
     private String fncgSuptTrgtDvsnCode;
     private String loanSubjDvsnCode;
     private String fncgMneyUsagClsfCode;
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyyMMdd")
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = EsbCodes.DATE)
     private Date loanHopeDate;
     private String loanPcesMgmtNo;
     private String fncgBpmTaskTrcgNm;
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyyMMddHHmmss")
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = EsbCodes.DTTM_SEC)
     private Date uworStarDttm;
     private String uworNm;
     private String reptHndrEmnb;
@@ -26,7 +27,7 @@ public class MyTodoItem {
     private String prcdHndrEmnb;
     private String prcdHndrFncgOrgnCode;
     private String fncgBpmUworSttsCntn;
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyyMMddHHmmss")
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = EsbCodes.DTTM_SEC)
     private Date starDttm;
     private String befoHndrEmnb;
     private String befoFncgOrgnCode;
