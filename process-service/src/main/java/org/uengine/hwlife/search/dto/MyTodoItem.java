@@ -19,7 +19,7 @@ public class MyTodoItem {
     private Date loanHopeDate;
     private String loanPcesMgmtNo;
     private String fncgBpmTaskTrcgNm;
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = EsbCodes.DTTM_SEC)
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = EsbCodes.DTTM_SEC, timezone = "Asia/Seoul")
     private Date uworStarDttm;
     private String uworNm;
     private String reptHndrEmnb;
@@ -27,7 +27,7 @@ public class MyTodoItem {
     private String prcdHndrEmnb;
     private String prcdHndrFncgOrgnCode;
     private String fncgBpmUworSttsCntn;
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = EsbCodes.DTTM_SEC)
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = EsbCodes.DTTM_SEC, timezone = "Asia/Seoul")
     private Date starDttm;
     private String befoHndrEmnb;
     private String befoFncgOrgnCode;

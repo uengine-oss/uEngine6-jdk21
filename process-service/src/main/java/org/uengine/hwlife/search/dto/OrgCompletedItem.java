@@ -9,7 +9,7 @@ import org.uengine.hwlife.esbclient.dto.EsbCodes;
  */
 public class OrgCompletedItem {
 
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = EsbCodes.DTTM_SEC)
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = EsbCodes.DTTM_SEC, timezone = "Asia/Seoul")
     private Date starDttm;
     private String loanCntcNo;
     private String fncgSuptTrgtDvsnCode;
@@ -21,7 +21,7 @@ public class OrgCompletedItem {
     private String loanPcesMgmtNo;
     private String reptHndrEmnb;
     private String reptHndrFncgOrgnCode;
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = EsbCodes.DTTM_SEC)
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = EsbCodes.DTTM_SEC, timezone = "Asia/Seoul")
     private Date endDttm;
     private String bpmBswrClsfCode;
     private String fncgBpmtaskLstId;

@@ -16,9 +16,9 @@ public class AbsenceRequest {
     private String fncgBpmAbstSqno;
     private String agntEmnb;
     private String agntFncgOrgnCode;
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = EsbCodes.DTTM_SEC)
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = EsbCodes.DTTM_SEC, timezone = "Asia/Seoul")
     private Date abscStarDttm;
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = EsbCodes.DTTM_SEC)
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = EsbCodes.DTTM_SEC, timezone = "Asia/Seoul")
     private Date abscEndDttm;
 
     public String getFncgBpmAbstSqno() {
