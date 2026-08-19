@@ -118,7 +118,7 @@
         "secret": "66LpF19OpkpgKKpWHdgiCEKisx5AXqLA",
         "redirectUris": [
           "http://localhost:5373/*",
-          "http://localhost:8288/*"
+          "http://localhost:8088/*" 
         ],
         "webOrigins": ["+"],
         "notBefore": 0,

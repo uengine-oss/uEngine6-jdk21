@@ -18,7 +18,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
+import org.springframework.context.ApplicationListener;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.Ordered;
@@ -81,62 +83,70 @@ public class PollingMessagingConfig {
      */
     @Bean
     public InboxQuartzRegistrar inboxQuartzRegistrar(StdSchedulerFactory schedulerFactory) throws SchedulerException {
-        Scheduler sched = schedulerFactory.getScheduler();
-
-        scheduleInboxPoll(sched);
-        scheduleTtlCleanup(sched);
-
-        if (!sched.isStarted()) {
-            sched.start();
-        }
-        log.info("[inbox-quartz] registered: poll(every {}ms) + ttl(cron {})", intervalMs, ttlCron);
-        return new InboxQuartzRegistrar(sched);
-    }
-
-    private void scheduleInboxPoll(Scheduler sched) throws SchedulerException {
-        JobDetail job = JobBuilder.newJob(InboxPollJob.class)
-                .withIdentity(POLL_JOB_KEY)
-                .storeDurably(false)
-                .build();
-
-        Trigger trigger = TriggerBuilder.newTrigger()
-                .forJob(POLL_JOB_KEY)
-                .withIdentity("inbox-poll-trigger", JOB_GROUP)
-                .startNow()
-                .withSchedule(SimpleScheduleBuilder.simpleSchedule()
-                        .withIntervalInMilliseconds(intervalMs)
-                        .repeatForever()
-                        .withMisfireHandlingInstructionNextWithRemainingCount())
-                .build();
-
-        // 동일 키 잡이 남아있을 수 있어 재등록 시 안전하게 교체
-        sched.scheduleJob(job, Set.of(trigger), true);
-    }
-
-    private void scheduleTtlCleanup(Scheduler sched) throws SchedulerException {
-        JobDetail job = JobBuilder.newJob(InboxTtlCleanupQuartzJob.class)
-                .withIdentity(TTL_JOB_KEY)
-                .storeDurably(false)
-                .build();
-
-        Trigger trigger = TriggerBuilder.newTrigger()
-                .forJob(TTL_JOB_KEY)
-                .withIdentity("inbox-ttl-trigger", JOB_GROUP)
-                .withSchedule(CronScheduleBuilder.cronSchedule(ttlCron))
-                .build();
-
-        sched.scheduleJob(job, Set.of(trigger), true);
+        return new InboxQuartzRegistrar(schedulerFactory.getScheduler(), intervalMs, ttlCron);
     }
 
     /**
      * Bean 컨테이너 종료 시 등록한 잡을 제거. Scheduler 자체는 다른 사용자(TimerEvent) 가
      * 있을 수 있으므로 shutdown 하지 않음.
      */
-    public static class InboxQuartzRegistrar {
+    public static class InboxQuartzRegistrar implements ApplicationListener<ApplicationReadyEvent> {
         private final Scheduler scheduler;
+        private final long intervalMs;
+        private final String ttlCron;
 
-        public InboxQuartzRegistrar(Scheduler scheduler) {
+        public InboxQuartzRegistrar(Scheduler scheduler, long intervalMs, String ttlCron) {
             this.scheduler = scheduler;
+            this.intervalMs = intervalMs;
+            this.ttlCron = ttlCron;
+        }
+
+        @Override
+        public void onApplicationEvent(ApplicationReadyEvent event) {
+            try {
+                scheduleInboxPoll();
+                scheduleTtlCleanup();
+                if (!scheduler.isStarted()) {
+                    scheduler.start();
+                }
+                log.info("[inbox-quartz] registered: poll(every {}ms) + ttl(cron {})", intervalMs, ttlCron);
+            } catch (SchedulerException e) {
+                throw new IllegalStateException("Failed to register inbox Quartz jobs", e);
+            }
+        }
+
+        private void scheduleInboxPoll() throws SchedulerException {
+            JobDetail job = JobBuilder.newJob(InboxPollJob.class)
+                    .withIdentity(POLL_JOB_KEY)
+                    .storeDurably(false)
+                    .build();
+
+            Trigger trigger = TriggerBuilder.newTrigger()
+                    .forJob(POLL_JOB_KEY)
+                    .withIdentity("inbox-poll-trigger", JOB_GROUP)
+                    .startNow()
+                    .withSchedule(SimpleScheduleBuilder.simpleSchedule()
+                            .withIntervalInMilliseconds(intervalMs)
+                            .repeatForever()
+                            .withMisfireHandlingInstructionNextWithRemainingCount())
+                    .build();
+
+            scheduler.scheduleJob(job, Set.of(trigger), true);
+        }
+
+        private void scheduleTtlCleanup() throws SchedulerException {
+            JobDetail job = JobBuilder.newJob(InboxTtlCleanupQuartzJob.class)
+                    .withIdentity(TTL_JOB_KEY)
+                    .storeDurably(false)
+                    .build();
+
+            Trigger trigger = TriggerBuilder.newTrigger()
+                    .forJob(TTL_JOB_KEY)
+                    .withIdentity("inbox-ttl-trigger", JOB_GROUP)
+                    .withSchedule(CronScheduleBuilder.cronSchedule(ttlCron))
+                    .build();
+
+            scheduler.scheduleJob(job, Set.of(trigger), true);
         }
 
         public void close() {

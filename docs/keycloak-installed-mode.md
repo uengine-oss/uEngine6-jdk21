@@ -66,6 +66,7 @@ Optional route overrides:
 export FRONTEND_URI=http://localhost:5173
 export PROCESS_SERVICE_URI=http://localhost:9094
 export DEFINITION_SERVICE_URI=http://localhost:9093
+export ANALYTICS_SERVICE_URI=http://localhost:9095
 export EXECUTION_SERVICE_URI=http://localhost:8000
 ```
 

@@ -20,6 +20,8 @@ import org.uengine.five.overriding.EventMappingDeployFilter;
 import org.uengine.hwlife.iam.ExternalIAMService;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
+import org.springframework.core.Ordered;
+import org.springframework.core.annotation.Order;
 import org.uengine.five.service.IAMCompanyRoleMapping;
 import org.uengine.five.service.IAMServiceFactory;
 import org.uengine.five.service.KeycloakIAMService;
@@ -63,6 +65,7 @@ public class ProcessServiceApplication {
 
     /** WAR 배포 시 main() 미호출 → 기동 완료 후 한 번만 보완 등록 */
     @EventListener(ApplicationReadyEvent.class)
+    @Order(Ordered.HIGHEST_PRECEDENCE)
     void onApplicationReady(ApplicationReadyEvent event) {
         if (applicationContext == null) {
             bootstrapAfterContextReady(event.getApplicationContext());

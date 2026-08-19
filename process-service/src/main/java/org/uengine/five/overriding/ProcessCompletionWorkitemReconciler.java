@@ -26,7 +26,8 @@ public class ProcessCompletionWorkitemReconciler {
     @Autowired(required = false)
     WorkItemNotificationService workItemNotificationService;
 
-    public ProcessCompletionWorkitemReconciler(WorklistRepository worklistRepository) {
+    public ProcessCompletionWorkitemReconciler(WorklistRepository worklistRepository,
+            WorkItemAssignmentStateService assignmentStateService) {
         this.worklistRepository = worklistRepository;
         this.assignmentStateService = assignmentStateService;
     }

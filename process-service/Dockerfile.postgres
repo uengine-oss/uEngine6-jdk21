@@ -1,0 +1,33 @@
+# syntax=docker/dockerfile:1.7
+FROM maven:3.9.9-eclipse-temurin-21 AS build
+
+WORKDIR /workspace
+COPY . .
+RUN --mount=type=cache,target=/root/.m2 \
+    mvn -B -pl process-service -am -Dmaven.test.skip=true package \
+    && cp process-service/target/process-service-*.jar /workspace/process.jar
+
+FROM eclipse-temurin:21-jre-jammy
+
+WORKDIR /app
+RUN mkdir -p /app/archive /app/definitions /app/instances /app/payloads /app/test
+COPY --from=build /workspace/process.jar /app/process.jar
+
+EXPOSE 9094
+
+ENV JAVA_OPTS="-Xms256m -Xmx768m --add-opens=java.base/java.util=ALL-UNNAMED --add-opens=java.base/java.lang.reflect=ALL-UNNAMED --add-opens=java.base/java.text=ALL-UNNAMED --add-opens=java.desktop/java.awt.font=ALL-UNNAMED -Dfile.encoding=UTF-8" \
+    SPRING_PROFILES_ACTIVE="postgres" \
+    PROCESS_SERVICE_PORT="9094" \
+    POSTGRES_HOST="postgres" \
+    POSTGRES_PORT="5432" \
+    POSTGRES_DB="uengine" \
+    POSTGRES_USER="uengine" \
+    POSTGRES_PASSWORD="uengine" \
+    UENGINE_DB_SCHEMA="public" \
+    UENGINE_DEFINITION_BASEPATH="/app" \
+    UENGINE_MESSAGING_MODE="polling"
+
+HEALTHCHECK --interval=10s --timeout=5s --start-period=90s --retries=12 \
+    CMD bash -c 'exec 3<>/dev/tcp/127.0.0.1/9094'
+
+ENTRYPOINT ["sh", "-c", "exec java $JAVA_OPTS -jar /app/process.jar"]

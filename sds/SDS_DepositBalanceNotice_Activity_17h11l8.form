@@ -1,0 +1,4 @@
+<form>
+  <label>DM 수령 및 확인</label>
+  <select-field name="예금잔액 이상" alias="예금잔액 이상" items='[{&quot;Y&quot;:&quot;Y&quot;},{&quot;N&quot;:&quot;N&quot;}]' v-model="formValues['예금잔액 이상']"></select-field>
+</form>

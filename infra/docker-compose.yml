@@ -10,6 +10,29 @@ x-logging: &default-logging
 
 # latest 는 KRaft 전용 엔트리로 바뀌어 KAFKA_PROCESS_ROLES 를 요구할 수 있음 → ZK 모드와 맞는 버전 고정
 services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: uengine-postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-uengine}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-uengine}
+      POSTGRES_DB: ${POSTGRES_DB:-uengine}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - uengine-postgres-data:/var/lib/postgresql/data
+      - ./postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-uengine} -d ${POSTGRES_DB:-uengine}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+    networks:
+      - app-network
+      - default
+    logging: *default-logging
+
   zookeeper:
     image: confluentinc/cp-zookeeper:7.6.1
     environment:
@@ -43,40 +66,95 @@ services:
   process-service:
     image: process-service:v0.0.1
     pull_policy: never
+    build:
+      context: ../process-service
+      dockerfile: Dockerfile
     depends_on:
-      - kafka
+      postgres:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      kafka:
+        condition: service_started
+    environment:
+      JAVA_OPTS: "-Xmx400M -Djava.security.egd=file:/dev/./urandom -Dserver.port=9094 -Dfile.encoding=UTF-8 -Dstdout.encoding=UTF-8 -Dstderr.encoding=UTF-8"
+      SPRING_PROFILES_ACTIVE: postgres
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-uengine}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-uengine}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-uengine}
+      SPRING_DATASOURCE_DRIVER_CLASS_NAME: org.postgresql.Driver
+      SPRING_JPA_DATABASE_PLATFORM: org.hibernate.dialect.PostgreSQLDialect
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      UENGINE_DB_SCHEMA: public
+      UENGINE_DEFINITION_BASEPATH: /app
+      UENGINE_MESSAGING_MODE: polling
+      KEYCLOAK_URI: http://keycloak:8080
+      KEYCLOAK_ADMIN_REALM: master
+      KEYCLOAK_ADMIN_CLIENT_ID: admin-cli
+      KEYCLOAK_ADMIN_USERNAME: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      SPRING_CLOUD_STREAM_KAFKA_BINDER_BROKERS: kafka:29092
+    ports:
+      - "9094:9094"
     volumes:
       - ../archive:/app/archive
       - ../definitions:/app/definitions
       - ../instances:/app/instances
       - ../payloads:/app/payloads
       - ../test:/app/test
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c 'exec 3<>/dev/tcp/127.0.0.1/9094'"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 90s
+    restart: on-failure
     networks:
-    - app-network
+      - app-network
     logging: *default-logging
 
   definition-service:
     image: definition-service:v0.0.1
     pull_policy: never
+    build:
+      context: ../definition-service
+      dockerfile: Dockerfile
     depends_on:
-      - kafka
+      postgres:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      kafka:
+        condition: service_started
+    environment:
+      JAVA_OPTS: "-Xmx400M -Djava.security.egd=file:/dev/./urandom -Dserver.port=9093 -Dfile.encoding=UTF-8"
+      SPRING_PROFILES_ACTIVE: postgres
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-uengine}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-uengine}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-uengine}
+      SPRING_DATASOURCE_DRIVER_CLASS_NAME: org.postgresql.Driver
+      SPRING_JPA_DATABASE_PLATFORM: org.hibernate.dialect.PostgreSQLDialect
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      UENGINE_DEFINITION_BASEPATH: /app
+      UENGINE_MESSAGING_MODE: polling
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      SPRING_CLOUD_STREAM_KAFKA_BINDER_BROKERS: kafka:29092
+    ports:
+      - "9093:9093"
     volumes:
       - ../archive:/app/archive
       - ../definitions:/app/definitions
       - ../instances:/app/instances
       - ../payloads:/app/payloads
       - ../test:/app/test
-    networks:
-    - app-network
-    logging: *default-logging
-
-  frontend:
-    image: frontend:0.0.7
-    pull_policy: never
-    environment:
-      - VITE_KEYCLOAK_URL=http://keycloak:8080
-      - VITE_KEYCLOAK_REALM=uengine
-      - VITE_KEYCLOAK_CLIENT_ID=uengine
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c 'exec 3<>/dev/tcp/127.0.0.1/9093'"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 90s
+    restart: on-failure
     networks:
       - app-network
     logging: *default-logging
@@ -90,6 +168,7 @@ services:
       KEYCLOAK_ADMIN_PASSWORD: admin
       KEYCLOAK_LOGLEVEL: debug
       KC_METRICS_ENABLED: "true"
+      KC_HEALTH_ENABLED: "true"
       KC_HTTP_ENABLED: "true"
       KC_PROXY: edge
       KC_SPI_THEME_DEFAULT: keycloak
@@ -98,36 +177,44 @@ services:
     volumes:
       - ./keycloak/realm-export.json:/opt/keycloak/data/import/realm-export.json
     command: ["start-dev", "--import-realm"]
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c 'exec 3<>/dev/tcp/127.0.0.1/8080'"]
+      interval: 10s
+      timeout: 5s
+      retries: 18
+      start_period: 120s
+    restart: unless-stopped
     networks:
       - app-network
     logging: *default-logging
 
-  gateway:
-    image: keycloak-gateway:0.0.5
-    pull_policy: never
-    ports:
-      - 8088:8080
-    depends_on:
-      - process-service
-      - definition-service
-      - frontend
-      - keycloak
-    environment:
-      - KEYCLOAK_URI=http://keycloak:8080
-      - KEYCLOAK_REALM=uengine
-      - KEYCLOAK_CLIENT_ID=uengine
-      - KEYCLOAK_CLIENT_SECRET=66LpF19OpkpgKKpWHdgiCEKisx5AXqLA
-      - GATEWAY_URI=http://localhost:8088
-      - SPRING_PROFILES_ACTIVE=docker
-    restart: on-failure
-    healthcheck:
-      interval: 5s
-      retries: 3
-    networks:
-      - app-network
-    logging: *default-logging
+  # gateway:
+  #   image: keycloak-gateway:0.0.5
+  #   pull_policy: never
+  #   ports:
+  #     - 8088:8080
+  #   depends_on:
+  #     - process-service
+  #     - definition-service
+  #     - frontend
+  #     - keycloak
+  #   environment:
+  #     - KEYCLOAK_URI=http://keycloak:8080
+  #     - KEYCLOAK_REALM=uengine
+  #     - KEYCLOAK_CLIENT_ID=uengine
+  #     - KEYCLOAK_CLIENT_SECRET=66LpF19OpkpgKKpWHdgiCEKisx5AXqLA
+  #     - GATEWAY_URI=http://localhost:8088
+  #     - SPRING_PROFILES_ACTIVE=docker
+  #   restart: on-failure
+  #   healthcheck:
+  #     interval: 5s
+  #     retries: 3
+  #   networks:
+  #     - app-network
+  #   logging: *default-logging
 
 volumes:
+  uengine-postgres-data:
   archive:
   definitions:
   instances:
@@ -137,4 +224,3 @@ volumes:
 networks:
   app-network:
     driver: bridge
-

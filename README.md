@@ -9,6 +9,8 @@
 ## 기능 문서
 
 - [docs/sql-task.md](docs/sql-task.md) — SQLTask: 데이터베이스에 직접 접근하는 BPMN Task (SQL 직접 작성 / DB 매핑 두 가지 설정 방식).
+- [docs/rpa-guide.md](docs/rpa-guide.md) — RPA Activity 사용법과 server/client 에이전트 빌드·Docker/Kubernetes 배포·운영 매뉴얼.
+- [analytics/README.md](analytics/README.md) — 독립 Analytics 하위 프로젝트의 PostgreSQL ETL·대시보드 API·Docker 실행 방법.
 
 ## Deploy Example Process Definitions
 
@@ -105,5 +107,3 @@ Docker에 올릴 때는 큰 변경사항이 생기거나 동작을 불가능하�
     ```
 
 ![alt text](mdmanual/docker.png)
-
-

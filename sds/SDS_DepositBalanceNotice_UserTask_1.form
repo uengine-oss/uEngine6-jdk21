@@ -1,0 +1,4 @@
+<form>
+  <label>예금잔액 통보 대상 게시</label>
+  <select-field name="본부 일괄발송 예금계좌" alias="본부 일괄발송 예금계좌" items='[{&quot;Y&quot;:&quot;Y&quot;},{&quot;N&quot;:&quot;N&quot;}]' v-model="formValues['본부 일괄발송 예금계좌']"></select-field>
+</form>

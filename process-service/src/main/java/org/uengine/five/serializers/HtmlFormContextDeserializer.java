@@ -24,8 +24,11 @@ public class HtmlFormContextDeserializer extends JsonDeserializer<HtmlFormContex
 
         HtmlFormContext formContext = new HtmlFormContext();
 
-        String formDefId = rootNode.get("formDefId").asText();
-        String filePath = rootNode.get("filePath").asText();
+        // formDefId/filePath 는 프론트가 생략할 수 있으므로 NPE 방지 (없으면 null 유지)
+        JsonNode formDefIdNode = rootNode.get("formDefId");
+        JsonNode filePathNode = rootNode.get("filePath");
+        String formDefId = formDefIdNode != null && !formDefIdNode.isNull() ? formDefIdNode.asText() : null;
+        String filePath = filePathNode != null && !filePathNode.isNull() ? filePathNode.asText() : null;
         JsonNode valueMapNode = rootNode.get("valueMap");
 
         HashMap<String, Serializable> valueMap = new HashMap<>();

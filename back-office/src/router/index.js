@@ -36,6 +36,7 @@ import ModelerRouter from '@/components/designer/ModelerRouter'
 import ProcessDesigner from '@/components/designer/process/ProcessDesigner'
 import ClassModeler from '@/components/designer/class-modeling/ClassModeler'
 import PracticeDesigner from '@/components/designer/essence/PracticeDesigner'
+import AnalyticsDashboard from '@/components/analytics/AnalyticsDashboard'
 
 Vue.component('modeler-router', ModelerRouter);
 Vue.component('process-designer', ProcessDesigner);
@@ -329,6 +330,15 @@ export default new Router({
           props: {
             backend: backend,
           },
+        },
+        {
+          path: 'analytics',
+          name: 'Analytics',
+          component: AnalyticsDashboard,
+          beforeEnter: RouterGuard.requireUser,
+          meta: {
+            breadcrumb: 'Analytics'
+          }
         },
         {
           path: 'instance',

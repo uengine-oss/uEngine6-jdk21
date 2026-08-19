@@ -49,7 +49,8 @@
                     {title: 'Workspace', icon: 'supervisor_account', routerPath: '/workspace'},
                     {title: 'Designer', icon: 'crop', routerPath: '/designer'},
                     {title: 'Service', icon: 'cloud_queue', routerPath: '/services'},
-                    {title: 'Instances', icon: 'list', routerPath: '/instance'}
+                    {title: 'Instances', icon: 'list', routerPath: '/instance'},
+                    {title: 'Analytics', icon: 'assessment', routerPath: '/analytics'}
                 ],
                 mini: false,
             }

@@ -1,18 +1,3 @@
-/*
- * [비활성화됨] 이 파일은 컴파일되지 않는 상태로 저장소에 남아 있었다.
- *
- *   - org.uengine.five.events.RPAParams          : 저장소 어디에도 존재하지 않음
- *   - org.uengine.five.Streams#outboundPython()  : 존재하지 않음
- *
- * 그동안은 target/classes 에 남아 있던 옛 .class 를 maven 증분 컴파일이 재사용해
- * 드러나지 않았을 뿐이다. 커널 인터페이스 변경으로 모듈 전체 재컴파일이 트리거되면서
- * 표면화되어, 빌드를 살리기 위해 본문을 주석 처리한다.
- *
- * 되살리려면 위 두 심볼을 복구한 뒤 아래 주석을 해제하면 된다.
- * 참조하는 코드는 저장소에 없다 (확인 완료).
- */
-
-/*
 package org.uengine.five.rpa;
 
 import java.io.Serializable;
@@ -59,6 +44,22 @@ public class RPAActivity extends DefaultActivity {
 
     /** Job 실행 제한 시간(초). 초과 시 실패 처리. */
     int timeoutSeconds = 600;
+
+    /** visual: 카드 편집 원본 사용, script: 자유 작성 Robot 스크립트 사용. */
+    String rpaAuthoringMode = "script";
+
+    /** 시각 편집 JSON 계약 버전. */
+    int rpaSchemaVersion = 1;
+
+    /** 시각 편집기의 순서형 작업 데이터. 실행 시에는 생성된 robotScript 를 사용한다. */
+    Map<String, Object>[] rpaSteps;
+
+    /**
+     * true 면 태스크 도달 즉시 Job 을 큐잉(QUEUED)해 에이전트가 바로 실행.
+     * false(기본)면 WAITING 상태로 생성되어 담당자가 인스턴스 화면의
+     * [RPA 실행] 버튼을 누를 때(POST /rpa/jobs/{id}/trigger) 큐잉된다.
+     */
+    boolean autoStart = false;
 
     /**
      * 변수 매핑. direction=in : 프로세스 변수(variable) 값을 argument 이름의 robot
@@ -197,6 +198,38 @@ public class RPAActivity extends DefaultActivity {
         this.timeoutSeconds = timeoutSeconds;
     }
 
+    public String getRpaAuthoringMode() {
+        return rpaAuthoringMode;
+    }
+
+    public void setRpaAuthoringMode(String rpaAuthoringMode) {
+        this.rpaAuthoringMode = rpaAuthoringMode;
+    }
+
+    public int getRpaSchemaVersion() {
+        return rpaSchemaVersion;
+    }
+
+    public void setRpaSchemaVersion(int rpaSchemaVersion) {
+        this.rpaSchemaVersion = rpaSchemaVersion;
+    }
+
+    public Map<String, Object>[] getRpaSteps() {
+        return rpaSteps;
+    }
+
+    public void setRpaSteps(Map<String, Object>[] rpaSteps) {
+        this.rpaSteps = rpaSteps;
+    }
+
+    public boolean isAutoStart() {
+        return autoStart;
+    }
+
+    public void setAutoStart(boolean autoStart) {
+        this.autoStart = autoStart;
+    }
+
     public ParameterContext[] getParameters() {
         return parameters;
     }
@@ -205,5 +238,3 @@ public class RPAActivity extends DefaultActivity {
         this.parameters = parameters;
     }
 }
-
-*/

@@ -21,6 +21,7 @@ export KEYCLOAK_CLIENT_ID=uengine
 export KEYCLOAK_CLIENT_SECRET=66LpF19OpkpgKKpWHdgiCEKisx5AXqLA
 export PROCESS_SERVICE_URI=http://localhost:9094
 export DEFINITION_SERVICE_URI=http://localhost:9093
+export ANALYTICS_SERVICE_URI=http://localhost:9095
 export EXECUTION_SERVICE_URI=http://localhost:8200
 
 cd "$BACKEND_DIR/keycloak-gateway"

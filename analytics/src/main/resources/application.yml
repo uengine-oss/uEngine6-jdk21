@@ -1,0 +1,42 @@
+spring:
+  application:
+    name: analytics
+  datasource:
+    url: jdbc:postgresql://${POSTGRES_HOST:localhost}:${POSTGRES_PORT:5432}/${POSTGRES_DB:uengine}
+    username: ${POSTGRES_USER:uengine}
+    password: ${POSTGRES_PASSWORD:uengine}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    hibernate:
+      ddl-auto: ${ANALYTICS_DDL_AUTO:update}
+    properties:
+      hibernate:
+        default_schema: ${UENGINE_DB_SCHEMA:public}
+        jdbc:
+          time_zone: UTC
+    open-in-view: false
+
+server:
+  port: ${ANALYTICS_SERVICE_PORT:9095}
+  error:
+    include-message: always
+
+uengine:
+  analytics:
+    source-schema: ${UENGINE_DB_SCHEMA:public}
+    etl:
+      enabled: ${UENGINE_ANALYTICS_ETL_ENABLED:false}
+      interval-ms: ${UENGINE_ANALYTICS_ETL_INTERVAL_MS:60000}
+      initial-delay-ms: ${UENGINE_ANALYTICS_ETL_INITIAL_DELAY_MS:30000}
+      time-zone: ${UENGINE_ANALYTICS_ETL_TIME_ZONE:Asia/Seoul}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      probes:
+        enabled: true

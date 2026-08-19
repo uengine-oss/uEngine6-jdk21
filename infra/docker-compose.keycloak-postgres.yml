@@ -26,7 +26,7 @@ services:
       KC_DB_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-uengine}
       KC_DB_USERNAME: ${POSTGRES_USER:-uengine}
       KC_DB_PASSWORD: ${POSTGRES_PASSWORD:-uengine}
-      KC_HOSTNAME: http://localhost:8280
+      KC_HOSTNAME: http://localhost:8080
     ports:
       - "8280:8080"
     volumes:
@@ -95,16 +95,35 @@ services:
       postgres:
         condition: service_healthy
 
+  analytics:
+    image: uengine-analytics:keycloak-postgres
+    build:
+      context: ../analytics
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_DB: ${POSTGRES_DB:-uengine}
+      POSTGRES_USER: ${POSTGRES_USER:-uengine}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-uengine}
+      UENGINE_DB_SCHEMA: public
+      UENGINE_ANALYTICS_ETL_ENABLED: "true"
+    ports:
+      - "9295:9095"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      process-service:
+        condition: service_started
+
   frontend:
     image: uengine-hli-frontend:keycloak
     build:
       context: ../../process-gpt-vue3-hli
     environment:
       VITE_KEYCLOAK_MODE: installed
-      VITE_KEYCLOAK_URL: http://localhost:8280
+      VITE_KEYCLOAK_URL: http://localhost:8080
       VITE_KEYCLOAK_REALM: uengine
       VITE_KEYCLOAK_CLIENT_ID: uengine
-      VITE_GATEWAY_URL: http://localhost:8288
+      VITE_GATEWAY_URL: http://localhost:8088
     ports:
       - "5373:8080"
 
@@ -115,15 +134,16 @@ services:
     environment:
       SPRING_PROFILES_ACTIVE: keycloak-installed
       GATEWAY_PORT: 8288
-      GATEWAY_URI: http://localhost:8288
+      GATEWAY_URI: http://localhost:8088
       FRONTEND_URI: http://frontend:8080
-      KEYCLOAK_URI: http://localhost:8280
+      KEYCLOAK_URI: http://localhost:8080
       KEYCLOAK_INTERNAL_URI: http://keycloak:8080
-      KEYCLOAK_REALM: uengine
+      KEYCLOAK_REALM: uengine (default realm)
       KEYCLOAK_CLIENT_ID: uengine
       KEYCLOAK_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET:-66LpF19OpkpgKKpWHdgiCEKisx5AXqLA}
       PROCESS_SERVICE_URI: http://process-service:9294
       DEFINITION_SERVICE_URI: http://definition-service:9293
+      ANALYTICS_SERVICE_URI: http://analytics:9095
       EXECUTION_SERVICE_URI: ${EXECUTION_SERVICE_URI:-http://host.docker.internal:8200}
     extra_hosts:
       - host.docker.internal:host-gateway
@@ -135,6 +155,8 @@ services:
       process-service:
         condition: service_started
       definition-service:
+        condition: service_started
+      analytics:
         condition: service_started
       frontend:
         condition: service_started

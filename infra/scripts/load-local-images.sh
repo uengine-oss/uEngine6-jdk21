@@ -7,7 +7,7 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "$ROOT"
 
 echo "==> [1/2] Maven JAR 빌드 (process-service, definition-service, keycloak-gateway)"
-mvn -pl process-service,definition-service,keycloak-gateway -am package -DskipTests
+mvn -pl process-service,definition-service,keycloak-gateway -am package -Dmaven.test.skip=true
 
 echo "==> [2/2] docker build로 로컬 태그 생성"
 docker build -t process-service:v0.0.1 -f process-service/Dockerfile process-service

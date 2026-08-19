@@ -1,0 +1,88 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-uengine}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-uengine}
+      POSTGRES_DB: ${POSTGRES_DB:-uengine}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - analytics-postgres-data:/var/lib/postgresql/data
+      - ./postgres/init/01-bpm-event-inbox.sql:/docker-entrypoint-initdb.d/01-bpm-event-inbox.sql:ro
+      - ./postgres/init/02-bpm-notification.sql:/docker-entrypoint-initdb.d/02-bpm-notification.sql:ro
+      - ./postgres/migration/2026-08-20-analytics-etl.sql:/docker-entrypoint-initdb.d/90-analytics-etl.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-uengine} -d ${POSTGRES_DB:-uengine}"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    restart: unless-stopped
+
+  process-service:
+    build:
+      context: ..
+      dockerfile: process-service/Dockerfile.postgres
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: ${POSTGRES_DB:-uengine}
+      POSTGRES_USER: ${POSTGRES_USER:-uengine}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-uengine}
+      UENGINE_MESSAGING_MODE: polling
+      UENGINE_DB_SCHEMA: public
+    ports:
+      - "${PROCESS_SERVICE_PORT:-9094}:9094"
+    volumes:
+      - analytics-archive:/app/archive
+      - analytics-definitions:/app/definitions
+      - analytics-instances:/app/instances
+      - analytics-payloads:/app/payloads
+    restart: on-failure
+
+  analytics:
+    build:
+      context: ../analytics
+    depends_on:
+      postgres:
+        condition: service_healthy
+      process-service:
+        condition: service_healthy
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: ${POSTGRES_DB:-uengine}
+      POSTGRES_USER: ${POSTGRES_USER:-uengine}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-uengine}
+      UENGINE_DB_SCHEMA: public
+      UENGINE_ANALYTICS_ETL_ENABLED: "true"
+      UENGINE_ANALYTICS_ETL_INTERVAL_MS: ${UENGINE_ANALYTICS_ETL_INTERVAL_MS:-60000}
+      UENGINE_ANALYTICS_ETL_INITIAL_DELAY_MS: ${UENGINE_ANALYTICS_ETL_INITIAL_DELAY_MS:-30000}
+      UENGINE_ANALYTICS_ETL_TIME_ZONE: ${UENGINE_ANALYTICS_ETL_TIME_ZONE:-Asia/Seoul}
+    ports:
+      - "${ANALYTICS_SERVICE_PORT:-9095}:9095"
+    restart: on-failure
+
+  back-office:
+    build:
+      context: ../back-office
+      dockerfile: Dockerfile.analytics
+    depends_on:
+      analytics:
+        condition: service_healthy
+    environment:
+      PROFILE: dev
+      ANALYTICS_API_URL: /analytics-api
+    ports:
+      - "${BACK_OFFICE_PORT:-8082}:8082"
+    restart: unless-stopped
+
+volumes:
+  analytics-postgres-data:
+  analytics-archive:
+  analytics-definitions:
+  analytics-instances:
+  analytics-payloads:

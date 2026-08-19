@@ -7,6 +7,7 @@ package org.uengine.kernel;
 import java.io.Serializable;
 import java.util.*;
 
+import org.uengine.contexts.EventSynchronization;
 import org.uengine.contexts.HtmlFormContext;
 //import com.sun.org.apache.regexp.internal.RE;
 import org.uengine.contexts.MappingContext;
@@ -265,15 +266,16 @@ public class ReceiveActivity extends DefaultActivity implements MessageListener,
     public Map<String, Object> getMappingInValues(ProcessInstance instance)
             throws Exception {
         Map<String, Object> mappingInValues = new HashMap();
-        if (getEventSynchronization().getMappingContext() == null)
+        EventSynchronization eventSynchronization = getEventSynchronization();
+        if (eventSynchronization == null || eventSynchronization.getMappingContext() == null)
             return mappingInValues;
 
-        ParameterContext[] params = getEventSynchronization().getMappingContext().getMappingElements();
+        ParameterContext[] params = eventSynchronization.getMappingContext().getMappingElements();
         Object value = null;
         if (params == null)
             return mappingInValues;
 
-        FieldDescriptor[] attributes = getEventSynchronization().getAttributes();
+        FieldDescriptor[] attributes = eventSynchronization.getAttributes();
         if (attributes != null) {
             for (FieldDescriptor field : attributes) {
                 boolean isArray = "Array".equals(field.getClassName());
