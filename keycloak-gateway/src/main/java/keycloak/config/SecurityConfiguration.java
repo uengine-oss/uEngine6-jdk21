@@ -27,6 +27,18 @@ public class SecurityConfiguration {
             .pathMatchers(HttpMethod.OPTIONS, "/**")
             .permitAll()
             .pathMatchers("/login/**", "/logout**")
+            .permitAll()
+            .pathMatchers(
+                "/assets/**",
+                "/static/**",
+                "/plugins/**",
+                "/css/**",
+                "/images/**",
+                "/favicon.ico",
+                "/*.png",
+                "/*.svg",
+                "/_redirects"
+            )
             .permitAll();
 
         // OAuth2 클라이언트 설정이 있을 때만 OAuth2 로그인 및 인증 활성화
