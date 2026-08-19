@@ -1210,11 +1210,10 @@ public class InstanceServiceImpl implements InstanceService {
      * @return
      */
 
-    // 주의: 경로가 getInstance() 와 같으면 콘텐츠 협상에서 이쪽이 이겨
-    // GET /instance/{id} 가 InstanceResource 대신 raw ProcessInstance 를 돌려준다.
-    // (관리자 화면의 인스턴스 실행보기가 _links.definition 을 못 찾아 실패한다)
-    @GetMapping("/instance/{instanceId}/local")
-    public ProcessInstance getProcessInstanceLocal(@PathVariable("instanceId") String instanceId) {
+    // 웹 엔드포인트가 아니다. ProcessInstance 는 변수 맵·정의·워크리스트 엔티티를 들고 있는
+    // 엔진 런타임 객체이고, ProcessInstanceEntity.workLists ↔ WorklistEntity.processInstance
+    // 순환 때문에 애초에 직렬화할 수 없다. 인스턴스 조회 API 는 getInstance() 가 담당한다.
+    public ProcessInstance getProcessInstanceLocal(String instanceId) {
 
         ProcessInstance instance = ProcessTransactionContext.getThreadLocalInstance()
                 .getProcessInstanceInTransaction(instanceId);

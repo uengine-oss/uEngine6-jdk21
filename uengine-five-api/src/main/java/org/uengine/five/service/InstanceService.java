@@ -26,7 +26,6 @@ import org.uengine.five.dto.TaskSkipCommand;
 import org.uengine.five.dto.TaskSkipResult;
 import org.uengine.five.audit.AuditEvent;
 import org.uengine.five.dto.WorkItemResource;
-import org.uengine.kernel.ProcessInstance;
 import org.uengine.kernel.RoleMapping;
 
 /**
@@ -192,9 +191,6 @@ public interface InstanceService {
         @RequestMapping(value = "/validate", method = RequestMethod.POST, consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
         public Serializable validate(@RequestBody String xml)
                         throws Exception;
-
-        @GetMapping("/instance/{instanceId}/local")
-        public ProcessInstance getProcessInstanceLocal(@PathVariable("instanceId") String instanceId) throws Exception;
 
         /**
          * 인스턴스(루트 인스턴스 ID 기준) 감사 로그 조회.

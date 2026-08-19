@@ -6,7 +6,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Vector;
 
-import org.uengine.processmanager.EMailServiceLocal;
 import org.uengine.processmanager.ProcessTransactionContext;
 import org.uengine.webservices.worklist.WorkList;
 
@@ -255,6 +254,4 @@ public interface ProcessInstance extends BeanPropertyResolver {
         public boolean isRoot();
 
         public boolean sendBroadcast(String eventType, Object payload) throws Exception;
-
-        public EMailServiceLocal getEmailService();
 }

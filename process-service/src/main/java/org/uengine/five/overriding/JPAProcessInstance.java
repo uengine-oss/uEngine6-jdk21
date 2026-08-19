@@ -36,7 +36,6 @@ import org.uengine.modeling.resource.IResource;
 import org.uengine.modeling.resource.ResourceManager;
 import org.uengine.modeling.resource.Serializer;
 import org.uengine.five.lifecycle.BpmLifecycleService;
-import org.uengine.processmanager.EMailServiceLocal;
 import org.uengine.processmanager.TransactionContext;
 import org.uengine.webservices.worklist.WorkList;
 
@@ -65,9 +64,6 @@ public class JPAProcessInstance extends DefaultProcessInstance implements Transa
 
     @Autowired
     ProcessInstanceRepository processInstanceRepository;
-
-    @Autowired
-    EMailServiceLocal emailService;
 
     @Autowired(required = false)
     BpmLifecycleService bpmLifecycleService;
@@ -690,14 +686,4 @@ public class JPAProcessInstance extends DefaultProcessInstance implements Transa
         return true;
     }
 
-    /**
-     * Jackson 이 이 게터를 타면 EmailServiceLocalImpl 을 직렬화하려다
-     * "Type definition error" 로 GET /instance/{id} 가 500 으로 끝난다.
-     * (관리자 화면의 인스턴스 실행보기가 이 API 를 쓴다)
-     */
-    @Override
-    @com.fasterxml.jackson.annotation.JsonIgnore
-    public EMailServiceLocal getEmailService() {
-        return emailService;
-    }
 }
