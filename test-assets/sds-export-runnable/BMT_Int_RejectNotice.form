@@ -1,0 +1,4 @@
+<form>
+  <label>반려 통보</label>
+  <textarea-field name="rejectMemo" alias="반려 안내" rows="3" v-model="formValues['rejectMemo']"></textarea-field>
+</form>

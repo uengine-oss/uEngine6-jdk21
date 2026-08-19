@@ -1,0 +1,1 @@
+<section><select-field name="평가등급" alias="평가등급" is_dynamic_load="false" items='[{"A":"A"},{"B":"B"},{"C":"C"}]' disabled="false" readonly="false"></select-field></section>

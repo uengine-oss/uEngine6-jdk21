@@ -18,6 +18,8 @@ spring:
       on-profile: default
   cloud:
     gateway:
+      default-filters:
+        - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials, RETAIN_FIRST
       routes:
         - id: execution
           uri: http://localhost:8000
@@ -60,6 +62,8 @@ spring:
       on-profile: docker
   cloud:
     gateway:
+      default-filters:
+        - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials, RETAIN_FIRST
       routes:
         - id: execution
           uri: http://localhost:8000
@@ -98,28 +102,39 @@ server:
 
 ---
 
+keycloak-client:
+  server-url: ${KEYCLOAK_URI:http://localhost:8280}
+  internal-server-url: ${KEYCLOAK_INTERNAL_URI:${keycloak-client.server-url}}
+  gateway-uri: ${GATEWAY_URI:http://localhost:8288}
+  frontend-uri: ${FRONTEND_URI:http://localhost:5373}
+
+server:
+  port: ${GATEWAY_PORT:8288}
+
 spring:
   config:
     activate:
       on-profile: keycloak-installed
   cloud:
     gateway:
+      default-filters:
+        - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials, RETAIN_FIRST
       httpclient:
         connect-timeout: 3000
         response-timeout: 3600000
       routes:
         - id: execution
-          uri: ${EXECUTION_SERVICE_URI:http://localhost:8000}
+          uri: ${EXECUTION_SERVICE_URI:http://localhost:8200}
           predicates:
             - Path=/complete/**, /vision-complete/**, /execution/**
           filters:
             - RewritePath=/execution/?(?<segment>.*), /$\{segment}
         - id: definition-servicce
-          uri: ${DEFINITION_SERVICE_URI:http://localhost:9093}
+          uri: ${DEFINITION_SERVICE_URI:http://localhost:9293}
           predicates:
             - Path=/definition/**, /version/**, /versions/**
         - id: instance-servicce
-          uri: ${PROCESS_SERVICE_URI:http://localhost:9094}
+          uri: ${PROCESS_SERVICE_URI:http://localhost:9294}
           predicates:
             - Path=/worklist/**, /test/**, /instance/**, /work-item/** , /instances/**, /dry-run/**, /validate/**, /start-and-complete
         - id: frontend
@@ -141,7 +156,10 @@ spring:
       client:
         provider:
           keycloak:
-            issuer-uri: ${keycloak-client.server-url}/realms/${keycloak-client.realm}
+            authorization-uri: ${keycloak-client.server-url}/realms/${keycloak-client.realm}/protocol/openid-connect/auth
+            token-uri: ${keycloak-client.internal-server-url}/realms/${keycloak-client.realm}/protocol/openid-connect/token
+            user-info-uri: ${keycloak-client.internal-server-url}/realms/${keycloak-client.realm}/protocol/openid-connect/userinfo
+            jwk-set-uri: ${keycloak-client.internal-server-url}/realms/${keycloak-client.realm}/protocol/openid-connect/certs
             user-name-attribute: preferred_username
         registration:
           keycloak:
@@ -152,4 +170,4 @@ spring:
             scope: openid
       resourceserver:
         jwt:
-          jwk-set-uri: ${keycloak-client.server-url}/realms/${keycloak-client.realm}/protocol/openid-connect/certs
+          jwk-set-uri: ${keycloak-client.internal-server-url}/realms/${keycloak-client.realm}/protocol/openid-connect/certs

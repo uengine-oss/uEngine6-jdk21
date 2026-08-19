@@ -7,12 +7,12 @@
 FROM eclipse-temurin:21-jre-jammy
 COPY target/*-SNAPSHOT.jar process.jar
 COPY src/main/resources/application.yml /app/application.yml
-EXPOSE 8080
-ENV JAVA_OPTS="-Xmx400M -Djava.security.egd=file:/dev/./urandom -Dserver.port=8080 -Dfile.encoding=UTF-8 -Dstdout.encoding=UTF-8 -Dstderr.encoding=UTF-8"
+EXPOSE 9294
+ENV JAVA_OPTS="-Xmx400M -Djava.security.egd=file:/dev/./urandom -Dfile.encoding=UTF-8 -Dstdout.encoding=UTF-8 -Dstderr.encoding=UTF-8"
 ENV SPRING_CLOUD_STREAM_KAFKA_BINDER_BROKERS="kafka:29092,localhost:9092"
 ENV SERVICE_HOST="localhost"
 ENV UENGINE_DEFINITION_BASEPATH="/app"
-ENV SPRING_PROFILES_ACTIVE="docker"
+ENV SPRING_PROFILES_ACTIVE="postgres,keycloak-installed"
 ENV KAFKA_BOOTSTRAP_SERVERS="kafka:29092,localhost:9092"
 ENTRYPOINT exec java $JAVA_OPTS -jar process.jar --spring.config.location=/app/application.yml
 

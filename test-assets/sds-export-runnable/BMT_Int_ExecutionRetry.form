@@ -1,0 +1,4 @@
+<form>
+  <label>실행 실패 재처리</label>
+  <textarea-field name="retryMemo" alias="재처리 내용" rows="3" v-model="formValues['retryMemo']"></textarea-field>
+</form>

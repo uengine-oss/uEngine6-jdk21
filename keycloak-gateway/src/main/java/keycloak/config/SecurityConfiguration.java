@@ -3,6 +3,7 @@ package keycloak.config;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.web.server.ServerHttpSecurity;
 import org.springframework.security.oauth2.client.registration.ReactiveClientRegistrationRepository;
 import org.springframework.security.web.server.SecurityWebFilterChain;
@@ -23,6 +24,8 @@ public class SecurityConfiguration {
             .csrf()
             .disable()
             .authorizeExchange()
+            .pathMatchers(HttpMethod.OPTIONS, "/**")
+            .permitAll()
             .pathMatchers("/login/**", "/logout**")
             .permitAll();
 
@@ -34,6 +37,7 @@ public class SecurityConfiguration {
                 .anyExchange()
                 .authenticated();
             http.oauth2Login(); // to redirect to oauth2 login page.
+            http.oauth2ResourceServer((oauth2) -> oauth2.jwt());
         } else {
             // OAuth2가 설정되지 않은 경우 모든 요청 허용
             authorizeExchange.anyExchange().permitAll();

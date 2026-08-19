@@ -1,0 +1,4 @@
+<form>
+  <label>여신 실행 결과 등록</label>
+  <select-field name="executionResult" alias="여신실행결과" items='[{"성공":"성공"},{"실패":"실패"}]' v-model="formValues['executionResult']"></select-field>
+</form>

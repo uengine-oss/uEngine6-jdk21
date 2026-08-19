@@ -1,0 +1,1 @@
+<section><select-field name="일괄발송대상여부" alias="일괄발송대상여부" is_dynamic_load="false" items='[{"Y":"Y"},{"N":"N"}]' disabled="false" readonly="false"></select-field></section>

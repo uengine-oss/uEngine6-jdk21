@@ -1,0 +1,4 @@
+<form>
+  <label>신청서류 검토</label>
+  <select-field name="documentReady" alias="서류완비여부" items='[{"Y":"Y"},{"N":"N"}]' v-model="formValues['documentReady']"></select-field>
+</form>

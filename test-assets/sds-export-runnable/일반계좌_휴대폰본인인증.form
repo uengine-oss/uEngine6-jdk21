@@ -1,0 +1,1 @@
+<section><select-field name="본인인증결과" alias="본인인증결과" is_dynamic_load="false" items='[{"정상": "정상"},{"실패": "실패"}]' disabled="false" readonly="false"></select-field></section>

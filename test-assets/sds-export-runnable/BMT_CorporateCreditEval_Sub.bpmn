@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:uengine="http://uengine" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="Definitions_BMT_CreditEval_Sub" targetNamespace="http://uengine.org/sds/bmt">
+  <bpmn:collaboration id="Collaboration_BMT_CreditEval_Sub">
+    <bpmn:participant id="Participant_BMT_CreditEval_Sub" name="공통 기업신용평가" processRef="Process_BMT_CreditEval_Sub">
+      <bpmn:extensionElements>
+        <uengine:properties json="{}" />
+      </bpmn:extensionElements>
+    </bpmn:participant>
+  </bpmn:collaboration>
+  <bpmn:process id="Process_BMT_CreditEval_Sub" name="공통 기업신용평가" isExecutable="true">
+    <bpmn:extensionElements>
+      <uengine:properties json="{&quot;definitionName&quot;:&quot;공통 기업신용평가&quot;,&quot;version&quot;:&quot;1.0&quot;}">
+        <uengine:variable name="creditEvalResult" type="Text" displayName="신용평가결과" />
+        <uengine:variable name="creditGrade" type="Text" displayName="평가등급" />
+      </uengine:properties>
+    </bpmn:extensionElements>
+    <bpmn:laneSet id="LaneSet_CreditEval">
+      <bpmn:lane id="Lane_CreditEval" name="신용평가부">
+        <bpmn:extensionElements>
+          <uengine:properties json="{&quot;role&quot;:&quot;user&quot;,&quot;dispatchingOption&quot;:1,&quot;roleResolutionContext&quot;:{&quot;_type&quot;:&quot;org.uengine.hwlife.overriding.BoundRoleResolutionContext&quot;,&quot;base&quot;:{&quot;_type&quot;:&quot;org.uengine.five.overriding.IAMRoleResolutionContext&quot;,&quot;scope&quot;:&quot;user&quot;},&quot;bindings&quot;:{}}}" />
+        </bpmn:extensionElements>
+<bpmn:flowNodeRef>Start_CreditEval</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_CreditInfoCheck</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gateway_CreditEvalResult</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_AdditionalData</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_RegisterResult</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>End_CreditEval</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="Start_CreditEval" name="평가 시작">
+      <bpmn:outgoing>Flow_S01</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:userTask id="Task_CreditInfoCheck" name="신용정보 조회 및 평가">
+      <bpmn:extensionElements>
+        <uengine:properties json="{&quot;role&quot;:&quot;user&quot;,&quot;process&quot;:&quot;Process_BMT_CreditEval_Sub&quot;,&quot;tool&quot;:&quot;formHandler:BMT_CreditEval_Check&quot;,&quot;duration&quot;:5,&quot;inputData&quot;:[],&quot;outputData&quot;:[],&quot;eventSynchronization&quot;:{&quot;eventType&quot;:&quot;&quot;,&quot;attributes&quot;:[],&quot;mappingContext&quot;:{&quot;mappingElements&quot;:[{&quot;argument&quot;:{&quot;text&quot;:&quot;creditEvalResult&quot;},&quot;direction&quot;:&quot;out&quot;,&quot;variable&quot;:{&quot;name&quot;:&quot;[Arguments].creditEvalResult&quot;},&quot;isKey&quot;:false}]}}}" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_S01</bpmn:incoming>
+      <bpmn:outgoing>Flow_S02</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:exclusiveGateway id="Gateway_CreditEvalResult" name="신용평가결과">
+      <bpmn:incoming>Flow_S02</bpmn:incoming>
+      <bpmn:outgoing>Flow_S03</bpmn:outgoing>
+      <bpmn:outgoing>Flow_S04</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:userTask id="Task_AdditionalData" name="추가자료 요청">
+      <bpmn:extensionElements>
+        <uengine:properties json="{&quot;role&quot;:&quot;user&quot;,&quot;process&quot;:&quot;Process_BMT_CreditEval_Sub&quot;,&quot;tool&quot;:&quot;formHandler:BMT_CreditEval_AdditionalData&quot;,&quot;duration&quot;:5,&quot;inputData&quot;:[],&quot;outputData&quot;:[],&quot;eventSynchronization&quot;:{&quot;eventType&quot;:&quot;&quot;,&quot;attributes&quot;:[],&quot;mappingContext&quot;:{&quot;mappingElements&quot;:[]}}}" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_S04</bpmn:incoming>
+      <bpmn:outgoing>Flow_S05</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="Task_RegisterResult" name="평가결과 등록">
+      <bpmn:extensionElements>
+        <uengine:properties json="{&quot;role&quot;:&quot;user&quot;,&quot;process&quot;:&quot;Process_BMT_CreditEval_Sub&quot;,&quot;tool&quot;:&quot;formHandler:BMT_CreditEval_Result&quot;,&quot;duration&quot;:5,&quot;inputData&quot;:[],&quot;outputData&quot;:[],&quot;eventSynchronization&quot;:{&quot;eventType&quot;:&quot;&quot;,&quot;attributes&quot;:[],&quot;mappingContext&quot;:{&quot;mappingElements&quot;:[{&quot;argument&quot;:{&quot;text&quot;:&quot;creditGrade&quot;},&quot;direction&quot;:&quot;out&quot;,&quot;variable&quot;:{&quot;name&quot;:&quot;[Arguments].creditGrade&quot;},&quot;isKey&quot;:false}]}}}" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_S03</bpmn:incoming>
+      <bpmn:incoming>Flow_S05</bpmn:incoming>
+      <bpmn:outgoing>Flow_S06</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:endEvent id="End_CreditEval" name="평가 완료">
+      <bpmn:incoming>Flow_S06</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_S01" sourceRef="Start_CreditEval" targetRef="Task_CreditInfoCheck" />
+    <bpmn:sequenceFlow id="Flow_S02" sourceRef="Task_CreditInfoCheck" targetRef="Gateway_CreditEvalResult" />
+    <bpmn:sequenceFlow id="Flow_S03" name="통과" sourceRef="Gateway_CreditEvalResult" targetRef="Task_RegisterResult">
+      <bpmn:extensionElements><uengine:properties json="{&quot;condition&quot;:{&quot;_type&quot;:&quot;org.uengine.kernel.Evaluate&quot;,&quot;key&quot;:&quot;creditEvalResult&quot;,&quot;value&quot;:&quot;통과&quot;}}" /></bpmn:extensionElements>
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${creditEvalResult == "통과"}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_S04" name="추가확인" sourceRef="Gateway_CreditEvalResult" targetRef="Task_AdditionalData">
+      <bpmn:extensionElements><uengine:properties json="{&quot;condition&quot;:{&quot;_type&quot;:&quot;org.uengine.kernel.Evaluate&quot;,&quot;key&quot;:&quot;creditEvalResult&quot;,&quot;value&quot;:&quot;추가확인&quot;}}" /></bpmn:extensionElements>
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${creditEvalResult == "추가확인"}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_S05" sourceRef="Task_AdditionalData" targetRef="Task_RegisterResult" />
+    <bpmn:sequenceFlow id="Flow_S06" sourceRef="Task_RegisterResult" targetRef="End_CreditEval" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="Diagram_CreditEval">
+    <bpmndi:BPMNPlane id="Plane_CreditEval" bpmnElement="Collaboration_BMT_CreditEval_Sub">
+      <bpmndi:BPMNShape id="Participant_BMT_CreditEval_Sub_di" bpmnElement="Participant_BMT_CreditEval_Sub" isHorizontal="true"><dc:Bounds x="40" y="70" width="1240" height="220" /><bpmndi:BPMNLabel /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_CreditEval_di" bpmnElement="Lane_CreditEval" isHorizontal="true"><dc:Bounds x="60" y="90" width="1200" height="170" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Start_CreditEval_di" bpmnElement="Start_CreditEval"><dc:Bounds x="110" y="157" width="36" height="36" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_CreditInfoCheck_di" bpmnElement="Task_CreditInfoCheck"><dc:Bounds x="230" y="136" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_CreditEvalResult_di" bpmnElement="Gateway_CreditEvalResult"><dc:Bounds x="420" y="151" width="50" height="50" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_AdditionalData_di" bpmnElement="Task_AdditionalData"><dc:Bounds x="570" y="136" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_RegisterResult_di" bpmnElement="Task_RegisterResult"><dc:Bounds x="790" y="136" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_CreditEval_di" bpmnElement="End_CreditEval"><dc:Bounds x="1010" y="157" width="36" height="36" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_S01_di" bpmnElement="Flow_S01"><di:waypoint x="146" y="175" /><di:waypoint x="230" y="175" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_S02_di" bpmnElement="Flow_S02"><di:waypoint x="330" y="176" /><di:waypoint x="420" y="176" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_S03_di" bpmnElement="Flow_S03"><di:waypoint x="470" y="176" /><di:waypoint x="790" y="176" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_S04_di" bpmnElement="Flow_S04"><di:waypoint x="445" y="201" /><di:waypoint x="445" y="246" /><di:waypoint x="620" y="246" /><di:waypoint x="620" y="216" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_S05_di" bpmnElement="Flow_S05"><di:waypoint x="670" y="176" /><di:waypoint x="790" y="176" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_S06_di" bpmnElement="Flow_S06"><di:waypoint x="890" y="176" /><di:waypoint x="1010" y="176" /></bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

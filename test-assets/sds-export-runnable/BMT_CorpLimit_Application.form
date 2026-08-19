@@ -1,0 +1,6 @@
+<form>
+  <label>기업여신 한도증액 신청 접수</label>
+  <text-field name="customerName" label="고객명" defaultValue="BMT 테스트 기업" />
+  <text-field name="requestedLimit" label="요청 한도" defaultValue="500000000" />
+  <select-field name="documentReady" label="서류완비여부" items='[{"Y":"Y"},{"N":"N"}]' />
+</form>

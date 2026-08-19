@@ -1,0 +1,4 @@
+<form>
+  <label>준법 승인</label>
+  <select-field name="complianceResult" alias="준법승인결과" items='[{"승인":"승인"},{"반려":"반려"}]' v-model="formValues['complianceResult']"></select-field>
+</form>

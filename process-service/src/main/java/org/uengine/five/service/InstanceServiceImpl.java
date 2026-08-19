@@ -952,12 +952,33 @@ public class InstanceServiceImpl implements InstanceService {
 
     @RequestMapping(value = "/instance/{instanceId}/running", method = RequestMethod.GET, produces = "application/json;charset=UTF-8")
     @ProcessTransactional(readOnly = true)
-    public ResponseEntity<List<WorklistEntity>> getRunningTaskId(@PathVariable("instanceId") String instanceId)
+    public ResponseEntity<List<Map<String, Object>>> getRunningTaskId(@PathVariable("instanceId") String instanceId)
             throws Exception {
 
-        List<WorklistEntity> worklistEntity = worklistRepository
+        List<WorklistEntity> worklistEntities = worklistRepository
                 .findCurrentWorkItemByInstId(Long.parseLong(instanceId));
-        return ResponseEntity.ok(worklistEntity);
+        List<Map<String, Object>> response = new ArrayList<>();
+        for (WorklistEntity worklistEntity : worklistEntities) {
+            Map<String, Object> item = new LinkedHashMap<>();
+            item.put("taskId", worklistEntity.getTaskId());
+            item.put("instId", worklistEntity.getInstId());
+            item.put("rootInstId", worklistEntity.getRootInstId());
+            item.put("title", worklistEntity.getTitle());
+            item.put("description", worklistEntity.getDescription());
+            item.put("endpoint", worklistEntity.getEndpoint());
+            item.put("roleName", worklistEntity.getRoleName());
+            item.put("resName", worklistEntity.getResName());
+            item.put("defId", worklistEntity.getDefId());
+            item.put("defName", worklistEntity.getDefName());
+            item.put("defVerId", worklistEntity.getDefVerId());
+            item.put("trcTag", worklistEntity.getTrcTag());
+            item.put("tool", worklistEntity.getTool());
+            item.put("parameter", worklistEntity.getParameter());
+            item.put("status", worklistEntity.getStatus());
+            item.put("execScope", worklistEntity.getExecScope());
+            response.add(item);
+        }
+        return ResponseEntity.ok(response);
     }
 
     @RequestMapping(value = "/instance/{instanceId}/completed", method = RequestMethod.GET, produces = "application/json;charset=UTF-8")
@@ -1840,7 +1861,7 @@ public class InstanceServiceImpl implements InstanceService {
         IContainer container = new ContainerResource();
         container.setPath("test/" + folderPath);
         if (!resourceManager.exists(container)) {
-            throw new FileNotFoundException("Folder not found: " + folderPath);
+            return result;
         }
         List<IResource> files = resourceManager.listFiles(container);
         if (files != null) {
@@ -2143,8 +2164,22 @@ public class InstanceServiceImpl implements InstanceService {
         List<String> fileContents = new ArrayList<>();
 
         try {
-            IResource resource = new DefaultResource("test/" + recordPath);
-            if (resourceManager.exists(resource)) {
+            IContainer recordContainer = new ContainerResource();
+            recordContainer.setPath("test/" + recordPath + "/record");
+            if (!resourceManager.exists(recordContainer)) {
+                return fileContents;
+            }
+
+            List<IResource> files = resourceManager.listFiles(recordContainer);
+            if (files == null) {
+                return fileContents;
+            }
+
+            for (IResource file : files) {
+                if (file.isContainer()) {
+                    continue;
+                }
+                IResource resource = new DefaultResource(file.getPath());
                 InputStream inputStream = resourceManager.getInputStream(resource);
                 String content = new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
                 fileContents.add(content);
@@ -2469,7 +2504,9 @@ public class InstanceServiceImpl implements InstanceService {
 
                     Map<String, Object> parameterValues = new HashMap<String, Object>();
 
-                    if (activity instanceof ReceiveActivity) {
+                    if (activity instanceof ReceiveActivity
+                            && activity.getEventSynchronization() != null
+                            && activity.getEventSynchronization().getMappingContext() != null) {
                         Map<String, Object> mappingInValues = ((ReceiveActivity) activity).getMappingInValues(instance);
                         if (mappingInValues.size() > 0) {
                             for (Map.Entry<String, Object> entry : mappingInValues.entrySet()) {

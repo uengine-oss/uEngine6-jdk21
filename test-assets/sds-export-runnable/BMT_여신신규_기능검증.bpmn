@@ -1,0 +1,544 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+                  xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+                  xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+                  xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+                  xmlns:uengine="http://uengine"
+                  id="Definitions_Loan_Main"
+                  name="여신신규_주택담보대출_대표프로세스"
+                  targetNamespace="http://uengine/sds/loan"
+                  exporter="uEngine"
+                  exporterVersion="1.0">
+  <bpmn:collaboration id="Collaboration_Loan_Main">
+    <bpmn:participant id="Participant_Loan_Main" name="여신신규_주택담보대출" processRef="Process_Loan_Main">
+      <bpmn:extensionElements>
+        <uengine:properties json="{&#34;purpose&#34;:&#34;주택담보대출 여신신규 대표 업무 흐름&#34;}" />
+      </bpmn:extensionElements>
+    </bpmn:participant>
+  </bpmn:collaboration>
+
+  <bpmn:process id="Process_Loan_Main" name="여신신규_주택담보대출" isExecutable="true">
+    <bpmn:extensionElements>
+      <uengine:properties json="{&#34;definitionName&#34;:&#34;여신신규_주택담보대출&#34;,&#34;version&#34;:&#34;1.0&#34;,&#34;shortDescription&#34;:{&#34;text&#34;:&#34;접수, 서류검토, 보완, 외부조회, 심사, 승인, 실행, 반려 및 재처리 흐름을 명확히 표현한 대표 프로세스&#34;}}">
+        <uengine:variable name="서류충족여부" type="Text" />
+        <uengine:variable name="조회결과" type="Text" />
+        <uengine:variable name="심사결과" type="Text" />
+        <uengine:variable name="본부승인대상여부" type="Text" />
+        <uengine:variable name="본부승인결과" type="Text" />
+        <uengine:variable name="실행결과" type="Text" />
+      </uengine:properties>
+    </bpmn:extensionElements>
+
+    <bpmn:laneSet id="LaneSet_Loan_Main">
+      <bpmn:lane id="Lane_Customer" name="고객">
+        <bpmn:extensionElements>
+          <uengine:properties json="{&quot;role&quot;:&quot;user&quot;,&quot;dispatchingOption&quot;:1,&quot;roleResolutionContext&quot;:{&quot;_type&quot;:&quot;org.uengine.hwlife.overriding.BoundRoleResolutionContext&quot;,&quot;base&quot;:{&quot;_type&quot;:&quot;org.uengine.five.overriding.IAMRoleResolutionContext&quot;,&quot;scope&quot;:&quot;user&quot;},&quot;bindings&quot;:{}}}" />
+        </bpmn:extensionElements>
+<bpmn:flowNodeRef>Start_Loan</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>UserTask_Application</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>UserTask_ResubmitDocuments</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_Branch" name="영업점">
+        <bpmn:extensionElements>
+          <uengine:properties json="{&quot;role&quot;:&quot;user&quot;,&quot;dispatchingOption&quot;:1,&quot;roleResolutionContext&quot;:{&quot;_type&quot;:&quot;org.uengine.hwlife.overriding.BoundRoleResolutionContext&quot;,&quot;base&quot;:{&quot;_type&quot;:&quot;org.uengine.five.overriding.IAMRoleResolutionContext&quot;,&quot;scope&quot;:&quot;user&quot;},&quot;bindings&quot;:{}}}" />
+        </bpmn:extensionElements>
+<bpmn:flowNodeRef>UserTask_DocumentReview</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gateway_DocumentComplete</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>UserTask_SupplementRequest</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>UserTask_RejectNotice</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>End_Rejected</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_ExternalSystem" name="외부시스템">
+        <bpmn:extensionElements>
+          <uengine:properties json="{&quot;role&quot;:&quot;user&quot;,&quot;dispatchingOption&quot;:1,&quot;roleResolutionContext&quot;:{&quot;_type&quot;:&quot;org.uengine.hwlife.overriding.BoundRoleResolutionContext&quot;,&quot;base&quot;:{&quot;_type&quot;:&quot;org.uengine.five.overriding.IAMRoleResolutionContext&quot;,&quot;scope&quot;:&quot;user&quot;},&quot;bindings&quot;:{}}}" />
+        </bpmn:extensionElements>
+<bpmn:flowNodeRef>Gateway_InquirySplit</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>ServiceTask_IdentityCheck</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>ServiceTask_CollateralInquiry</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gateway_InquiryJoin</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gateway_InquiryResult</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_Review" name="심사부">
+        <bpmn:extensionElements>
+          <uengine:properties json="{&quot;role&quot;:&quot;user&quot;,&quot;dispatchingOption&quot;:1,&quot;roleResolutionContext&quot;:{&quot;_type&quot;:&quot;org.uengine.hwlife.overriding.BoundRoleResolutionContext&quot;,&quot;base&quot;:{&quot;_type&quot;:&quot;org.uengine.five.overriding.IAMRoleResolutionContext&quot;,&quot;scope&quot;:&quot;user&quot;},&quot;bindings&quot;:{}}}" />
+        </bpmn:extensionElements>
+<bpmn:flowNodeRef>UserTask_CreditReview</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gateway_ReviewResult</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gateway_HeadOfficeRequired</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_HeadOffice" name="본부">
+        <bpmn:extensionElements>
+          <uengine:properties json="{&quot;role&quot;:&quot;user&quot;,&quot;dispatchingOption&quot;:1,&quot;roleResolutionContext&quot;:{&quot;_type&quot;:&quot;org.uengine.hwlife.overriding.BoundRoleResolutionContext&quot;,&quot;base&quot;:{&quot;_type&quot;:&quot;org.uengine.five.overriding.IAMRoleResolutionContext&quot;,&quot;scope&quot;:&quot;user&quot;},&quot;bindings&quot;:{}}}" />
+        </bpmn:extensionElements>
+<bpmn:flowNodeRef>UserTask_HeadOfficeApproval</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gateway_HeadOfficeResult</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_Operation" name="여신운영">
+        <bpmn:extensionElements>
+          <uengine:properties json="{&quot;role&quot;:&quot;user&quot;,&quot;dispatchingOption&quot;:1,&quot;roleResolutionContext&quot;:{&quot;_type&quot;:&quot;org.uengine.hwlife.overriding.BoundRoleResolutionContext&quot;,&quot;base&quot;:{&quot;_type&quot;:&quot;org.uengine.five.overriding.IAMRoleResolutionContext&quot;,&quot;scope&quot;:&quot;user&quot;},&quot;bindings&quot;:{}}}" />
+        </bpmn:extensionElements>
+<bpmn:flowNodeRef>UserTask_ContractPrepare</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>ServiceTask_LoanExecution</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gateway_ExecutionResult</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>UserTask_ExecutionRetry</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>End_Completed</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+
+    <bpmn:startEvent id="Start_Loan" name="시작">
+      <bpmn:outgoing>Flow_Start_Application</bpmn:outgoing>
+    </bpmn:startEvent>
+
+    <bpmn:userTask id="UserTask_Application" name="고객 여신신청">
+      <bpmn:extensionElements>
+        <uengine:properties json="{&#34;role&#34;:&#34;user&#34;,&#34;tool&#34;:&#34;formHandler:loan_application_form&#34;,&#34;checkpoints&#34;:[&#34;신청서 입력&#34;,&#34;필수 서류 제출&#34;]}" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_Start_Application</bpmn:incoming>
+      <bpmn:outgoing>Flow_Application_DocumentReview</bpmn:outgoing>
+    </bpmn:userTask>
+
+    <bpmn:userTask id="UserTask_DocumentReview" name="신청서류 검토">
+      <bpmn:extensionElements>
+        <uengine:properties json="{&#34;role&#34;:&#34;user&#34;,&#34;tool&#34;:&#34;formHandler:loan_document_review_form&#34;,&#34;eventSynchronization&#34;:{&#34;mappingContext&#34;:{&#34;mappingElements&#34;:[{&#34;argument&#34;:{&#34;text&#34;:&#34;서류충족여부&#34;},&#34;direction&#34;:&#34;out&#34;,&#34;variable&#34;:{&#34;name&#34;:&#34;[Arguments].서류충족여부&#34;},&#34;isKey&#34;:false}]}}}" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_Application_DocumentReview</bpmn:incoming>
+      <bpmn:incoming>Flow_Resubmit_DocumentReview</bpmn:incoming>
+      <bpmn:outgoing>Flow_DocumentReview_Gateway</bpmn:outgoing>
+    </bpmn:userTask>
+
+    <bpmn:exclusiveGateway id="Gateway_DocumentComplete" name="서류충족여부" default="Flow_Document_No">
+      <bpmn:incoming>Flow_DocumentReview_Gateway</bpmn:incoming>
+      <bpmn:outgoing>Flow_Document_Yes</bpmn:outgoing>
+      <bpmn:outgoing>Flow_Document_No</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+
+    <bpmn:userTask id="UserTask_SupplementRequest" name="보완요청">
+      <bpmn:extensionElements>
+        <uengine:properties json="{&#34;role&#34;:&#34;user&#34;,&#34;tool&#34;:&#34;formHandler:loan_supplement_request_form&#34;,&#34;checkpoints&#34;:[&#34;누락 서류 안내&#34;,&#34;보완 기한 안내&#34;]}" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_Document_No</bpmn:incoming>
+      <bpmn:outgoing>Flow_Supplement_Resubmit</bpmn:outgoing>
+    </bpmn:userTask>
+
+    <bpmn:userTask id="UserTask_ResubmitDocuments" name="보완서류 접수">
+      <bpmn:extensionElements>
+        <uengine:properties json="{&#34;role&#34;:&#34;user&#34;,&#34;tool&#34;:&#34;formHandler:loan_resubmit_documents_form&#34;}" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_Supplement_Resubmit</bpmn:incoming>
+      <bpmn:outgoing>Flow_Resubmit_DocumentReview</bpmn:outgoing>
+    </bpmn:userTask>
+
+    <bpmn:parallelGateway id="Gateway_InquirySplit" name="조회업무 분기">
+      <bpmn:incoming>Flow_Document_Yes</bpmn:incoming>
+      <bpmn:outgoing>Flow_Split_Identity</bpmn:outgoing>
+      <bpmn:outgoing>Flow_Split_Collateral</bpmn:outgoing>
+    </bpmn:parallelGateway>
+
+    <bpmn:serviceTask id="ServiceTask_IdentityCheck" name="본인확인">
+      <bpmn:extensionElements>
+        <uengine:properties json="{&#34;systemType&#34;:&#34;external&#34;,&#34;systemName&#34;:&#34;본인확인 시스템&#34;,&#34;taskKind&#34;:&#34;system&#34;}" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_Split_Identity</bpmn:incoming>
+      <bpmn:outgoing>Flow_Identity_Join</bpmn:outgoing>
+    </bpmn:serviceTask>
+
+    <bpmn:serviceTask id="ServiceTask_CollateralInquiry" name="담보시세 조회">
+      <bpmn:extensionElements>
+        <uengine:properties json="{&#34;systemType&#34;:&#34;external&#34;,&#34;systemName&#34;:&#34;담보평가/시세조회 시스템&#34;,&#34;taskKind&#34;:&#34;system&#34;}" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_Split_Collateral</bpmn:incoming>
+      <bpmn:outgoing>Flow_Collateral_Join</bpmn:outgoing>
+    </bpmn:serviceTask>
+
+    <bpmn:parallelGateway id="Gateway_InquiryJoin" name="조회결과 취합">
+      <bpmn:incoming>Flow_Identity_Join</bpmn:incoming>
+      <bpmn:incoming>Flow_Collateral_Join</bpmn:incoming>
+      <bpmn:outgoing>Flow_Join_InquiryResult</bpmn:outgoing>
+    </bpmn:parallelGateway>
+
+    <bpmn:exclusiveGateway id="Gateway_InquiryResult" name="조회결과" default="Flow_Inquiry_Reject">
+      <bpmn:incoming>Flow_Join_InquiryResult</bpmn:incoming>
+      <bpmn:outgoing>Flow_Inquiry_Normal</bpmn:outgoing>
+      <bpmn:outgoing>Flow_Inquiry_Reject</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+
+    <bpmn:userTask id="UserTask_CreditReview" name="여신심사">
+      <bpmn:extensionElements>
+        <uengine:properties json="{&#34;role&#34;:&#34;user&#34;,&#34;tool&#34;:&#34;formHandler:loan_credit_review_form&#34;,&#34;eventSynchronization&#34;:{&#34;mappingContext&#34;:{&#34;mappingElements&#34;:[{&#34;argument&#34;:{&#34;text&#34;:&#34;심사결과&#34;},&#34;direction&#34;:&#34;out&#34;,&#34;variable&#34;:{&#34;name&#34;:&#34;[Arguments].심사결과&#34;},&#34;isKey&#34;:false},{&#34;argument&#34;:{&#34;text&#34;:&#34;본부승인대상여부&#34;},&#34;direction&#34;:&#34;out&#34;,&#34;variable&#34;:{&#34;name&#34;:&#34;[Arguments].본부승인대상여부&#34;},&#34;isKey&#34;:false}]}}}" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_Inquiry_Normal</bpmn:incoming>
+      <bpmn:outgoing>Flow_Review_Result</bpmn:outgoing>
+    </bpmn:userTask>
+
+    <bpmn:exclusiveGateway id="Gateway_ReviewResult" name="심사결과" default="Flow_Review_Reject">
+      <bpmn:incoming>Flow_Review_Result</bpmn:incoming>
+      <bpmn:outgoing>Flow_Review_Approve</bpmn:outgoing>
+      <bpmn:outgoing>Flow_Review_Supplement</bpmn:outgoing>
+      <bpmn:outgoing>Flow_Review_Reject</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+
+    <bpmn:exclusiveGateway id="Gateway_HeadOfficeRequired" name="본부승인대상여부" default="Flow_HeadOffice_No">
+      <bpmn:incoming>Flow_Review_Approve</bpmn:incoming>
+      <bpmn:outgoing>Flow_HeadOffice_Yes</bpmn:outgoing>
+      <bpmn:outgoing>Flow_HeadOffice_No</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+
+    <bpmn:userTask id="UserTask_HeadOfficeApproval" name="본부승인">
+      <bpmn:extensionElements>
+        <uengine:properties json="{&#34;role&#34;:&#34;user&#34;,&#34;tool&#34;:&#34;formHandler:loan_head_office_approval_form&#34;,&#34;eventSynchronization&#34;:{&#34;mappingContext&#34;:{&#34;mappingElements&#34;:[{&#34;argument&#34;:{&#34;text&#34;:&#34;본부승인결과&#34;},&#34;direction&#34;:&#34;out&#34;,&#34;variable&#34;:{&#34;name&#34;:&#34;[Arguments].본부승인결과&#34;},&#34;isKey&#34;:false}]}}}" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_HeadOffice_Yes</bpmn:incoming>
+      <bpmn:outgoing>Flow_HeadOffice_Result</bpmn:outgoing>
+    </bpmn:userTask>
+
+    <bpmn:exclusiveGateway id="Gateway_HeadOfficeResult" name="본부승인결과" default="Flow_HeadOffice_Reject">
+      <bpmn:incoming>Flow_HeadOffice_Result</bpmn:incoming>
+      <bpmn:outgoing>Flow_HeadOffice_Approve</bpmn:outgoing>
+      <bpmn:outgoing>Flow_HeadOffice_Reject</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+
+    <bpmn:userTask id="UserTask_ContractPrepare" name="약정 및 실행준비">
+      <bpmn:extensionElements>
+        <uengine:properties json="{&#34;role&#34;:&#34;user&#34;,&#34;tool&#34;:&#34;formHandler:loan_contract_prepare_form&#34;}" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_HeadOffice_No</bpmn:incoming>
+      <bpmn:incoming>Flow_HeadOffice_Approve</bpmn:incoming>
+      <bpmn:outgoing>Flow_Contract_Execution</bpmn:outgoing>
+    </bpmn:userTask>
+
+    <bpmn:serviceTask id="ServiceTask_LoanExecution" name="대출 실행">
+      <bpmn:extensionElements>
+        <uengine:properties json="{&#34;systemType&#34;:&#34;external&#34;,&#34;systemName&#34;:&#34;계정계/여신실행 시스템&#34;,&#34;taskKind&#34;:&#34;system&#34;}" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_Contract_Execution</bpmn:incoming>
+      <bpmn:incoming>Flow_Retry_Execution</bpmn:incoming>
+      <bpmn:outgoing>Flow_Execution_Result</bpmn:outgoing>
+    </bpmn:serviceTask>
+
+    <bpmn:exclusiveGateway id="Gateway_ExecutionResult" name="실행결과" default="Flow_Execution_Retry">
+      <bpmn:incoming>Flow_Execution_Result</bpmn:incoming>
+      <bpmn:outgoing>Flow_Execution_Complete</bpmn:outgoing>
+      <bpmn:outgoing>Flow_Execution_Retry</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+
+    <bpmn:userTask id="UserTask_ExecutionRetry" name="실행오류 재처리">
+      <bpmn:extensionElements>
+        <uengine:properties json="{&#34;role&#34;:&#34;user&#34;,&#34;tool&#34;:&#34;formHandler:loan_execution_retry_form&#34;,&#34;checkpoints&#34;:[&#34;오류 원인 확인&#34;,&#34;재실행 여부 판단&#34;]}" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_Execution_Retry</bpmn:incoming>
+      <bpmn:outgoing>Flow_Retry_Execution</bpmn:outgoing>
+    </bpmn:userTask>
+
+    <bpmn:userTask id="UserTask_RejectNotice" name="반려통보">
+      <bpmn:extensionElements>
+        <uengine:properties json="{&#34;role&#34;:&#34;user&#34;,&#34;tool&#34;:&#34;formHandler:loan_reject_notice_form&#34;}" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_Inquiry_Reject</bpmn:incoming>
+      <bpmn:incoming>Flow_Review_Reject</bpmn:incoming>
+      <bpmn:incoming>Flow_HeadOffice_Reject</bpmn:incoming>
+      <bpmn:outgoing>Flow_Reject_End</bpmn:outgoing>
+    </bpmn:userTask>
+
+    <bpmn:endEvent id="End_Rejected" name="반려종료">
+      <bpmn:incoming>Flow_Reject_End</bpmn:incoming>
+    </bpmn:endEvent>
+
+    <bpmn:endEvent id="End_Completed" name="완료">
+      <bpmn:incoming>Flow_Execution_Complete</bpmn:incoming>
+    </bpmn:endEvent>
+
+    <bpmn:sequenceFlow id="Flow_Start_Application" sourceRef="Start_Loan" targetRef="UserTask_Application" />
+    <bpmn:sequenceFlow id="Flow_Application_DocumentReview" sourceRef="UserTask_Application" targetRef="UserTask_DocumentReview" />
+    <bpmn:sequenceFlow id="Flow_DocumentReview_Gateway" sourceRef="UserTask_DocumentReview" targetRef="Gateway_DocumentComplete" />
+    <bpmn:sequenceFlow id="Flow_Document_Yes" name="Y" sourceRef="Gateway_DocumentComplete" targetRef="Gateway_InquirySplit">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"><![CDATA[서류충족여부 == "Y"]]></bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_Document_No" name="N" sourceRef="Gateway_DocumentComplete" targetRef="UserTask_SupplementRequest">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"><![CDATA[서류충족여부 == "N"]]></bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_Supplement_Resubmit" sourceRef="UserTask_SupplementRequest" targetRef="UserTask_ResubmitDocuments" />
+    <bpmn:sequenceFlow id="Flow_Resubmit_DocumentReview" sourceRef="UserTask_ResubmitDocuments" targetRef="UserTask_DocumentReview" />
+    <bpmn:sequenceFlow id="Flow_Split_Identity" sourceRef="Gateway_InquirySplit" targetRef="ServiceTask_IdentityCheck" />
+    <bpmn:sequenceFlow id="Flow_Split_Collateral" sourceRef="Gateway_InquirySplit" targetRef="ServiceTask_CollateralInquiry" />
+    <bpmn:sequenceFlow id="Flow_Identity_Join" sourceRef="ServiceTask_IdentityCheck" targetRef="Gateway_InquiryJoin" />
+    <bpmn:sequenceFlow id="Flow_Collateral_Join" sourceRef="ServiceTask_CollateralInquiry" targetRef="Gateway_InquiryJoin" />
+    <bpmn:sequenceFlow id="Flow_Join_InquiryResult" sourceRef="Gateway_InquiryJoin" targetRef="Gateway_InquiryResult" />
+    <bpmn:sequenceFlow id="Flow_Inquiry_Normal" name="정상" sourceRef="Gateway_InquiryResult" targetRef="UserTask_CreditReview">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"><![CDATA[조회결과 == "정상"]]></bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_Inquiry_Reject" name="이상" sourceRef="Gateway_InquiryResult" targetRef="UserTask_RejectNotice">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"><![CDATA[조회결과 == "이상"]]></bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_Review_Result" sourceRef="UserTask_CreditReview" targetRef="Gateway_ReviewResult" />
+    <bpmn:sequenceFlow id="Flow_Review_Approve" name="승인" sourceRef="Gateway_ReviewResult" targetRef="Gateway_HeadOfficeRequired">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"><![CDATA[심사결과 == "승인"]]></bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_Review_Supplement" name="보완" sourceRef="Gateway_ReviewResult" targetRef="UserTask_SupplementRequest">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"><![CDATA[심사결과 == "보완"]]></bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_Review_Reject" name="반려" sourceRef="Gateway_ReviewResult" targetRef="UserTask_RejectNotice">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"><![CDATA[심사결과 == "반려"]]></bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_HeadOffice_Yes" name="Y" sourceRef="Gateway_HeadOfficeRequired" targetRef="UserTask_HeadOfficeApproval">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"><![CDATA[본부승인대상여부 == "Y"]]></bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_HeadOffice_No" name="N" sourceRef="Gateway_HeadOfficeRequired" targetRef="UserTask_ContractPrepare">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"><![CDATA[본부승인대상여부 == "N"]]></bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_HeadOffice_Result" sourceRef="UserTask_HeadOfficeApproval" targetRef="Gateway_HeadOfficeResult" />
+    <bpmn:sequenceFlow id="Flow_HeadOffice_Approve" name="승인" sourceRef="Gateway_HeadOfficeResult" targetRef="UserTask_ContractPrepare">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"><![CDATA[본부승인결과 == "승인"]]></bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_HeadOffice_Reject" name="반려" sourceRef="Gateway_HeadOfficeResult" targetRef="UserTask_RejectNotice">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"><![CDATA[본부승인결과 == "반려"]]></bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_Contract_Execution" sourceRef="UserTask_ContractPrepare" targetRef="ServiceTask_LoanExecution" />
+    <bpmn:sequenceFlow id="Flow_Execution_Result" sourceRef="ServiceTask_LoanExecution" targetRef="Gateway_ExecutionResult" />
+    <bpmn:sequenceFlow id="Flow_Execution_Complete" name="정상" sourceRef="Gateway_ExecutionResult" targetRef="End_Completed">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"><![CDATA[실행결과 == "정상"]]></bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_Execution_Retry" name="오류" sourceRef="Gateway_ExecutionResult" targetRef="UserTask_ExecutionRetry">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"><![CDATA[실행결과 == "오류"]]></bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_Retry_Execution" sourceRef="UserTask_ExecutionRetry" targetRef="ServiceTask_LoanExecution" />
+    <bpmn:sequenceFlow id="Flow_Reject_End" sourceRef="UserTask_RejectNotice" targetRef="End_Rejected" />
+  </bpmn:process>
+
+  <bpmndi:BPMNDiagram id="BPMNDiagram_Loan_Main">
+    <bpmndi:BPMNPlane id="BPMNPlane_Loan_Main" bpmnElement="Collaboration_Loan_Main">
+      <bpmndi:BPMNShape id="Participant_Loan_Main_di" bpmnElement="Participant_Loan_Main" isHorizontal="true">
+        <dc:Bounds x="-1220" y="-500" width="2550" height="1050" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_Customer_di" bpmnElement="Lane_Customer" isHorizontal="true">
+        <dc:Bounds x="-1190" y="-500" width="2520" height="150" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_Branch_di" bpmnElement="Lane_Branch" isHorizontal="true">
+        <dc:Bounds x="-1190" y="-350" width="2520" height="190" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_ExternalSystem_di" bpmnElement="Lane_ExternalSystem" isHorizontal="true">
+        <dc:Bounds x="-1190" y="-160" width="2520" height="170" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_Review_di" bpmnElement="Lane_Review" isHorizontal="true">
+        <dc:Bounds x="-1190" y="10" width="2520" height="160" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_HeadOffice_di" bpmnElement="Lane_HeadOffice" isHorizontal="true">
+        <dc:Bounds x="-1190" y="170" width="2520" height="150" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_Operation_di" bpmnElement="Lane_Operation" isHorizontal="true">
+        <dc:Bounds x="-1190" y="320" width="2520" height="230" />
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="Start_Loan_di" bpmnElement="Start_Loan">
+        <dc:Bounds x="-1130" y="-443" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="UserTask_Application_di" bpmnElement="UserTask_Application">
+        <dc:Bounds x="-1040" y="-465" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="UserTask_DocumentReview_di" bpmnElement="UserTask_DocumentReview">
+        <dc:Bounds x="-850" y="-310" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_DocumentComplete_di" bpmnElement="Gateway_DocumentComplete" isMarkerVisible="true">
+        <dc:Bounds x="-665" y="-295" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="UserTask_SupplementRequest_di" bpmnElement="UserTask_SupplementRequest">
+        <dc:Bounds x="-520" y="-310" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="UserTask_ResubmitDocuments_di" bpmnElement="UserTask_ResubmitDocuments">
+        <dc:Bounds x="-360" y="-465" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_InquirySplit_di" bpmnElement="Gateway_InquirySplit">
+        <dc:Bounds x="-520" y="-95" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ServiceTask_IdentityCheck_di" bpmnElement="ServiceTask_IdentityCheck">
+        <dc:Bounds x="-360" y="-140" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ServiceTask_CollateralInquiry_di" bpmnElement="ServiceTask_CollateralInquiry">
+        <dc:Bounds x="-360" y="-50" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_InquiryJoin_di" bpmnElement="Gateway_InquiryJoin">
+        <dc:Bounds x="-175" y="-95" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_InquiryResult_di" bpmnElement="Gateway_InquiryResult" isMarkerVisible="true">
+        <dc:Bounds x="-25" y="-95" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="UserTask_CreditReview_di" bpmnElement="UserTask_CreditReview">
+        <dc:Bounds x="110" y="50" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_ReviewResult_di" bpmnElement="Gateway_ReviewResult" isMarkerVisible="true">
+        <dc:Bounds x="285" y="65" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_HeadOfficeRequired_di" bpmnElement="Gateway_HeadOfficeRequired" isMarkerVisible="true">
+        <dc:Bounds x="450" y="65" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="UserTask_HeadOfficeApproval_di" bpmnElement="UserTask_HeadOfficeApproval">
+        <dc:Bounds x="590" y="205" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_HeadOfficeResult_di" bpmnElement="Gateway_HeadOfficeResult" isMarkerVisible="true">
+        <dc:Bounds x="760" y="220" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="UserTask_ContractPrepare_di" bpmnElement="UserTask_ContractPrepare">
+        <dc:Bounds x="590" y="375" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ServiceTask_LoanExecution_di" bpmnElement="ServiceTask_LoanExecution">
+        <dc:Bounds x="760" y="375" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_ExecutionResult_di" bpmnElement="Gateway_ExecutionResult" isMarkerVisible="true">
+        <dc:Bounds x="930" y="390" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="UserTask_ExecutionRetry_di" bpmnElement="UserTask_ExecutionRetry">
+        <dc:Bounds x="920" y="465" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_Completed_di" bpmnElement="End_Completed">
+        <dc:Bounds x="1090" y="397" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="UserTask_RejectNotice_di" bpmnElement="UserTask_RejectNotice">
+        <dc:Bounds x="110" y="-310" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_Rejected_di" bpmnElement="End_Rejected">
+        <dc:Bounds x="290" y="-288" width="36" height="36" />
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNEdge id="Flow_Start_Application_di" bpmnElement="Flow_Start_Application">
+        <di:waypoint x="-1094" y="-425" />
+        <di:waypoint x="-1040" y="-425" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Application_DocumentReview_di" bpmnElement="Flow_Application_DocumentReview">
+        <di:waypoint x="-940" y="-425" />
+        <di:waypoint x="-800" y="-425" />
+        <di:waypoint x="-800" y="-310" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_DocumentReview_Gateway_di" bpmnElement="Flow_DocumentReview_Gateway">
+        <di:waypoint x="-750" y="-270" />
+        <di:waypoint x="-665" y="-270" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Document_No_di" bpmnElement="Flow_Document_No">
+        <di:waypoint x="-615" y="-270" />
+        <di:waypoint x="-520" y="-270" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Supplement_Resubmit_di" bpmnElement="Flow_Supplement_Resubmit">
+        <di:waypoint x="-420" y="-270" />
+        <di:waypoint x="-310" y="-270" />
+        <di:waypoint x="-310" y="-385" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Resubmit_DocumentReview_di" bpmnElement="Flow_Resubmit_DocumentReview">
+        <di:waypoint x="-360" y="-425" />
+        <di:waypoint x="-800" y="-425" />
+        <di:waypoint x="-800" y="-310" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Document_Yes_di" bpmnElement="Flow_Document_Yes">
+        <di:waypoint x="-640" y="-245" />
+        <di:waypoint x="-640" y="-70" />
+        <di:waypoint x="-520" y="-70" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Split_Identity_di" bpmnElement="Flow_Split_Identity">
+        <di:waypoint x="-470" y="-70" />
+        <di:waypoint x="-430" y="-70" />
+        <di:waypoint x="-430" y="-100" />
+        <di:waypoint x="-360" y="-100" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Split_Collateral_di" bpmnElement="Flow_Split_Collateral">
+        <di:waypoint x="-470" y="-70" />
+        <di:waypoint x="-430" y="-70" />
+        <di:waypoint x="-430" y="-10" />
+        <di:waypoint x="-360" y="-10" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Identity_Join_di" bpmnElement="Flow_Identity_Join">
+        <di:waypoint x="-260" y="-100" />
+        <di:waypoint x="-210" y="-100" />
+        <di:waypoint x="-210" y="-70" />
+        <di:waypoint x="-175" y="-70" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Collateral_Join_di" bpmnElement="Flow_Collateral_Join">
+        <di:waypoint x="-260" y="-10" />
+        <di:waypoint x="-210" y="-10" />
+        <di:waypoint x="-210" y="-70" />
+        <di:waypoint x="-175" y="-70" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Join_InquiryResult_di" bpmnElement="Flow_Join_InquiryResult">
+        <di:waypoint x="-125" y="-70" />
+        <di:waypoint x="-25" y="-70" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Inquiry_Normal_di" bpmnElement="Flow_Inquiry_Normal">
+        <di:waypoint x="0" y="-45" />
+        <di:waypoint x="0" y="90" />
+        <di:waypoint x="110" y="90" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Inquiry_Reject_di" bpmnElement="Flow_Inquiry_Reject">
+        <di:waypoint x="0" y="-95" />
+        <di:waypoint x="0" y="-270" />
+        <di:waypoint x="110" y="-270" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Review_Result_di" bpmnElement="Flow_Review_Result">
+        <di:waypoint x="210" y="90" />
+        <di:waypoint x="285" y="90" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Review_Approve_di" bpmnElement="Flow_Review_Approve">
+        <di:waypoint x="335" y="90" />
+        <di:waypoint x="450" y="90" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Review_Supplement_di" bpmnElement="Flow_Review_Supplement">
+        <di:waypoint x="310" y="65" />
+        <di:waypoint x="310" y="-160" />
+        <di:waypoint x="-470" y="-160" />
+        <di:waypoint x="-470" y="-230" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Review_Reject_di" bpmnElement="Flow_Review_Reject">
+        <di:waypoint x="310" y="65" />
+        <di:waypoint x="310" y="-270" />
+        <di:waypoint x="210" y="-270" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_HeadOffice_Yes_di" bpmnElement="Flow_HeadOffice_Yes">
+        <di:waypoint x="475" y="115" />
+        <di:waypoint x="475" y="245" />
+        <di:waypoint x="590" y="245" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_HeadOffice_No_di" bpmnElement="Flow_HeadOffice_No">
+        <di:waypoint x="475" y="115" />
+        <di:waypoint x="475" y="415" />
+        <di:waypoint x="590" y="415" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_HeadOffice_Result_di" bpmnElement="Flow_HeadOffice_Result">
+        <di:waypoint x="690" y="245" />
+        <di:waypoint x="760" y="245" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_HeadOffice_Approve_di" bpmnElement="Flow_HeadOffice_Approve">
+        <di:waypoint x="785" y="270" />
+        <di:waypoint x="785" y="350" />
+        <di:waypoint x="640" y="350" />
+        <di:waypoint x="640" y="375" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_HeadOffice_Reject_di" bpmnElement="Flow_HeadOffice_Reject">
+        <di:waypoint x="810" y="245" />
+        <di:waypoint x="870" y="245" />
+        <di:waypoint x="870" y="-270" />
+        <di:waypoint x="210" y="-270" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Contract_Execution_di" bpmnElement="Flow_Contract_Execution">
+        <di:waypoint x="690" y="415" />
+        <di:waypoint x="760" y="415" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Execution_Result_di" bpmnElement="Flow_Execution_Result">
+        <di:waypoint x="860" y="415" />
+        <di:waypoint x="930" y="415" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Execution_Complete_di" bpmnElement="Flow_Execution_Complete">
+        <di:waypoint x="980" y="415" />
+        <di:waypoint x="1090" y="415" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Execution_Retry_di" bpmnElement="Flow_Execution_Retry">
+        <di:waypoint x="955" y="440" />
+        <di:waypoint x="955" y="465" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Retry_Execution_di" bpmnElement="Flow_Retry_Execution">
+        <di:waypoint x="920" y="505" />
+        <di:waypoint x="810" y="505" />
+        <di:waypoint x="810" y="455" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Reject_End_di" bpmnElement="Flow_Reject_End">
+        <di:waypoint x="210" y="-270" />
+        <di:waypoint x="290" y="-270" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

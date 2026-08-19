@@ -1,0 +1,292 @@
+<?xml version='1.0' encoding='utf-8'?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:uengine="http://uengine" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="Definitions_Process_NewDepositAccount" targetNamespace="http://uengine.org/sds/representative">
+  <bpmn:process id="Process_NewDepositAccount" name="일반계좌신규" isExecutable="true">
+    <bpmn:extensionElements>
+      <uengine:properties json="{&quot;definitionName&quot;:&quot;일반계좌신규&quot;,&quot;version&quot;:&quot;1.0&quot;,&quot;shortDescription&quot;:{&quot;text&quot;:&quot;분기 시뮬레이션 실행용 대표 프로세스&quot;}}">
+        <uengine:variable name="개인정보동의여부" type="Text" />
+        <uengine:variable name="본인인증결과" type="Text" />
+        <uengine:variable name="신규고객여부" type="Text" />
+        <uengine:variable name="재시도여부" type="Text" />
+      </uengine:properties>
+    </bpmn:extensionElements>
+    <bpmn:laneSet id="LaneSet_Process_NewDepositAccount">
+      <bpmn:lane id="Lane_1" name="고객">
+        <bpmn:flowNodeRef>Start_Account</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_2" name="영업점">
+        <bpmn:flowNodeRef>Task_AccountConsult</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gw_NewCustomer</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gw_AuthOk</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_AuthRetry</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_PrivacyConsent</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gw_Consent</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_CancelNotice</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>End_AccountCancel</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_3" name="외부 인증/코어뱅킹 시스템">
+        <bpmn:flowNodeRef>Svc_PhoneAuth</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Svc_OpenAccount</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>End_AccountDone</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="Start_Account" name="상담 시작">
+      <bpmn:extensionElements>
+        <uengine:properties json="{&quot;checkpoints&quot;:[],&quot;attachments&quot;:[],&quot;taskLink&quot;:&quot;&quot;,&quot;role&quot;:&quot;고객&quot;,&quot;process&quot;:&quot;Process_NewDepositAccount&quot;,&quot;inputData&quot;:[],&quot;outputData&quot;:[],&quot;properties&quot;:&quot;{}&quot;,&quot;duration&quot;:5,&quot;tool&quot;:&quot;formHandler:defaultform&quot;}" />
+      </bpmn:extensionElements>
+      <bpmn:outgoing>Flow_A01</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:userTask id="Task_AccountConsult" name="상담/권유(방문판매)">
+      <bpmn:extensionElements>
+        <uengine:properties json="{&quot;checkpoints&quot;:[],&quot;attachments&quot;:[],&quot;taskLink&quot;:&quot;&quot;,&quot;role&quot;:&quot;영업점&quot;,&quot;process&quot;:&quot;Process_NewDepositAccount&quot;,&quot;inputData&quot;:[],&quot;outputData&quot;:[],&quot;properties&quot;:&quot;{}&quot;,&quot;duration&quot;:5,&quot;tool&quot;:&quot;formHandler:일반계좌_상담권유&quot;,&quot;eventSynchronization&quot;:{&quot;mappingContext&quot;:{&quot;mappingElements&quot;:[{&quot;argument&quot;:{&quot;text&quot;:&quot;신규고객여부&quot;},&quot;direction&quot;:&quot;out&quot;,&quot;variable&quot;:{&quot;name&quot;:&quot;[Arguments].신규고객여부&quot;},&quot;isKey&quot;:false}]}}}" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_A01</bpmn:incoming>
+      <bpmn:outgoing>Flow_A02</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:exclusiveGateway id="Gw_NewCustomer" name="신규고객 여부">
+      <bpmn:extensionElements>
+        <uengine:properties json="{&quot;checkpoints&quot;:[],&quot;attachments&quot;:[],&quot;taskLink&quot;:&quot;&quot;,&quot;role&quot;:&quot;영업점&quot;,&quot;process&quot;:&quot;Process_NewDepositAccount&quot;,&quot;inputData&quot;:[],&quot;outputData&quot;:[],&quot;properties&quot;:&quot;{}&quot;,&quot;duration&quot;:5,&quot;tool&quot;:&quot;formHandler:defaultform&quot;}" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_A02</bpmn:incoming>
+      <bpmn:outgoing>Flow_A03</bpmn:outgoing>
+      <bpmn:outgoing>Flow_A04</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:userTask id="Svc_PhoneAuth" name="휴대폰 본인인증">
+      <bpmn:extensionElements>
+        <uengine:properties json="{&quot;checkpoints&quot;:[&quot;테스트 응답 입력&quot;],&quot;attachments&quot;:[],&quot;taskLink&quot;:&quot;&quot;,&quot;role&quot;:&quot;외부 인증/코어뱅킹 시스템&quot;,&quot;process&quot;:&quot;Process_NewDepositAccount&quot;,&quot;inputData&quot;:[],&quot;outputData&quot;:[],&quot;properties&quot;:&quot;{}&quot;,&quot;duration&quot;:5,&quot;tool&quot;:&quot;formHandler:일반계좌_휴대폰본인인증&quot;,&quot;eventSynchronization&quot;:{&quot;mappingContext&quot;:{&quot;mappingElements&quot;:[{&quot;argument&quot;:{&quot;text&quot;:&quot;본인인증결과&quot;},&quot;direction&quot;:&quot;out&quot;,&quot;variable&quot;:{&quot;name&quot;:&quot;[Arguments].본인인증결과&quot;},&quot;isKey&quot;:false}]}}}" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_A03</bpmn:incoming>
+      <bpmn:incoming>Flow_A07</bpmn:incoming>
+      <bpmn:outgoing>Flow_A05</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:exclusiveGateway id="Gw_AuthOk" name="본인인증 결과">
+      <bpmn:extensionElements>
+        <uengine:properties json="{&quot;checkpoints&quot;:[],&quot;attachments&quot;:[],&quot;taskLink&quot;:&quot;&quot;,&quot;role&quot;:&quot;영업점&quot;,&quot;process&quot;:&quot;Process_NewDepositAccount&quot;,&quot;inputData&quot;:[],&quot;outputData&quot;:[],&quot;properties&quot;:&quot;{}&quot;,&quot;duration&quot;:5,&quot;tool&quot;:&quot;formHandler:defaultform&quot;}" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_A05</bpmn:incoming>
+      <bpmn:outgoing>Flow_A06</bpmn:outgoing>
+      <bpmn:outgoing>Flow_A09</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:userTask id="Task_AuthRetry" name="본인확인 재요청">
+      <bpmn:extensionElements>
+        <uengine:properties json="{&quot;checkpoints&quot;:[],&quot;attachments&quot;:[],&quot;taskLink&quot;:&quot;&quot;,&quot;role&quot;:&quot;영업점&quot;,&quot;process&quot;:&quot;Process_NewDepositAccount&quot;,&quot;inputData&quot;:[],&quot;outputData&quot;:[],&quot;properties&quot;:&quot;{}&quot;,&quot;duration&quot;:5,&quot;tool&quot;:&quot;formHandler:일반계좌_본인확인재요청&quot;,&quot;eventSynchronization&quot;:{&quot;mappingContext&quot;:{&quot;mappingElements&quot;:[{&quot;argument&quot;:{&quot;text&quot;:&quot;재시도여부&quot;},&quot;direction&quot;:&quot;out&quot;,&quot;variable&quot;:{&quot;name&quot;:&quot;[Arguments].재시도여부&quot;},&quot;isKey&quot;:false}]}}}" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_A06</bpmn:incoming>
+      <bpmn:outgoing>Flow_A07</bpmn:outgoing>
+      <bpmn:outgoing>Flow_A08</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="Task_PrivacyConsent" name="개인정보 이용동의서">
+      <bpmn:extensionElements>
+        <uengine:properties json="{&quot;checkpoints&quot;:[],&quot;attachments&quot;:[],&quot;taskLink&quot;:&quot;&quot;,&quot;role&quot;:&quot;영업점&quot;,&quot;process&quot;:&quot;Process_NewDepositAccount&quot;,&quot;inputData&quot;:[],&quot;outputData&quot;:[],&quot;properties&quot;:&quot;{}&quot;,&quot;duration&quot;:5,&quot;tool&quot;:&quot;formHandler:일반계좌_개인정보동의&quot;,&quot;eventSynchronization&quot;:{&quot;mappingContext&quot;:{&quot;mappingElements&quot;:[{&quot;argument&quot;:{&quot;text&quot;:&quot;개인정보동의여부&quot;},&quot;direction&quot;:&quot;out&quot;,&quot;variable&quot;:{&quot;name&quot;:&quot;[Arguments].개인정보동의여부&quot;},&quot;isKey&quot;:false}]}}}" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_A04</bpmn:incoming>
+      <bpmn:incoming>Flow_A09</bpmn:incoming>
+      <bpmn:outgoing>Flow_A10</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:exclusiveGateway id="Gw_Consent" name="개인정보 동의 여부">
+      <bpmn:extensionElements>
+        <uengine:properties json="{&quot;checkpoints&quot;:[],&quot;attachments&quot;:[],&quot;taskLink&quot;:&quot;&quot;,&quot;role&quot;:&quot;영업점&quot;,&quot;process&quot;:&quot;Process_NewDepositAccount&quot;,&quot;inputData&quot;:[],&quot;outputData&quot;:[],&quot;properties&quot;:&quot;{}&quot;,&quot;duration&quot;:5,&quot;tool&quot;:&quot;formHandler:defaultform&quot;}" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_A10</bpmn:incoming>
+      <bpmn:outgoing>Flow_A11</bpmn:outgoing>
+      <bpmn:outgoing>Flow_A12</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:userTask id="Svc_OpenAccount" name="계좌 신규 등록">
+      <bpmn:extensionElements>
+        <uengine:properties json="{&quot;checkpoints&quot;:[&quot;테스트 응답 입력&quot;],&quot;attachments&quot;:[],&quot;taskLink&quot;:&quot;&quot;,&quot;role&quot;:&quot;외부 인증/코어뱅킹 시스템&quot;,&quot;process&quot;:&quot;Process_NewDepositAccount&quot;,&quot;inputData&quot;:[],&quot;outputData&quot;:[],&quot;properties&quot;:&quot;{}&quot;,&quot;duration&quot;:5,&quot;tool&quot;:&quot;formHandler:일반계좌_계좌신규등록&quot;,&quot;eventSynchronization&quot;:{&quot;mappingContext&quot;:{&quot;mappingElements&quot;:[{&quot;argument&quot;:{&quot;text&quot;:&quot;계좌개설결과&quot;},&quot;direction&quot;:&quot;out&quot;,&quot;variable&quot;:{&quot;name&quot;:&quot;[Arguments].계좌개설결과&quot;},&quot;isKey&quot;:false}]}}}" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_A11</bpmn:incoming>
+      <bpmn:outgoing>Flow_A13</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="Task_CancelNotice" name="개설취소 통보">
+      <bpmn:extensionElements>
+        <uengine:properties json="{&quot;checkpoints&quot;:[],&quot;attachments&quot;:[],&quot;taskLink&quot;:&quot;&quot;,&quot;role&quot;:&quot;영업점&quot;,&quot;process&quot;:&quot;Process_NewDepositAccount&quot;,&quot;inputData&quot;:[],&quot;outputData&quot;:[],&quot;properties&quot;:&quot;{}&quot;,&quot;duration&quot;:5,&quot;tool&quot;:&quot;formHandler:일반계좌_개설취소통보&quot;}" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_A08</bpmn:incoming>
+      <bpmn:incoming>Flow_A12</bpmn:incoming>
+      <bpmn:outgoing>Flow_A14</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:endEvent id="End_AccountCancel" name="취소 종료">
+      <bpmn:extensionElements>
+        <uengine:properties json="{&quot;checkpoints&quot;:[],&quot;attachments&quot;:[],&quot;taskLink&quot;:&quot;&quot;,&quot;role&quot;:&quot;영업점&quot;,&quot;process&quot;:&quot;Process_NewDepositAccount&quot;,&quot;inputData&quot;:[],&quot;outputData&quot;:[],&quot;properties&quot;:&quot;{}&quot;,&quot;duration&quot;:5,&quot;tool&quot;:&quot;formHandler:defaultform&quot;}" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_A14</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:endEvent id="End_AccountDone" name="계좌개설 완료">
+      <bpmn:extensionElements>
+        <uengine:properties json="{&quot;checkpoints&quot;:[],&quot;attachments&quot;:[],&quot;taskLink&quot;:&quot;&quot;,&quot;role&quot;:&quot;외부 인증/코어뱅킹 시스템&quot;,&quot;process&quot;:&quot;Process_NewDepositAccount&quot;,&quot;inputData&quot;:[],&quot;outputData&quot;:[],&quot;properties&quot;:&quot;{}&quot;,&quot;duration&quot;:5,&quot;tool&quot;:&quot;formHandler:defaultform&quot;}" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_A13</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_A01" sourceRef="Start_Account" targetRef="Task_AccountConsult" />
+    <bpmn:sequenceFlow id="Flow_A02" sourceRef="Task_AccountConsult" targetRef="Gw_NewCustomer" />
+    <bpmn:sequenceFlow id="Flow_A03" sourceRef="Gw_NewCustomer" targetRef="Svc_PhoneAuth" name="Y">
+      <bpmn:extensionElements>
+        <uengine:properties json="{&quot;condition&quot;:{&quot;_type&quot;:&quot;org.uengine.kernel.Evaluate&quot;,&quot;key&quot;:&quot;신규고객여부&quot;,&quot;value&quot;:&quot;Y&quot;}}" />
+      </bpmn:extensionElements>
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${신규고객여부 == "Y"}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_A04" sourceRef="Gw_NewCustomer" targetRef="Task_PrivacyConsent" name="N">
+      <bpmn:extensionElements>
+        <uengine:properties json="{&quot;condition&quot;:{&quot;_type&quot;:&quot;org.uengine.kernel.Evaluate&quot;,&quot;key&quot;:&quot;신규고객여부&quot;,&quot;value&quot;:&quot;N&quot;}}" />
+      </bpmn:extensionElements>
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${신규고객여부 == "N"}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_A05" sourceRef="Svc_PhoneAuth" targetRef="Gw_AuthOk" />
+    <bpmn:sequenceFlow id="Flow_A06" sourceRef="Gw_AuthOk" targetRef="Task_AuthRetry" name="실패">
+      <bpmn:extensionElements>
+        <uengine:properties json="{&quot;condition&quot;:{&quot;_type&quot;:&quot;org.uengine.kernel.Evaluate&quot;,&quot;key&quot;:&quot;본인인증결과&quot;,&quot;value&quot;:&quot;실패&quot;}}" />
+      </bpmn:extensionElements>
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${본인인증결과 == "실패"}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_A07" sourceRef="Task_AuthRetry" targetRef="Svc_PhoneAuth" name="재시도">
+      <bpmn:extensionElements>
+        <uengine:properties json="{&quot;condition&quot;:{&quot;_type&quot;:&quot;org.uengine.kernel.Evaluate&quot;,&quot;key&quot;:&quot;재시도여부&quot;,&quot;value&quot;:&quot;Y&quot;}}" />
+      </bpmn:extensionElements>
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${재시도여부 == "Y"}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_A08" sourceRef="Task_AuthRetry" targetRef="Task_CancelNotice" name="취소">
+      <bpmn:extensionElements>
+        <uengine:properties json="{&quot;condition&quot;:{&quot;_type&quot;:&quot;org.uengine.kernel.Evaluate&quot;,&quot;key&quot;:&quot;재시도여부&quot;,&quot;value&quot;:&quot;N&quot;}}" />
+      </bpmn:extensionElements>
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${재시도여부 == "N"}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_A09" sourceRef="Gw_AuthOk" targetRef="Task_PrivacyConsent" name="정상">
+      <bpmn:extensionElements>
+        <uengine:properties json="{&quot;condition&quot;:{&quot;_type&quot;:&quot;org.uengine.kernel.Evaluate&quot;,&quot;key&quot;:&quot;본인인증결과&quot;,&quot;value&quot;:&quot;정상&quot;}}" />
+      </bpmn:extensionElements>
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${본인인증결과 == "정상"}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_A10" sourceRef="Task_PrivacyConsent" targetRef="Gw_Consent" />
+    <bpmn:sequenceFlow id="Flow_A11" sourceRef="Gw_Consent" targetRef="Svc_OpenAccount" name="Y">
+      <bpmn:extensionElements>
+        <uengine:properties json="{&quot;condition&quot;:{&quot;_type&quot;:&quot;org.uengine.kernel.Evaluate&quot;,&quot;key&quot;:&quot;개인정보동의여부&quot;,&quot;value&quot;:&quot;Y&quot;}}" />
+      </bpmn:extensionElements>
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${개인정보동의여부 == "Y"}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_A12" sourceRef="Gw_Consent" targetRef="Task_CancelNotice" name="N">
+      <bpmn:extensionElements>
+        <uengine:properties json="{&quot;condition&quot;:{&quot;_type&quot;:&quot;org.uengine.kernel.Evaluate&quot;,&quot;key&quot;:&quot;개인정보동의여부&quot;,&quot;value&quot;:&quot;N&quot;}}" />
+      </bpmn:extensionElements>
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${개인정보동의여부 == "N"}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_A13" sourceRef="Svc_OpenAccount" targetRef="End_AccountDone" />
+    <bpmn:sequenceFlow id="Flow_A14" sourceRef="Task_CancelNotice" targetRef="End_AccountCancel" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="Diagram_Process_NewDepositAccount">
+    <bpmndi:BPMNPlane id="Plane_Process_NewDepositAccount" bpmnElement="Process_NewDepositAccount">
+      <bpmndi:BPMNShape id="Lane_1_di" bpmnElement="Lane_1" isHorizontal="true">
+        <dc:Bounds x="60" y="90" width="2380" height="150" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_2_di" bpmnElement="Lane_2" isHorizontal="true">
+        <dc:Bounds x="60" y="240" width="2380" height="150" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_3_di" bpmnElement="Lane_3" isHorizontal="true">
+        <dc:Bounds x="60" y="390" width="2380" height="150" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Start_Account_di" bpmnElement="Start_Account">
+        <dc:Bounds x="110" y="147" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_AccountConsult_di" bpmnElement="Task_AccountConsult">
+        <dc:Bounds x="235" y="276" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gw_NewCustomer_di" bpmnElement="Gw_NewCustomer">
+        <dc:Bounds x="410" y="291" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Svc_PhoneAuth_di" bpmnElement="Svc_PhoneAuth">
+        <dc:Bounds x="545" y="426" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gw_AuthOk_di" bpmnElement="Gw_AuthOk">
+        <dc:Bounds x="720" y="291" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_AuthRetry_di" bpmnElement="Task_AuthRetry">
+        <dc:Bounds x="845" y="276" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_PrivacyConsent_di" bpmnElement="Task_PrivacyConsent">
+        <dc:Bounds x="945" y="276" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gw_Consent_di" bpmnElement="Gw_Consent">
+        <dc:Bounds x="1120" y="291" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Svc_OpenAccount_di" bpmnElement="Svc_OpenAccount">
+        <dc:Bounds x="1255" y="426" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_CancelNotice_di" bpmnElement="Task_CancelNotice">
+        <dc:Bounds x="1355" y="276" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_AccountCancel_di" bpmnElement="End_AccountCancel">
+        <dc:Bounds x="1530" y="297" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_AccountDone_di" bpmnElement="End_AccountDone">
+        <dc:Bounds x="1430" y="447" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_A01_di" bpmnElement="Flow_A01">
+        <di:waypoint x="146" y="165" />
+        <di:waypoint x="190.5" y="165" />
+        <di:waypoint x="190.5" y="316" />
+        <di:waypoint x="235" y="316" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_A02_di" bpmnElement="Flow_A02">
+        <di:waypoint x="335" y="316" />
+        <di:waypoint x="410" y="316" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_A03_di" bpmnElement="Flow_A03">
+        <di:waypoint x="460" y="316" />
+        <di:waypoint x="502.5" y="316" />
+        <di:waypoint x="502.5" y="466" />
+        <di:waypoint x="545" y="466" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_A04_di" bpmnElement="Flow_A04">
+        <di:waypoint x="460" y="316" />
+        <di:waypoint x="945" y="316" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_A05_di" bpmnElement="Flow_A05">
+        <di:waypoint x="645" y="466" />
+        <di:waypoint x="682.5" y="466" />
+        <di:waypoint x="682.5" y="316" />
+        <di:waypoint x="720" y="316" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_A06_di" bpmnElement="Flow_A06">
+        <di:waypoint x="770" y="316" />
+        <di:waypoint x="845" y="316" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_A07_di" bpmnElement="Flow_A07">
+        <di:waypoint x="845" y="316" />
+        <di:waypoint x="745" y="316" />
+        <di:waypoint x="745" y="466" />
+        <di:waypoint x="645" y="466" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_A08_di" bpmnElement="Flow_A08">
+        <di:waypoint x="945" y="316" />
+        <di:waypoint x="1355" y="316" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_A09_di" bpmnElement="Flow_A09">
+        <di:waypoint x="770" y="316" />
+        <di:waypoint x="945" y="316" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_A10_di" bpmnElement="Flow_A10">
+        <di:waypoint x="1045" y="316" />
+        <di:waypoint x="1120" y="316" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_A11_di" bpmnElement="Flow_A11">
+        <di:waypoint x="1170" y="316" />
+        <di:waypoint x="1212.5" y="316" />
+        <di:waypoint x="1212.5" y="466" />
+        <di:waypoint x="1255" y="466" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_A12_di" bpmnElement="Flow_A12">
+        <di:waypoint x="1170" y="316" />
+        <di:waypoint x="1355" y="316" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_A13_di" bpmnElement="Flow_A13">
+        <di:waypoint x="1355" y="466" />
+        <di:waypoint x="1430" y="466" />
+        <di:waypoint x="1430" y="465" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_A14_di" bpmnElement="Flow_A14">
+        <di:waypoint x="1455" y="316" />
+        <di:waypoint x="1530" y="316" />
+        <di:waypoint x="1530" y="315" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

@@ -1,0 +1,4 @@
+<form>
+  <label>보완 요청</label>
+  <textarea-field name="supplementReason" alias="보완사유" rows="3" v-model="formValues['supplementReason']"></textarea-field>
+</form>

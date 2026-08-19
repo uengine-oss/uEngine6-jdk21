@@ -304,3 +304,35 @@ logging:
   level:
     org.hibernate.type: warn
     org.springframework.cloud: warn
+
+---
+# Keycloak Docker deployment uses its own host ports without changing dev/qa/prod defaults.
+spring:
+  config:
+    activate:
+      on-profile: keycloak-installed
+
+server:
+  port: ${PROCESS_SERVICE_PORT:9294}
+
+keycloak:
+  url: ${KEYCLOAK_URI:http://localhost:8280}
+
+---
+# PostgreSQL profile for local and Docker deployments.
+spring:
+  config:
+    activate:
+      on-profile: postgres
+  datasource:
+    url: jdbc:postgresql://${POSTGRES_HOST:localhost}:${POSTGRES_PORT:5432}/${POSTGRES_DB:uengine}
+    username: ${POSTGRES_USER:uengine}
+    password: ${POSTGRES_PASSWORD:uengine}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        default_schema: ${UENGINE_DB_SCHEMA:public}
