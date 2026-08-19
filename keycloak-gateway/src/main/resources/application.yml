@@ -34,7 +34,7 @@ spring:
         - id: instance-servicce
           uri: http://localhost:9094
           predicates:
-            - Path=/worklist/**, /test/**, /instance/**, /work-item/** , /instances/**, /dry-run/**, /validate/**, /start-and-complete
+            - Path=/worklist/**, /test/**, /instance/**, /work-item/** , /instances/**, /dry-run/**, /validate/**, /start-and-complete, /rpa/**
         # - id: inventory-service
         #   uri: http://localhost:8080
         #   predicates: 
@@ -103,13 +103,13 @@ server:
 ---
 
 keycloak-client:
-  server-url: ${KEYCLOAK_URI:http://localhost:8280}
+  server-url: ${KEYCLOAK_URI:http://localhost:8080}
   internal-server-url: ${KEYCLOAK_INTERNAL_URI:${keycloak-client.server-url}}
-  gateway-uri: ${GATEWAY_URI:http://localhost:8288}
+  gateway-uri: ${GATEWAY_URI:http://localhost:8088}
   frontend-uri: ${FRONTEND_URI:http://localhost:5373}
 
 server:
-  port: ${GATEWAY_PORT:8288}
+  port: ${GATEWAY_PORT:8088}
 
 spring:
   config:
@@ -136,7 +136,7 @@ spring:
         - id: instance-servicce
           uri: ${PROCESS_SERVICE_URI:http://localhost:9294}
           predicates:
-            - Path=/worklist/**, /test/**, /instance/**, /work-item/** , /instances/**, /dry-run/**, /validate/**, /start-and-complete
+            - Path=/worklist/**, /test/**, /instance/**, /work-item/** , /instances/**, /dry-run/**, /validate/**, /start-and-complete, /rpa/**
         - id: frontend
           uri: ${keycloak-client.frontend-uri}
           predicates:
