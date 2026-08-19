@@ -45,4 +45,6 @@ direct-run/logs/
 # Local samples and environment
 .sample/
 .env
+.env.*
+!.env.example
 .DS_Store
