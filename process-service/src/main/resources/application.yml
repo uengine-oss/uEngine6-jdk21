@@ -36,6 +36,12 @@ uengine:
     sync-on-startup:
       enabled: true
       clear-all-event-mappings: false
+  # 헤더 벨/배지 알림 (GET /notifications, POST /notifications/read)
+  notification:
+    enabled: ${UENGINE_NOTIFICATION_ENABLED:true}
+    # true 면 배정 대상이 행위자 본인일 때 알림을 만들지 않는다.
+    # 참고 구현(Process-GPT 의 handle_todolist_change 트리거)은 생략하지 않으므로 기본값은 false.
+    skip-self: ${UENGINE_NOTIFICATION_SKIP_SELF:false}
 
 logging:
   charset:

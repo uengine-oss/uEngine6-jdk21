@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  SQLTask 샘플.
+
+  * SQLTask_Register : SQL 을 직접 작성하는 방식 (DirectSQLStrategy, 기본)
+  * SQLTask_Lookup   : 컬럼 매핑만으로 SQL 을 생성하는 방식 (DatabaseMappingStrategy)
+
+  두 태스크 모두 같은 타입(org.uengine.kernel.bpmn.SQLTask)이며 설정 방식만 다르다.
+  여기서는 서버에 설정된 기본 DataSource 를 사용하므로, 배포 전에 아래 테이블이 있어야 한다:
+
+    create table SAMPLE_CUSTOMER (
+      ID           varchar(20) primary key,
+      NAME         varchar(100),
+      CREDIT_LIMIT bigint
+    );
+-->
+<bpmn:definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+                  xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+                  xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+                  xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+                  xmlns:uengine="http://uengine"
+                  id="Definitions_SQLTaskSample"
+                  name="sales/sqlTaskProcess"
+                  targetNamespace="http://bpmn.io/schema/bpmn">
+
+  <bpmn:process id="sqlTaskProcess" name="sqlTaskProcess" isExecutable="true">
+    <bpmn:extensionElements>
+      <uengine:properties json="{&quot;definitionName&quot;:&quot;sales/sqlTaskProcess&quot;,&quot;version&quot;:&quot;1.0&quot;}">
+        <uengine:variable name="customerId" type="Text" />
+        <uengine:variable name="customerName" type="Text" />
+        <uengine:variable name="creditLimit" type="Number" />
+      </uengine:properties>
+    </bpmn:extensionElements>
+
+    <bpmn:startEvent id="Start_1" name="시작">
+      <bpmn:outgoing>Flow_1</bpmn:outgoing>
+    </bpmn:startEvent>
+
+    <bpmn:serviceTask id="SQLTask_Register" name="고객 등록 (SQL 직접 작성)">
+      <bpmn:extensionElements>
+        <uengine:properties>
+          <uengine:json>
+            {
+              "_type": "org.uengine.kernel.bpmn.SQLTask",
+              "connectionFactory": {
+                "_type": "org.uengine.util.dao.DataSourceConnectionFactory"
+              },
+              "sqlStmt": "insert into SAMPLE_CUSTOMER (ID, NAME, CREDIT_LIMIT) values (?, ?, ?)",
+              "parameters": [
+                {"argument": {"text": "ID"}, "variable": {"name": "customerId"}},
+                {"argument": {"text": "NAME"}, "variable": {"name": "customerName"}},
+                {"argument": {"text": "CREDIT_LIMIT"}, "variable": {"name": "creditLimit"}}
+              ]
+            }
+          </uengine:json>
+        </uengine:properties>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_1</bpmn:incoming>
+      <bpmn:outgoing>Flow_2</bpmn:outgoing>
+    </bpmn:serviceTask>
+
+    <bpmn:serviceTask id="SQLTask_Lookup" name="고객 조회 (DB 매핑)">
+      <bpmn:extensionElements>
+        <uengine:properties>
+          <uengine:json>
+            {
+              "_type": "org.uengine.kernel.bpmn.SQLTask",
+              "connectionFactory": {
+                "_type": "org.uengine.util.dao.DataSourceConnectionFactory"
+              },
+              "strategy": {
+                "_type": "org.uengine.kernel.bpmn.sql.DatabaseMappingStrategy",
+                "queryMode": "SELECT",
+                "mappingContext": {
+                  "mappingElements": [
+                    {"argument": {"text": "SAMPLE_CUSTOMER.ID"}, "variable": {"name": "customerId"}, "isKey": true},
+                    {"argument": {"text": "SAMPLE_CUSTOMER.NAME"}, "variable": {"name": "customerName"}},
+                    {"argument": {"text": "SAMPLE_CUSTOMER.CREDIT_LIMIT"}, "variable": {"name": "creditLimit"}}
+                  ]
+                }
+              }
+            }
+          </uengine:json>
+        </uengine:properties>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_2</bpmn:incoming>
+      <bpmn:outgoing>Flow_3</bpmn:outgoing>
+    </bpmn:serviceTask>
+
+    <bpmn:endEvent id="End_1" name="종료">
+      <bpmn:incoming>Flow_3</bpmn:incoming>
+    </bpmn:endEvent>
+
+    <bpmn:sequenceFlow id="Flow_1" sourceRef="Start_1" targetRef="SQLTask_Register" />
+    <bpmn:sequenceFlow id="Flow_2" sourceRef="SQLTask_Register" targetRef="SQLTask_Lookup" />
+    <bpmn:sequenceFlow id="Flow_3" sourceRef="SQLTask_Lookup" targetRef="End_1" />
+  </bpmn:process>
+
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="sqlTaskProcess">
+      <bpmndi:BPMNShape id="Start_1_di" bpmnElement="Start_1">
+        <dc:Bounds x="160" y="160" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="SQLTask_Register_di" bpmnElement="SQLTask_Register">
+        <dc:Bounds x="250" y="138" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="SQLTask_Lookup_di" bpmnElement="SQLTask_Lookup">
+        <dc:Bounds x="410" y="138" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_1_di" bpmnElement="End_1">
+        <dc:Bounds x="572" y="160" width="36" height="36" />
+      </bpmndi:BPMNShape>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

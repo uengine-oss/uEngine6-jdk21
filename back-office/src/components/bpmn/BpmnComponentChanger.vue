@@ -314,6 +314,11 @@
               icon: 'bpmn-icon-script-task'
             },
             {
+              component: 'bpmn-sql-task',
+              label: 'SQL Task',
+              icon: 'bpmn-icon-data-store'
+            },
+            {
               component: 'bpmn-call-activity',
               label: 'Call Activity',
               icon: 'bpmn-icon-call-activity'

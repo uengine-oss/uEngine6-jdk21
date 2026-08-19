@@ -1,6 +1,6 @@
 <template>
 
-    <div class="canvas-panel">
+    <div class="canvas-panel mapper-canvas">
       <opengraph>
         <template>
 
@@ -192,3 +192,16 @@
   }
 
 </script>
+
+<style rel="stylesheet/css">
+  /*
+    Raphael(OpenGraph) 이 생성하는 SVG text 노드에는 인라인으로 font: 10px 'serif' 가
+    찍히기 때문에 매퍼 캔버스의 글씨만 바탕(serif) 계열로 보인다.
+    화면 기본 폰트(custom.css 의 body font-family)와 동일하게 맞춘다.
+    인라인 스타일을 이기려면 !important 가 필요하다.
+  */
+  .mapper-canvas svg text,
+  .mapper-canvas svg tspan {
+    font-family: "open sans", "Helvetica Neue", Helvetica, Arial, sans-serif !important;
+  }
+</style>

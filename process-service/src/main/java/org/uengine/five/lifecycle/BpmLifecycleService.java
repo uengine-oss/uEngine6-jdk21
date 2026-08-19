@@ -2,9 +2,11 @@ package org.uengine.five.lifecycle;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.uengine.five.entity.ProcessInstanceEntity;
 import org.uengine.five.entity.WorklistEntity;
+import org.uengine.five.notification.WorkItemNotificationService;
 
 /**
  * BPM 업무/프로세스 생명주기 이벤트 서비스.
@@ -27,6 +29,13 @@ public class BpmLifecycleService {
 
     private static final Logger log = LoggerFactory.getLogger(BpmLifecycleService.class);
 
+    /**
+     * 헤더 알림(벨/배지) 생성·정리. ESB 송신({@link #send})과는 별개의 관심사이므로
+     * 별도 서비스로 두고, 빈이 없어도 생명주기 이벤트 자체는 계속 동작하게 optional 주입한다.
+     */
+    @Autowired(required = false)
+    WorkItemNotificationService workItemNotificationService;
+
     // ──────────────────────────────────────────────────────────────────────
     // 1. 업무 배정 (최초)
     // ──────────────────────────────────────────────────────────────────────
@@ -45,6 +54,8 @@ public class BpmLifecycleService {
         log.debug("[BpmLifecycle] {} | taskId={} instId={} endpoint={}",
                 event.getEventType(), event.getTaskId(), event.getInstanceId(),
                 event.getEndpoint());
+
+        notifyQuietly(() -> workItemNotificationService.onTaskAssigned(wl));
 
         send(event);
     }
@@ -71,6 +82,8 @@ public class BpmLifecycleService {
                 event.getEventType(), event.getTaskId(), event.getInstanceId(),
                 previousEndpoint, event.getEndpoint());
 
+        notifyQuietly(() -> workItemNotificationService.onTaskAssignmentChanged(wl, previousEndpoint));
+
         send(event);
     }
 
@@ -91,6 +104,8 @@ public class BpmLifecycleService {
         log.debug("[BpmLifecycle] {} | taskId={} instId={} endpoint={}",
                 event.getEventType(), event.getTaskId(), event.getInstanceId(),
                 event.getEndpoint());
+
+        notifyQuietly(() -> workItemNotificationService.onTaskTerminated(wl));
 
         send(event);
     }
@@ -177,6 +192,25 @@ public class BpmLifecycleService {
                     response.getStatusCode(), event);
         }
         */
+    }
+
+    // ──────────────────────────────────────────────────────────────────────
+    // 알림 연동
+    // ──────────────────────────────────────────────────────────────────────
+
+    /**
+     * 알림 처리 실패가 업무 처리 트랜잭션을 깨뜨리지 않도록 감싼다.
+     * 알림은 부가 기능이므로 실패해도 워크아이템 배정/완료는 그대로 진행되어야 한다.
+     */
+    private void notifyQuietly(Runnable action) {
+        if (workItemNotificationService == null) {
+            return;
+        }
+        try {
+            action.run();
+        } catch (Exception e) {
+            log.warn("[BpmLifecycle] notification handling failed (ignored)", e);
+        }
     }
 
     // ──────────────────────────────────────────────────────────────────────

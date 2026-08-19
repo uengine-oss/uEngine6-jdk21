@@ -1210,7 +1210,10 @@ public class InstanceServiceImpl implements InstanceService {
      * @return
      */
 
-    @GetMapping("/instance/{instanceId}")
+    // 주의: 경로가 getInstance() 와 같으면 콘텐츠 협상에서 이쪽이 이겨
+    // GET /instance/{id} 가 InstanceResource 대신 raw ProcessInstance 를 돌려준다.
+    // (관리자 화면의 인스턴스 실행보기가 _links.definition 을 못 찾아 실패한다)
+    @GetMapping("/instance/{instanceId}/local")
     public ProcessInstance getProcessInstanceLocal(@PathVariable("instanceId") String instanceId) {
 
         ProcessInstance instance = ProcessTransactionContext.getThreadLocalInstance()

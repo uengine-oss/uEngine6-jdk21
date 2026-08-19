@@ -12,7 +12,7 @@ definitions/
 instances/
 payloads/
 archive/
-test/
+/test/
 ### IntelliJ IDEA ###
 .idea
 *.iws
@@ -37,6 +37,12 @@ infra/keycloak/install/keycloak-*/
 infra/keycloak/install/package-staging/
 infra/keycloak/install/*.tar.gz
 infra/keycloak/install/*.zip
+logs/
 
 # Local direct-run logs
 direct-run/logs/
+
+# Local samples and environment
+.sample/
+.env
+.DS_Store

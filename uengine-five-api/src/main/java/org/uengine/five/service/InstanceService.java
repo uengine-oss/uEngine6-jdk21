@@ -193,7 +193,7 @@ public interface InstanceService {
         public Serializable validate(@RequestBody String xml)
                         throws Exception;
 
-        @GetMapping("/instance/{instanceId}")
+        @GetMapping("/instance/{instanceId}/local")
         public ProcessInstance getProcessInstanceLocal(@PathVariable("instanceId") String instanceId) throws Exception;
 
         /**
