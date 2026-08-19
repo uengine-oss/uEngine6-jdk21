@@ -1,0 +1,413 @@
+[
+  {
+    "definitionId": "1. 여신신규_주택담보대출.bpmn",
+    "gatewayId": "Gateway_004tb5u",
+    "variable": "본부승인대상여부",
+    "taskId": "Activity_02n3y47",
+    "inputDefaults": {
+      "본부승인대상여부": "Y"
+    },
+    "branches": [
+      {
+        "value": "Y",
+        "targetId": "Activity_023csvw"
+      },
+      {
+        "value": "N",
+        "targetId": "Activity_1pxrqp2"
+      }
+    ]
+  },
+  {
+    "definitionId": "1. 여신신규_주택담보대출.bpmn",
+    "gatewayId": "Gateway_0wp1fd9",
+    "variable": "승인 여부",
+    "taskId": "Activity_023csvw",
+    "inputDefaults": {
+      "승인 여부": "Y",
+      "금리승인요청여부": "Y"
+    },
+    "branches": [
+      {
+        "value": "Y",
+        "targetId": "Gateway_128wycp"
+      },
+      {
+        "value": "N",
+        "targetId": "Activity_19n1nvv"
+      }
+    ]
+  },
+  {
+    "definitionId": "1. 여신신규_주택담보대출.bpmn",
+    "gatewayId": "Gateway_128wycp",
+    "variable": "금리승인요청여부",
+    "taskId": "Activity_023csvw",
+    "inputDefaults": {
+      "승인 여부": "Y",
+      "금리승인요청여부": "Y"
+    },
+    "branches": [
+      {
+        "value": "Y",
+        "targetId": "Activity_0r2a90h"
+      },
+      {
+        "value": "N",
+        "targetId": "Activity_09may6m"
+      }
+    ]
+  },
+  {
+    "definitionId": "1. 여신신규_주택담보대출.bpmn",
+    "gatewayId": "Gateway_1b02bhr",
+    "variable": "수수료 예외적용 여부",
+    "taskId": "Activity_09may6m",
+    "inputDefaults": {
+      "수수료 예외적용 여부": "Y"
+    },
+    "branches": [
+      {
+        "value": "N",
+        "targetId": "Activity_1gug9g7"
+      },
+      {
+        "value": "Y",
+        "targetId": "Activity_1erg8r3"
+      }
+    ]
+  },
+  {
+    "definitionId": "1. 여신신규_주택담보대출.bpmn",
+    "gatewayId": "Gateway_0c9w4dp",
+    "variable": "주택소유수 조회도의여부",
+    "taskId": "Activity_0evsacp",
+    "inputDefaults": {
+      "주택소유수 조회도의여부": "Y",
+      "동의방식": "대면"
+    },
+    "branches": [
+      {
+        "value": "Y",
+        "targetId": "Gateway_1ruix1g"
+      },
+      {
+        "value": "N",
+        "targetId": "Activity_0dumxzl"
+      }
+    ]
+  },
+  {
+    "definitionId": "1. 여신신규_주택담보대출.bpmn",
+    "gatewayId": "Gateway_1ruix1g",
+    "variable": "동의방식",
+    "taskId": "Activity_0evsacp",
+    "inputDefaults": {
+      "주택소유수 조회도의여부": "Y",
+      "동의방식": "대면"
+    },
+    "branches": [
+      {
+        "value": "대면",
+        "targetId": "Activity_1pzjllp"
+      },
+      {
+        "value": "비대면",
+        "targetId": "Activity_0v15dzr"
+      }
+    ]
+  },
+  {
+    "definitionId": "1. 여신신규_주택담보대출.bpmn",
+    "gatewayId": "Gateway_0xxj6e9",
+    "variable": "시세조회가능여부",
+    "taskId": "Activity_0pjy3by",
+    "inputDefaults": {
+      "시세조회가능여부": "Y"
+    },
+    "branches": [
+      {
+        "value": "N",
+        "targetId": "Activity_1qto1f7"
+      },
+      {
+        "value": "Y",
+        "targetId": "Activity_0zapoxh"
+      }
+    ]
+  },
+  {
+    "definitionId": "1. 여신신규_주택담보대출.bpmn",
+    "gatewayId": "Gateway_058201h",
+    "variable": "보증서 발급 가능 여부",
+    "taskId": "Activity_0sk5eon",
+    "inputDefaults": {
+      "보증서 발급 가능 여부": "Y"
+    },
+    "branches": [
+      {
+        "value": "Y",
+        "targetId": "Activity_1anm3uo"
+      },
+      {
+        "value": "N",
+        "targetId": "Activity_1t1hswv"
+      }
+    ]
+  },
+  {
+    "definitionId": "1. 여신신규_주택담보대출.bpmn",
+    "gatewayId": "Gateway_1ck1yit",
+    "variable": "집단잔금대출 여부",
+    "taskId": "Activity_07m87tq",
+    "inputDefaults": {
+      "집단잔금대출 여부": "Y"
+    },
+    "branches": [
+      {
+        "value": "Y",
+        "targetId": "Activity_1um6cso"
+      },
+      {
+        "value": "N",
+        "targetId": "Activity_1avopfk"
+      }
+    ]
+  },
+  {
+    "definitionId": "2. 수출환어음_매입.bpmn",
+    "gatewayId": "Gateway_0jzmkj7",
+    "variable": "연체 여부",
+    "taskId": "Activity_0aj17dc",
+    "inputDefaults": {
+      "연체 여부": "Y",
+      "보완가능 여부": "Y"
+    },
+    "branches": [
+      {
+        "value": "Y",
+        "targetId": "Gateway_0xw42jy"
+      },
+      {
+        "value": "N",
+        "targetId": "Activity_0krogtc"
+      }
+    ]
+  },
+  {
+    "definitionId": "2. 수출환어음_매입.bpmn",
+    "gatewayId": "Gateway_0xw42jy",
+    "variable": "보완가능 여부",
+    "taskId": "Activity_0aj17dc",
+    "inputDefaults": {
+      "연체 여부": "Y",
+      "보완가능 여부": "Y"
+    },
+    "branches": [
+      {
+        "value": "Y",
+        "targetId": "Activity_08vzdex"
+      },
+      {
+        "value": "N",
+        "targetId": "Activity_1ts07vv"
+      }
+    ]
+  },
+  {
+    "definitionId": "2. 수출환어음_매입.bpmn",
+    "gatewayId": "Gateway_1iydw4x",
+    "variable": "하자 여부",
+    "taskId": "Activity_17c75ii",
+    "inputDefaults": {
+      "하자 여부": "Y",
+      "하자 매입 한도내여부": "N",
+      "매입 방법": "보증부매입"
+    },
+    "branches": [
+      {
+        "value": "Y",
+        "targetId": "Gateway_1wk69f5"
+      },
+      {
+        "value": "N",
+        "targetId": "Activity_1483tjo"
+      }
+    ]
+  },
+  {
+    "definitionId": "2. 수출환어음_매입.bpmn",
+    "gatewayId": "Gateway_1wk69f5",
+    "variable": "하자 매입 한도내여부",
+    "taskId": "Activity_17c75ii",
+    "inputDefaults": {
+      "하자 여부": "Y",
+      "하자 매입 한도내여부": "N",
+      "매입 방법": "보증부매입"
+    },
+    "branches": [
+      {
+        "value": "N",
+        "targetId": "Gateway_1hg2bsm"
+      },
+      {
+        "value": "Y",
+        "targetId": "Activity_1483tjo"
+      }
+    ]
+  },
+  {
+    "definitionId": "2. 수출환어음_매입.bpmn",
+    "gatewayId": "Gateway_1hg2bsm",
+    "variable": "매입 방법",
+    "taskId": "Activity_17c75ii",
+    "inputDefaults": {
+      "하자 여부": "Y",
+      "하자 매입 한도내여부": "N",
+      "매입 방법": "보증부매입"
+    },
+    "branches": [
+      {
+        "value": "보증부매입",
+        "targetId": "Activity_1483tjo"
+      },
+      {
+        "value": "일반매입",
+        "targetId": "Activity_0f9cluf"
+      }
+    ]
+  },
+  {
+    "definitionId": "3. 기업신용카드 신규발급.bpmn",
+    "gatewayId": "Gateway_17z2x07",
+    "variable": "승인여부",
+    "taskId": "Activity_05s3u1y",
+    "inputDefaults": {
+      "승인여부": "Y"
+    },
+    "branches": [
+      {
+        "value": "N",
+        "targetId": "Activity_031fvm9"
+      },
+      {
+        "value": "Y",
+        "targetId": "Activity_0cygppp"
+      }
+    ]
+  },
+  {
+    "definitionId": "4. 일반계좌신규.bpmn",
+    "gatewayId": "Gateway_17r3n8x",
+    "variable": "신규고객여부",
+    "taskId": "Activity_1nu7hzx",
+    "inputDefaults": {
+      "신규고객여부": "Y"
+    },
+    "branches": [
+      {
+        "value": "N",
+        "targetId": "Activity_0y0af8u"
+      },
+      {
+        "value": "Y",
+        "targetId": "Activity_0rv2p9p"
+      }
+    ]
+  },
+  {
+    "definitionId": "5. 예금잔액 통보.bpmn",
+    "gatewayId": "Gateway_021de48",
+    "variable": "본부 일괄발송 예금계좌",
+    "taskId": "UserTask_1",
+    "inputDefaults": {
+      "본부 일괄발송 예금계좌": "Y"
+    },
+    "branches": [
+      {
+        "value": "Y",
+        "targetId": "Activity_1hibq4b"
+      },
+      {
+        "value": "N",
+        "targetId": "Activity_1gbb0jt"
+      }
+    ]
+  },
+  {
+    "definitionId": "5. 예금잔액 통보.bpmn",
+    "gatewayId": "Gateway_136sdqh",
+    "variable": "DM 반송여부",
+    "taskId": "Activity_0if7ufl",
+    "inputDefaults": {
+      "DM 반송여부": "Y"
+    },
+    "branches": [
+      {
+        "value": "N",
+        "targetId": "Activity_17h11l8"
+      },
+      {
+        "value": "Y",
+        "targetId": "Activity_1m01h6k"
+      }
+    ]
+  },
+  {
+    "definitionId": "5. 예금잔액 통보.bpmn",
+    "gatewayId": "Gateway_1lr8r88",
+    "variable": "예금잔액 이상",
+    "taskId": "Activity_17h11l8",
+    "inputDefaults": {
+      "예금잔액 이상": "Y"
+    },
+    "branches": [
+      {
+        "value": "Y",
+        "targetId": "Activity_04nmmmh"
+      },
+      {
+        "value": "N",
+        "targetId": "Event_0l1v4f0"
+      }
+    ]
+  },
+  {
+    "definitionId": "수출환어음_매입_및_추심_결재.bpmn",
+    "gatewayId": "Gateway_0o4q3n9",
+    "variable": "입금여부",
+    "taskId": "UserTask_1",
+    "inputDefaults": {
+      "입금여부": "Y"
+    },
+    "branches": [
+      {
+        "value": "Y",
+        "targetId": "Activity_0fxgy63"
+      },
+      {
+        "value": "N",
+        "targetId": "Activity_0mowp5e"
+      }
+    ]
+  },
+  {
+    "definitionId": "여신심사.bpmn",
+    "gatewayId": "Gateway_1l81ivs",
+    "variable": "서류충족여부",
+    "taskId": "Activity_1r58ac7",
+    "inputDefaults": {
+      "서류충족여부": "Y"
+    },
+    "branches": [
+      {
+        "value": "N",
+        "targetId": "Activity_0jb9tor"
+      },
+      {
+        "value": "Y",
+        "targetId": "Activity_0g1o9lm"
+      }
+    ]
+  }
+]

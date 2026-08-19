@@ -1,0 +1,4 @@
+<form>
+  <label>본부 승인</label>
+  <select-field name="hqResult" label="본부승인결과" items='[{"승인":"승인"},{"반려":"반려"}]' />
+</form>

@@ -1,0 +1,144 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-uengine}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-uengine}
+      POSTGRES_DB: ${POSTGRES_DB:-uengine}
+    ports:
+      - "5632:5432"
+    volumes:
+      - uengine-postgres-data:/var/lib/postgresql/data
+      - ./postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.6.1
+    command: ["start-dev", "--http-port=8080", "--import-realm"]
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAK_ADMIN_USERNAME:-admin}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin}
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-uengine}
+      KC_DB_USERNAME: ${POSTGRES_USER:-uengine}
+      KC_DB_PASSWORD: ${POSTGRES_PASSWORD:-uengine}
+      KC_HOSTNAME: http://localhost:8280
+    ports:
+      - "8280:8080"
+    volumes:
+      - ./keycloak/realm-export.json:/opt/keycloak/data/import/realm-export.json:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  process-service:
+    image: uengine-process-service:keycloak-postgres
+    build:
+      context: ../process-service
+    environment:
+      SPRING_PROFILES_ACTIVE: postgres,keycloak-installed
+      PROCESS_SERVICE_PORT: 9294
+      POSTGRES_HOST: postgres
+      POSTGRES_DB: ${POSTGRES_DB:-uengine}
+      POSTGRES_USER: ${POSTGRES_USER:-uengine}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-uengine}
+      UENGINE_DB_SCHEMA: public
+      KEYCLOAK_URI: http://keycloak:8080
+      MAIL_SMTP_HOST: ${MAIL_SMTP_HOST:-localhost}
+      MAIL_SMTP_PORT: ${MAIL_SMTP_PORT:-25}
+      MAIL_SMTP_AUTH: ${MAIL_SMTP_AUTH:-false}
+      MAIL_SMTP_STARTTLS_ENABLE: ${MAIL_SMTP_STARTTLS_ENABLE:-false}
+      MAIL_SMTP_SSL_TRUST: ${MAIL_SMTP_SSL_TRUST:-localhost}
+      MAIL_SMTP_USERNAME: ${MAIL_SMTP_USERNAME:-}
+      MAIL_SMTP_PASSWORD: ${MAIL_SMTP_PASSWORD:-}
+      mail.smtp.host: ${MAIL_SMTP_HOST:-localhost}
+      mail.smtp.port: ${MAIL_SMTP_PORT:-25}
+      mail.smtp.auth: ${MAIL_SMTP_AUTH:-false}
+      mail.smtp.starttls.enable: ${MAIL_SMTP_STARTTLS_ENABLE:-false}
+      mail.smtp.ssl.trust: ${MAIL_SMTP_SSL_TRUST:-localhost}
+      mail.smtp.username: ${MAIL_SMTP_USERNAME:-}
+      mail.smtp.password: ${MAIL_SMTP_PASSWORD:-}
+    extra_hosts:
+      - host.docker.internal:host-gateway
+    ports:
+      - "9294:9294"
+    volumes:
+      - uengine-definitions:/app/definitions
+    depends_on:
+      postgres:
+        condition: service_healthy
+      keycloak:
+        condition: service_started
+
+  definition-service:
+    image: uengine-definition-service:keycloak-postgres
+    build:
+      context: ../definition-service
+    environment:
+      SPRING_PROFILES_ACTIVE: postgres,keycloak-installed
+      DEFINITION_SERVICE_PORT: 9293
+      POSTGRES_HOST: postgres
+      POSTGRES_DB: ${POSTGRES_DB:-uengine}
+      POSTGRES_USER: ${POSTGRES_USER:-uengine}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-uengine}
+      UENGINE_DB_SCHEMA: public
+      PROCESS_SERVICE_URL: http://process-service:9294
+    ports:
+      - "9293:9293"
+    volumes:
+      - uengine-definitions:/app/definitions
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  frontend:
+    image: uengine-hli-frontend:keycloak
+    build:
+      context: ../../process-gpt-vue3-hli
+    environment:
+      VITE_KEYCLOAK_MODE: installed
+      VITE_KEYCLOAK_URL: http://localhost:8280
+      VITE_KEYCLOAK_REALM: uengine
+      VITE_KEYCLOAK_CLIENT_ID: uengine
+      VITE_GATEWAY_URL: http://localhost:8288
+    ports:
+      - "5373:8080"
+
+  gateway:
+    image: uengine-keycloak-gateway:keycloak-postgres
+    build:
+      context: ../keycloak-gateway
+    environment:
+      SPRING_PROFILES_ACTIVE: keycloak-installed
+      GATEWAY_PORT: 8288
+      GATEWAY_URI: http://localhost:8288
+      FRONTEND_URI: http://frontend:8080
+      KEYCLOAK_URI: http://localhost:8280
+      KEYCLOAK_INTERNAL_URI: http://keycloak:8080
+      KEYCLOAK_REALM: uengine
+      KEYCLOAK_CLIENT_ID: uengine
+      KEYCLOAK_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET:-66LpF19OpkpgKKpWHdgiCEKisx5AXqLA}
+      PROCESS_SERVICE_URI: http://process-service:9294
+      DEFINITION_SERVICE_URI: http://definition-service:9293
+      EXECUTION_SERVICE_URI: ${EXECUTION_SERVICE_URI:-http://host.docker.internal:8200}
+    extra_hosts:
+      - host.docker.internal:host-gateway
+    ports:
+      - "8288:8288"
+    depends_on:
+      keycloak:
+        condition: service_started
+      process-service:
+        condition: service_started
+      definition-service:
+        condition: service_started
+      frontend:
+        condition: service_started
+
+volumes:
+  uengine-postgres-data:
+  uengine-definitions:

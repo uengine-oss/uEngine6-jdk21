@@ -1,0 +1,4 @@
+<form>
+  <label>평가결과 등록</label>
+  <select-field name="creditGrade" label="평가등급" items='[{"A":"A"},{"B":"B"},{"C":"C"}]' />
+</form>

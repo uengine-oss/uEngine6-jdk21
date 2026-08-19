@@ -1,0 +1,331 @@
+<?xml version='1.0' encoding='utf-8'?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:uengine="http://uengine" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="Definitions_Process_CorporateCardIssue" targetNamespace="http://uengine.org/sds/representative">
+  <bpmn:process id="Process_CorporateCardIssue" name="기업신용카드 신규발급" isExecutable="true">
+    <bpmn:extensionElements>
+      <uengine:properties json="{&quot;definitionName&quot;:&quot;기업신용카드 신규발급&quot;,&quot;version&quot;:&quot;1.0&quot;,&quot;shortDescription&quot;:{&quot;text&quot;:&quot;분기 시뮬레이션 실행용 대표 프로세스&quot;}}">
+        <uengine:variable name="본인확인결과" type="Text" />
+        <uengine:variable name="서류충족여부" type="Text" />
+        <uengine:variable name="승인여부" type="Text" />
+      </uengine:properties>
+    </bpmn:extensionElements>
+    <bpmn:laneSet id="LaneSet_Process_CorporateCardIssue">
+      <bpmn:lane id="Lane_1" name="고객/법인">
+        <bpmn:flowNodeRef>Start_CorpCard</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_SubmitCardSupplement</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_2" name="영업점">
+        <bpmn:flowNodeRef>Task_CardConsult</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gw_IdentityOk</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_GiveTerms</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_CheckDocs</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gw_DocsComplete</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_RequestCardSupplement</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_RejectCard</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>End_CardRejected</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_3" name="외부 인증/카드 시스템">
+        <bpmn:flowNodeRef>Svc_IdentityCheck</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Svc_IssueAndShipCard</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>End_CardDone</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_4" name="심사 부서">
+        <bpmn:flowNodeRef>Task_CreditReview</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gw_Approval</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="Start_CorpCard" name="신청 시작">
+      <bpmn:extensionElements>
+        <uengine:properties json="{&quot;checkpoints&quot;:[],&quot;attachments&quot;:[],&quot;taskLink&quot;:&quot;&quot;,&quot;role&quot;:&quot;고객/법인&quot;,&quot;process&quot;:&quot;Process_CorporateCardIssue&quot;,&quot;inputData&quot;:[],&quot;outputData&quot;:[],&quot;properties&quot;:&quot;{}&quot;,&quot;duration&quot;:5,&quot;tool&quot;:&quot;formHandler:defaultform&quot;}" />
+      </bpmn:extensionElements>
+      <bpmn:outgoing>Flow_C01</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:userTask id="Task_CardConsult" name="입회신청 상담">
+      <bpmn:extensionElements>
+        <uengine:properties json="{&quot;checkpoints&quot;:[],&quot;attachments&quot;:[],&quot;taskLink&quot;:&quot;&quot;,&quot;role&quot;:&quot;영업점&quot;,&quot;process&quot;:&quot;Process_CorporateCardIssue&quot;,&quot;inputData&quot;:[],&quot;outputData&quot;:[],&quot;properties&quot;:&quot;{}&quot;,&quot;duration&quot;:5,&quot;tool&quot;:&quot;formHandler:기업카드_입회상담&quot;}" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_C01</bpmn:incoming>
+      <bpmn:outgoing>Flow_C02</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="Svc_IdentityCheck" name="본인확인">
+      <bpmn:extensionElements>
+        <uengine:properties json="{&quot;checkpoints&quot;:[&quot;테스트 응답 입력&quot;],&quot;attachments&quot;:[],&quot;taskLink&quot;:&quot;&quot;,&quot;role&quot;:&quot;외부 인증/카드 시스템&quot;,&quot;process&quot;:&quot;Process_CorporateCardIssue&quot;,&quot;inputData&quot;:[],&quot;outputData&quot;:[],&quot;properties&quot;:&quot;{}&quot;,&quot;duration&quot;:5,&quot;tool&quot;:&quot;formHandler:기업카드_본인확인&quot;,&quot;eventSynchronization&quot;:{&quot;mappingContext&quot;:{&quot;mappingElements&quot;:[{&quot;argument&quot;:{&quot;text&quot;:&quot;본인확인결과&quot;},&quot;direction&quot;:&quot;out&quot;,&quot;variable&quot;:{&quot;name&quot;:&quot;[Arguments].본인확인결과&quot;},&quot;isKey&quot;:false}]}}}" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_C02</bpmn:incoming>
+      <bpmn:outgoing>Flow_C03</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:exclusiveGateway id="Gw_IdentityOk" name="본인확인 결과">
+      <bpmn:extensionElements>
+        <uengine:properties json="{&quot;checkpoints&quot;:[],&quot;attachments&quot;:[],&quot;taskLink&quot;:&quot;&quot;,&quot;role&quot;:&quot;영업점&quot;,&quot;process&quot;:&quot;Process_CorporateCardIssue&quot;,&quot;inputData&quot;:[],&quot;outputData&quot;:[],&quot;properties&quot;:&quot;{}&quot;,&quot;duration&quot;:5,&quot;tool&quot;:&quot;formHandler:defaultform&quot;}" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_C03</bpmn:incoming>
+      <bpmn:outgoing>Flow_C04</bpmn:outgoing>
+      <bpmn:outgoing>Flow_C05</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:userTask id="Task_GiveTerms" name="약관/설명서 교부">
+      <bpmn:extensionElements>
+        <uengine:properties json="{&quot;checkpoints&quot;:[],&quot;attachments&quot;:[],&quot;taskLink&quot;:&quot;&quot;,&quot;role&quot;:&quot;영업점&quot;,&quot;process&quot;:&quot;Process_CorporateCardIssue&quot;,&quot;inputData&quot;:[],&quot;outputData&quot;:[],&quot;properties&quot;:&quot;{}&quot;,&quot;duration&quot;:5,&quot;tool&quot;:&quot;formHandler:기업카드_약관교부&quot;}" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_C05</bpmn:incoming>
+      <bpmn:outgoing>Flow_C06</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="Task_CheckDocs" name="신청서류 확인">
+      <bpmn:extensionElements>
+        <uengine:properties json="{&quot;checkpoints&quot;:[],&quot;attachments&quot;:[],&quot;taskLink&quot;:&quot;&quot;,&quot;role&quot;:&quot;영업점&quot;,&quot;process&quot;:&quot;Process_CorporateCardIssue&quot;,&quot;inputData&quot;:[],&quot;outputData&quot;:[],&quot;properties&quot;:&quot;{}&quot;,&quot;duration&quot;:5,&quot;tool&quot;:&quot;formHandler:기업카드_서류확인&quot;,&quot;eventSynchronization&quot;:{&quot;mappingContext&quot;:{&quot;mappingElements&quot;:[{&quot;argument&quot;:{&quot;text&quot;:&quot;서류충족여부&quot;},&quot;direction&quot;:&quot;out&quot;,&quot;variable&quot;:{&quot;name&quot;:&quot;[Arguments].서류충족여부&quot;},&quot;isKey&quot;:false}]}}}" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_C06</bpmn:incoming>
+      <bpmn:incoming>Flow_C10</bpmn:incoming>
+      <bpmn:outgoing>Flow_C07</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:exclusiveGateway id="Gw_DocsComplete" name="서류충족 여부">
+      <bpmn:extensionElements>
+        <uengine:properties json="{&quot;checkpoints&quot;:[],&quot;attachments&quot;:[],&quot;taskLink&quot;:&quot;&quot;,&quot;role&quot;:&quot;영업점&quot;,&quot;process&quot;:&quot;Process_CorporateCardIssue&quot;,&quot;inputData&quot;:[],&quot;outputData&quot;:[],&quot;properties&quot;:&quot;{}&quot;,&quot;duration&quot;:5,&quot;tool&quot;:&quot;formHandler:defaultform&quot;}" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_C07</bpmn:incoming>
+      <bpmn:outgoing>Flow_C08</bpmn:outgoing>
+      <bpmn:outgoing>Flow_C11</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:userTask id="Task_RequestCardSupplement" name="보완요청">
+      <bpmn:extensionElements>
+        <uengine:properties json="{&quot;checkpoints&quot;:[],&quot;attachments&quot;:[],&quot;taskLink&quot;:&quot;&quot;,&quot;role&quot;:&quot;영업점&quot;,&quot;process&quot;:&quot;Process_CorporateCardIssue&quot;,&quot;inputData&quot;:[],&quot;outputData&quot;:[],&quot;properties&quot;:&quot;{}&quot;,&quot;duration&quot;:5,&quot;tool&quot;:&quot;formHandler:기업카드_보완요청&quot;}" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_C08</bpmn:incoming>
+      <bpmn:outgoing>Flow_C09</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="Task_SubmitCardSupplement" name="보완서류 제출">
+      <bpmn:extensionElements>
+        <uengine:properties json="{&quot;checkpoints&quot;:[],&quot;attachments&quot;:[],&quot;taskLink&quot;:&quot;&quot;,&quot;role&quot;:&quot;고객/법인&quot;,&quot;process&quot;:&quot;Process_CorporateCardIssue&quot;,&quot;inputData&quot;:[],&quot;outputData&quot;:[],&quot;properties&quot;:&quot;{}&quot;,&quot;duration&quot;:5,&quot;tool&quot;:&quot;formHandler:기업카드_보완서류&quot;}" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_C09</bpmn:incoming>
+      <bpmn:outgoing>Flow_C10</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="Task_CreditReview" name="심사(신용조사)">
+      <bpmn:extensionElements>
+        <uengine:properties json="{&quot;checkpoints&quot;:[],&quot;attachments&quot;:[],&quot;taskLink&quot;:&quot;&quot;,&quot;role&quot;:&quot;심사 부서&quot;,&quot;process&quot;:&quot;Process_CorporateCardIssue&quot;,&quot;inputData&quot;:[],&quot;outputData&quot;:[],&quot;properties&quot;:&quot;{}&quot;,&quot;duration&quot;:5,&quot;tool&quot;:&quot;formHandler:기업카드_신용심사&quot;,&quot;eventSynchronization&quot;:{&quot;mappingContext&quot;:{&quot;mappingElements&quot;:[{&quot;argument&quot;:{&quot;text&quot;:&quot;승인여부&quot;},&quot;direction&quot;:&quot;out&quot;,&quot;variable&quot;:{&quot;name&quot;:&quot;[Arguments].승인여부&quot;},&quot;isKey&quot;:false}]}}}" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_C11</bpmn:incoming>
+      <bpmn:outgoing>Flow_C12</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:exclusiveGateway id="Gw_Approval" name="승인 여부">
+      <bpmn:extensionElements>
+        <uengine:properties json="{&quot;checkpoints&quot;:[],&quot;attachments&quot;:[],&quot;taskLink&quot;:&quot;&quot;,&quot;role&quot;:&quot;심사 부서&quot;,&quot;process&quot;:&quot;Process_CorporateCardIssue&quot;,&quot;inputData&quot;:[],&quot;outputData&quot;:[],&quot;properties&quot;:&quot;{}&quot;,&quot;duration&quot;:5,&quot;tool&quot;:&quot;formHandler:defaultform&quot;}" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_C12</bpmn:incoming>
+      <bpmn:outgoing>Flow_C13</bpmn:outgoing>
+      <bpmn:outgoing>Flow_C14</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:userTask id="Task_RejectCard" name="발급불가 통보">
+      <bpmn:extensionElements>
+        <uengine:properties json="{&quot;checkpoints&quot;:[],&quot;attachments&quot;:[],&quot;taskLink&quot;:&quot;&quot;,&quot;role&quot;:&quot;영업점&quot;,&quot;process&quot;:&quot;Process_CorporateCardIssue&quot;,&quot;inputData&quot;:[],&quot;outputData&quot;:[],&quot;properties&quot;:&quot;{}&quot;,&quot;duration&quot;:5,&quot;tool&quot;:&quot;formHandler:기업카드_발급불가통보&quot;}" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_C04</bpmn:incoming>
+      <bpmn:incoming>Flow_C13</bpmn:incoming>
+      <bpmn:outgoing>Flow_C15</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="Svc_IssueAndShipCard" name="카드발급 및 배송">
+      <bpmn:extensionElements>
+        <uengine:properties json="{&quot;checkpoints&quot;:[&quot;테스트 응답 입력&quot;],&quot;attachments&quot;:[],&quot;taskLink&quot;:&quot;&quot;,&quot;role&quot;:&quot;외부 인증/카드 시스템&quot;,&quot;process&quot;:&quot;Process_CorporateCardIssue&quot;,&quot;inputData&quot;:[],&quot;outputData&quot;:[],&quot;properties&quot;:&quot;{}&quot;,&quot;duration&quot;:5,&quot;tool&quot;:&quot;formHandler:기업카드_카드발급배송&quot;,&quot;eventSynchronization&quot;:{&quot;mappingContext&quot;:{&quot;mappingElements&quot;:[{&quot;argument&quot;:{&quot;text&quot;:&quot;배송결과&quot;},&quot;direction&quot;:&quot;out&quot;,&quot;variable&quot;:{&quot;name&quot;:&quot;[Arguments].배송결과&quot;},&quot;isKey&quot;:false}]}}}" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_C14</bpmn:incoming>
+      <bpmn:outgoing>Flow_C16</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:endEvent id="End_CardRejected" name="반려 종료">
+      <bpmn:extensionElements>
+        <uengine:properties json="{&quot;checkpoints&quot;:[],&quot;attachments&quot;:[],&quot;taskLink&quot;:&quot;&quot;,&quot;role&quot;:&quot;영업점&quot;,&quot;process&quot;:&quot;Process_CorporateCardIssue&quot;,&quot;inputData&quot;:[],&quot;outputData&quot;:[],&quot;properties&quot;:&quot;{}&quot;,&quot;duration&quot;:5,&quot;tool&quot;:&quot;formHandler:defaultform&quot;}" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_C15</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:endEvent id="End_CardDone" name="발급 완료">
+      <bpmn:extensionElements>
+        <uengine:properties json="{&quot;checkpoints&quot;:[],&quot;attachments&quot;:[],&quot;taskLink&quot;:&quot;&quot;,&quot;role&quot;:&quot;외부 인증/카드 시스템&quot;,&quot;process&quot;:&quot;Process_CorporateCardIssue&quot;,&quot;inputData&quot;:[],&quot;outputData&quot;:[],&quot;properties&quot;:&quot;{}&quot;,&quot;duration&quot;:5,&quot;tool&quot;:&quot;formHandler:defaultform&quot;}" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_C16</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_C01" sourceRef="Start_CorpCard" targetRef="Task_CardConsult" />
+    <bpmn:sequenceFlow id="Flow_C02" sourceRef="Task_CardConsult" targetRef="Svc_IdentityCheck" />
+    <bpmn:sequenceFlow id="Flow_C03" sourceRef="Svc_IdentityCheck" targetRef="Gw_IdentityOk" />
+    <bpmn:sequenceFlow id="Flow_C04" sourceRef="Gw_IdentityOk" targetRef="Task_RejectCard" name="불일치">
+      <bpmn:extensionElements>
+        <uengine:properties json="{&quot;condition&quot;:{&quot;_type&quot;:&quot;org.uengine.kernel.Evaluate&quot;,&quot;key&quot;:&quot;본인확인결과&quot;,&quot;value&quot;:&quot;불일치&quot;}}" />
+      </bpmn:extensionElements>
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${본인확인결과 == "불일치"}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_C05" sourceRef="Gw_IdentityOk" targetRef="Task_GiveTerms" name="정상">
+      <bpmn:extensionElements>
+        <uengine:properties json="{&quot;condition&quot;:{&quot;_type&quot;:&quot;org.uengine.kernel.Evaluate&quot;,&quot;key&quot;:&quot;본인확인결과&quot;,&quot;value&quot;:&quot;정상&quot;}}" />
+      </bpmn:extensionElements>
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${본인확인결과 == "정상"}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_C06" sourceRef="Task_GiveTerms" targetRef="Task_CheckDocs" />
+    <bpmn:sequenceFlow id="Flow_C07" sourceRef="Task_CheckDocs" targetRef="Gw_DocsComplete" />
+    <bpmn:sequenceFlow id="Flow_C08" sourceRef="Gw_DocsComplete" targetRef="Task_RequestCardSupplement" name="N">
+      <bpmn:extensionElements>
+        <uengine:properties json="{&quot;condition&quot;:{&quot;_type&quot;:&quot;org.uengine.kernel.Evaluate&quot;,&quot;key&quot;:&quot;서류충족여부&quot;,&quot;value&quot;:&quot;N&quot;}}" />
+      </bpmn:extensionElements>
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${서류충족여부 == "N"}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_C09" sourceRef="Task_RequestCardSupplement" targetRef="Task_SubmitCardSupplement" />
+    <bpmn:sequenceFlow id="Flow_C10" sourceRef="Task_SubmitCardSupplement" targetRef="Task_CheckDocs" />
+    <bpmn:sequenceFlow id="Flow_C11" sourceRef="Gw_DocsComplete" targetRef="Task_CreditReview" name="Y">
+      <bpmn:extensionElements>
+        <uengine:properties json="{&quot;condition&quot;:{&quot;_type&quot;:&quot;org.uengine.kernel.Evaluate&quot;,&quot;key&quot;:&quot;서류충족여부&quot;,&quot;value&quot;:&quot;Y&quot;}}" />
+      </bpmn:extensionElements>
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${서류충족여부 == "Y"}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_C12" sourceRef="Task_CreditReview" targetRef="Gw_Approval" />
+    <bpmn:sequenceFlow id="Flow_C13" sourceRef="Gw_Approval" targetRef="Task_RejectCard" name="N">
+      <bpmn:extensionElements>
+        <uengine:properties json="{&quot;condition&quot;:{&quot;_type&quot;:&quot;org.uengine.kernel.Evaluate&quot;,&quot;key&quot;:&quot;승인여부&quot;,&quot;value&quot;:&quot;N&quot;}}" />
+      </bpmn:extensionElements>
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${승인여부 == "N"}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_C14" sourceRef="Gw_Approval" targetRef="Svc_IssueAndShipCard" name="Y">
+      <bpmn:extensionElements>
+        <uengine:properties json="{&quot;condition&quot;:{&quot;_type&quot;:&quot;org.uengine.kernel.Evaluate&quot;,&quot;key&quot;:&quot;승인여부&quot;,&quot;value&quot;:&quot;Y&quot;}}" />
+      </bpmn:extensionElements>
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${승인여부 == "Y"}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_C15" sourceRef="Task_RejectCard" targetRef="End_CardRejected" />
+    <bpmn:sequenceFlow id="Flow_C16" sourceRef="Svc_IssueAndShipCard" targetRef="End_CardDone" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="Diagram_Process_CorporateCardIssue">
+    <bpmndi:BPMNPlane id="Plane_Process_CorporateCardIssue" bpmnElement="Process_CorporateCardIssue">
+      <bpmndi:BPMNShape id="Lane_1_di" bpmnElement="Lane_1" isHorizontal="true">
+        <dc:Bounds x="60" y="90" width="2380" height="150" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_2_di" bpmnElement="Lane_2" isHorizontal="true">
+        <dc:Bounds x="60" y="240" width="2380" height="150" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_3_di" bpmnElement="Lane_3" isHorizontal="true">
+        <dc:Bounds x="60" y="390" width="2380" height="150" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_4_di" bpmnElement="Lane_4" isHorizontal="true">
+        <dc:Bounds x="60" y="540" width="2380" height="150" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Start_CorpCard_di" bpmnElement="Start_CorpCard">
+        <dc:Bounds x="110" y="147" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_CardConsult_di" bpmnElement="Task_CardConsult">
+        <dc:Bounds x="235" y="276" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Svc_IdentityCheck_di" bpmnElement="Svc_IdentityCheck">
+        <dc:Bounds x="435" y="426" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gw_IdentityOk_di" bpmnElement="Gw_IdentityOk">
+        <dc:Bounds x="610" y="291" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_GiveTerms_di" bpmnElement="Task_GiveTerms">
+        <dc:Bounds x="745" y="276" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_CheckDocs_di" bpmnElement="Task_CheckDocs">
+        <dc:Bounds x="945" y="276" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gw_DocsComplete_di" bpmnElement="Gw_DocsComplete">
+        <dc:Bounds x="1120" y="291" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_RequestCardSupplement_di" bpmnElement="Task_RequestCardSupplement">
+        <dc:Bounds x="1255" y="276" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_SubmitCardSupplement_di" bpmnElement="Task_SubmitCardSupplement">
+        <dc:Bounds x="1255" y="126" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_CreditReview_di" bpmnElement="Task_CreditReview">
+        <dc:Bounds x="1355" y="576" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gw_Approval_di" bpmnElement="Gw_Approval">
+        <dc:Bounds x="1530" y="591" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_RejectCard_di" bpmnElement="Task_RejectCard">
+        <dc:Bounds x="1655" y="276" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Svc_IssueAndShipCard_di" bpmnElement="Svc_IssueAndShipCard">
+        <dc:Bounds x="1755" y="426" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_CardRejected_di" bpmnElement="End_CardRejected">
+        <dc:Bounds x="1830" y="297" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_CardDone_di" bpmnElement="End_CardDone">
+        <dc:Bounds x="1930" y="447" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_C01_di" bpmnElement="Flow_C01">
+        <di:waypoint x="146" y="165" />
+        <di:waypoint x="190.5" y="165" />
+        <di:waypoint x="190.5" y="316" />
+        <di:waypoint x="235" y="316" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_C02_di" bpmnElement="Flow_C02">
+        <di:waypoint x="335" y="316" />
+        <di:waypoint x="385" y="316" />
+        <di:waypoint x="385" y="466" />
+        <di:waypoint x="435" y="466" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_C03_di" bpmnElement="Flow_C03">
+        <di:waypoint x="535" y="466" />
+        <di:waypoint x="572.5" y="466" />
+        <di:waypoint x="572.5" y="316" />
+        <di:waypoint x="610" y="316" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_C04_di" bpmnElement="Flow_C04">
+        <di:waypoint x="660" y="316" />
+        <di:waypoint x="1655" y="316" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_C05_di" bpmnElement="Flow_C05">
+        <di:waypoint x="660" y="316" />
+        <di:waypoint x="745" y="316" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_C06_di" bpmnElement="Flow_C06">
+        <di:waypoint x="845" y="316" />
+        <di:waypoint x="945" y="316" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_C07_di" bpmnElement="Flow_C07">
+        <di:waypoint x="1045" y="316" />
+        <di:waypoint x="1120" y="316" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_C08_di" bpmnElement="Flow_C08">
+        <di:waypoint x="1170" y="316" />
+        <di:waypoint x="1255" y="316" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_C09_di" bpmnElement="Flow_C09">
+        <di:waypoint x="1305" y="276" />
+        <di:waypoint x="1305" y="206" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_C10_di" bpmnElement="Flow_C10">
+        <di:waypoint x="1255" y="166" />
+        <di:waypoint x="1150" y="166" />
+        <di:waypoint x="1150" y="316" />
+        <di:waypoint x="1045" y="316" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_C11_di" bpmnElement="Flow_C11">
+        <di:waypoint x="1170" y="316" />
+        <di:waypoint x="1262.5" y="316" />
+        <di:waypoint x="1262.5" y="616" />
+        <di:waypoint x="1355" y="616" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_C12_di" bpmnElement="Flow_C12">
+        <di:waypoint x="1455" y="616" />
+        <di:waypoint x="1530" y="616" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_C13_di" bpmnElement="Flow_C13">
+        <di:waypoint x="1580" y="616" />
+        <di:waypoint x="1617.5" y="616" />
+        <di:waypoint x="1617.5" y="316" />
+        <di:waypoint x="1655" y="316" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_C14_di" bpmnElement="Flow_C14">
+        <di:waypoint x="1580" y="616" />
+        <di:waypoint x="1667.5" y="616" />
+        <di:waypoint x="1667.5" y="466" />
+        <di:waypoint x="1755" y="466" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_C15_di" bpmnElement="Flow_C15">
+        <di:waypoint x="1755" y="316" />
+        <di:waypoint x="1830" y="316" />
+        <di:waypoint x="1830" y="315" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_C16_di" bpmnElement="Flow_C16">
+        <di:waypoint x="1855" y="466" />
+        <di:waypoint x="1930" y="466" />
+        <di:waypoint x="1930" y="465" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

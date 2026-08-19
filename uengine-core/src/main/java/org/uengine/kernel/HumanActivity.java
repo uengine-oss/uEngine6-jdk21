@@ -567,6 +567,11 @@ public class HumanActivity extends ReceiveActivity {
 				try {
 					if (instance.isSubProcess()) {
 						currentLogin = instance.getRootProcessInstance().getRoleMapping("Initiator");
+						if (currentLogin == null && UserContext.getThreadLocalInstance() != null
+								&& UserContext.getThreadLocalInstance().getUserId() != null) {
+							currentLogin = RoleMapping.create();
+							currentLogin.setEndpoint(UserContext.getThreadLocalInstance().getUserId());
+						}
 					} else {
 						currentLogin = RoleMapping.create();
 						// currentLogin.setEndpoint(GlobalContext.getUserId());

@@ -1,0 +1,297 @@
+<?xml version='1.0' encoding='utf-8'?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:uengine="http://uengine" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="Definitions_Process_DepositBalanceNotice" targetNamespace="http://uengine.org/sds/representative">
+  <bpmn:process id="Process_DepositBalanceNotice" name="예금잔액 통보" isExecutable="true">
+    <bpmn:extensionElements>
+      <uengine:properties json="{&quot;definitionName&quot;:&quot;예금잔액 통보&quot;,&quot;version&quot;:&quot;1.0&quot;,&quot;shortDescription&quot;:{&quot;text&quot;:&quot;분기 시뮬레이션 실행용 대표 프로세스&quot;}}">
+        <uengine:variable name="DM반송여부" type="Text" />
+        <uengine:variable name="예금잔액이상여부" type="Text" />
+        <uengine:variable name="일괄발송대상여부" type="Text" />
+      </uengine:properties>
+    </bpmn:extensionElements>
+    <bpmn:laneSet id="LaneSet_Process_DepositBalanceNotice">
+      <bpmn:lane id="Lane_1" name="본부">
+        <bpmn:flowNodeRef>Start_BalanceNotice</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_PostTargets</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gw_BatchTarget</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_2" name="영업점">
+        <bpmn:flowNodeRef>Task_CheckBalance</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_IndividualDm</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gw_Returned</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_ConfirmAddress</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gw_BalanceIssue</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_ReportIssue</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>End_Normal</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>End_IssueReported</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_3" name="발송 시스템">
+        <bpmn:flowNodeRef>Svc_BatchDm</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_4" name="고객">
+        <bpmn:flowNodeRef>Task_CustomerConfirm</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="Start_BalanceNotice" name="통보 준비 시작">
+      <bpmn:extensionElements>
+        <uengine:properties json="{&quot;checkpoints&quot;:[],&quot;attachments&quot;:[],&quot;taskLink&quot;:&quot;&quot;,&quot;role&quot;:&quot;본부&quot;,&quot;process&quot;:&quot;Process_DepositBalanceNotice&quot;,&quot;inputData&quot;:[],&quot;outputData&quot;:[],&quot;properties&quot;:&quot;{}&quot;,&quot;duration&quot;:5,&quot;tool&quot;:&quot;formHandler:defaultform&quot;}" />
+      </bpmn:extensionElements>
+      <bpmn:outgoing>Flow_B01</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:userTask id="Task_PostTargets" name="예금잔액 통보 대상 게시">
+      <bpmn:extensionElements>
+        <uengine:properties json="{&quot;checkpoints&quot;:[],&quot;attachments&quot;:[],&quot;taskLink&quot;:&quot;&quot;,&quot;role&quot;:&quot;본부&quot;,&quot;process&quot;:&quot;Process_DepositBalanceNotice&quot;,&quot;inputData&quot;:[],&quot;outputData&quot;:[],&quot;properties&quot;:&quot;{}&quot;,&quot;duration&quot;:5,&quot;tool&quot;:&quot;formHandler:예금잔액_대상게시&quot;,&quot;eventSynchronization&quot;:{&quot;mappingContext&quot;:{&quot;mappingElements&quot;:[{&quot;argument&quot;:{&quot;text&quot;:&quot;일괄발송대상여부&quot;},&quot;direction&quot;:&quot;out&quot;,&quot;variable&quot;:{&quot;name&quot;:&quot;[Arguments].일괄발송대상여부&quot;},&quot;isKey&quot;:false}]}}}" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_B01</bpmn:incoming>
+      <bpmn:outgoing>Flow_B02</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:exclusiveGateway id="Gw_BatchTarget" name="본부 일괄발송 대상 여부">
+      <bpmn:extensionElements>
+        <uengine:properties json="{&quot;checkpoints&quot;:[],&quot;attachments&quot;:[],&quot;taskLink&quot;:&quot;&quot;,&quot;role&quot;:&quot;본부&quot;,&quot;process&quot;:&quot;Process_DepositBalanceNotice&quot;,&quot;inputData&quot;:[],&quot;outputData&quot;:[],&quot;properties&quot;:&quot;{}&quot;,&quot;duration&quot;:5,&quot;tool&quot;:&quot;formHandler:defaultform&quot;}" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_B02</bpmn:incoming>
+      <bpmn:outgoing>Flow_B03</bpmn:outgoing>
+      <bpmn:outgoing>Flow_B04</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:userTask id="Svc_BatchDm" name="일괄 DM 발송">
+      <bpmn:extensionElements>
+        <uengine:properties json="{&quot;checkpoints&quot;:[&quot;테스트 응답 입력&quot;],&quot;attachments&quot;:[],&quot;taskLink&quot;:&quot;&quot;,&quot;role&quot;:&quot;발송 시스템&quot;,&quot;process&quot;:&quot;Process_DepositBalanceNotice&quot;,&quot;inputData&quot;:[],&quot;outputData&quot;:[],&quot;properties&quot;:&quot;{}&quot;,&quot;duration&quot;:5,&quot;tool&quot;:&quot;formHandler:예금잔액_일괄DM발송&quot;,&quot;eventSynchronization&quot;:{&quot;mappingContext&quot;:{&quot;mappingElements&quot;:[{&quot;argument&quot;:{&quot;text&quot;:&quot;DM반송여부&quot;},&quot;direction&quot;:&quot;out&quot;,&quot;variable&quot;:{&quot;name&quot;:&quot;[Arguments].DM반송여부&quot;},&quot;isKey&quot;:false}]}}}" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_B03</bpmn:incoming>
+      <bpmn:outgoing>Flow_B05</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="Task_CheckBalance" name="이상 유무 확인">
+      <bpmn:extensionElements>
+        <uengine:properties json="{&quot;checkpoints&quot;:[],&quot;attachments&quot;:[],&quot;taskLink&quot;:&quot;&quot;,&quot;role&quot;:&quot;영업점&quot;,&quot;process&quot;:&quot;Process_DepositBalanceNotice&quot;,&quot;inputData&quot;:[],&quot;outputData&quot;:[],&quot;properties&quot;:&quot;{}&quot;,&quot;duration&quot;:5,&quot;tool&quot;:&quot;formHandler:예금잔액_이상유무확인&quot;,&quot;eventSynchronization&quot;:{&quot;mappingContext&quot;:{&quot;mappingElements&quot;:[{&quot;argument&quot;:{&quot;text&quot;:&quot;예금잔액이상여부&quot;},&quot;direction&quot;:&quot;out&quot;,&quot;variable&quot;:{&quot;name&quot;:&quot;[Arguments].예금잔액이상여부&quot;},&quot;isKey&quot;:false}]}}}" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_B04</bpmn:incoming>
+      <bpmn:outgoing>Flow_B06</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="Task_IndividualDm" name="개별 DM 발송">
+      <bpmn:extensionElements>
+        <uengine:properties json="{&quot;checkpoints&quot;:[],&quot;attachments&quot;:[],&quot;taskLink&quot;:&quot;&quot;,&quot;role&quot;:&quot;영업점&quot;,&quot;process&quot;:&quot;Process_DepositBalanceNotice&quot;,&quot;inputData&quot;:[],&quot;outputData&quot;:[],&quot;properties&quot;:&quot;{}&quot;,&quot;duration&quot;:5,&quot;tool&quot;:&quot;formHandler:예금잔액_개별DM발송&quot;,&quot;eventSynchronization&quot;:{&quot;mappingContext&quot;:{&quot;mappingElements&quot;:[{&quot;argument&quot;:{&quot;text&quot;:&quot;DM반송여부&quot;},&quot;direction&quot;:&quot;out&quot;,&quot;variable&quot;:{&quot;name&quot;:&quot;[Arguments].DM반송여부&quot;},&quot;isKey&quot;:false}]}}}" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_B06</bpmn:incoming>
+      <bpmn:incoming>Flow_B09</bpmn:incoming>
+      <bpmn:outgoing>Flow_B07</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:exclusiveGateway id="Gw_Returned" name="DM 반송 여부">
+      <bpmn:extensionElements>
+        <uengine:properties json="{&quot;checkpoints&quot;:[],&quot;attachments&quot;:[],&quot;taskLink&quot;:&quot;&quot;,&quot;role&quot;:&quot;영업점&quot;,&quot;process&quot;:&quot;Process_DepositBalanceNotice&quot;,&quot;inputData&quot;:[],&quot;outputData&quot;:[],&quot;properties&quot;:&quot;{}&quot;,&quot;duration&quot;:5,&quot;tool&quot;:&quot;formHandler:defaultform&quot;}" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_B05</bpmn:incoming>
+      <bpmn:incoming>Flow_B07</bpmn:incoming>
+      <bpmn:outgoing>Flow_B08</bpmn:outgoing>
+      <bpmn:outgoing>Flow_B10</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:userTask id="Task_ConfirmAddress" name="반송주소 확인">
+      <bpmn:extensionElements>
+        <uengine:properties json="{&quot;checkpoints&quot;:[],&quot;attachments&quot;:[],&quot;taskLink&quot;:&quot;&quot;,&quot;role&quot;:&quot;영업점&quot;,&quot;process&quot;:&quot;Process_DepositBalanceNotice&quot;,&quot;inputData&quot;:[],&quot;outputData&quot;:[],&quot;properties&quot;:&quot;{}&quot;,&quot;duration&quot;:5,&quot;tool&quot;:&quot;formHandler:예금잔액_반송주소확인&quot;}" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_B08</bpmn:incoming>
+      <bpmn:outgoing>Flow_B09</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="Task_CustomerConfirm" name="DM 수령 및 확인">
+      <bpmn:extensionElements>
+        <uengine:properties json="{&quot;checkpoints&quot;:[],&quot;attachments&quot;:[],&quot;taskLink&quot;:&quot;&quot;,&quot;role&quot;:&quot;고객&quot;,&quot;process&quot;:&quot;Process_DepositBalanceNotice&quot;,&quot;inputData&quot;:[],&quot;outputData&quot;:[],&quot;properties&quot;:&quot;{}&quot;,&quot;duration&quot;:5,&quot;tool&quot;:&quot;formHandler:예금잔액_DM수령확인&quot;,&quot;eventSynchronization&quot;:{&quot;mappingContext&quot;:{&quot;mappingElements&quot;:[{&quot;argument&quot;:{&quot;text&quot;:&quot;예금잔액이상여부&quot;},&quot;direction&quot;:&quot;out&quot;,&quot;variable&quot;:{&quot;name&quot;:&quot;[Arguments].예금잔액이상여부&quot;},&quot;isKey&quot;:false}]}}}" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_B10</bpmn:incoming>
+      <bpmn:outgoing>Flow_B11</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:exclusiveGateway id="Gw_BalanceIssue" name="예금잔액 이상 여부">
+      <bpmn:extensionElements>
+        <uengine:properties json="{&quot;checkpoints&quot;:[],&quot;attachments&quot;:[],&quot;taskLink&quot;:&quot;&quot;,&quot;role&quot;:&quot;영업점&quot;,&quot;process&quot;:&quot;Process_DepositBalanceNotice&quot;,&quot;inputData&quot;:[],&quot;outputData&quot;:[],&quot;properties&quot;:&quot;{}&quot;,&quot;duration&quot;:5,&quot;tool&quot;:&quot;formHandler:defaultform&quot;}" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_B11</bpmn:incoming>
+      <bpmn:outgoing>Flow_B12</bpmn:outgoing>
+      <bpmn:outgoing>Flow_B13</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:userTask id="Task_ReportIssue" name="예금잔액 이상 통보">
+      <bpmn:extensionElements>
+        <uengine:properties json="{&quot;checkpoints&quot;:[],&quot;attachments&quot;:[],&quot;taskLink&quot;:&quot;&quot;,&quot;role&quot;:&quot;영업점&quot;,&quot;process&quot;:&quot;Process_DepositBalanceNotice&quot;,&quot;inputData&quot;:[],&quot;outputData&quot;:[],&quot;properties&quot;:&quot;{}&quot;,&quot;duration&quot;:5,&quot;tool&quot;:&quot;formHandler:예금잔액_이상통보&quot;}" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_B12</bpmn:incoming>
+      <bpmn:outgoing>Flow_B14</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:endEvent id="End_Normal" name="통보 완료">
+      <bpmn:extensionElements>
+        <uengine:properties json="{&quot;checkpoints&quot;:[],&quot;attachments&quot;:[],&quot;taskLink&quot;:&quot;&quot;,&quot;role&quot;:&quot;영업점&quot;,&quot;process&quot;:&quot;Process_DepositBalanceNotice&quot;,&quot;inputData&quot;:[],&quot;outputData&quot;:[],&quot;properties&quot;:&quot;{}&quot;,&quot;duration&quot;:5,&quot;tool&quot;:&quot;formHandler:defaultform&quot;}" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_B13</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:endEvent id="End_IssueReported" name="이상 통보 완료">
+      <bpmn:extensionElements>
+        <uengine:properties json="{&quot;checkpoints&quot;:[],&quot;attachments&quot;:[],&quot;taskLink&quot;:&quot;&quot;,&quot;role&quot;:&quot;영업점&quot;,&quot;process&quot;:&quot;Process_DepositBalanceNotice&quot;,&quot;inputData&quot;:[],&quot;outputData&quot;:[],&quot;properties&quot;:&quot;{}&quot;,&quot;duration&quot;:5,&quot;tool&quot;:&quot;formHandler:defaultform&quot;}" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_B14</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_B01" sourceRef="Start_BalanceNotice" targetRef="Task_PostTargets" />
+    <bpmn:sequenceFlow id="Flow_B02" sourceRef="Task_PostTargets" targetRef="Gw_BatchTarget" />
+    <bpmn:sequenceFlow id="Flow_B03" sourceRef="Gw_BatchTarget" targetRef="Svc_BatchDm" name="Y">
+      <bpmn:extensionElements>
+        <uengine:properties json="{&quot;condition&quot;:{&quot;_type&quot;:&quot;org.uengine.kernel.Evaluate&quot;,&quot;key&quot;:&quot;일괄발송대상여부&quot;,&quot;value&quot;:&quot;Y&quot;}}" />
+      </bpmn:extensionElements>
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${일괄발송대상여부 == "Y"}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_B04" sourceRef="Gw_BatchTarget" targetRef="Task_CheckBalance" name="N">
+      <bpmn:extensionElements>
+        <uengine:properties json="{&quot;condition&quot;:{&quot;_type&quot;:&quot;org.uengine.kernel.Evaluate&quot;,&quot;key&quot;:&quot;일괄발송대상여부&quot;,&quot;value&quot;:&quot;N&quot;}}" />
+      </bpmn:extensionElements>
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${일괄발송대상여부 == "N"}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_B05" sourceRef="Svc_BatchDm" targetRef="Gw_Returned" />
+    <bpmn:sequenceFlow id="Flow_B06" sourceRef="Task_CheckBalance" targetRef="Task_IndividualDm" />
+    <bpmn:sequenceFlow id="Flow_B07" sourceRef="Task_IndividualDm" targetRef="Gw_Returned" />
+    <bpmn:sequenceFlow id="Flow_B08" sourceRef="Gw_Returned" targetRef="Task_ConfirmAddress" name="Y">
+      <bpmn:extensionElements>
+        <uengine:properties json="{&quot;condition&quot;:{&quot;_type&quot;:&quot;org.uengine.kernel.Evaluate&quot;,&quot;key&quot;:&quot;DM반송여부&quot;,&quot;value&quot;:&quot;Y&quot;}}" />
+      </bpmn:extensionElements>
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${DM반송여부 == "Y"}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_B09" sourceRef="Task_ConfirmAddress" targetRef="Task_IndividualDm" />
+    <bpmn:sequenceFlow id="Flow_B10" sourceRef="Gw_Returned" targetRef="Task_CustomerConfirm" name="N">
+      <bpmn:extensionElements>
+        <uengine:properties json="{&quot;condition&quot;:{&quot;_type&quot;:&quot;org.uengine.kernel.Evaluate&quot;,&quot;key&quot;:&quot;DM반송여부&quot;,&quot;value&quot;:&quot;N&quot;}}" />
+      </bpmn:extensionElements>
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${DM반송여부 == "N"}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_B11" sourceRef="Task_CustomerConfirm" targetRef="Gw_BalanceIssue" />
+    <bpmn:sequenceFlow id="Flow_B12" sourceRef="Gw_BalanceIssue" targetRef="Task_ReportIssue" name="Y">
+      <bpmn:extensionElements>
+        <uengine:properties json="{&quot;condition&quot;:{&quot;_type&quot;:&quot;org.uengine.kernel.Evaluate&quot;,&quot;key&quot;:&quot;예금잔액이상여부&quot;,&quot;value&quot;:&quot;Y&quot;}}" />
+      </bpmn:extensionElements>
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${예금잔액이상여부 == "Y"}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_B13" sourceRef="Gw_BalanceIssue" targetRef="End_Normal" name="N">
+      <bpmn:extensionElements>
+        <uengine:properties json="{&quot;condition&quot;:{&quot;_type&quot;:&quot;org.uengine.kernel.Evaluate&quot;,&quot;key&quot;:&quot;예금잔액이상여부&quot;,&quot;value&quot;:&quot;N&quot;}}" />
+      </bpmn:extensionElements>
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${예금잔액이상여부 == "N"}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_B14" sourceRef="Task_ReportIssue" targetRef="End_IssueReported" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="Diagram_Process_DepositBalanceNotice">
+    <bpmndi:BPMNPlane id="Plane_Process_DepositBalanceNotice" bpmnElement="Process_DepositBalanceNotice">
+      <bpmndi:BPMNShape id="Lane_1_di" bpmnElement="Lane_1" isHorizontal="true">
+        <dc:Bounds x="60" y="90" width="2380" height="150" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_2_di" bpmnElement="Lane_2" isHorizontal="true">
+        <dc:Bounds x="60" y="240" width="2380" height="150" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_3_di" bpmnElement="Lane_3" isHorizontal="true">
+        <dc:Bounds x="60" y="390" width="2380" height="150" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_4_di" bpmnElement="Lane_4" isHorizontal="true">
+        <dc:Bounds x="60" y="540" width="2380" height="150" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Start_BalanceNotice_di" bpmnElement="Start_BalanceNotice">
+        <dc:Bounds x="110" y="147" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_PostTargets_di" bpmnElement="Task_PostTargets">
+        <dc:Bounds x="235" y="126" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gw_BatchTarget_di" bpmnElement="Gw_BatchTarget">
+        <dc:Bounds x="410" y="141" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Svc_BatchDm_di" bpmnElement="Svc_BatchDm">
+        <dc:Bounds x="545" y="426" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_CheckBalance_di" bpmnElement="Task_CheckBalance">
+        <dc:Bounds x="545" y="276" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_IndividualDm_di" bpmnElement="Task_IndividualDm">
+        <dc:Bounds x="745" y="276" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gw_Returned_di" bpmnElement="Gw_Returned">
+        <dc:Bounds x="920" y="291" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_ConfirmAddress_di" bpmnElement="Task_ConfirmAddress">
+        <dc:Bounds x="1055" y="276" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_CustomerConfirm_di" bpmnElement="Task_CustomerConfirm">
+        <dc:Bounds x="1155" y="576" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gw_BalanceIssue_di" bpmnElement="Gw_BalanceIssue">
+        <dc:Bounds x="1330" y="291" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_ReportIssue_di" bpmnElement="Task_ReportIssue">
+        <dc:Bounds x="1455" y="276" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_Normal_di" bpmnElement="End_Normal">
+        <dc:Bounds x="1630" y="297" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_IssueReported_di" bpmnElement="End_IssueReported">
+        <dc:Bounds x="1630" y="447" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_B01_di" bpmnElement="Flow_B01">
+        <di:waypoint x="146" y="165" />
+        <di:waypoint x="235" y="165" />
+        <di:waypoint x="235" y="166" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_B02_di" bpmnElement="Flow_B02">
+        <di:waypoint x="335" y="166" />
+        <di:waypoint x="410" y="166" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_B03_di" bpmnElement="Flow_B03">
+        <di:waypoint x="460" y="166" />
+        <di:waypoint x="502.5" y="166" />
+        <di:waypoint x="502.5" y="466" />
+        <di:waypoint x="545" y="466" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_B04_di" bpmnElement="Flow_B04">
+        <di:waypoint x="460" y="166" />
+        <di:waypoint x="502.5" y="166" />
+        <di:waypoint x="502.5" y="316" />
+        <di:waypoint x="545" y="316" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_B05_di" bpmnElement="Flow_B05">
+        <di:waypoint x="645" y="466" />
+        <di:waypoint x="782.5" y="466" />
+        <di:waypoint x="782.5" y="316" />
+        <di:waypoint x="920" y="316" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_B06_di" bpmnElement="Flow_B06">
+        <di:waypoint x="645" y="316" />
+        <di:waypoint x="745" y="316" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_B07_di" bpmnElement="Flow_B07">
+        <di:waypoint x="845" y="316" />
+        <di:waypoint x="920" y="316" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_B08_di" bpmnElement="Flow_B08">
+        <di:waypoint x="970" y="316" />
+        <di:waypoint x="1055" y="316" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_B09_di" bpmnElement="Flow_B09">
+        <di:waypoint x="1055" y="316" />
+        <di:waypoint x="845" y="316" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_B10_di" bpmnElement="Flow_B10">
+        <di:waypoint x="970" y="316" />
+        <di:waypoint x="1062.5" y="316" />
+        <di:waypoint x="1062.5" y="616" />
+        <di:waypoint x="1155" y="616" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_B11_di" bpmnElement="Flow_B11">
+        <di:waypoint x="1255" y="616" />
+        <di:waypoint x="1292.5" y="616" />
+        <di:waypoint x="1292.5" y="316" />
+        <di:waypoint x="1330" y="316" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_B12_di" bpmnElement="Flow_B12">
+        <di:waypoint x="1380" y="316" />
+        <di:waypoint x="1455" y="316" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_B13_di" bpmnElement="Flow_B13">
+        <di:waypoint x="1380" y="316" />
+        <di:waypoint x="1630" y="316" />
+        <di:waypoint x="1630" y="315" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_B14_di" bpmnElement="Flow_B14">
+        <di:waypoint x="1555" y="316" />
+        <di:waypoint x="1592.5" y="316" />
+        <di:waypoint x="1592.5" y="465" />
+        <di:waypoint x="1630" y="465" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

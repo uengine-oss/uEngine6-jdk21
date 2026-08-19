@@ -1,0 +1,4 @@
+<form>
+  <label>최종승인 검토</label>
+  <select-field name="approvalResult" label="승인결과" items='[{"승인":"승인"},{"반려":"반려"}]' />
+</form>

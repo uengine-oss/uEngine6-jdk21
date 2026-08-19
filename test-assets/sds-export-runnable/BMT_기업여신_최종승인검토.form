@@ -1,0 +1,1 @@
+<section><select-field name="승인결과" alias="승인결과" is_dynamic_load="false" items='[{"승인":"승인"},{"반려":"반려"}]' disabled="false" readonly="false"></select-field></section>

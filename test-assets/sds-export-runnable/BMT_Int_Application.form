@@ -1,0 +1,5 @@
+<form>
+  <label>BMT 통합 기업여신 신청 접수</label>
+  <text-field name="customerName" label="고객명" defaultValue="BMT 테스트 기업" />
+  <text-field name="requestedAmount" label="신청금액" defaultValue="500000000" />
+</form>

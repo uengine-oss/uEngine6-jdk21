@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:uengine="http://uengine" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="Definitions_BMT_CorporateCreditEvalSub" targetNamespace="http://uengine.org/sds/bmt">
+  <bpmn:process id="Process_BMT_CorporateCreditEvalSub" name="공통 기업신용평가" isExecutable="true">
+    <bpmn:extensionElements>
+      <uengine:properties json="{&quot;definitionName&quot;:&quot;공통 기업신용평가&quot;,&quot;version&quot;:&quot;1.0&quot;,&quot;shortDescription&quot;:{&quot;text&quot;:&quot;콜액티비티 검증용 공통 신용평가 서브프로세스&quot;}}">
+        <uengine:variable name="신용평가결과" type="Text" />
+        <uengine:variable name="평가등급" type="Text" />
+      </uengine:properties>
+    </bpmn:extensionElements>
+    <bpmn:laneSet id="LaneSet_BMT_CreditEvalSub">
+      <bpmn:lane id="Lane_Sub_CreditTeam" name="신용평가부">
+        <bpmn:extensionElements>
+          <uengine:properties json="{&quot;role&quot;:&quot;user&quot;,&quot;dispatchingOption&quot;:1,&quot;roleResolutionContext&quot;:{&quot;_type&quot;:&quot;org.uengine.hwlife.overriding.BoundRoleResolutionContext&quot;,&quot;base&quot;:{&quot;_type&quot;:&quot;org.uengine.five.overriding.IAMRoleResolutionContext&quot;,&quot;scope&quot;:&quot;user&quot;},&quot;bindings&quot;:{}}}" />
+        </bpmn:extensionElements>
+<bpmn:flowNodeRef>Start_SubCreditEval</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_CreditInfoCheck</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gw_CreditEvalResult</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_RegisterEvalResult</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>End_SubCreditEvalDone</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_Sub_Branch" name="영업점">
+        <bpmn:extensionElements>
+          <uengine:properties json="{&quot;role&quot;:&quot;user&quot;,&quot;dispatchingOption&quot;:1,&quot;roleResolutionContext&quot;:{&quot;_type&quot;:&quot;org.uengine.hwlife.overriding.BoundRoleResolutionContext&quot;,&quot;base&quot;:{&quot;_type&quot;:&quot;org.uengine.five.overriding.IAMRoleResolutionContext&quot;,&quot;scope&quot;:&quot;user&quot;},&quot;bindings&quot;:{}}}" />
+        </bpmn:extensionElements>
+<bpmn:flowNodeRef>Task_RequestAdditionalData</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="Start_SubCreditEval" name="평가 시작">
+      <bpmn:extensionElements>
+        <uengine:properties json="{&quot;role&quot;:&quot;user&quot;,&quot;process&quot;:&quot;Process_BMT_CorporateCreditEvalSub&quot;,&quot;tool&quot;:&quot;formHandler:defaultform&quot;,&quot;duration&quot;:5,&quot;inputData&quot;:[],&quot;outputData&quot;:[],&quot;properties&quot;:&quot;{}&quot;}" />
+      </bpmn:extensionElements>
+      <bpmn:outgoing>SubFlow_01</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:userTask id="Task_CreditInfoCheck" name="신용정보 조회 및 평가">
+      <bpmn:extensionElements>
+        <uengine:properties json="{&quot;role&quot;:&quot;user&quot;,&quot;process&quot;:&quot;Process_BMT_CorporateCreditEvalSub&quot;,&quot;tool&quot;:&quot;formHandler:BMT_기업신용평가_조회&quot;,&quot;duration&quot;:5,&quot;inputData&quot;:[],&quot;outputData&quot;:[],&quot;properties&quot;:&quot;{}&quot;,&quot;eventSynchronization&quot;:{&quot;mappingContext&quot;:{&quot;mappingElements&quot;:[{&quot;argument&quot;:{&quot;text&quot;:&quot;신용평가결과&quot;},&quot;direction&quot;:&quot;out&quot;,&quot;variable&quot;:{&quot;name&quot;:&quot;[Arguments].신용평가결과&quot;},&quot;isKey&quot;:false}]}}}" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>SubFlow_01</bpmn:incoming>
+      <bpmn:outgoing>SubFlow_02</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:exclusiveGateway id="Gw_CreditEvalResult" name="평가결과">
+      <bpmn:incoming>SubFlow_02</bpmn:incoming>
+      <bpmn:outgoing>SubFlow_03</bpmn:outgoing>
+      <bpmn:outgoing>SubFlow_04</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:userTask id="Task_RequestAdditionalData" name="추가자료 요청">
+      <bpmn:extensionElements>
+        <uengine:properties json="{&quot;role&quot;:&quot;user&quot;,&quot;process&quot;:&quot;Process_BMT_CorporateCreditEvalSub&quot;,&quot;tool&quot;:&quot;formHandler:BMT_기업신용평가_추가자료요청&quot;,&quot;duration&quot;:5,&quot;inputData&quot;:[],&quot;outputData&quot;:[],&quot;properties&quot;:&quot;{}&quot;}" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>SubFlow_04</bpmn:incoming>
+      <bpmn:outgoing>SubFlow_05</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="Task_RegisterEvalResult" name="평가결과 등록">
+      <bpmn:extensionElements>
+        <uengine:properties json="{&quot;role&quot;:&quot;user&quot;,&quot;process&quot;:&quot;Process_BMT_CorporateCreditEvalSub&quot;,&quot;tool&quot;:&quot;formHandler:BMT_기업신용평가_결과등록&quot;,&quot;duration&quot;:5,&quot;inputData&quot;:[],&quot;outputData&quot;:[],&quot;properties&quot;:&quot;{}&quot;,&quot;eventSynchronization&quot;:{&quot;mappingContext&quot;:{&quot;mappingElements&quot;:[{&quot;argument&quot;:{&quot;text&quot;:&quot;평가등급&quot;},&quot;direction&quot;:&quot;out&quot;,&quot;variable&quot;:{&quot;name&quot;:&quot;[Arguments].평가등급&quot;},&quot;isKey&quot;:false}]}}}" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>SubFlow_03</bpmn:incoming>
+      <bpmn:incoming>SubFlow_05</bpmn:incoming>
+      <bpmn:outgoing>SubFlow_06</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:endEvent id="End_SubCreditEvalDone" name="평가 완료">
+      <bpmn:incoming>SubFlow_06</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="SubFlow_01" sourceRef="Start_SubCreditEval" targetRef="Task_CreditInfoCheck" />
+    <bpmn:sequenceFlow id="SubFlow_02" sourceRef="Task_CreditInfoCheck" targetRef="Gw_CreditEvalResult" />
+    <bpmn:sequenceFlow id="SubFlow_03" name="통과" sourceRef="Gw_CreditEvalResult" targetRef="Task_RegisterEvalResult">
+      <bpmn:extensionElements>
+        <uengine:properties json="{&quot;condition&quot;:{&quot;_type&quot;:&quot;org.uengine.kernel.Evaluate&quot;,&quot;key&quot;:&quot;신용평가결과&quot;,&quot;value&quot;:&quot;통과&quot;}}" />
+      </bpmn:extensionElements>
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${신용평가결과 == "통과"}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="SubFlow_04" name="추가확인" sourceRef="Gw_CreditEvalResult" targetRef="Task_RequestAdditionalData">
+      <bpmn:extensionElements>
+        <uengine:properties json="{&quot;condition&quot;:{&quot;_type&quot;:&quot;org.uengine.kernel.Evaluate&quot;,&quot;key&quot;:&quot;신용평가결과&quot;,&quot;value&quot;:&quot;추가확인&quot;}}" />
+      </bpmn:extensionElements>
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${신용평가결과 == "추가확인"}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="SubFlow_05" sourceRef="Task_RequestAdditionalData" targetRef="Task_RegisterEvalResult" />
+    <bpmn:sequenceFlow id="SubFlow_06" sourceRef="Task_RegisterEvalResult" targetRef="End_SubCreditEvalDone" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="Diagram_BMT_CreditEvalSub">
+    <bpmndi:BPMNPlane id="Plane_BMT_CreditEvalSub" bpmnElement="Process_BMT_CorporateCreditEvalSub">
+      <bpmndi:BPMNShape id="Lane_Sub_CreditTeam_di" bpmnElement="Lane_Sub_CreditTeam" isHorizontal="true">
+        <dc:Bounds x="60" y="90" width="1200" height="150" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_Sub_Branch_di" bpmnElement="Lane_Sub_Branch" isHorizontal="true">
+        <dc:Bounds x="60" y="240" width="1200" height="150" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Start_SubCreditEval_di" bpmnElement="Start_SubCreditEval"><dc:Bounds x="110" y="147" width="36" height="36" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_CreditInfoCheck_di" bpmnElement="Task_CreditInfoCheck"><dc:Bounds x="230" y="126" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gw_CreditEvalResult_di" bpmnElement="Gw_CreditEvalResult"><dc:Bounds x="420" y="141" width="50" height="50" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_RequestAdditionalData_di" bpmnElement="Task_RequestAdditionalData"><dc:Bounds x="570" y="276" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_RegisterEvalResult_di" bpmnElement="Task_RegisterEvalResult"><dc:Bounds x="760" y="126" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_SubCreditEvalDone_di" bpmnElement="End_SubCreditEvalDone"><dc:Bounds x="980" y="147" width="36" height="36" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SubFlow_01_di" bpmnElement="SubFlow_01"><di:waypoint x="146" y="165" /><di:waypoint x="230" y="165" /><di:waypoint x="230" y="166" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SubFlow_02_di" bpmnElement="SubFlow_02"><di:waypoint x="330" y="166" /><di:waypoint x="420" y="166" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SubFlow_03_di" bpmnElement="SubFlow_03"><di:waypoint x="470" y="166" /><di:waypoint x="760" y="166" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SubFlow_04_di" bpmnElement="SubFlow_04"><di:waypoint x="445" y="191" /><di:waypoint x="445" y="316" /><di:waypoint x="570" y="316" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SubFlow_05_di" bpmnElement="SubFlow_05"><di:waypoint x="670" y="316" /><di:waypoint x="710" y="316" /><di:waypoint x="710" y="166" /><di:waypoint x="760" y="166" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SubFlow_06_di" bpmnElement="SubFlow_06"><di:waypoint x="860" y="166" /><di:waypoint x="980" y="166" /><di:waypoint x="980" y="165" /></bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

@@ -173,7 +173,8 @@ public class JPAWorkList implements WorkList {
             wl.setScope(scope);
             Object groupNameObj = parameterMap.get("groupName");
             wl.setGroupCd(groupNameObj != null ? String.valueOf(groupNameObj) : null);
-            wl.setAssignType(Integer.parseInt("" + parameterMap.get("assignType")));
+            Object assignTypeObj = parameterMap.get("assignType");
+            wl.setAssignType(assignTypeObj == null ? 0 : Integer.parseInt(String.valueOf(assignTypeObj)));
 
             if(parameterMap.containsKey("actType")){
                 wl.setActType((String) parameterMap.get("actType"));

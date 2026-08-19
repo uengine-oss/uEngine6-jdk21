@@ -1,0 +1,1 @@
+<section><select-field name="이면배서완료" alias="이면배서완료" is_dynamic_load="false" items='[{"Y":"Y"}]' disabled="false" readonly="false"></select-field></section>

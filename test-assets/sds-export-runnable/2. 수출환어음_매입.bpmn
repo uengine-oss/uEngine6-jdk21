@@ -1,0 +1,557 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:uengine="http://uengine" id="Definitions_1" name="수출환어음 매입" targetNamespace="http://bpmn.io/schema/bpmn" exporter="bpmn-js (https://demo.bpmn.io)" exporterVersion="16.4.0">
+  <bpmn:collaboration id="Collaboration_1">
+    <bpmn:participant id="Participant_1" name="수출환어음 매입" processRef="Process_1">
+      <bpmn:extensionElements>
+        <uengine:properties json="{}" />
+      </bpmn:extensionElements>
+    </bpmn:participant>
+  </bpmn:collaboration>
+  <bpmn:process id="Process_1" isExecutable="true">
+    <bpmn:extensionElements>
+      <uengine:properties json="{&#34;definitionName&#34;:&#34;수출환어음 매입&#34;,&#34;version&#34;:&#34;0.1&#34;,&#34;shortDescription&#34;:{&#34;text&#34;:null}}"><uengine:variable name="연체 여부" type="Text" /><uengine:variable name="보완가능 여부" type="Text" /><uengine:variable name="하자 여부" type="Text" /><uengine:variable name="하자 매입 한도내여부" type="Text" /><uengine:variable name="매입 방법" type="Text" /></uengine:properties></bpmn:extensionElements>
+    <bpmn:laneSet id="LaneSet_1">
+      <bpmn:lane id="Lane_1p28jn7" name="고객">
+        <bpmn:extensionElements>
+          <uengine:properties json="{&#34;roleResolutionContext&#34;:{&#34;_type&#34;:&#34;org.uengine.kernel.DirectRoleResolutionContext&#34;,&#34;endpoint&#34;:null},&#34;dispatchingOption&#34;:7}" />
+        </bpmn:extensionElements>
+        <bpmn:flowNodeRef>StartEvent_1</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Activity_08vzdex</bpmn:flowNodeRef>
+        <bpmn:childLaneSet id="LaneSet_0n23wr3">
+          <bpmn:lane id="Lane_08jmcax">
+            <bpmn:flowNodeRef>StartEvent_1</bpmn:flowNodeRef>
+            <bpmn:flowNodeRef>Activity_08vzdex</bpmn:flowNodeRef>
+          </bpmn:lane>
+        </bpmn:childLaneSet>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_1" name="영업점">
+        <bpmn:extensionElements>
+          <uengine:properties json="{&#34;roleResolutionContext&#34;:{&#34;_type&#34;:&#34;org.uengine.kernel.DirectRoleResolutionContext&#34;,&#34;endpoint&#34;:null},&#34;dispatchingOption&#34;:7}" />
+        </bpmn:extensionElements>
+        <bpmn:flowNodeRef>Gateway_0xw42jy</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Activity_0aj17dc</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gateway_0jzmkj7</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Activity_0krogtc</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Activity_1ts07vv</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Activity_1pfhxjq</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>UserTask_1</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Activity_1ehuprf</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Activity_1i18cml</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Activity_1483tjo</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Activity_1go4sk0</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Event_0j5suyk</bpmn:flowNodeRef>
+        <bpmn:childLaneSet id="LaneSet_1lrujeo">
+          <bpmn:lane id="Lane_1pjw5yi" name="">
+            <bpmn:extensionElements>
+              <uengine:properties json="{&#34;roleResolutionContext&#34;:{&#34;_type&#34;:&#34;org.uengine.kernel.DirectRoleResolutionContext&#34;,&#34;endpoint&#34;:null},&#34;dispatchingOption&#34;:7}" />
+            </bpmn:extensionElements>
+            <bpmn:flowNodeRef>Gateway_0xw42jy</bpmn:flowNodeRef>
+            <bpmn:flowNodeRef>Activity_0aj17dc</bpmn:flowNodeRef>
+            <bpmn:flowNodeRef>Gateway_0jzmkj7</bpmn:flowNodeRef>
+            <bpmn:flowNodeRef>Activity_0krogtc</bpmn:flowNodeRef>
+            <bpmn:flowNodeRef>Activity_1ts07vv</bpmn:flowNodeRef>
+            <bpmn:flowNodeRef>Activity_1pfhxjq</bpmn:flowNodeRef>
+            <bpmn:flowNodeRef>UserTask_1</bpmn:flowNodeRef>
+            <bpmn:flowNodeRef>Activity_1ehuprf</bpmn:flowNodeRef>
+            <bpmn:flowNodeRef>Activity_1i18cml</bpmn:flowNodeRef>
+            <bpmn:flowNodeRef>Activity_1483tjo</bpmn:flowNodeRef>
+            <bpmn:flowNodeRef>Activity_1go4sk0</bpmn:flowNodeRef>
+            <bpmn:flowNodeRef>Event_0j5suyk</bpmn:flowNodeRef>
+          </bpmn:lane>
+        </bpmn:childLaneSet>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_0fkb972" name="본부">
+        <bpmn:extensionElements>
+          <uengine:properties json="{&#34;roleResolutionContext&#34;:{&#34;_type&#34;:&#34;org.uengine.kernel.DirectRoleResolutionContext&#34;,&#34;endpoint&#34;:null},&#34;dispatchingOption&#34;:7}" />
+        </bpmn:extensionElements>
+        <bpmn:flowNodeRef>Activity_17c75ii</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gateway_1iydw4x</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gateway_1hg2bsm</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Activity_1swolnv</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gateway_1wk69f5</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Activity_17u1mg7</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Activity_095xty8</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Activity_0f9cluf</bpmn:flowNodeRef>
+        <bpmn:childLaneSet id="LaneSet_1p2guxb">
+          <bpmn:lane id="Lane_1el0zqv">
+            <bpmn:flowNodeRef>Activity_17c75ii</bpmn:flowNodeRef>
+            <bpmn:flowNodeRef>Gateway_1iydw4x</bpmn:flowNodeRef>
+            <bpmn:flowNodeRef>Gateway_1hg2bsm</bpmn:flowNodeRef>
+            <bpmn:flowNodeRef>Activity_1swolnv</bpmn:flowNodeRef>
+            <bpmn:flowNodeRef>Gateway_1wk69f5</bpmn:flowNodeRef>
+            <bpmn:flowNodeRef>Activity_17u1mg7</bpmn:flowNodeRef>
+            <bpmn:flowNodeRef>Activity_095xty8</bpmn:flowNodeRef>
+            <bpmn:flowNodeRef>Activity_0f9cluf</bpmn:flowNodeRef>
+          </bpmn:lane>
+        </bpmn:childLaneSet>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:sequenceFlow id="Flow_1j1ad8s" sourceRef="UserTask_1" targetRef="Activity_1pfhxjq" />
+    <bpmn:sequenceFlow id="Flow_1w2sau5" sourceRef="Activity_1pfhxjq" targetRef="Activity_1i18cml" />
+    <bpmn:sequenceFlow id="Flow_01wwmek" sourceRef="Activity_1i18cml" targetRef="Activity_1ehuprf" />
+    <bpmn:sequenceFlow id="Flow_0kkem89" sourceRef="Activity_1ehuprf" targetRef="Activity_17u1mg7" />
+    <bpmn:sequenceFlow id="Flow_1xgj45a" sourceRef="Activity_17u1mg7" targetRef="Activity_095xty8" />
+    <bpmn:sequenceFlow id="Flow_1ps0wwd" sourceRef="Activity_1swolnv" targetRef="Activity_1go4sk0" />
+    <bpmn:sequenceFlow id="Flow_09mss8l" sourceRef="Activity_1go4sk0" targetRef="Event_0j5suyk" />
+    <bpmn:sequenceFlow id="Flow_03e0at7" sourceRef="StartEvent_1" targetRef="Activity_08vzdex" />
+    <bpmn:sequenceFlow id="Flow_06ku2mj" sourceRef="Activity_08vzdex" targetRef="Activity_0aj17dc" />
+    <bpmn:startEvent id="StartEvent_1" name="시작">
+      <bpmn:extensionElements>
+        <uengine:properties json="{&#34;role&#34;:&#34;고객&#34;}" />
+      </bpmn:extensionElements>
+      <bpmn:outgoing>Flow_03e0at7</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:userTask id="Activity_08vzdex" name="신청서류 접수">
+      <bpmn:extensionElements>
+        <uengine:properties json="{&#34;checkpoints&#34;:[],&#34;attachments&#34;:[],&#34;taskLink&#34;:&#34;&#34;,&#34;role&#34;:&#34;고객&#34;,&#34;process&#34;:&#34;Process_1&#34;,&#34;inputData&#34;:[],&#34;outputData&#34;:[],&#34;properties&#34;:&#34;{}&#34;,&#34;duration&#34;:5,&#34;tool&#34;:&#34;formHandler:defaultform&#34;}" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_03e0at7</bpmn:incoming>
+      <bpmn:incoming>Flow_1bma40x</bpmn:incoming>
+      <bpmn:outgoing>Flow_06ku2mj</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:sequenceFlow id="Flow_0h92p35" sourceRef="Activity_0aj17dc" targetRef="Gateway_0jzmkj7" />
+    <bpmn:sequenceFlow id="Flow_0u4hcn2" name="Y" sourceRef="Gateway_0jzmkj7" targetRef="Gateway_0xw42jy"><bpmn:extensionElements><uengine:properties json="{&#34;condition&#34;:{&#34;_type&#34;:&#34;org.uengine.kernel.Evaluate&#34;,&#34;key&#34;:&#34;연체 여부&#34;,&#34;value&#34;:&#34;Y&#34;}}" /></bpmn:extensionElements></bpmn:sequenceFlow>
+    <bpmn:exclusiveGateway id="Gateway_0xw42jy" name="보완가능 여부" default="Flow_1910qns">
+      <bpmn:extensionElements>
+        <uengine:properties json="{&#34;role&#34;:&#34;영업점&#34;}" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_0u4hcn2</bpmn:incoming>
+      <bpmn:outgoing>Flow_1bma40x</bpmn:outgoing>
+      <bpmn:outgoing>Flow_1910qns</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:sequenceFlow id="Flow_0aywcac" name="N" sourceRef="Gateway_0jzmkj7" targetRef="Activity_0krogtc"><bpmn:extensionElements><uengine:properties json="{&#34;condition&#34;:{&#34;_type&#34;:&#34;org.uengine.kernel.Evaluate&#34;,&#34;key&#34;:&#34;연체 여부&#34;,&#34;value&#34;:&#34;N&#34;}}" /></bpmn:extensionElements></bpmn:sequenceFlow>
+    <bpmn:userTask id="Activity_0aj17dc" name="연체 및 신용상태 확인">
+      <bpmn:extensionElements>
+        <uengine:properties json="{&#34;checkpoints&#34;:[],&#34;attachments&#34;:[],&#34;taskLink&#34;:&#34;&#34;,&#34;tool&#34;:&#34;formHandler:sds_2_activity_0aj17dc_decision&#34;,&#34;eventSynchronization&#34;:{&#34;mappingContext&#34;:{&#34;mappingElements&#34;:[{&#34;argument&#34;:{&#34;text&#34;:&#34;연체 여부&#34;},&#34;direction&#34;:&#34;out&#34;,&#34;variable&#34;:{&#34;name&#34;:&#34;[Arguments].연체 여부&#34;},&#34;isKey&#34;:false},{&#34;argument&#34;:{&#34;text&#34;:&#34;보완가능 여부&#34;},&#34;direction&#34;:&#34;out&#34;,&#34;variable&#34;:{&#34;name&#34;:&#34;[Arguments].보완가능 여부&#34;},&#34;isKey&#34;:false}]}}}" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_06ku2mj</bpmn:incoming>
+      <bpmn:outgoing>Flow_0h92p35</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:sequenceFlow id="Flow_14thk5x" sourceRef="Activity_0krogtc" targetRef="Activity_17c75ii" />
+    <bpmn:sequenceFlow id="Flow_1imsac8" sourceRef="Activity_17c75ii" targetRef="Gateway_1iydw4x" />
+    <bpmn:exclusiveGateway id="Gateway_0jzmkj7" name="연체 여부" default="Flow_0aywcac">
+      <bpmn:extensionElements>
+        <uengine:properties json="{&#34;role&#34;:&#34;영업점&#34;}" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_0h92p35</bpmn:incoming>
+      <bpmn:outgoing>Flow_0u4hcn2</bpmn:outgoing>
+      <bpmn:outgoing>Flow_0aywcac</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:task id="Activity_0krogtc" name="서류 스캔">
+      <bpmn:extensionElements>
+        <uengine:properties json="{&#34;checkpoints&#34;:[],&#34;attachments&#34;:[],&#34;taskLink&#34;:&#34;&#34;}" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_0aywcac</bpmn:incoming>
+      <bpmn:outgoing>Flow_14thk5x</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:sequenceFlow id="Flow_1bma40x" name="Y" sourceRef="Gateway_0xw42jy" targetRef="Activity_08vzdex"><bpmn:extensionElements><uengine:properties json="{&#34;condition&#34;:{&#34;_type&#34;:&#34;org.uengine.kernel.Evaluate&#34;,&#34;key&#34;:&#34;보완가능 여부&#34;,&#34;value&#34;:&#34;Y&#34;}}" /></bpmn:extensionElements></bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_1910qns" name="N" sourceRef="Gateway_0xw42jy" targetRef="Activity_1ts07vv"><bpmn:extensionElements><uengine:properties json="{&#34;condition&#34;:{&#34;_type&#34;:&#34;org.uengine.kernel.Evaluate&#34;,&#34;key&#34;:&#34;보완가능 여부&#34;,&#34;value&#34;:&#34;N&#34;}}" /></bpmn:extensionElements></bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_142vh08" sourceRef="Activity_1ts07vv" targetRef="Event_0j5suyk" />
+    <bpmn:sequenceFlow id="Flow_1f1tusl" name="Y" sourceRef="Gateway_1iydw4x" targetRef="Gateway_1wk69f5"><bpmn:extensionElements><uengine:properties json="{&#34;condition&#34;:{&#34;_type&#34;:&#34;org.uengine.kernel.Evaluate&#34;,&#34;key&#34;:&#34;하자 여부&#34;,&#34;value&#34;:&#34;Y&#34;}}" /></bpmn:extensionElements></bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_0heqs8x" name="N" sourceRef="Gateway_1wk69f5" targetRef="Gateway_1hg2bsm"><bpmn:extensionElements><uengine:properties json="{&#34;condition&#34;:{&#34;_type&#34;:&#34;org.uengine.kernel.Evaluate&#34;,&#34;key&#34;:&#34;하자 매입 한도내여부&#34;,&#34;value&#34;:&#34;N&#34;}}" /></bpmn:extensionElements></bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_0p60xrz" name="N" sourceRef="Gateway_1iydw4x" targetRef="Activity_1483tjo"><bpmn:extensionElements><uengine:properties json="{&#34;condition&#34;:{&#34;_type&#34;:&#34;org.uengine.kernel.Evaluate&#34;,&#34;key&#34;:&#34;하자 여부&#34;,&#34;value&#34;:&#34;N&#34;}}" /></bpmn:extensionElements></bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_1m1mvgc" sourceRef="Activity_1483tjo" targetRef="UserTask_1" />
+    <bpmn:userTask id="Activity_1ts07vv" name="매입불가 통보">
+      <bpmn:extensionElements>
+        <uengine:properties json="{&#34;checkpoints&#34;:[],&#34;attachments&#34;:[],&#34;taskLink&#34;:&#34;&#34;,&#34;role&#34;:&#34;영업점&#34;,&#34;process&#34;:&#34;Process_1&#34;,&#34;inputData&#34;:[],&#34;outputData&#34;:[],&#34;properties&#34;:&#34;{}&#34;,&#34;duration&#34;:5,&#34;tool&#34;:&#34;formHandler:defaultform&#34;}" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_1910qns</bpmn:incoming>
+      <bpmn:outgoing>Flow_142vh08</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="Activity_1pfhxjq" name="신용장 이면 배서">
+      <bpmn:extensionElements>
+        <uengine:properties json="{&#34;role&#34;:&#34;영업점&#34;,&#34;process&#34;:&#34;Process_1&#34;,&#34;inputData&#34;:[],&#34;outputData&#34;:[],&#34;properties&#34;:&#34;{}&#34;,&#34;duration&#34;:5,&#34;tool&#34;:&#34;formHandler:defaultform&#34;}" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_1j1ad8s</bpmn:incoming>
+      <bpmn:outgoing>Flow_1w2sau5</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:task id="UserTask_1" name="수수료징수 및 보증료 입금">
+      <bpmn:extensionElements>
+        <uengine:properties json="{&#34;checkpoints&#34;:[],&#34;attachments&#34;:[],&#34;taskLink&#34;:&#34;&#34;}" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_1m1mvgc</bpmn:incoming>
+      <bpmn:outgoing>Flow_1j1ad8s</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:userTask id="Activity_1ehuprf" name="계산서교부">
+      <bpmn:extensionElements>
+        <uengine:properties json="{&#34;checkpoints&#34;:[],&#34;attachments&#34;:[],&#34;taskLink&#34;:&#34;&#34;,&#34;role&#34;:&#34;영업점&#34;,&#34;process&#34;:&#34;Process_1&#34;,&#34;inputData&#34;:[],&#34;outputData&#34;:[],&#34;properties&#34;:&#34;{}&#34;,&#34;duration&#34;:5,&#34;tool&#34;:&#34;formHandler:defaultform&#34;}" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_01wwmek</bpmn:incoming>
+      <bpmn:outgoing>Flow_0kkem89</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:task id="Activity_1i18cml" name="대금 지급">
+      <bpmn:extensionElements>
+        <uengine:properties json="{&#34;checkpoints&#34;:[],&#34;attachments&#34;:[],&#34;taskLink&#34;:&#34;&#34;}" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_1w2sau5</bpmn:incoming>
+      <bpmn:outgoing>Flow_01wwmek</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:sequenceFlow id="Flow_0hnemx0" name="Y" sourceRef="Gateway_1wk69f5" targetRef="Activity_1483tjo"><bpmn:extensionElements><uengine:properties json="{&#34;condition&#34;:{&#34;_type&#34;:&#34;org.uengine.kernel.Evaluate&#34;,&#34;key&#34;:&#34;하자 매입 한도내여부&#34;,&#34;value&#34;:&#34;Y&#34;}}" /></bpmn:extensionElements></bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_0szleal" name="보증부매입" sourceRef="Gateway_1hg2bsm" targetRef="Activity_1483tjo"><bpmn:extensionElements><uengine:properties json="{&#34;condition&#34;:{&#34;_type&#34;:&#34;org.uengine.kernel.Evaluate&#34;,&#34;key&#34;:&#34;매입 방법&#34;,&#34;value&#34;:&#34;보증부매입&#34;}}" /></bpmn:extensionElements></bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_1hro17e" sourceRef="Activity_0f9cluf" targetRef="Event_0j5suyk" />
+    <bpmn:task id="Activity_1483tjo" name="매입실행">
+      <bpmn:extensionElements>
+        <uengine:properties json="{&#34;checkpoints&#34;:[],&#34;attachments&#34;:[],&#34;taskLink&#34;:&#34;&#34;,&#34;role&#34;:&#34;영업점&#34;,&#34;process&#34;:&#34;Process_1&#34;,&#34;inputData&#34;:[],&#34;outputData&#34;:[],&#34;properties&#34;:&#34;{}&#34;,&#34;duration&#34;:5,&#34;tool&#34;:&#34;formHandler:defaultform&#34;}" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_0p60xrz</bpmn:incoming>
+      <bpmn:incoming>Flow_0hnemx0</bpmn:incoming>
+      <bpmn:incoming>Flow_0szleal</bpmn:incoming>
+      <bpmn:outgoing>Flow_1m1mvgc</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:userTask id="Activity_17c75ii" name="매입서류 검토">
+      <bpmn:extensionElements>
+        <uengine:properties json="{&#34;checkpoints&#34;:[],&#34;attachments&#34;:[],&#34;taskLink&#34;:&#34;&#34;,&#34;tool&#34;:&#34;formHandler:sds_2_activity_17c75ii_decision&#34;,&#34;eventSynchronization&#34;:{&#34;mappingContext&#34;:{&#34;mappingElements&#34;:[{&#34;argument&#34;:{&#34;text&#34;:&#34;하자 여부&#34;},&#34;direction&#34;:&#34;out&#34;,&#34;variable&#34;:{&#34;name&#34;:&#34;[Arguments].하자 여부&#34;},&#34;isKey&#34;:false},{&#34;argument&#34;:{&#34;text&#34;:&#34;하자 매입 한도내여부&#34;},&#34;direction&#34;:&#34;out&#34;,&#34;variable&#34;:{&#34;name&#34;:&#34;[Arguments].하자 매입 한도내여부&#34;},&#34;isKey&#34;:false},{&#34;argument&#34;:{&#34;text&#34;:&#34;매입 방법&#34;},&#34;direction&#34;:&#34;out&#34;,&#34;variable&#34;:{&#34;name&#34;:&#34;[Arguments].매입 방법&#34;},&#34;isKey&#34;:false}]}}}" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_14thk5x</bpmn:incoming>
+      <bpmn:outgoing>Flow_1imsac8</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:exclusiveGateway id="Gateway_1iydw4x" name="하자 여부" default="Flow_0p60xrz">
+      <bpmn:extensionElements>
+        <uengine:properties json="{&#34;role&#34;:&#34;본부&#34;}" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_1imsac8</bpmn:incoming>
+      <bpmn:outgoing>Flow_1f1tusl</bpmn:outgoing>
+      <bpmn:outgoing>Flow_0p60xrz</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:sequenceFlow id="Flow_03cdzm8" sourceRef="Gateway_1hg2bsm" targetRef="Activity_0f9cluf"  name="일반매입"><bpmn:extensionElements><uengine:properties json="{&#34;condition&#34;:{&#34;_type&#34;:&#34;org.uengine.kernel.Evaluate&#34;,&#34;key&#34;:&#34;매입 방법&#34;,&#34;value&#34;:&#34;일반매입&#34;}}" /></bpmn:extensionElements></bpmn:sequenceFlow>
+    <bpmn:userTask id="Activity_1go4sk0" name="선적서류 발송">
+      <bpmn:extensionElements>
+        <uengine:properties json="{&#34;checkpoints&#34;:[],&#34;attachments&#34;:[],&#34;taskLink&#34;:&#34;&#34;,&#34;role&#34;:&#34;영업점&#34;,&#34;process&#34;:&#34;Process_1&#34;,&#34;inputData&#34;:[],&#34;outputData&#34;:[],&#34;properties&#34;:&#34;{}&#34;,&#34;duration&#34;:5,&#34;tool&#34;:&#34;formHandler:defaultform&#34;}" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_1ps0wwd</bpmn:incoming>
+      <bpmn:outgoing>Flow_09mss8l</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:sequenceFlow id="Flow_13afr2a" sourceRef="Activity_095xty8" targetRef="Activity_1swolnv" />
+    <bpmn:endEvent id="Event_0j5suyk" name="종료">
+      <bpmn:extensionElements>
+        <uengine:properties json="{&#34;parameters&#34;:[],&#34;checkpoints&#34;:[],&#34;dataInput&#34;:{&#34;name&#34;:&#34;&#34;},&#34;role&#34;:&#34;영업점&#34;}" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_09mss8l</bpmn:incoming>
+      <bpmn:incoming>Flow_142vh08</bpmn:incoming>
+      <bpmn:incoming>Flow_1hro17e</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:exclusiveGateway id="Gateway_1hg2bsm" name="매입 방법" default="Flow_03cdzm8">
+      <bpmn:extensionElements>
+        <uengine:properties json="{&#34;role&#34;:&#34;본부&#34;}" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_0heqs8x</bpmn:incoming>
+      <bpmn:outgoing>Flow_0szleal</bpmn:outgoing>
+      <bpmn:outgoing>Flow_03cdzm8</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:task id="Activity_1swolnv" name="수출대금 송금 전문 발송">
+      <bpmn:extensionElements>
+        <uengine:properties json="{&#34;checkpoints&#34;:[],&#34;attachments&#34;:[],&#34;taskLink&#34;:&#34;&#34;}" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_13afr2a</bpmn:incoming>
+      <bpmn:outgoing>Flow_1ps0wwd</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:exclusiveGateway id="Gateway_1wk69f5" name="하자 매입 한도내여부" default="Flow_0hnemx0">
+      <bpmn:extensionElements>
+        <uengine:properties json="{&#34;role&#34;:&#34;본부&#34;}" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_1f1tusl</bpmn:incoming>
+      <bpmn:outgoing>Flow_0heqs8x</bpmn:outgoing>
+      <bpmn:outgoing>Flow_0hnemx0</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:task id="Activity_17u1mg7" name="수출환어음 C/L 등록">
+      <bpmn:extensionElements>
+        <uengine:properties json="{&#34;checkpoints&#34;:[],&#34;attachments&#34;:[],&#34;taskLink&#34;:&#34;&#34;}" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_0kkem89</bpmn:incoming>
+      <bpmn:outgoing>Flow_1xgj45a</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:userTask id="Activity_095xty8" name="수출대금 입금은행 선정">
+      <bpmn:extensionElements>
+        <uengine:properties json="{&#34;checkpoints&#34;:[],&#34;attachments&#34;:[],&#34;taskLink&#34;:&#34;&#34;,&#34;role&#34;:&#34;본부&#34;,&#34;process&#34;:&#34;Process_1&#34;,&#34;inputData&#34;:[],&#34;outputData&#34;:[],&#34;properties&#34;:&#34;{}&#34;,&#34;duration&#34;:5,&#34;tool&#34;:&#34;formHandler:defaultform&#34;}" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_1xgj45a</bpmn:incoming>
+      <bpmn:outgoing>Flow_13afr2a</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:task id="Activity_0f9cluf" name="추출환어음 매입추심 결제">
+      <bpmn:extensionElements>
+        <uengine:properties json="{&#34;checkpoints&#34;:[],&#34;attachments&#34;:[],&#34;taskLink&#34;:&#34;&#34;,&#34;definitionId&#34;:&#34;&#34;}" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_03cdzm8</bpmn:incoming>
+      <bpmn:outgoing>Flow_1hro17e</bpmn:outgoing>
+    </bpmn:task>
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Collaboration_1">
+      <bpmndi:BPMNShape id="Participant_1_di" bpmnElement="Participant_1" isHorizontal="true">
+        <dc:Bounds x="731" y="0" width="1987" height="1120" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_1_di" bpmnElement="Lane_1" isHorizontal="true">
+        <dc:Bounds x="761" y="160" width="1957" height="500" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_1pjw5yi_di" bpmnElement="Lane_1pjw5yi" isHorizontal="true">
+        <dc:Bounds x="791" y="160" width="1927" height="500" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_1p28jn7_di" bpmnElement="Lane_1p28jn7" isHorizontal="true">
+        <dc:Bounds x="761" y="0" width="1957" height="160" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_08jmcax_di" bpmnElement="Lane_08jmcax" isHorizontal="true">
+        <dc:Bounds x="791" y="0" width="1927" height="160" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_0fkb972_di" bpmnElement="Lane_0fkb972" isHorizontal="true">
+        <dc:Bounds x="761" y="660" width="1957" height="460" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_1el0zqv_di" bpmnElement="Lane_1el0zqv" isHorizontal="true">
+        <dc:Bounds x="791" y="660" width="1927" height="460" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="StartEvent_1_di" bpmnElement="StartEvent_1">
+        <dc:Bounds x="842" y="62" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="850" y="105" width="22" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_08vzdex_di" bpmnElement="Activity_08vzdex">
+        <dc:Bounds x="1000" y="40" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_0xw42jy_di" bpmnElement="Gateway_0xw42jy" isMarkerVisible="true">
+        <dc:Bounds x="1215" y="225" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1148" y="223" width="64" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0ezevgz_di" bpmnElement="Activity_0aj17dc">
+        <dc:Bounds x="1000" y="210" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_0jzmkj7_di" bpmnElement="Gateway_0jzmkj7" isMarkerVisible="true">
+        <dc:Bounds x="1025" y="385" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="968" y="383" width="44" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1qvxi5d_di" bpmnElement="Activity_0krogtc">
+        <dc:Bounds x="1000" y="530" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1ts07vv_di" bpmnElement="Activity_1ts07vv">
+        <dc:Bounds x="1380" y="210" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1pfhxjq_di" bpmnElement="Activity_1pfhxjq">
+        <dc:Bounds x="1791" y="530" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_10sejzd_di" bpmnElement="UserTask_1">
+        <dc:Bounds x="1791" y="370" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1ehuprf_di" bpmnElement="Activity_1ehuprf">
+        <dc:Bounds x="2021" y="530" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0jqdqvs_di" bpmnElement="Activity_1i18cml">
+        <dc:Bounds x="2021" y="370" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0zqladm_di" bpmnElement="Activity_1483tjo">
+        <dc:Bounds x="1580" y="370" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_19xvfay_di" bpmnElement="Activity_17c75ii">
+        <dc:Bounds x="1000" y="700" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_1iydw4x_di" bpmnElement="Gateway_1iydw4x" isMarkerVisible="true">
+        <dc:Bounds x="1215" y="715" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1168" y="703" width="44" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1go4sk0_di" bpmnElement="Activity_1go4sk0">
+        <dc:Bounds x="2400" y="450" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_0j5suyk_di" bpmnElement="Event_0j5suyk">
+        <dc:Bounds x="2582" y="472" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="2629" y="480" width="21" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_1hg2bsm_di" bpmnElement="Gateway_1hg2bsm" isMarkerVisible="true">
+        <dc:Bounds x="1425" y="945" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1378" y="943" width="44" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1onesnf_di" bpmnElement="Activity_1swolnv">
+        <dc:Bounds x="2220" y="850" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_1wk69f5_di" bpmnElement="Gateway_1wk69f5" isMarkerVisible="true">
+        <dc:Bounds x="1315" y="835" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1274" y="756" width="51" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1w68ikm_di" bpmnElement="Activity_17u1mg7">
+        <dc:Bounds x="2021" y="700" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_095xty8_di" bpmnElement="Activity_095xty8">
+        <dc:Bounds x="2021" y="850" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1v20oa7_di" bpmnElement="Activity_0f9cluf">
+        <dc:Bounds x="1791" y="980" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_1j1ad8s_di" bpmnElement="Flow_1j1ad8s">
+        <di:waypoint x="1841" y="450" />
+        <di:waypoint x="1841" y="530" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1w2sau5_di" bpmnElement="Flow_1w2sau5">
+        <di:waypoint x="1891" y="570" />
+        <di:waypoint x="1951" y="570" />
+        <di:waypoint x="1951" y="410" />
+        <di:waypoint x="2021" y="410" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_01wwmek_di" bpmnElement="Flow_01wwmek">
+        <di:waypoint x="2071" y="450" />
+        <di:waypoint x="2071" y="530" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0kkem89_di" bpmnElement="Flow_0kkem89">
+        <di:waypoint x="2071" y="610" />
+        <di:waypoint x="2071" y="700" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1xgj45a_di" bpmnElement="Flow_1xgj45a">
+        <di:waypoint x="2071" y="780" />
+        <di:waypoint x="2071" y="850" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1ps0wwd_di" bpmnElement="Flow_1ps0wwd">
+        <di:waypoint x="2320" y="890" />
+        <di:waypoint x="2360" y="890" />
+        <di:waypoint x="2360" y="490" />
+        <di:waypoint x="2400" y="490" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_09mss8l_di" bpmnElement="Flow_09mss8l">
+        <di:waypoint x="2500" y="490" />
+        <di:waypoint x="2582" y="490" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_03e0at7_di" bpmnElement="Flow_03e0at7">
+        <di:waypoint x="878" y="80" />
+        <di:waypoint x="1000" y="80" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_06ku2mj_di" bpmnElement="Flow_06ku2mj">
+        <di:waypoint x="1050" y="120" />
+        <di:waypoint x="1050" y="210" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0h92p35_di" bpmnElement="Flow_0h92p35">
+        <di:waypoint x="1050" y="290" />
+        <di:waypoint x="1050" y="385" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0u4hcn2_di" bpmnElement="Flow_0u4hcn2">
+        <di:waypoint x="1075" y="410" />
+        <di:waypoint x="1150" y="410" />
+        <di:waypoint x="1150" y="250" />
+        <di:waypoint x="1215" y="250" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1096" y="383" width="7" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0aywcac_di" bpmnElement="Flow_0aywcac">
+        <di:waypoint x="1050" y="435" />
+        <di:waypoint x="1050" y="530" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1061" y="453" width="8" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_14thk5x_di" bpmnElement="Flow_14thk5x">
+        <di:waypoint x="1050" y="610" />
+        <di:waypoint x="1050" y="700" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1imsac8_di" bpmnElement="Flow_1imsac8">
+        <di:waypoint x="1100" y="740" />
+        <di:waypoint x="1215" y="740" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1bma40x_di" bpmnElement="Flow_1bma40x">
+        <di:waypoint x="1240" y="225" />
+        <di:waypoint x="1240" y="80" />
+        <di:waypoint x="1100" y="80" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1246" y="193" width="7" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1910qns_di" bpmnElement="Flow_1910qns">
+        <di:waypoint x="1265" y="250" />
+        <di:waypoint x="1380" y="250" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1296" y="232" width="8" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_142vh08_di" bpmnElement="Flow_142vh08">
+        <di:waypoint x="1480" y="250" />
+        <di:waypoint x="2600" y="250" />
+        <di:waypoint x="2600" y="472" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1f1tusl_di" bpmnElement="Flow_1f1tusl">
+        <di:waypoint x="1240" y="765" />
+        <di:waypoint x="1240" y="860" />
+        <di:waypoint x="1315" y="860" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1251" y="780" width="7" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0heqs8x_di" bpmnElement="Flow_0heqs8x">
+        <di:waypoint x="1340" y="885" />
+        <di:waypoint x="1340" y="970" />
+        <di:waypoint x="1425" y="970" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1351" y="904" width="8" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0p60xrz_di" bpmnElement="Flow_0p60xrz">
+        <di:waypoint x="1265" y="740" />
+        <di:waypoint x="1340" y="740" />
+        <di:waypoint x="1340" y="410" />
+        <di:waypoint x="1580" y="410" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1326" y="641" width="8" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1m1mvgc_di" bpmnElement="Flow_1m1mvgc">
+        <di:waypoint x="1680" y="410" />
+        <di:waypoint x="1791" y="410" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0hnemx0_di" bpmnElement="Flow_0hnemx0">
+        <di:waypoint x="1365" y="860" />
+        <di:waypoint x="1440" y="860" />
+        <di:waypoint x="1440" y="410" />
+        <di:waypoint x="1580" y="410" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1376" y="842" width="7" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0szleal_di" bpmnElement="Flow_0szleal">
+        <di:waypoint x="1475" y="970" />
+        <di:waypoint x="1540" y="970" />
+        <di:waypoint x="1540" y="410" />
+        <di:waypoint x="1580" y="410" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1470" y="952" width="51" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1hro17e_di" bpmnElement="Flow_1hro17e">
+        <di:waypoint x="1891" y="1020" />
+        <di:waypoint x="2600" y="1020" />
+        <di:waypoint x="2600" y="508" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_03cdzm8_di" bpmnElement="Flow_03cdzm8">
+        <di:waypoint x="1450" y="995" />
+        <di:waypoint x="1450" y="1020" />
+        <di:waypoint x="1791" y="1020" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_13afr2a_di" bpmnElement="Flow_13afr2a">
+        <di:waypoint x="2121" y="890" />
+        <di:waypoint x="2220" y="890" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

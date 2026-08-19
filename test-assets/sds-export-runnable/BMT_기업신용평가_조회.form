@@ -1,0 +1,1 @@
+<section><select-field name="신용평가결과" alias="신용평가결과" is_dynamic_load="false" items='[{"통과":"통과"},{"추가확인":"추가확인"}]' disabled="false" readonly="false"></select-field></section>

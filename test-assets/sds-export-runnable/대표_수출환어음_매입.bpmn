@@ -1,0 +1,422 @@
+<?xml version='1.0' encoding='utf-8'?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:uengine="http://uengine" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="Definitions_Process_ExportBillPurchase" targetNamespace="http://uengine.org/sds/representative">
+  <bpmn:process id="Process_ExportBillPurchase" name="수출환어음 매입" isExecutable="true">
+    <bpmn:extensionElements>
+      <uengine:properties json="{&quot;definitionName&quot;:&quot;수출환어음 매입&quot;,&quot;version&quot;:&quot;1.0&quot;,&quot;shortDescription&quot;:{&quot;text&quot;:&quot;분기 시뮬레이션 실행용 대표 프로세스&quot;}}">
+        <uengine:variable name="매입방법" type="Text" />
+        <uengine:variable name="서류보완필요여부" type="Text" />
+        <uengine:variable name="연체여부" type="Text" />
+        <uengine:variable name="하자매입한도내여부" type="Text" />
+        <uengine:variable name="하자여부" type="Text" />
+      </uengine:properties>
+    </bpmn:extensionElements>
+    <bpmn:laneSet id="LaneSet_Process_ExportBillPurchase">
+      <bpmn:lane id="Lane_1" name="고객/거래처">
+        <bpmn:flowNodeRef>Start_ExportBill</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_SubmitSupplement</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_2" name="영업점">
+        <bpmn:flowNodeRef>Task_ReceiveExportDocs</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gw_SupplementNeeded</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_RequestSupplement</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gw_Overdue</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_EndorseLC</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_ReviewShippingDocs</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gw_Defect</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_RejectPurchase</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_IssueStatement</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_SelectDepositBank</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>End_Rejected</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>End_Completed</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_3" name="외부 조회/발송 시스템">
+        <bpmn:flowNodeRef>Svc_CreditOverdueCheck</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Svc_SendShippingDocs</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_4" name="심사/관리 부서">
+        <bpmn:flowNodeRef>Gw_DefectLimit</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gw_PurchaseMethod</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="Start_ExportBill" name="신청 시작">
+      <bpmn:extensionElements>
+        <uengine:properties json="{&quot;checkpoints&quot;:[],&quot;attachments&quot;:[],&quot;taskLink&quot;:&quot;&quot;,&quot;role&quot;:&quot;고객/거래처&quot;,&quot;process&quot;:&quot;Process_ExportBillPurchase&quot;,&quot;inputData&quot;:[],&quot;outputData&quot;:[],&quot;properties&quot;:&quot;{}&quot;,&quot;duration&quot;:5,&quot;tool&quot;:&quot;formHandler:defaultform&quot;}" />
+      </bpmn:extensionElements>
+      <bpmn:outgoing>Flow_E01</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:userTask id="Task_ReceiveExportDocs" name="신청서류 접수">
+      <bpmn:extensionElements>
+        <uengine:properties json="{&quot;checkpoints&quot;:[],&quot;attachments&quot;:[],&quot;taskLink&quot;:&quot;&quot;,&quot;role&quot;:&quot;영업점&quot;,&quot;process&quot;:&quot;Process_ExportBillPurchase&quot;,&quot;inputData&quot;:[],&quot;outputData&quot;:[],&quot;properties&quot;:&quot;{}&quot;,&quot;duration&quot;:5,&quot;tool&quot;:&quot;formHandler:수출환어음_신청서류접수&quot;,&quot;eventSynchronization&quot;:{&quot;mappingContext&quot;:{&quot;mappingElements&quot;:[{&quot;argument&quot;:{&quot;text&quot;:&quot;서류보완필요여부&quot;},&quot;direction&quot;:&quot;out&quot;,&quot;variable&quot;:{&quot;name&quot;:&quot;[Arguments].서류보완필요여부&quot;},&quot;isKey&quot;:false}]}}}" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_E01</bpmn:incoming>
+      <bpmn:incoming>Flow_E05</bpmn:incoming>
+      <bpmn:outgoing>Flow_E02</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:exclusiveGateway id="Gw_SupplementNeeded" name="서류 보완 필요 여부">
+      <bpmn:extensionElements>
+        <uengine:properties json="{&quot;checkpoints&quot;:[],&quot;attachments&quot;:[],&quot;taskLink&quot;:&quot;&quot;,&quot;role&quot;:&quot;영업점&quot;,&quot;process&quot;:&quot;Process_ExportBillPurchase&quot;,&quot;inputData&quot;:[],&quot;outputData&quot;:[],&quot;properties&quot;:&quot;{}&quot;,&quot;duration&quot;:5,&quot;tool&quot;:&quot;formHandler:defaultform&quot;}" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_E02</bpmn:incoming>
+      <bpmn:outgoing>Flow_E03</bpmn:outgoing>
+      <bpmn:outgoing>Flow_E06</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:userTask id="Task_RequestSupplement" name="보완요청">
+      <bpmn:extensionElements>
+        <uengine:properties json="{&quot;checkpoints&quot;:[],&quot;attachments&quot;:[],&quot;taskLink&quot;:&quot;&quot;,&quot;role&quot;:&quot;영업점&quot;,&quot;process&quot;:&quot;Process_ExportBillPurchase&quot;,&quot;inputData&quot;:[],&quot;outputData&quot;:[],&quot;properties&quot;:&quot;{}&quot;,&quot;duration&quot;:5,&quot;tool&quot;:&quot;formHandler:수출환어음_보완요청&quot;}" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_E03</bpmn:incoming>
+      <bpmn:outgoing>Flow_E04</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="Task_SubmitSupplement" name="보완서류 제출">
+      <bpmn:extensionElements>
+        <uengine:properties json="{&quot;checkpoints&quot;:[],&quot;attachments&quot;:[],&quot;taskLink&quot;:&quot;&quot;,&quot;role&quot;:&quot;고객/거래처&quot;,&quot;process&quot;:&quot;Process_ExportBillPurchase&quot;,&quot;inputData&quot;:[],&quot;outputData&quot;:[],&quot;properties&quot;:&quot;{}&quot;,&quot;duration&quot;:5,&quot;tool&quot;:&quot;formHandler:수출환어음_보완서류&quot;}" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_E04</bpmn:incoming>
+      <bpmn:outgoing>Flow_E05</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="Svc_CreditOverdueCheck" name="연체 및 신용상태 조회">
+      <bpmn:extensionElements>
+        <uengine:properties json="{&quot;checkpoints&quot;:[&quot;테스트 응답 입력&quot;],&quot;attachments&quot;:[],&quot;taskLink&quot;:&quot;&quot;,&quot;role&quot;:&quot;외부 조회/발송 시스템&quot;,&quot;process&quot;:&quot;Process_ExportBillPurchase&quot;,&quot;inputData&quot;:[],&quot;outputData&quot;:[],&quot;properties&quot;:&quot;{}&quot;,&quot;duration&quot;:5,&quot;tool&quot;:&quot;formHandler:수출환어음_연체신용조회&quot;,&quot;eventSynchronization&quot;:{&quot;mappingContext&quot;:{&quot;mappingElements&quot;:[{&quot;argument&quot;:{&quot;text&quot;:&quot;연체여부&quot;},&quot;direction&quot;:&quot;out&quot;,&quot;variable&quot;:{&quot;name&quot;:&quot;[Arguments].연체여부&quot;},&quot;isKey&quot;:false}]}}}" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_E06</bpmn:incoming>
+      <bpmn:outgoing>Flow_E07</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:exclusiveGateway id="Gw_Overdue" name="연체 여부">
+      <bpmn:extensionElements>
+        <uengine:properties json="{&quot;checkpoints&quot;:[],&quot;attachments&quot;:[],&quot;taskLink&quot;:&quot;&quot;,&quot;role&quot;:&quot;영업점&quot;,&quot;process&quot;:&quot;Process_ExportBillPurchase&quot;,&quot;inputData&quot;:[],&quot;outputData&quot;:[],&quot;properties&quot;:&quot;{}&quot;,&quot;duration&quot;:5,&quot;tool&quot;:&quot;formHandler:defaultform&quot;}" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_E07</bpmn:incoming>
+      <bpmn:outgoing>Flow_E08</bpmn:outgoing>
+      <bpmn:outgoing>Flow_E09</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:userTask id="Task_EndorseLC" name="신용장 이면배서">
+      <bpmn:extensionElements>
+        <uengine:properties json="{&quot;checkpoints&quot;:[],&quot;attachments&quot;:[],&quot;taskLink&quot;:&quot;&quot;,&quot;role&quot;:&quot;영업점&quot;,&quot;process&quot;:&quot;Process_ExportBillPurchase&quot;,&quot;inputData&quot;:[],&quot;outputData&quot;:[],&quot;properties&quot;:&quot;{}&quot;,&quot;duration&quot;:5,&quot;tool&quot;:&quot;formHandler:수출환어음_이면배서&quot;}" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_E09</bpmn:incoming>
+      <bpmn:outgoing>Flow_E10</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="Task_ReviewShippingDocs" name="매입서류 검토">
+      <bpmn:extensionElements>
+        <uengine:properties json="{&quot;checkpoints&quot;:[],&quot;attachments&quot;:[],&quot;taskLink&quot;:&quot;&quot;,&quot;role&quot;:&quot;영업점&quot;,&quot;process&quot;:&quot;Process_ExportBillPurchase&quot;,&quot;inputData&quot;:[],&quot;outputData&quot;:[],&quot;properties&quot;:&quot;{}&quot;,&quot;duration&quot;:5,&quot;tool&quot;:&quot;formHandler:수출환어음_매입서류검토&quot;,&quot;eventSynchronization&quot;:{&quot;mappingContext&quot;:{&quot;mappingElements&quot;:[{&quot;argument&quot;:{&quot;text&quot;:&quot;하자여부&quot;},&quot;direction&quot;:&quot;out&quot;,&quot;variable&quot;:{&quot;name&quot;:&quot;[Arguments].하자여부&quot;},&quot;isKey&quot;:false},{&quot;argument&quot;:{&quot;text&quot;:&quot;하자매입한도내여부&quot;},&quot;direction&quot;:&quot;out&quot;,&quot;variable&quot;:{&quot;name&quot;:&quot;[Arguments].하자매입한도내여부&quot;},&quot;isKey&quot;:false},{&quot;argument&quot;:{&quot;text&quot;:&quot;매입방법&quot;},&quot;direction&quot;:&quot;out&quot;,&quot;variable&quot;:{&quot;name&quot;:&quot;[Arguments].매입방법&quot;},&quot;isKey&quot;:false}]}}}" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_E10</bpmn:incoming>
+      <bpmn:outgoing>Flow_E11</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:exclusiveGateway id="Gw_Defect" name="하자 여부">
+      <bpmn:extensionElements>
+        <uengine:properties json="{&quot;checkpoints&quot;:[],&quot;attachments&quot;:[],&quot;taskLink&quot;:&quot;&quot;,&quot;role&quot;:&quot;영업점&quot;,&quot;process&quot;:&quot;Process_ExportBillPurchase&quot;,&quot;inputData&quot;:[],&quot;outputData&quot;:[],&quot;properties&quot;:&quot;{}&quot;,&quot;duration&quot;:5,&quot;tool&quot;:&quot;formHandler:defaultform&quot;}" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_E11</bpmn:incoming>
+      <bpmn:outgoing>Flow_E12</bpmn:outgoing>
+      <bpmn:outgoing>Flow_E13</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:exclusiveGateway id="Gw_DefectLimit" name="하자매입 한도 내 여부">
+      <bpmn:extensionElements>
+        <uengine:properties json="{&quot;checkpoints&quot;:[],&quot;attachments&quot;:[],&quot;taskLink&quot;:&quot;&quot;,&quot;role&quot;:&quot;심사/관리 부서&quot;,&quot;process&quot;:&quot;Process_ExportBillPurchase&quot;,&quot;inputData&quot;:[],&quot;outputData&quot;:[],&quot;properties&quot;:&quot;{}&quot;,&quot;duration&quot;:5,&quot;tool&quot;:&quot;formHandler:defaultform&quot;}" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_E13</bpmn:incoming>
+      <bpmn:outgoing>Flow_E14</bpmn:outgoing>
+      <bpmn:outgoing>Flow_E15</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:exclusiveGateway id="Gw_PurchaseMethod" name="매입 방법">
+      <bpmn:extensionElements>
+        <uengine:properties json="{&quot;checkpoints&quot;:[],&quot;attachments&quot;:[],&quot;taskLink&quot;:&quot;&quot;,&quot;role&quot;:&quot;심사/관리 부서&quot;,&quot;process&quot;:&quot;Process_ExportBillPurchase&quot;,&quot;inputData&quot;:[],&quot;outputData&quot;:[],&quot;properties&quot;:&quot;{}&quot;,&quot;duration&quot;:5,&quot;tool&quot;:&quot;formHandler:defaultform&quot;}" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_E15</bpmn:incoming>
+      <bpmn:outgoing>Flow_E16</bpmn:outgoing>
+      <bpmn:outgoing>Flow_E17</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:userTask id="Task_RejectPurchase" name="매입불가 통보">
+      <bpmn:extensionElements>
+        <uengine:properties json="{&quot;checkpoints&quot;:[],&quot;attachments&quot;:[],&quot;taskLink&quot;:&quot;&quot;,&quot;role&quot;:&quot;영업점&quot;,&quot;process&quot;:&quot;Process_ExportBillPurchase&quot;,&quot;inputData&quot;:[],&quot;outputData&quot;:[],&quot;properties&quot;:&quot;{}&quot;,&quot;duration&quot;:5,&quot;tool&quot;:&quot;formHandler:수출환어음_매입불가통보&quot;}" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_E08</bpmn:incoming>
+      <bpmn:incoming>Flow_E14</bpmn:incoming>
+      <bpmn:outgoing>Flow_E21</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="Task_IssueStatement" name="계산서 교부">
+      <bpmn:extensionElements>
+        <uengine:properties json="{&quot;checkpoints&quot;:[],&quot;attachments&quot;:[],&quot;taskLink&quot;:&quot;&quot;,&quot;role&quot;:&quot;영업점&quot;,&quot;process&quot;:&quot;Process_ExportBillPurchase&quot;,&quot;inputData&quot;:[],&quot;outputData&quot;:[],&quot;properties&quot;:&quot;{}&quot;,&quot;duration&quot;:5,&quot;tool&quot;:&quot;formHandler:수출환어음_계산서교부&quot;}" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_E12</bpmn:incoming>
+      <bpmn:incoming>Flow_E16</bpmn:incoming>
+      <bpmn:outgoing>Flow_E18</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="Svc_SendShippingDocs" name="선적서류 발송">
+      <bpmn:extensionElements>
+        <uengine:properties json="{&quot;checkpoints&quot;:[],&quot;attachments&quot;:[],&quot;taskLink&quot;:&quot;&quot;,&quot;role&quot;:&quot;외부 조회/발송 시스템&quot;,&quot;process&quot;:&quot;Process_ExportBillPurchase&quot;,&quot;inputData&quot;:[],&quot;outputData&quot;:[],&quot;properties&quot;:&quot;{}&quot;,&quot;duration&quot;:5,&quot;tool&quot;:&quot;formHandler:defaultform&quot;}" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_E18</bpmn:incoming>
+      <bpmn:outgoing>Flow_E19</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="Task_SelectDepositBank" name="수출대금 입금은행 선정">
+      <bpmn:extensionElements>
+        <uengine:properties json="{&quot;checkpoints&quot;:[],&quot;attachments&quot;:[],&quot;taskLink&quot;:&quot;&quot;,&quot;role&quot;:&quot;영업점&quot;,&quot;process&quot;:&quot;Process_ExportBillPurchase&quot;,&quot;inputData&quot;:[],&quot;outputData&quot;:[],&quot;properties&quot;:&quot;{}&quot;,&quot;duration&quot;:5,&quot;tool&quot;:&quot;formHandler:수출환어음_입금은행선정&quot;}" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_E17</bpmn:incoming>
+      <bpmn:incoming>Flow_E19</bpmn:incoming>
+      <bpmn:outgoing>Flow_E20</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:endEvent id="End_Rejected" name="반려 종료">
+      <bpmn:extensionElements>
+        <uengine:properties json="{&quot;checkpoints&quot;:[],&quot;attachments&quot;:[],&quot;taskLink&quot;:&quot;&quot;,&quot;role&quot;:&quot;영업점&quot;,&quot;process&quot;:&quot;Process_ExportBillPurchase&quot;,&quot;inputData&quot;:[],&quot;outputData&quot;:[],&quot;properties&quot;:&quot;{}&quot;,&quot;duration&quot;:5,&quot;tool&quot;:&quot;formHandler:defaultform&quot;}" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_E21</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:endEvent id="End_Completed" name="매입 완료">
+      <bpmn:extensionElements>
+        <uengine:properties json="{&quot;checkpoints&quot;:[],&quot;attachments&quot;:[],&quot;taskLink&quot;:&quot;&quot;,&quot;role&quot;:&quot;영업점&quot;,&quot;process&quot;:&quot;Process_ExportBillPurchase&quot;,&quot;inputData&quot;:[],&quot;outputData&quot;:[],&quot;properties&quot;:&quot;{}&quot;,&quot;duration&quot;:5,&quot;tool&quot;:&quot;formHandler:defaultform&quot;}" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_E20</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_E01" sourceRef="Start_ExportBill" targetRef="Task_ReceiveExportDocs" />
+    <bpmn:sequenceFlow id="Flow_E02" sourceRef="Task_ReceiveExportDocs" targetRef="Gw_SupplementNeeded" />
+    <bpmn:sequenceFlow id="Flow_E03" sourceRef="Gw_SupplementNeeded" targetRef="Task_RequestSupplement" name="Y">
+      <bpmn:extensionElements>
+        <uengine:properties json="{&quot;condition&quot;:{&quot;_type&quot;:&quot;org.uengine.kernel.Evaluate&quot;,&quot;key&quot;:&quot;서류보완필요여부&quot;,&quot;value&quot;:&quot;Y&quot;}}" />
+      </bpmn:extensionElements>
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${서류보완필요여부 == "Y"}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_E04" sourceRef="Task_RequestSupplement" targetRef="Task_SubmitSupplement" />
+    <bpmn:sequenceFlow id="Flow_E05" sourceRef="Task_SubmitSupplement" targetRef="Task_ReceiveExportDocs" />
+    <bpmn:sequenceFlow id="Flow_E06" sourceRef="Gw_SupplementNeeded" targetRef="Svc_CreditOverdueCheck" name="N">
+      <bpmn:extensionElements>
+        <uengine:properties json="{&quot;condition&quot;:{&quot;_type&quot;:&quot;org.uengine.kernel.Evaluate&quot;,&quot;key&quot;:&quot;서류보완필요여부&quot;,&quot;value&quot;:&quot;N&quot;}}" />
+      </bpmn:extensionElements>
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${서류보완필요여부 == "N"}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_E07" sourceRef="Svc_CreditOverdueCheck" targetRef="Gw_Overdue" />
+    <bpmn:sequenceFlow id="Flow_E08" sourceRef="Gw_Overdue" targetRef="Task_RejectPurchase" name="Y">
+      <bpmn:extensionElements>
+        <uengine:properties json="{&quot;condition&quot;:{&quot;_type&quot;:&quot;org.uengine.kernel.Evaluate&quot;,&quot;key&quot;:&quot;연체여부&quot;,&quot;value&quot;:&quot;Y&quot;}}" />
+      </bpmn:extensionElements>
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${연체여부 == "Y"}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_E09" sourceRef="Gw_Overdue" targetRef="Task_EndorseLC" name="N">
+      <bpmn:extensionElements>
+        <uengine:properties json="{&quot;condition&quot;:{&quot;_type&quot;:&quot;org.uengine.kernel.Evaluate&quot;,&quot;key&quot;:&quot;연체여부&quot;,&quot;value&quot;:&quot;N&quot;}}" />
+      </bpmn:extensionElements>
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${연체여부 == "N"}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_E10" sourceRef="Task_EndorseLC" targetRef="Task_ReviewShippingDocs" />
+    <bpmn:sequenceFlow id="Flow_E11" sourceRef="Task_ReviewShippingDocs" targetRef="Gw_Defect" />
+    <bpmn:sequenceFlow id="Flow_E12" sourceRef="Gw_Defect" targetRef="Task_IssueStatement" name="N">
+      <bpmn:extensionElements>
+        <uengine:properties json="{&quot;condition&quot;:{&quot;_type&quot;:&quot;org.uengine.kernel.Evaluate&quot;,&quot;key&quot;:&quot;하자여부&quot;,&quot;value&quot;:&quot;N&quot;}}" />
+      </bpmn:extensionElements>
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${하자여부 == "N"}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_E13" sourceRef="Gw_Defect" targetRef="Gw_DefectLimit" name="Y">
+      <bpmn:extensionElements>
+        <uengine:properties json="{&quot;condition&quot;:{&quot;_type&quot;:&quot;org.uengine.kernel.Evaluate&quot;,&quot;key&quot;:&quot;하자여부&quot;,&quot;value&quot;:&quot;Y&quot;}}" />
+      </bpmn:extensionElements>
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${하자여부 == "Y"}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_E14" sourceRef="Gw_DefectLimit" targetRef="Task_RejectPurchase" name="N">
+      <bpmn:extensionElements>
+        <uengine:properties json="{&quot;condition&quot;:{&quot;_type&quot;:&quot;org.uengine.kernel.Evaluate&quot;,&quot;key&quot;:&quot;하자매입한도내여부&quot;,&quot;value&quot;:&quot;N&quot;}}" />
+      </bpmn:extensionElements>
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${하자매입한도내여부 == "N"}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_E15" sourceRef="Gw_DefectLimit" targetRef="Gw_PurchaseMethod" name="Y">
+      <bpmn:extensionElements>
+        <uengine:properties json="{&quot;condition&quot;:{&quot;_type&quot;:&quot;org.uengine.kernel.Evaluate&quot;,&quot;key&quot;:&quot;하자매입한도내여부&quot;,&quot;value&quot;:&quot;Y&quot;}}" />
+      </bpmn:extensionElements>
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${하자매입한도내여부 == "Y"}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_E16" sourceRef="Gw_PurchaseMethod" targetRef="Task_IssueStatement" name="즉시매입">
+      <bpmn:extensionElements>
+        <uengine:properties json="{&quot;condition&quot;:{&quot;_type&quot;:&quot;org.uengine.kernel.Evaluate&quot;,&quot;key&quot;:&quot;매입방법&quot;,&quot;value&quot;:&quot;즉시매입&quot;}}" />
+      </bpmn:extensionElements>
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${매입방법 == "즉시매입"}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_E17" sourceRef="Gw_PurchaseMethod" targetRef="Task_SelectDepositBank" name="추심후매입">
+      <bpmn:extensionElements>
+        <uengine:properties json="{&quot;condition&quot;:{&quot;_type&quot;:&quot;org.uengine.kernel.Evaluate&quot;,&quot;key&quot;:&quot;매입방법&quot;,&quot;value&quot;:&quot;추심후매입&quot;}}" />
+      </bpmn:extensionElements>
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${매입방법 == "추심후매입"}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_E18" sourceRef="Task_IssueStatement" targetRef="Svc_SendShippingDocs" />
+    <bpmn:sequenceFlow id="Flow_E19" sourceRef="Svc_SendShippingDocs" targetRef="Task_SelectDepositBank" />
+    <bpmn:sequenceFlow id="Flow_E20" sourceRef="Task_SelectDepositBank" targetRef="End_Completed" />
+    <bpmn:sequenceFlow id="Flow_E21" sourceRef="Task_RejectPurchase" targetRef="End_Rejected" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="Diagram_Process_ExportBillPurchase">
+    <bpmndi:BPMNPlane id="Plane_Process_ExportBillPurchase" bpmnElement="Process_ExportBillPurchase">
+      <bpmndi:BPMNShape id="Lane_1_di" bpmnElement="Lane_1" isHorizontal="true">
+        <dc:Bounds x="60" y="90" width="2380" height="150" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_2_di" bpmnElement="Lane_2" isHorizontal="true">
+        <dc:Bounds x="60" y="240" width="2380" height="150" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_3_di" bpmnElement="Lane_3" isHorizontal="true">
+        <dc:Bounds x="60" y="390" width="2380" height="150" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_4_di" bpmnElement="Lane_4" isHorizontal="true">
+        <dc:Bounds x="60" y="540" width="2380" height="150" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Start_ExportBill_di" bpmnElement="Start_ExportBill">
+        <dc:Bounds x="110" y="147" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_ReceiveExportDocs_di" bpmnElement="Task_ReceiveExportDocs">
+        <dc:Bounds x="235" y="276" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gw_SupplementNeeded_di" bpmnElement="Gw_SupplementNeeded">
+        <dc:Bounds x="410" y="291" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_RequestSupplement_di" bpmnElement="Task_RequestSupplement">
+        <dc:Bounds x="545" y="276" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_SubmitSupplement_di" bpmnElement="Task_SubmitSupplement">
+        <dc:Bounds x="545" y="126" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Svc_CreditOverdueCheck_di" bpmnElement="Svc_CreditOverdueCheck">
+        <dc:Bounds x="635" y="426" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gw_Overdue_di" bpmnElement="Gw_Overdue">
+        <dc:Bounds x="810" y="291" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_EndorseLC_di" bpmnElement="Task_EndorseLC">
+        <dc:Bounds x="945" y="276" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_ReviewShippingDocs_di" bpmnElement="Task_ReviewShippingDocs">
+        <dc:Bounds x="1135" y="276" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gw_Defect_di" bpmnElement="Gw_Defect">
+        <dc:Bounds x="1310" y="291" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gw_DefectLimit_di" bpmnElement="Gw_DefectLimit">
+        <dc:Bounds x="1410" y="591" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gw_PurchaseMethod_di" bpmnElement="Gw_PurchaseMethod">
+        <dc:Bounds x="1610" y="591" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_RejectPurchase_di" bpmnElement="Task_RejectPurchase">
+        <dc:Bounds x="1535" y="276" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_IssueStatement_di" bpmnElement="Task_IssueStatement">
+        <dc:Bounds x="1735" y="276" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Svc_SendShippingDocs_di" bpmnElement="Svc_SendShippingDocs">
+        <dc:Bounds x="1935" y="426" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_SelectDepositBank_di" bpmnElement="Task_SelectDepositBank">
+        <dc:Bounds x="2135" y="276" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_Rejected_di" bpmnElement="End_Rejected">
+        <dc:Bounds x="1710" y="315" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_Completed_di" bpmnElement="End_Completed">
+        <dc:Bounds x="2310" y="297" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_E01_di" bpmnElement="Flow_E01">
+        <di:waypoint x="146" y="165" />
+        <di:waypoint x="190.5" y="165" />
+        <di:waypoint x="190.5" y="316" />
+        <di:waypoint x="235" y="316" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_E02_di" bpmnElement="Flow_E02">
+        <di:waypoint x="335" y="316" />
+        <di:waypoint x="410" y="316" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_E03_di" bpmnElement="Flow_E03">
+        <di:waypoint x="460" y="316" />
+        <di:waypoint x="545" y="316" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_E04_di" bpmnElement="Flow_E04">
+        <di:waypoint x="595" y="276" />
+        <di:waypoint x="595" y="206" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_E05_di" bpmnElement="Flow_E05">
+        <di:waypoint x="545" y="166" />
+        <di:waypoint x="440" y="166" />
+        <di:waypoint x="440" y="316" />
+        <di:waypoint x="335" y="316" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_E06_di" bpmnElement="Flow_E06">
+        <di:waypoint x="460" y="316" />
+        <di:waypoint x="547.5" y="316" />
+        <di:waypoint x="547.5" y="466" />
+        <di:waypoint x="635" y="466" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_E07_di" bpmnElement="Flow_E07">
+        <di:waypoint x="735" y="466" />
+        <di:waypoint x="772.5" y="466" />
+        <di:waypoint x="772.5" y="316" />
+        <di:waypoint x="810" y="316" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_E08_di" bpmnElement="Flow_E08">
+        <di:waypoint x="860" y="316" />
+        <di:waypoint x="1535" y="316" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_E09_di" bpmnElement="Flow_E09">
+        <di:waypoint x="860" y="316" />
+        <di:waypoint x="945" y="316" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_E10_di" bpmnElement="Flow_E10">
+        <di:waypoint x="1045" y="316" />
+        <di:waypoint x="1135" y="316" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_E11_di" bpmnElement="Flow_E11">
+        <di:waypoint x="1235" y="316" />
+        <di:waypoint x="1310" y="316" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_E12_di" bpmnElement="Flow_E12">
+        <di:waypoint x="1360" y="316" />
+        <di:waypoint x="1735" y="316" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_E13_di" bpmnElement="Flow_E13">
+        <di:waypoint x="1360" y="316" />
+        <di:waypoint x="1385" y="316" />
+        <di:waypoint x="1385" y="616" />
+        <di:waypoint x="1410" y="616" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_E14_di" bpmnElement="Flow_E14">
+        <di:waypoint x="1460" y="616" />
+        <di:waypoint x="1497.5" y="616" />
+        <di:waypoint x="1497.5" y="316" />
+        <di:waypoint x="1535" y="316" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_E15_di" bpmnElement="Flow_E15">
+        <di:waypoint x="1460" y="616" />
+        <di:waypoint x="1610" y="616" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_E16_di" bpmnElement="Flow_E16">
+        <di:waypoint x="1660" y="616" />
+        <di:waypoint x="1697.5" y="616" />
+        <di:waypoint x="1697.5" y="316" />
+        <di:waypoint x="1735" y="316" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_E17_di" bpmnElement="Flow_E17">
+        <di:waypoint x="1660" y="616" />
+        <di:waypoint x="1897.5" y="616" />
+        <di:waypoint x="1897.5" y="316" />
+        <di:waypoint x="2135" y="316" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_E18_di" bpmnElement="Flow_E18">
+        <di:waypoint x="1835" y="316" />
+        <di:waypoint x="1885" y="316" />
+        <di:waypoint x="1885" y="466" />
+        <di:waypoint x="1935" y="466" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_E19_di" bpmnElement="Flow_E19">
+        <di:waypoint x="2035" y="466" />
+        <di:waypoint x="2085" y="466" />
+        <di:waypoint x="2085" y="316" />
+        <di:waypoint x="2135" y="316" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_E20_di" bpmnElement="Flow_E20">
+        <di:waypoint x="2235" y="316" />
+        <di:waypoint x="2310" y="316" />
+        <di:waypoint x="2310" y="315" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_E21_di" bpmnElement="Flow_E21">
+        <di:waypoint x="1635" y="316" />
+        <di:waypoint x="1672.5" y="316" />
+        <di:waypoint x="1672.5" y="333" />
+        <di:waypoint x="1710" y="333" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

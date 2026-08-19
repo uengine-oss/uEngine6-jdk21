@@ -1,0 +1,4 @@
+<form>
+  <label>신용정보 조회 및 평가</label>
+  <select-field name="creditEvalResult" label="신용평가결과" items='[{"통과":"통과"},{"추가확인":"추가확인"}]' />
+</form>

@@ -1,0 +1,1 @@
+<section><select-field name="신규고객여부" alias="신규고객여부" is_dynamic_load="false" items='[{"Y":"Y"},{"N":"N"}]' disabled="false" readonly="false"></select-field></section>

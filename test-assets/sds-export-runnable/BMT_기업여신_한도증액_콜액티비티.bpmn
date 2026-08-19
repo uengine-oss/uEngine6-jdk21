@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:uengine="http://uengine" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="Definitions_BMT_CorporateLimitIncrease" targetNamespace="http://uengine.org/sds/bmt">
+  <bpmn:process id="Process_BMT_CorporateLimitIncrease" name="기업여신 한도증액 심사" isExecutable="true">
+    <bpmn:extensionElements>
+      <uengine:properties json="{&quot;definitionName&quot;:&quot;기업여신 한도증액 심사&quot;,&quot;version&quot;:&quot;1.0&quot;,&quot;shortDescription&quot;:{&quot;text&quot;:&quot;콜액티비티와 부모 복귀 검증용 BMT 대표 프로세스&quot;}}">
+        <uengine:variable name="서류완비여부" type="Text" />
+        <uengine:variable name="승인결과" type="Text" />
+      </uengine:properties>
+    </bpmn:extensionElements>
+    <bpmn:laneSet id="LaneSet_BMT_LimitIncrease">
+      <bpmn:lane id="Lane_Parent_Branch" name="영업점">
+        <bpmn:extensionElements>
+          <uengine:properties json="{&quot;role&quot;:&quot;user&quot;,&quot;dispatchingOption&quot;:1,&quot;roleResolutionContext&quot;:{&quot;_type&quot;:&quot;org.uengine.hwlife.overriding.BoundRoleResolutionContext&quot;,&quot;base&quot;:{&quot;_type&quot;:&quot;org.uengine.five.overriding.IAMRoleResolutionContext&quot;,&quot;scope&quot;:&quot;user&quot;},&quot;bindings&quot;:{}}}" />
+        </bpmn:extensionElements>
+<bpmn:flowNodeRef>Start_LimitIncrease</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_ReceiveApplication</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gw_DocumentReady</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_RequestSupplement</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_ContractNotice</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_RejectNotice</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>End_LimitIncreaseDone</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>End_LimitIncreaseReject</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_Parent_Credit" name="여신심사부">
+        <bpmn:extensionElements>
+          <uengine:properties json="{&quot;role&quot;:&quot;user&quot;,&quot;dispatchingOption&quot;:1,&quot;roleResolutionContext&quot;:{&quot;_type&quot;:&quot;org.uengine.hwlife.overriding.BoundRoleResolutionContext&quot;,&quot;base&quot;:{&quot;_type&quot;:&quot;org.uengine.five.overriding.IAMRoleResolutionContext&quot;,&quot;scope&quot;:&quot;user&quot;},&quot;bindings&quot;:{}}}" />
+        </bpmn:extensionElements>
+<bpmn:flowNodeRef>Call_CorporateCreditEval</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_FinalApprovalReview</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gw_ApprovalResult</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="Start_LimitIncrease" name="증액 신청 시작">
+      <bpmn:extensionElements>
+        <uengine:properties json="{&quot;role&quot;:&quot;user&quot;,&quot;process&quot;:&quot;Process_BMT_CorporateLimitIncrease&quot;,&quot;tool&quot;:&quot;formHandler:defaultform&quot;,&quot;duration&quot;:5,&quot;inputData&quot;:[],&quot;outputData&quot;:[],&quot;properties&quot;:&quot;{}&quot;}" />
+      </bpmn:extensionElements>
+      <bpmn:outgoing>Flow_P01</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:userTask id="Task_ReceiveApplication" name="한도증액 신청 접수">
+      <bpmn:extensionElements>
+        <uengine:properties json="{&quot;role&quot;:&quot;user&quot;,&quot;process&quot;:&quot;Process_BMT_CorporateLimitIncrease&quot;,&quot;tool&quot;:&quot;formHandler:BMT_기업여신_신청접수&quot;,&quot;duration&quot;:5,&quot;inputData&quot;:[],&quot;outputData&quot;:[],&quot;properties&quot;:&quot;{}&quot;,&quot;eventSynchronization&quot;:{&quot;mappingContext&quot;:{&quot;mappingElements&quot;:[{&quot;argument&quot;:{&quot;text&quot;:&quot;서류완비여부&quot;},&quot;direction&quot;:&quot;out&quot;,&quot;variable&quot;:{&quot;name&quot;:&quot;[Arguments].서류완비여부&quot;},&quot;isKey&quot;:false}]}}}" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_P01</bpmn:incoming>
+      <bpmn:incoming>Flow_P05</bpmn:incoming>
+      <bpmn:outgoing>Flow_P02</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:exclusiveGateway id="Gw_DocumentReady" name="서류완비여부">
+      <bpmn:incoming>Flow_P02</bpmn:incoming>
+      <bpmn:outgoing>Flow_P03</bpmn:outgoing>
+      <bpmn:outgoing>Flow_P04</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:userTask id="Task_RequestSupplement" name="보완요청">
+      <bpmn:extensionElements>
+        <uengine:properties json="{&quot;role&quot;:&quot;user&quot;,&quot;process&quot;:&quot;Process_BMT_CorporateLimitIncrease&quot;,&quot;tool&quot;:&quot;formHandler:BMT_기업여신_보완요청&quot;,&quot;duration&quot;:5,&quot;inputData&quot;:[],&quot;outputData&quot;:[],&quot;properties&quot;:&quot;{}&quot;}" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_P04</bpmn:incoming>
+      <bpmn:outgoing>Flow_P05</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:callActivity id="Call_CorporateCreditEval" name="공통 기업신용평가 호출" calledElement="BMT_공통_기업신용평가_서브프로세스">
+      <bpmn:extensionElements>
+        <uengine:properties json="{&quot;role&quot;:&quot;user&quot;,&quot;process&quot;:&quot;Process_BMT_CorporateLimitIncrease&quot;,&quot;definitionId&quot;:&quot;BMT_공통_기업신용평가_서브프로세스.bpmn&quot;,&quot;version&quot;:&quot;1.0&quot;,&quot;duration&quot;:5,&quot;inputData&quot;:[],&quot;outputData&quot;:[],&quot;properties&quot;:&quot;{}&quot;}" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_P03</bpmn:incoming>
+      <bpmn:outgoing>Flow_P06</bpmn:outgoing>
+    </bpmn:callActivity>
+    <bpmn:userTask id="Task_FinalApprovalReview" name="최종승인 검토">
+      <bpmn:extensionElements>
+        <uengine:properties json="{&quot;role&quot;:&quot;user&quot;,&quot;process&quot;:&quot;Process_BMT_CorporateLimitIncrease&quot;,&quot;tool&quot;:&quot;formHandler:BMT_기업여신_최종승인검토&quot;,&quot;duration&quot;:5,&quot;inputData&quot;:[],&quot;outputData&quot;:[],&quot;properties&quot;:&quot;{}&quot;,&quot;eventSynchronization&quot;:{&quot;mappingContext&quot;:{&quot;mappingElements&quot;:[{&quot;argument&quot;:{&quot;text&quot;:&quot;승인결과&quot;},&quot;direction&quot;:&quot;out&quot;,&quot;variable&quot;:{&quot;name&quot;:&quot;[Arguments].승인결과&quot;},&quot;isKey&quot;:false}]}}}" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_P06</bpmn:incoming>
+      <bpmn:outgoing>Flow_P07</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:exclusiveGateway id="Gw_ApprovalResult" name="승인결과">
+      <bpmn:incoming>Flow_P07</bpmn:incoming>
+      <bpmn:outgoing>Flow_P08</bpmn:outgoing>
+      <bpmn:outgoing>Flow_P09</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:userTask id="Task_ContractNotice" name="약정 및 실행 안내">
+      <bpmn:extensionElements>
+        <uengine:properties json="{&quot;role&quot;:&quot;user&quot;,&quot;process&quot;:&quot;Process_BMT_CorporateLimitIncrease&quot;,&quot;tool&quot;:&quot;formHandler:BMT_기업여신_약정실행안내&quot;,&quot;duration&quot;:5,&quot;inputData&quot;:[],&quot;outputData&quot;:[],&quot;properties&quot;:&quot;{}&quot;}" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_P08</bpmn:incoming>
+      <bpmn:outgoing>Flow_P10</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="Task_RejectNotice" name="증액불가 통보">
+      <bpmn:extensionElements>
+        <uengine:properties json="{&quot;role&quot;:&quot;user&quot;,&quot;process&quot;:&quot;Process_BMT_CorporateLimitIncrease&quot;,&quot;tool&quot;:&quot;formHandler:BMT_기업여신_증액불가통보&quot;,&quot;duration&quot;:5,&quot;inputData&quot;:[],&quot;outputData&quot;:[],&quot;properties&quot;:&quot;{}&quot;}" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_P09</bpmn:incoming>
+      <bpmn:outgoing>Flow_P11</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:endEvent id="End_LimitIncreaseDone" name="증액 완료"><bpmn:incoming>Flow_P10</bpmn:incoming></bpmn:endEvent>
+    <bpmn:endEvent id="End_LimitIncreaseReject" name="반려 종료"><bpmn:incoming>Flow_P11</bpmn:incoming></bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_P01" sourceRef="Start_LimitIncrease" targetRef="Task_ReceiveApplication" />
+    <bpmn:sequenceFlow id="Flow_P02" sourceRef="Task_ReceiveApplication" targetRef="Gw_DocumentReady" />
+    <bpmn:sequenceFlow id="Flow_P03" name="Y" sourceRef="Gw_DocumentReady" targetRef="Call_CorporateCreditEval">
+      <bpmn:extensionElements><uengine:properties json="{&quot;condition&quot;:{&quot;_type&quot;:&quot;org.uengine.kernel.Evaluate&quot;,&quot;key&quot;:&quot;서류완비여부&quot;,&quot;value&quot;:&quot;Y&quot;}}" /></bpmn:extensionElements>
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${서류완비여부 == "Y"}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_P04" name="N" sourceRef="Gw_DocumentReady" targetRef="Task_RequestSupplement">
+      <bpmn:extensionElements><uengine:properties json="{&quot;condition&quot;:{&quot;_type&quot;:&quot;org.uengine.kernel.Evaluate&quot;,&quot;key&quot;:&quot;서류완비여부&quot;,&quot;value&quot;:&quot;N&quot;}}" /></bpmn:extensionElements>
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${서류완비여부 == "N"}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_P05" sourceRef="Task_RequestSupplement" targetRef="Task_ReceiveApplication" />
+    <bpmn:sequenceFlow id="Flow_P06" sourceRef="Call_CorporateCreditEval" targetRef="Task_FinalApprovalReview" />
+    <bpmn:sequenceFlow id="Flow_P07" sourceRef="Task_FinalApprovalReview" targetRef="Gw_ApprovalResult" />
+    <bpmn:sequenceFlow id="Flow_P08" name="승인" sourceRef="Gw_ApprovalResult" targetRef="Task_ContractNotice">
+      <bpmn:extensionElements><uengine:properties json="{&quot;condition&quot;:{&quot;_type&quot;:&quot;org.uengine.kernel.Evaluate&quot;,&quot;key&quot;:&quot;승인결과&quot;,&quot;value&quot;:&quot;승인&quot;}}" /></bpmn:extensionElements>
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${승인결과 == "승인"}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_P09" name="반려" sourceRef="Gw_ApprovalResult" targetRef="Task_RejectNotice">
+      <bpmn:extensionElements><uengine:properties json="{&quot;condition&quot;:{&quot;_type&quot;:&quot;org.uengine.kernel.Evaluate&quot;,&quot;key&quot;:&quot;승인결과&quot;,&quot;value&quot;:&quot;반려&quot;}}" /></bpmn:extensionElements>
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${승인결과 == "반려"}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_P10" sourceRef="Task_ContractNotice" targetRef="End_LimitIncreaseDone" />
+    <bpmn:sequenceFlow id="Flow_P11" sourceRef="Task_RejectNotice" targetRef="End_LimitIncreaseReject" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="Diagram_BMT_LimitIncrease">
+    <bpmndi:BPMNPlane id="Plane_BMT_LimitIncrease" bpmnElement="Process_BMT_CorporateLimitIncrease">
+      <bpmndi:BPMNShape id="Lane_Parent_Branch_di" bpmnElement="Lane_Parent_Branch" isHorizontal="true"><dc:Bounds x="60" y="90" width="1800" height="150" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_Parent_Credit_di" bpmnElement="Lane_Parent_Credit" isHorizontal="true"><dc:Bounds x="60" y="240" width="1800" height="150" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Start_LimitIncrease_di" bpmnElement="Start_LimitIncrease"><dc:Bounds x="110" y="147" width="36" height="36" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_ReceiveApplication_di" bpmnElement="Task_ReceiveApplication"><dc:Bounds x="230" y="126" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gw_DocumentReady_di" bpmnElement="Gw_DocumentReady"><dc:Bounds x="420" y="141" width="50" height="50" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_RequestSupplement_di" bpmnElement="Task_RequestSupplement"><dc:Bounds x="570" y="126" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Call_CorporateCreditEval_di" bpmnElement="Call_CorporateCreditEval"><dc:Bounds x="570" y="276" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_FinalApprovalReview_di" bpmnElement="Task_FinalApprovalReview"><dc:Bounds x="790" y="276" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gw_ApprovalResult_di" bpmnElement="Gw_ApprovalResult"><dc:Bounds x="980" y="291" width="50" height="50" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_ContractNotice_di" bpmnElement="Task_ContractNotice"><dc:Bounds x="1130" y="126" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_RejectNotice_di" bpmnElement="Task_RejectNotice"><dc:Bounds x="1130" y="276" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_LimitIncreaseDone_di" bpmnElement="End_LimitIncreaseDone"><dc:Bounds x="1360" y="147" width="36" height="36" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_LimitIncreaseReject_di" bpmnElement="End_LimitIncreaseReject"><dc:Bounds x="1360" y="297" width="36" height="36" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_P01_di" bpmnElement="Flow_P01"><di:waypoint x="146" y="165" /><di:waypoint x="230" y="165" /><di:waypoint x="230" y="166" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_P02_di" bpmnElement="Flow_P02"><di:waypoint x="330" y="166" /><di:waypoint x="420" y="166" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_P03_di" bpmnElement="Flow_P03"><di:waypoint x="445" y="191" /><di:waypoint x="445" y="316" /><di:waypoint x="570" y="316" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_P04_di" bpmnElement="Flow_P04"><di:waypoint x="470" y="166" /><di:waypoint x="570" y="166" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_P05_di" bpmnElement="Flow_P05"><di:waypoint x="570" y="166" /><di:waypoint x="500" y="166" /><di:waypoint x="500" y="106" /><di:waypoint x="280" y="106" /><di:waypoint x="280" y="126" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_P06_di" bpmnElement="Flow_P06"><di:waypoint x="670" y="316" /><di:waypoint x="790" y="316" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_P07_di" bpmnElement="Flow_P07"><di:waypoint x="890" y="316" /><di:waypoint x="980" y="316" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_P08_di" bpmnElement="Flow_P08"><di:waypoint x="1005" y="291" /><di:waypoint x="1005" y="166" /><di:waypoint x="1130" y="166" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_P09_di" bpmnElement="Flow_P09"><di:waypoint x="1030" y="316" /><di:waypoint x="1130" y="316" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_P10_di" bpmnElement="Flow_P10"><di:waypoint x="1230" y="166" /><di:waypoint x="1360" y="166" /><di:waypoint x="1360" y="165" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_P11_di" bpmnElement="Flow_P11"><di:waypoint x="1230" y="316" /><di:waypoint x="1360" y="316" /><di:waypoint x="1360" y="315" /></bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

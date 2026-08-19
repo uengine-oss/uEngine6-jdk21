@@ -1,0 +1,1 @@
+<section><select-field name="계좌개설결과" alias="계좌개설결과" is_dynamic_load="false" items='[{"완료": "완료"}]' disabled="false" readonly="false"></select-field></section>

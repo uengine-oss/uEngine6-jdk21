@@ -273,13 +273,16 @@ public class ReceiveActivity extends DefaultActivity implements MessageListener,
         if (params == null)
             return mappingInValues;
 
-        for (FieldDescriptor field : getEventSynchronization().getAttributes()) {
-            boolean isArray = "Array".equals(field.getClassName());
-            if (isArray) {
-                ArrayList<Object> mappingInValue = new ArrayList<>();
-                mappingInValues.put(field.getName(), mappingInValue);
-            } else {
-                mappingInValues.put(field.getName(), null);
+        FieldDescriptor[] attributes = getEventSynchronization().getAttributes();
+        if (attributes != null) {
+            for (FieldDescriptor field : attributes) {
+                boolean isArray = "Array".equals(field.getClassName());
+                if (isArray) {
+                    ArrayList<Object> mappingInValue = new ArrayList<>();
+                    mappingInValues.put(field.getName(), mappingInValue);
+                } else {
+                    mappingInValues.put(field.getName(), null);
+                }
             }
         }
         for (ParameterContext param : params) {

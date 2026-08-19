@@ -1,0 +1,4 @@
+<form>
+  <label>약정 및 실행 안내</label>
+  <text-field name="noticeMessage" label="안내 내용" defaultValue="한도증액 승인 후 약정 및 실행 안내 완료" />
+</form>
