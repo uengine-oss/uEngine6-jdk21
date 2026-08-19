@@ -1,4 +1,4 @@
 <form>
   <label>담보조회 연계결과 확인</label>
-  <text-field name="collateralResult" label="담보조회 결과" defaultValue="정상" />
+  <text-field name="collateralResult" alias="담보조회 결과" v-model="formValues['collateralResult']"></text-field>
 </form>

@@ -1879,7 +1879,7 @@ public class InstanceServiceImpl implements InstanceService {
         IContainer container = new ContainerResource();
         container.setPath("test/" + folderPath);
         if (!resourceManager.exists(container)) {
-            throw new FileNotFoundException("Folder not found: " + folderPath);
+            return result;
         }
         List<IResource> files = resourceManager.listFiles(container);
         if (files != null) {
@@ -2191,8 +2191,22 @@ public class InstanceServiceImpl implements InstanceService {
         List<String> fileContents = new ArrayList<>();
 
         try {
-            IResource resource = new DefaultResource("test/" + recordPath);
-            if (resourceManager.exists(resource)) {
+            IContainer recordContainer = new ContainerResource();
+            recordContainer.setPath("test/" + recordPath + "/record");
+            if (!resourceManager.exists(recordContainer)) {
+                return fileContents;
+            }
+
+            List<IResource> files = resourceManager.listFiles(recordContainer);
+            if (files == null) {
+                return fileContents;
+            }
+
+            for (IResource file : files) {
+                if (file.isContainer()) {
+                    continue;
+                }
+                IResource resource = new DefaultResource(file.getPath());
                 InputStream inputStream = resourceManager.getInputStream(resource);
                 String content = new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
                 fileContents.add(content);

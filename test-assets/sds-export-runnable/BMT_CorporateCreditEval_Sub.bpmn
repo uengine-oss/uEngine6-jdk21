@@ -32,7 +32,7 @@
     </bpmn:startEvent>
     <bpmn:userTask id="Task_CreditInfoCheck" name="신용정보 조회 및 평가">
       <bpmn:extensionElements>
-        <uengine:properties json="{&quot;role&quot;:&quot;user&quot;,&quot;process&quot;:&quot;Process_BMT_CreditEval_Sub&quot;,&quot;tool&quot;:&quot;formHandler:BMT_CreditEval_Check&quot;,&quot;duration&quot;:5,&quot;inputData&quot;:[],&quot;outputData&quot;:[],&quot;eventSynchronization&quot;:{&quot;mappingContext&quot;:{&quot;mappingElements&quot;:[{&quot;argument&quot;:{&quot;text&quot;:&quot;creditEvalResult&quot;},&quot;direction&quot;:&quot;out&quot;,&quot;variable&quot;:{&quot;name&quot;:&quot;[Arguments].creditEvalResult&quot;},&quot;isKey&quot;:false}]}}}" />
+        <uengine:properties json="{&quot;role&quot;:&quot;user&quot;,&quot;process&quot;:&quot;Process_BMT_CreditEval_Sub&quot;,&quot;tool&quot;:&quot;formHandler:BMT_CreditEval_Check&quot;,&quot;duration&quot;:5,&quot;inputData&quot;:[],&quot;outputData&quot;:[],&quot;eventSynchronization&quot;:{&quot;eventType&quot;:&quot;&quot;,&quot;attributes&quot;:[],&quot;mappingContext&quot;:{&quot;mappingElements&quot;:[{&quot;argument&quot;:{&quot;text&quot;:&quot;creditEvalResult&quot;},&quot;direction&quot;:&quot;out&quot;,&quot;variable&quot;:{&quot;name&quot;:&quot;[Arguments].creditEvalResult&quot;},&quot;isKey&quot;:false}]}}}" />
       </bpmn:extensionElements>
       <bpmn:incoming>Flow_S01</bpmn:incoming>
       <bpmn:outgoing>Flow_S02</bpmn:outgoing>
@@ -44,14 +44,14 @@
     </bpmn:exclusiveGateway>
     <bpmn:userTask id="Task_AdditionalData" name="추가자료 요청">
       <bpmn:extensionElements>
-        <uengine:properties json="{&quot;role&quot;:&quot;user&quot;,&quot;process&quot;:&quot;Process_BMT_CreditEval_Sub&quot;,&quot;tool&quot;:&quot;formHandler:BMT_CreditEval_AdditionalData&quot;,&quot;duration&quot;:5,&quot;inputData&quot;:[],&quot;outputData&quot;:[]}" />
+        <uengine:properties json="{&quot;role&quot;:&quot;user&quot;,&quot;process&quot;:&quot;Process_BMT_CreditEval_Sub&quot;,&quot;tool&quot;:&quot;formHandler:BMT_CreditEval_AdditionalData&quot;,&quot;duration&quot;:5,&quot;inputData&quot;:[],&quot;outputData&quot;:[],&quot;eventSynchronization&quot;:{&quot;eventType&quot;:&quot;&quot;,&quot;attributes&quot;:[],&quot;mappingContext&quot;:{&quot;mappingElements&quot;:[]}}}" />
       </bpmn:extensionElements>
       <bpmn:incoming>Flow_S04</bpmn:incoming>
       <bpmn:outgoing>Flow_S05</bpmn:outgoing>
     </bpmn:userTask>
     <bpmn:userTask id="Task_RegisterResult" name="평가결과 등록">
       <bpmn:extensionElements>
-        <uengine:properties json="{&quot;role&quot;:&quot;user&quot;,&quot;process&quot;:&quot;Process_BMT_CreditEval_Sub&quot;,&quot;tool&quot;:&quot;formHandler:BMT_CreditEval_Result&quot;,&quot;duration&quot;:5,&quot;inputData&quot;:[],&quot;outputData&quot;:[],&quot;eventSynchronization&quot;:{&quot;mappingContext&quot;:{&quot;mappingElements&quot;:[{&quot;argument&quot;:{&quot;text&quot;:&quot;creditGrade&quot;},&quot;direction&quot;:&quot;out&quot;,&quot;variable&quot;:{&quot;name&quot;:&quot;[Arguments].creditGrade&quot;},&quot;isKey&quot;:false}]}}}" />
+        <uengine:properties json="{&quot;role&quot;:&quot;user&quot;,&quot;process&quot;:&quot;Process_BMT_CreditEval_Sub&quot;,&quot;tool&quot;:&quot;formHandler:BMT_CreditEval_Result&quot;,&quot;duration&quot;:5,&quot;inputData&quot;:[],&quot;outputData&quot;:[],&quot;eventSynchronization&quot;:{&quot;eventType&quot;:&quot;&quot;,&quot;attributes&quot;:[],&quot;mappingContext&quot;:{&quot;mappingElements&quot;:[{&quot;argument&quot;:{&quot;text&quot;:&quot;creditGrade&quot;},&quot;direction&quot;:&quot;out&quot;,&quot;variable&quot;:{&quot;name&quot;:&quot;[Arguments].creditGrade&quot;},&quot;isKey&quot;:false}]}}}" />
       </bpmn:extensionElements>
       <bpmn:incoming>Flow_S03</bpmn:incoming>
       <bpmn:incoming>Flow_S05</bpmn:incoming>

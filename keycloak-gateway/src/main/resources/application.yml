@@ -18,6 +18,8 @@ spring:
       on-profile: default
   cloud:
     gateway:
+      default-filters:
+        - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials, RETAIN_FIRST
       routes:
         - id: execution
           uri: http://localhost:8000
@@ -60,6 +62,8 @@ spring:
       on-profile: docker
   cloud:
     gateway:
+      default-filters:
+        - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials, RETAIN_FIRST
       routes:
         - id: execution
           uri: http://localhost:8000
@@ -113,6 +117,8 @@ spring:
       on-profile: keycloak-installed
   cloud:
     gateway:
+      default-filters:
+        - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials, RETAIN_FIRST
       httpclient:
         connect-timeout: 3000
         response-timeout: 3600000

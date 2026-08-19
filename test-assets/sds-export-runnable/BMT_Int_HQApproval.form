@@ -1,4 +1,4 @@
 <form>
   <label>본부 승인</label>
-  <select-field name="hqResult" label="본부승인결과" items='[{"승인":"승인"},{"반려":"반려"}]' />
+  <select-field name="hqResult" alias="본부승인결과" items='[{"승인":"승인"},{"반려":"반려"}]' v-model="formValues['hqResult']"></select-field>
 </form>

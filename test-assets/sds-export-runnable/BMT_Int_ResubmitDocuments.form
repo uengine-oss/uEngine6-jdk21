@@ -1,4 +1,4 @@
 <form>
   <label>보완서류 재접수</label>
-  <text-field name="resubmitMemo" label="재접수 메모" defaultValue="보완서류 접수 완료" />
+  <text-field name="resubmitMemo" alias="재접수 메모" v-model="formValues['resubmitMemo']"></text-field>
 </form>

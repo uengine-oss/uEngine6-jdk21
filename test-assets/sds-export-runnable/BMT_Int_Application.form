@@ -1,5 +1,5 @@
 <form>
   <label>BMT 통합 기업여신 신청 접수</label>
-  <text-field name="customerName" label="고객명" defaultValue="BMT 테스트 기업" />
-  <text-field name="requestedAmount" label="신청금액" defaultValue="500000000" />
+  <text-field name="customerName" alias="고객명" v-model="formValues['customerName']"></text-field>
+  <text-field name="requestedAmount" alias="신청금액" type="number" v-model="formValues['requestedAmount']"></text-field>
 </form>

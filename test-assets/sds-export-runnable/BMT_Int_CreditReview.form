@@ -1,4 +1,4 @@
 <form>
   <label>여신 심사 판정</label>
-  <select-field name="reviewResult" label="심사결과" items='[{"승인":"승인"},{"보완":"보완"},{"반려":"반려"}]' />
+  <select-field name="reviewResult" alias="심사결과" items='[{"승인":"승인"},{"보완":"보완"},{"반려":"반려"}]' v-model="formValues['reviewResult']"></select-field>
 </form>

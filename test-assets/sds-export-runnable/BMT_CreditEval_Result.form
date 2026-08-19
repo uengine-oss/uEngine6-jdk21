@@ -1,4 +1,4 @@
 <form>
   <label>평가결과 등록</label>
-  <select-field name="creditGrade" label="평가등급" items='[{"A":"A"},{"B":"B"},{"C":"C"}]' />
+  <select-field name="creditGrade" alias="평가등급" items='[{"A":"A"},{"B":"B"},{"C":"C"}]' v-model="formValues['creditGrade']"></select-field>
 </form>

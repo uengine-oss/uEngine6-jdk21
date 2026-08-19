@@ -1,4 +1,4 @@
 <form>
   <label>본인확인 연계결과 확인</label>
-  <text-field name="identityResult" label="본인확인 결과" defaultValue="정상" />
+  <text-field name="identityResult" alias="본인확인 결과" v-model="formValues['identityResult']"></text-field>
 </form>
