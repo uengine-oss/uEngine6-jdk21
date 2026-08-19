@@ -19,8 +19,7 @@
           "composite": true,
           "composites": {
             "client": {
-              "realm-management": ["view-realm", "view-users", "query-groups", "query-users"],
-              "account": ["view-groups"]
+              "realm-management": ["view-realm", "view-users", "query-groups", "query-users"]
             }
           }
         },

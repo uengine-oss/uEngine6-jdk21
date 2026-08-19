@@ -52,6 +52,19 @@ filter:
   payload:
     enabled: false
 
+# 메일 기능을 사용하지 않는 로컬/컨테이너 환경에서도 빈 설정으로 기동 가능하게 한다.
+mail:
+  smtp:
+    host: ${MAIL_SMTP_HOST:localhost}
+    port: ${MAIL_SMTP_PORT:25}
+    auth: ${MAIL_SMTP_AUTH:false}
+    starttls:
+      enable: ${MAIL_SMTP_STARTTLS_ENABLE:false}
+    ssl:
+      trust: ${MAIL_SMTP_SSL_TRUST:localhost}
+    username: ${MAIL_SMTP_USERNAME:}
+    password: ${MAIL_SMTP_PASSWORD:}
+
 # ESB 인바운드 { header, payload } → @RequestBody DTO unwrap (EsbRequestBodyAdvice)
 esb:
   inbound-unwrap:
