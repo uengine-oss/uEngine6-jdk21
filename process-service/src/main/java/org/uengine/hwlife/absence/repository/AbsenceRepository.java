@@ -14,7 +14,7 @@ import org.uengine.hwlife.absence.entity.AbsenceEntity;
  *
  * <p>JpaRepository 기본 메서드 (save / findById / deleteById) 외에,
  * 사번(userId) 으로 모든 이력을 조회하는 {@link #findByUserId(String)} 와,
- * 등록 시 기간 중복 검사를 위한 {@link #findOverlappingActive} 만 제공합니다.</p>
+ * 등록 시 기간 중복/상호 부재 검사를 위한 조회를 제공합니다.</p>
  */
 public interface AbsenceRepository extends JpaRepository<AbsenceEntity, Long> {
 
@@ -59,4 +59,20 @@ public interface AbsenceRepository extends JpaRepository<AbsenceEntity, Long> {
     List<AbsenceEntity> findOverlappingActiveWithoutEnd(@Param("userId") String userId,
                                                          @Param("newAbscStarDttm") Date newAbscStarDttm,
                                                          @Param("excludeAbseId") Long excludeAbseId);
+
+    /**
+     * 상대(agentUserId)가 요청자(userId)를 대결자로 둔 활성 부재가 기간 겹치는지 검사.
+     * {@code newAbscEndDttm} 이 null 이면 신규 종료를 무한으로 본다.
+     * PostgreSQL 은 {@code ? is null} 의 바인드 타입을 추론하지 못하므로 timestamp 로 캐스팅한다.
+     */
+    @Query("select a from AbsenceEntity a " +
+            "where a.userId = :agentUserId " +
+            "  and a.agentUserId = :userId " +
+            "  and a.abscRscsDttm is null " +
+            "  and ( cast(:newAbscEndDttm as timestamp) is null or a.abscStarDttm <= :newAbscEndDttm ) " +
+            "  and ( a.abscEndDttm is null or a.abscEndDttm >= :newAbscStarDttm )")
+    List<AbsenceEntity> findReciprocalActive(@Param("userId") String userId,
+                                             @Param("agentUserId") String agentUserId,
+                                             @Param("newAbscStarDttm") Date newAbscStarDttm,
+                                             @Param("newAbscEndDttm") Date newAbscEndDttm);
 }

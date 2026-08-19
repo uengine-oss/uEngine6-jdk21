@@ -58,6 +58,7 @@ public class AbsenceServiceImpl implements AbsenceService {
      *   <li>{@code LBM030008} — 부재 건 없음</li>
      *   <li>{@code LBM030009} — 이미 해제된 부재</li>
      *   <li>{@code LBM030010} — 본인 부재 건이 아님</li>
+     *   <li>{@code LBM030011} — 상호 부재 설정 불가</li>
      * </ul>
      */
     @Override
@@ -102,6 +103,9 @@ public class AbsenceServiceImpl implements AbsenceService {
 
         if (hasOverlap(entity, null)) {
             return result("LBM030006");
+        }
+        if (hasReciprocalActiveAbsence(entity)) {
+            return result("LBM030011");
         }
         absenceRepository.save(entity);
         return result("LBM000000");
@@ -225,5 +229,11 @@ public class AbsenceServiceImpl implements AbsenceService {
                 : absenceRepository.findOverlappingActiveWithEnd(
                         target.getUserId(), target.getAbscStarDttm(), target.getAbscEndDttm(), excludedId);
         return !overlapping.isEmpty();
+    }
+
+    private boolean hasReciprocalActiveAbsence(AbsenceEntity target) {
+        return !absenceRepository.findReciprocalActive(
+                target.getUserId(), target.getAgentUserId(),
+                target.getAbscStarDttm(), target.getAbscEndDttm()).isEmpty();
     }
 }
