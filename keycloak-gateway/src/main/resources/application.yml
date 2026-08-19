@@ -34,7 +34,7 @@ spring:
         - id: instance-servicce
           uri: http://localhost:9094
           predicates:
-            - Path=/worklist/**, /test/**, /instance/**, /work-item/** , /instances/**, /dry-run/**, /validate/**, /start-and-complete, /rpa/**
+            - Path=/worklist/**, /test/**, /instance/**, /work-item/** , /instances/**, /dry-run/**, /validate/**, /start-and-complete, /notifications/**, /sql-metadata/**, /rpa/**
         # - id: inventory-service
         #   uri: http://localhost:8080
         #   predicates: 
@@ -136,7 +136,7 @@ spring:
         - id: instance-servicce
           uri: ${PROCESS_SERVICE_URI:http://localhost:9294}
           predicates:
-            - Path=/worklist/**, /test/**, /instance/**, /work-item/** , /instances/**, /dry-run/**, /validate/**, /start-and-complete, /rpa/**
+            - Path=/worklist/**, /test/**, /instance/**, /work-item/** , /instances/**, /dry-run/**, /validate/**, /start-and-complete, /notifications/**, /sql-metadata/**, /rpa/**
         - id: frontend
           uri: ${keycloak-client.frontend-uri}
           predicates:

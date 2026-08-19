@@ -36,7 +36,6 @@ import org.uengine.modeling.resource.IResource;
 import org.uengine.modeling.resource.ResourceManager;
 import org.uengine.modeling.resource.Serializer;
 import org.uengine.five.lifecycle.BpmLifecycleService;
-import org.uengine.processmanager.EMailServiceLocal;
 import org.uengine.processmanager.TransactionContext;
 import org.uengine.webservices.worklist.WorkList;
 
@@ -65,9 +64,6 @@ public class JPAProcessInstance extends DefaultProcessInstance implements Transa
 
     @Autowired
     ProcessInstanceRepository processInstanceRepository;
-
-    @Autowired
-    EMailServiceLocal emailService;
 
     @Autowired(required = false)
     BpmLifecycleService bpmLifecycleService;
@@ -695,8 +691,4 @@ public class JPAProcessInstance extends DefaultProcessInstance implements Transa
         return true;
     }
 
-    @Override
-    public EMailServiceLocal getEmailService() {
-        return emailService;
-    }
 }

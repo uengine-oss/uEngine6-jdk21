@@ -1,0 +1,3 @@
+[submodule "sample-apps/bpm-sample-app-banking"]
+	path = sample-apps/bpm-sample-app-banking
+	url = https://github.com/uengine-oss/bpm-sample-app-banking.git

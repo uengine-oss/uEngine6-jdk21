@@ -22,6 +22,22 @@ public class LocalEMailActivity extends DefaultActivity {
 		setCharacterSet("UTF-8");
 	}
 
+	/**
+	 * 메일 발송 컴포넌트를 얻는다.
+	 *
+	 * <p>프로세스 인스턴스에 매달아 두지 않는다. 인스턴스는 실행 상태(변수·토큰)를 담는 객체이지
+	 * 인프라 서비스의 보관소가 아니다. 커널의 다른 컴포넌트(IActivityEventQueue,
+	 * NotificationService 등)와 같은 방식으로 {@link GlobalContext#getComponent(Class)} 로 조회한다.
+	 */
+	protected EMailServiceLocal emailService() {
+		EMailServiceLocal emailService = GlobalContext.getComponent(EMailServiceLocal.class);
+		if (emailService == null) {
+			throw new IllegalStateException(
+					"EMailServiceLocal 컴포넌트를 찾을 수 없습니다. 메일 발송 설정을 확인하세요.");
+		}
+		return emailService;
+	}
+
 	String contents;
 
 	public String getContents() {
@@ -249,7 +265,7 @@ public class LocalEMailActivity extends DefaultActivity {
 			for (int i = 0; i < tempMailAddrs.length; i++) {
 				mailAddrs = tempMailAddrs[i];
 
-				instance.getEmailService().sendMail(
+				emailService().sendMail(
 						actualFrom,
 						actualFromName,
 						mailAddrs,

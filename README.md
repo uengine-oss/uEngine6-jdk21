@@ -1,5 +1,15 @@
 # uEngine5-bpm
 
+## 설치 문서
+
+- [docs/local-install-guide.md](docs/local-install-guide.md) — 로컬 설치·기동 매뉴얼 (앱은 직접 실행, 인프라만 Docker). 로그인부터 작업 완료까지 검증된 절차.
+- [docs/install-issues.md](docs/install-issues.md) — 설치 중 발생한 문제 관리대장 (원인·조치·근본 수정 필요 여부).
+- [docs/keycloak-installed-mode.md](docs/keycloak-installed-mode.md) — 외부 Keycloak 설치형 배포 설정.
+
+## 기능 문서
+
+- [docs/sql-task.md](docs/sql-task.md) — SQLTask: 데이터베이스에 직접 접근하는 BPMN Task (SQL 직접 작성 / DB 매핑 두 가지 설정 방식).
+
 ## Deploy Example Process Definitions
 
 Firstly, run the definition-service:

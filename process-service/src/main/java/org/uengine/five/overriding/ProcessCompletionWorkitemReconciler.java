@@ -3,8 +3,10 @@ package org.uengine.five.overriding;
 import java.util.Date;
 import java.util.List;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.uengine.five.entity.WorklistEntity;
+import org.uengine.five.notification.WorkItemNotificationService;
 import org.uengine.five.repository.WorklistRepository;
 import org.uengine.five.service.WorkItemAssignmentStateService;
 import org.uengine.webservices.worklist.DefaultWorkList;
@@ -17,9 +19,14 @@ public class ProcessCompletionWorkitemReconciler {
     private final WorklistRepository worklistRepository;
     private final WorkItemAssignmentStateService assignmentStateService;
 
-    public ProcessCompletionWorkitemReconciler(
-            WorklistRepository worklistRepository,
-            WorkItemAssignmentStateService assignmentStateService) {
+    /**
+     * 이 클래스는 JPAWorkList.completeWorkItem 을 거치지 않고 상태만 직접 바꾸므로
+     * BpmLifecycleService 훅이 타지 않는다. 헤더 알림이 끝난 업무에 남지 않도록 여기서 직접 정리한다.
+     */
+    @Autowired(required = false)
+    WorkItemNotificationService workItemNotificationService;
+
+    public ProcessCompletionWorkitemReconciler(WorklistRepository worklistRepository) {
         this.worklistRepository = worklistRepository;
         this.assignmentStateService = assignmentStateService;
     }
@@ -44,7 +51,17 @@ public class ProcessCompletionWorkitemReconciler {
             }
         }
         worklistRepository.saveAll(activeWork);
-        assignmentStateService.synchronize(instanceId);
+
+        if (workItemNotificationService != null) {
+            for (WorklistEntity workItem : activeWork) {
+                try {
+                    workItemNotificationService.onTaskTerminated(workItem);
+                } catch (Exception ignore) {
+                    // 알림 정리 실패가 인스턴스 정리를 막지 않게 한다.
+                }
+            }
+        }
+
         return activeWork.size();
     }
 }

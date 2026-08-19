@@ -1,0 +1,42 @@
+# process-service 로컬 직접 실행용 설정 오버라이드 (브랜치 bmt/sds-process-test 기준)
+#
+# 사용법:
+#   SPRING_PROFILES_ACTIVE=postgres,keycloak-installed \
+#   java --add-opens ... -jar process-service/target/process-service-1.1-SNAPSHOT.jar \
+#        --spring.config.additional-location=file:docs/local/process-service.local.yml
+#
+# DataSource/포트/Keycloak URL 은 이제 application.yml 의 postgres, keycloak-installed
+# 프로파일이 제공한다. 이 파일은 프로파일이 채워주지 않는 항목만 보충한다.
+
+spring:
+  jpa:
+    properties:
+      # ProcessInstanceRepositoryH2 의 JPQL regexp_like(...) 를 SQL 로 변환한다.
+      # postgres 프로파일에는 없다. 미등록 시 /instances/search/findFilterICanSee 가 500 으로 실패.
+      hibernate.metadata_builder_contributor: org.uengine.five.config.OracleHibernateMetadataContributor
+
+uengine:
+  definition:
+    # definitions/ 와 archive/ 의 상위 디렉터리. definition-service 와 반드시 동일해야 한다.
+    basePath: ${UENGINE_BASEPATH:.}
+  audit:
+    sink: none
+
+# EMailServerSoapBindingImpl 이 기본값 없는 @Value 로 요구한다. 없으면 기동 자체가 실패한다.
+# (docker-compose.keycloak-postgres.yml 은 같은 값을 컨테이너 환경변수로 넣어준다)
+mail:
+  enabled: false
+  smtp:
+    host: localhost
+    port: 25
+    auth: false
+    starttls:
+      enable: false
+    ssl:
+      trust: localhost
+    username: ""
+    password: ""
+
+logging:
+  file:
+    name: ${UENGINE_LOG_DIR:logs}/bpm-process.log
