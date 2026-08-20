@@ -1,8 +1,10 @@
 package org.uengine.five.service;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -67,15 +69,30 @@ public class RootInstanceResolver {
      * worklist batch 검색용 — worklist {@code instId} → 루트 {@link ProcessInstanceEntity} 캐시.
      */
     public Map<Long, ProcessInstanceEntity> preload(Collection<WorklistEntity> worklists) {
+        List<ProcessInstanceEntity> instances = new ArrayList<>();
+        if (worklists != null) {
+            for (WorklistEntity worklist : worklists) {
+                if (worklist != null && worklist.getProcessInstance() != null) {
+                    instances.add(worklist.getProcessInstance());
+                }
+            }
+        }
+        return preloadInstances(instances);
+    }
+
+    /**
+     * 인스턴스 batch 검색용 — {@code instId} → 루트 {@link ProcessInstanceEntity} 캐시.
+     */
+    public Map<Long, ProcessInstanceEntity> preloadInstances(
+            Collection<ProcessInstanceEntity> instances) {
         Map<Long, ProcessInstanceEntity> byInstId = new HashMap<>();
         Map<Long, ProcessInstanceEntity> byRootInstId = new HashMap<>();
-        if (worklists == null) {
+        if (instances == null) {
             return byInstId;
         }
 
         Set<Long> missingRootIds = new HashSet<>();
-        for (WorklistEntity worklist : worklists) {
-            ProcessInstanceEntity instance = worklist == null ? null : worklist.getProcessInstance();
+        for (ProcessInstanceEntity instance : instances) {
             Long rootInstId = rootInstIdOf(instance);
             if (rootInstId == null) {
                 continue;
@@ -94,18 +111,17 @@ public class RootInstanceResolver {
                 }
             }
         }
-        for (WorklistEntity worklist : worklists) {
-            if (worklist == null || worklist.getInstId() == null) {
+        for (ProcessInstanceEntity instance : instances) {
+            if (instance == null || instance.getInstId() == null) {
                 continue;
             }
-            ProcessInstanceEntity instance = worklist.getProcessInstance();
             Long rootInstId = rootInstIdOf(instance);
             if (rootInstId == null) {
                 continue;
             }
             ProcessInstanceEntity root = byRootInstId.get(rootInstId);
             if (root != null) {
-                byInstId.put(worklist.getInstId(), root);
+                byInstId.put(instance.getInstId(), root);
             }
         }
         return byInstId;

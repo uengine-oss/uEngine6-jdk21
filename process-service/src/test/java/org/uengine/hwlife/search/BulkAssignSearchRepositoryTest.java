@@ -88,7 +88,7 @@ class BulkAssignSearchRepositoryTest {
 
   private static BulkAssignSearchRepository.SearchResult search(BulkAssignSearchRequest request) {
     try (EntityManager entityManager = sessionFactory.createEntityManager()) {
-      return new BulkAssignSearchRepository(entityManager).search(request);
+      return new BulkAssignSearchRepository(entityManager).search(request, "101");
     }
   }
 

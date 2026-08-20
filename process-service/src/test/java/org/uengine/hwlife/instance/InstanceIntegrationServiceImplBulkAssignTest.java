@@ -62,7 +62,7 @@ class InstanceIntegrationServiceImplBulkAssignTest {
     assertEquals(5, response.getSucsCont());
     assertEquals(0, response.getFailCont());
     assertEquals(List.of(), response.getFailList());
-    verify(itemService, times(5)).assign(any(), eq("kim"), any());
+    verify(itemService, times(5)).assign(any(), eq("kim"), any(), any());
   }
 
   @Test
@@ -70,7 +70,7 @@ class InstanceIntegrationServiceImplBulkAssignTest {
     BulkAssignRequest request = request(5, "kim");
     BulkAssignRequestItem failing = request.getBswrList().get(2);
     doThrow(new BulkAssignItemException("LBM070012", null))
-        .when(itemService).assign(eq(failing), eq("kim"), any());
+        .when(itemService).assign(eq(failing), eq("kim"), any(), any());
 
     BulkAssignResponse response = service.assignBulk(request);
 
@@ -90,7 +90,7 @@ class InstanceIntegrationServiceImplBulkAssignTest {
     assertEquals(1, response.getSucsCont());
     assertEquals(1, response.getFailCont());
     assertEquals("LBM070007", response.getFailList().get(0).getPrcsRsltCntn());
-    verify(itemService, times(1)).assign(any(), eq("kim"), any());
+    verify(itemService, times(1)).assign(any(), eq("kim"), any(), any());
   }
 
   @Test
@@ -135,7 +135,7 @@ class InstanceIntegrationServiceImplBulkAssignTest {
       BulkAssignResponse response = service.assignBulk(request(1, "unknown"));
 
       assertEquals("LBM070005", response.getFailList().get(0).getPrcsRsltCntn());
-      verify(itemService, times(0)).assign(any(), any(), any());
+      verify(itemService, times(0)).assign(any(), any(), any(), any());
     }
   }
 
@@ -143,13 +143,13 @@ class InstanceIntegrationServiceImplBulkAssignTest {
   void propagatesBusinessAndUnexpectedAssignmentCodes() throws Exception {
     BulkAssignRequest businessFailure = request(1, "kim");
     doThrow(new BulkAssignItemException("LBM070019", null))
-        .when(itemService).assign(any(), eq("kim"), any());
+        .when(itemService).assign(any(), eq("kim"), any(), any());
     assertEquals("LBM070019",
         service.assignBulk(businessFailure).getFailList().get(0).getPrcsRsltCntn());
 
     BulkAssignRequest unexpectedFailure = request(1, "lee");
     doThrow(new RuntimeException("unexpected"))
-        .when(itemService).assign(any(), eq("lee"), any());
+        .when(itemService).assign(any(), eq("lee"), any(), any());
     assertEquals("LBM070020",
         service.assignBulk(unexpectedFailure).getFailList().get(0).getPrcsRsltCntn());
   }

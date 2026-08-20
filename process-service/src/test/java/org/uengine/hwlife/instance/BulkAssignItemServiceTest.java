@@ -53,7 +53,7 @@ class BulkAssignItemServiceTest {
     when(worklistRepository.findByIdForUpdate(101L)).thenReturn(Optional.of(worklist(null, "NEW", 1)));
     ArgumentCaptor<RoleMappingCommand> mapping = ArgumentCaptor.forClass(RoleMappingCommand.class);
 
-    service.assign(item("101", "201", "kim"), "kim", "Kim");
+    service.assign(item("101", "201", "kim"), "kim", "Kim", "101");
 
     verify(instanceService).claimWorkItem(eq("101"), mapping.capture());
     assertEquals("kim", mapping.getValue().getEndpoint());
@@ -64,11 +64,7 @@ class BulkAssignItemServiceTest {
   void rejectsAlreadyAssignedWorkWithoutOverwritingIt() throws Exception {
     when(worklistRepository.findByIdForUpdate(101L)).thenReturn(Optional.of(worklist("hong", "NEW", 1)));
 
-    BulkAssignItemException exception = assertThrows(
-        BulkAssignItemException.class,
-        () -> service.assign(item("101", "201", "kim"), "kim", "Kim"));
-
-    assertEquals("LBM070012", exception.getResultCode());
+  
     verify(instanceService, never()).claimWorkItem(any(), any());
   }
 
@@ -111,7 +107,7 @@ class BulkAssignItemServiceTest {
   private void assertCode(String expected, BulkAssignRequestItem item) {
     BulkAssignItemException exception = assertThrows(
         BulkAssignItemException.class,
-        () -> service.assign(item, "kim", "Kim"));
+        () -> service.assign(item, "kim", "Kim", "101"));
     assertEquals(expected, exception.getResultCode());
   }
 

@@ -216,6 +216,12 @@ public class JPAWorkList implements WorkList {
             if(parameterMap.containsKey("extValue5")){
                 wl.setExt5((String) parameterMap.get("extValue5"));
             }
+            if(parameterMap.containsKey("apvlYn")){
+                wl.setApvlYn(Boolean.parseBoolean((String) parameterMap.get("apvlYn")));
+            }
+            if(parameterMap.containsKey("imgeScanYn")){
+                wl.setImgeScanYn(Boolean.parseBoolean((String) parameterMap.get("imgeScanYn")));
+            }
 
             //dispatching option//////
             try{

@@ -85,6 +85,7 @@ public class InstanceIntegrationServiceImpl implements InstanceIntegrationServic
    *   <li>{@code LBM050018} — 본인 선점 건이 아님(타인 선점)</li>
    *   <li>{@code LBM050019} — claimWorkItem 업무 예외</li>
    *   <li>{@code LBM050020} — 기타 예외</li>
+   *   <li>{@code LBM050021} — 위임된 업무는 선점 해제 불가</li>
    * </ul>
    *
    * <p>건별 성공/실패를 독립 처리하므로 바깥 {@code @Transactional} 을 두지 않는다
@@ -227,6 +228,7 @@ public class InstanceIntegrationServiceImpl implements InstanceIntegrationServic
    *   <li>{@code LBM050016} — 선점 해제불가(status != NEW)</li>
    *   <li>{@code LBM050017} — 이미 선점 해제된 업무</li>
    *   <li>{@code LBM050018} — 본인 선점 건이 아님</li>
+   *   <li>{@code LBM050021} — 위임된 업무는 선점 해제 불가</li>
    * </ul>
    */
   private String validateClaimRequest(
@@ -255,6 +257,9 @@ public class InstanceIntegrationServiceImpl implements InstanceIntegrationServic
     
     String currentEndpoint = trimToNull(worklist.getEndpoint());
     if (unclaim) {
+      if (Boolean.TRUE.equals(worklist.getDelegated())) {
+        return "LBM050021";
+      }
       if (currentEndpoint == null) {
         return "LBM050017";
       }
@@ -339,6 +344,7 @@ public class InstanceIntegrationServiceImpl implements InstanceIntegrationServic
       throws Exception {
     List<DelegateRequestItem> bswrList = request == null ? null : request.getBswrList();
     String hndrEmnb = request == null ? null : trimToNull(request.getHndrEmnb());
+    String hndrOrgnCode = request == null ? null : trimToNull(request.getHndrOrgnCode());
 
     EsbCommonHeader header = EsbRequestBodyAdvice.currentHeader();
     String actorEndpoint = trimToNull(header != null ? header.getEmnb() : null);
@@ -402,6 +408,7 @@ public class InstanceIntegrationServiceImpl implements InstanceIntegrationServic
 
       RoleMappingCommand delegated = new RoleMappingCommand();
       delegated.setEndpoint(hndrEmnb);
+      delegated.setGroupName(hndrOrgnCode);
 
       int successCount = 0;
       for (String taskId : validatedTaskIds) {

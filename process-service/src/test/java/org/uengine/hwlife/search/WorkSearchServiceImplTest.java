@@ -67,6 +67,7 @@ class WorkSearchServiceImplTest {
   private ProcessInstanceRepository processInstanceRepository;
   private WorklistRepository worklistRepository;
   private WorkSearchServiceImpl service;
+  private OrgCompletedSearchRepository orgCompletedSearchRepository;
 
   @BeforeEach
   void setUp() {
@@ -75,12 +76,14 @@ class WorkSearchServiceImplTest {
     bulkAssignSearchRepository = mock(BulkAssignSearchRepository.class);
     processInstanceRepository = mock(ProcessInstanceRepository.class);
     worklistRepository = mock(WorklistRepository.class);
+    orgCompletedSearchRepository = mock(OrgCompletedSearchRepository.class);
     service = new WorkSearchServiceImpl(
         searchRepository,
         orgRunningSearchRepository,
         bulkAssignSearchRepository,
         processInstanceRepository,
-        worklistRepository);
+        worklistRepository, 
+        orgCompletedSearchRepository);
     bindEsbHeader(HEADER_EMNB, HEADER_BELN_ORGN_CODE);
   }
 
@@ -95,13 +98,13 @@ class WorkSearchServiceImplTest {
     rootInstance.setInstId(100L);
     rootInstance.setRootInstId(100L);
     rootInstance.setDefId("line_1");
-    when(bulkAssignSearchRepository.search(request))
+    when(bulkAssignSearchRepository.search(request, "101"))
         .thenReturn(new BulkAssignSearchRepository.SearchResult(List.of(worklist), 1));
     when(processInstanceRepository.findAllById(any())).thenReturn(List.of(rootInstance));
 
     BulkAssignSearchResponse response = service.searchBulkAssign(request);
 
-    verify(bulkAssignSearchRepository).search(request);
+    verify(bulkAssignSearchRepository).search(request, "101");
     assertEquals(1, response.getTotCont());
     assertEquals(1, response.getBswrList().size());
     assertEquals("105", response.getBswrList().get(0).getFncgBpmTaskLstId());

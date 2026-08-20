@@ -11,6 +11,7 @@ import java.util.List;
 public class DelegateRequest {
 
     private String hndrEmnb;
+    private String hndrOrgnCode;
     private List<DelegateRequestItem> bswrList;
 
     public String getHndrEmnb() {
@@ -19,6 +20,14 @@ public class DelegateRequest {
 
     public void setHndrEmnb(String hndrEmnb) {
         this.hndrEmnb = hndrEmnb;
+    }
+
+    public String getHndrOrgnCode() {
+        return hndrOrgnCode;
+    }
+
+    public void setHndrOrgnCode(String hndrOrgnCode) {
+        this.hndrOrgnCode = hndrOrgnCode;
     }
 
     public List<DelegateRequestItem> getBswrList() {

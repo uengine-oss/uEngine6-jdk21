@@ -521,6 +521,12 @@ public class HumanActivity extends ReceiveActivity {
 		if (getExtValue10() != null)
 			kpv.setProperty("extValue10", evaluateContent(instance, getExtValue10()).toString());
 
+		if(getApvlYn() != null)
+			kpv.setProperty("apvlYn", getApvlYn().toString());
+
+		if(getImgeScanYn() != null)
+			kpv.setProperty("imgeScanYn", getImgeScanYn().toString());
+
 		return (Map) kpv;
 	}
 
@@ -1636,5 +1642,24 @@ public class HumanActivity extends ReceiveActivity {
 	// this.parentEditorId = parentEditorId;
 	// }
 	//
+
+	Boolean apvlYn; // 결재 유형의 업무 여부
+    Boolean imgeScanYn; // 이미지 스캔 여부
+
+	public Boolean getApvlYn() {
+		return apvlYn;
+	}
+
+	public void setApvlYn(Boolean apvlYn) {
+		this.apvlYn = apvlYn;
+	}
+
+	public Boolean getImgeScanYn() {
+		return imgeScanYn;
+	}
+
+	public void setImgeScanYn(Boolean imgeScanYn) {
+		this.imgeScanYn = imgeScanYn;
+	}
 
 }
