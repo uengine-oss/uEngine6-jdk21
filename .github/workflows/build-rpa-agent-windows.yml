@@ -1,0 +1,38 @@
+name: Build Windows RPA Agent
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "rpa-agent-v*"
+
+jobs:
+  build-windows-agent:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: powershell
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: |
+            rpa-agent/requirements.txt
+            rpa-agent/requirements-tray.txt
+
+      - name: Build and self-test Windows agent
+        run: .\rpa-agent\build-tray.ps1 -Python python
+
+      - name: Upload Windows agent
+        uses: actions/upload-artifact@v4
+        with:
+          name: uengine-rpa-agent-windows-x64
+          path: |
+            rpa-agent/dist/uengine-rpa-agent.exe
+            rpa-agent/dist/uengine-rpa-agent-windows-x64.zip
+          if-no-files-found: error

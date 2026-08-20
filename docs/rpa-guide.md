@@ -2,13 +2,17 @@
 
 이 문서는 uEngine 프로세스의 `RPAActivity`를 사용해 Robot Framework 작업을 실행하는 방법과 서버 워커·클라이언트 에이전트의 빌드 및 운영 배포 방법을 설명합니다.
 
+최종 현행화: 2026-08-20
+
 ## 1. 구성과 실행 흐름
 
 uEngine RPA는 프로세스 엔진이 Robot 작업을 직접 실행하지 않고 데이터베이스의 `RPA_JOB` 큐를 통해 에이전트에 전달하는 구조입니다.
 
 ```text
 BPMN RPAActivity
-  → RPA_JOB 생성(QUEUED)
+  → RPA_JOB 생성
+    ├─ autoStart=true: QUEUED
+    └─ autoStart=false: WAITING → 사용자 실행(trigger) → QUEUED
   → 에이전트가 poll 및 선점(CLAIMED)
   → Robot Framework 실행(RUNNING)
   → 로그·라이브 프레임·영상 업로드
@@ -36,7 +40,10 @@ Job은 여러 에이전트가 동시에 폴링하더라도 DB 조건부 갱신�
 | `rpa-agent/uengine_rpa/tray.py` | 클라이언트 tray agent 진입점 |
 | `rpa-agent/uengine_rpa/UEngineLibrary.py` | Robot Framework용 uEngine 키워드 라이브러리 |
 | `rpa-agent/Dockerfile` | 서버 워커 이미지 정의 |
-| `rpa-agent/build-tray.sh` | 클라이언트 단일 실행파일 빌드 |
+| `rpa-agent/build-tray.sh` | macOS/Linux 클라이언트 실행파일 빌드·자체 진단 |
+| `rpa-agent/build-tray.ps1` | Windows x64 실행파일·ZIP 빌드·자체 진단 |
+| `rpa-agent/build-tray-windows.cmd` | PowerShell 실행 정책을 포함한 Windows 빌드 진입점 |
+| `.github/workflows/build-rpa-agent-windows.yml` | Windows 에이전트 CI 아티팩트 생성 |
 | `sds/SDS_DepositBalanceNotice.bpmn` | server/client 모드가 포함된 예제 프로세스 |
 
 ## 3. 사전 요구사항
@@ -55,9 +62,11 @@ Job은 여러 에이전트가 동시에 폴링하더라도 DB 조건부 갱신�
 
 클라이언트 에이전트:
 
-- Python 3.10 이상 권장
-- GUI tray 사용 시 데스크톱 로그인 세션
-- 대상 OS에서 직접 빌드한 실행파일. PyInstaller 결과물은 다른 OS용으로 교차 빌드할 수 없습니다.
+- 실행 PC: Windows 10/11 x64, macOS 또는 Linux 데스크톱의 로그인 세션
+- 화면 자동화 시 잠금 해제된 대화형 데스크톱. Windows 서비스의 Session 0에서는 화면 자동화를 실행하지 않습니다.
+- 소스 실행·빌드 PC: Python 3.10 이상(Windows 빌드는 Python 3.11 권장)
+- 배포된 단일 실행파일을 실행하는 PC에는 Python이 필요하지 않습니다.
+- PyInstaller 결과물은 빌드한 OS·CPU 아키텍처 전용이므로 Windows 실행파일은 Windows에서 빌드해야 합니다.
 
 ## 4. RPA Activity 작성
 
@@ -70,6 +79,10 @@ BPMN `serviceTask`의 `uengine:properties` JSON에 다음 타입을 지정합니
   "_type": "org.uengine.five.rpa.RPAActivity",
   "executionType": "server",
   "robotScript": "*** Settings ***\nLibrary    UEngineLibrary\n...",
+  "rpaAuthoringMode": "script",
+  "rpaSchemaVersion": 1,
+  "rpaSteps": null,
+  "autoStart": false,
   "targetUser": null,
   "dockerImage": "uengine/rpa-worker:1.0.0",
   "timeoutSeconds": 600,
@@ -81,6 +94,10 @@ BPMN `serviceTask`의 `uengine:properties` JSON에 다음 타입을 지정합니
 |---|---|
 | `executionType` | `server` 또는 `client`. 생략하거나 잘못된 값이면 server로 처리 |
 | `robotScript` | 실행할 `.robot` 스크립트 원문 |
+| `rpaAuthoringMode` | `script`는 Robot 원문 작성, `visual`은 카드형 시각 편집 원본 사용. 기본값 `script` |
+| `rpaSchemaVersion` | `rpaSteps` 시각 편집 데이터 계약 버전. 기본값 `1` |
+| `rpaSteps` | 시각 편집기의 순서형 작업 JSON. 실제 실행에는 이 데이터로 생성된 `robotScript`를 사용 |
+| `autoStart` | `true`면 즉시 `QUEUED`, 기본값 `false`면 `WAITING`으로 생성되어 사용자가 실행할 때 큐잉 |
 | `targetUser` | client Job을 가져갈 사용자 식별자. 예: `hong@uengine.org` |
 | `dockerImage` | 모델 표시·배포 참고용 메타데이터. Job별 이미지를 자동 실행하거나 선택하지 않음 |
 | `timeoutSeconds` | 선점 후 최대 실행 시간. 기본값 600초 |
@@ -132,12 +149,22 @@ ${CUSTOMER_ID}    ${EMPTY}
 
 `Set Process Output`으로 기록한 값은 실행 종료 후 process-service에 전달됩니다. 스크립트 종료 코드가 0이면 성공, 그 외에는 실패로 보고되고 RPA Activity가 fault 상태가 됩니다.
 
-프로젝트 제공 키워드:
+프로젝트 제공 주요 키워드:
 
 | Robot 키워드 | 기능 |
 |---|---|
 | `Set Process Output` | 프로세스에 반환할 결과 키·값 저장 |
 | `Get Process Output` | 현재까지 저장한 결과 조회 |
+| `Open Browser` / `Go To Url` / `Close Browser` | Playwright 브라우저 제어 |
+| `Click Element` / `Input Text` / `Select Option` | selector 기반 브라우저 입력 |
+| `Wait For Element` / `Save Element Text As Output` | 요소 대기와 텍스트 결과 저장 |
+| `Take Browser Screenshot` | 브라우저 화면 캡처 |
+| `Click Screen` / `Type Text` / `Press Key` / `Press Hotkey` | 사용자 데스크톱 입력 자동화 |
+| `Take Desktop Screenshot` | 데스크톱 화면 캡처 |
+| `Read Text File As Output` / `Write Text File` | 텍스트 파일 입출력 |
+| `Copy File` / `Move File` / `List Folder As Output` | 파일·폴더 작업 |
+| `Http Get As Output` / `Http Post Json As Output` | HTTP 결과를 프로세스 출력으로 저장 |
+| `Json Value As Output` | JSON 경로 값을 프로세스 출력으로 저장 |
 | `Open Dm Site` | Playwright로 DM 예제 화면 열기 |
 | `Send Dm Via Web` | DM 예제 화면 입력·전송 |
 | `Close Dm Site` | 브라우저 종료와 녹화 flush |
@@ -283,27 +310,51 @@ cd rpa-agent
 ./build-tray.sh
 ```
 
-결과물은 `rpa-agent/dist/` 아래에 생성됩니다. Windows는 Windows 빌드 머신에서 다음과 같이 빌드합니다.
+결과물은 `rpa-agent/dist/` 아래에 생성되며 빌드 직후 포함 모듈 자체 진단이 실행됩니다.
+
+Windows x64 빌드 머신에서는 Command Prompt 또는 PowerShell에서 다음을 실행합니다.
 
 ```powershell
 cd rpa-agent
-py -m venv .venv-build
-.\.venv-build\Scripts\Activate.ps1
-pip install -r requirements-tray.txt
-pyinstaller --noconfirm --onefile --windowed `
-  --name uengine-rpa-agent `
-  --collect-all robot `
-  --add-data "uengine_rpa/UEngineLibrary.py;uengine_rpa" `
-  --hidden-import uengine_rpa.UEngineLibrary `
-  tray_entry.py
+.\build-tray-windows.cmd
 ```
+
+생성물:
+
+- `dist\uengine-rpa-agent.exe`: 설치 없이 실행할 Windows tray agent
+- `dist\uengine-rpa-agent-windows-x64.zip`: 배포용 압축 파일
+
+PowerShell에서 Python 실행기를 지정해야 하면 다음처럼 직접 호출합니다.
+
+```powershell
+.\build-tray.ps1 -Python "C:\Python311\python.exe"
+```
+
+Windows PC가 없는 경우 GitHub Actions의 **Build Windows RPA Agent** workflow를 수동 실행하거나 `rpa-agent-v*` 형식의 tag를 push합니다. 완료 후 workflow artifact의 `uengine-rpa-agent-windows-x64`에서 EXE와 ZIP을 받을 수 있습니다.
 
 주의사항:
 
 - PyInstaller는 빌드를 실행한 OS 및 CPU 아키텍처용 결과물을 생성합니다.
-- 기본 tray 빌드에는 Playwright와 브라우저 바이너리가 포함되지 않습니다. 예제의 `Send Dm Via Web`은 Playwright가 없으면 API 방식으로 폴백합니다.
-- 실제 client 브라우저 자동화를 배포하려면 Playwright 패키지·브라우저 설치 방식과 사내 배포 정책을 별도로 구성하고 대상 PC에서 검증해야 합니다.
-- 실행파일 서명, 공증, 자동 시작 등록은 OS별 배포 체계에서 처리합니다.
+- tray 실행파일에는 Playwright Python 코드와 driver가 포함되지만 Chromium 바이너리는 포함하지 않습니다.
+- 브라우저 작업이 필요한 경우 agent가 최초 실행 시 Chromium을 사용자 캐시에 설치합니다. Windows 기본 경로는 `%LOCALAPPDATA%\ms-playwright`입니다. 최초 실행 PC가 인터넷에 연결되지 않는 환경이면 사전에 `PLAYWRIGHT_BROWSERS_PATH`에 Chromium을 배포해야 합니다.
+- `Send Dm Via Web`은 브라우저 시작 실패 시 DM 예제 API 방식으로 폴백하지만, 일반 브라우저 키워드는 브라우저 설치 실패를 그대로 보고합니다.
+- 운영 배포 전 EXE 코드 서명과 SmartScreen 검증, macOS 서명·공증, Linux 데스크톱 의존성을 조직 정책에 맞게 처리합니다.
+
+### 6.4 Windows 설치와 실행
+
+설정 파일 `%USERPROFILE%\.uengine-rpa-agent.json`을 작성합니다.
+
+```powershell
+@'
+{
+  "baseUrl": "https://process.example.com",
+  "user": "hong@uengine.org",
+  "agentId": "hong-windows-01"
+}
+'@ | Set-Content -Encoding UTF8 "$HOME\.uengine-rpa-agent.json"
+```
+
+ZIP을 원하는 폴더에 풀고 `uengine-rpa-agent.exe`를 실행합니다. 시스템 tray에 uEngine 아이콘이 표시되며 종료는 아이콘 메뉴의 `Quit`을 사용합니다. 화면 자동화가 필요하면 작업 스케줄러를 **사용자가 로그온할 때만 실행**하도록 구성하고 Windows 서비스로 등록하지 않습니다.
 
 ## 7. Docker Compose 배포
 
@@ -419,6 +470,7 @@ create index if not exists idx_rpa_job_instance
 |---|---|---|
 | `UENGINE_USER` | 없음 | client Job의 `targetUser`와 비교할 사용자 식별자 |
 | `UENGINE_TRAY_HEADLESS` | `0` | `1`이면 tray GUI 없이 실행 |
+| `PLAYWRIGHT_BROWSERS_PATH` | OS별 사용자 Playwright 캐시 | 사전 배포한 브라우저가 있는 사용자 지정 경로 |
 
 ### 화면 자동화와 예제 Library
 
@@ -436,7 +488,10 @@ create index if not exists idx_rpa_job_instance
 
 | 메서드 | 경로 | 용도 |
 |---|---|---|
+| `POST` | `/rpa/validate` | Robot 스크립트 문법·키워드 검증 |
 | `POST` | `/rpa/poll?agentId=&mode=&user=` | Job 폴링 및 원자적 선점 |
+| `POST` | `/rpa/jobs/{jobId}/trigger` | `WAITING` Job을 `QUEUED`로 전환 |
+| `POST` | `/rpa/jobs/{jobId}/retry` | `FAILED`·`TIMEOUT` Job을 새 Job으로 재실행 |
 | `POST` | `/rpa/jobs/{jobId}/start` | `RUNNING` 전환 |
 | `POST` | `/rpa/jobs/{jobId}/log` | 실행 로그 추가 |
 | `POST` | `/rpa/jobs/{jobId}/complete` | 성공·실패와 결과 보고 |
@@ -462,12 +517,12 @@ docker logs --tail 100 rpa-worker
 
 시작 로그에 `started agentId=... mode=server`가 보여야 합니다. client agent는 프로세스와 로그에서 `mode=client`, `user=...`를 확인합니다.
 
-Job 상태는 다음 순서로 전환됩니다.
+Job 상태는 다음 순서로 전환됩니다. 재실행은 기존 Job을 변경하지 않고 새 Job을 만들며, `autoStart=false`로 생긴 새 `WAITING` Job도 즉시 `QUEUED`로 전환합니다.
 
 ```text
-QUEUED → CLAIMED → RUNNING → DONE
-                           ↘ FAILED
-                           ↘ TIMEOUT
+autoStart=true  ───────────────→ QUEUED ─→ CLAIMED ─→ RUNNING ─→ DONE
+autoStart=false → WAITING ─trigger↗                         ├─→ FAILED ─retry→ 새 QUEUED
+                                                           └─→ TIMEOUT ─retry→ 새 QUEUED
 ```
 
 시간 초과 정리는 다른 에이전트의 `/rpa/poll` 요청 시 수행됩니다. 별도의 heartbeat API는 현재 제공하지 않습니다.
@@ -506,11 +561,17 @@ process-service를 여러 replica로 운영할 때 주의합니다.
 3. 에이전트의 `UENGINE_BASE_URL`과 process-service 네트워크 접근을 확인합니다.
 4. 에이전트 로그에서 `poll failed` 메시지를 확인합니다.
 
+### Job이 WAITING인 경우
+
+- 오류가 아니라 `autoStart=false`의 정상 상태입니다.
+- 인스턴스 화면의 `RPA 실행` 버튼을 누르거나 `POST /rpa/jobs/{jobId}/trigger`를 호출합니다.
+- 자동 실행이 필요한 모델은 Activity의 `autoStart`를 `true`로 저장합니다.
+
 ### CLAIMED 또는 RUNNING에서 멈춘 경우
 
 - 해당 Job의 `agentId`, 상세 로그와 `timeoutSeconds`를 확인합니다.
 - 워커가 강제 종료되면 Job은 즉시 재큐잉되지 않습니다. 제한 시간을 넘긴 뒤 다음 poll 요청에서 `TIMEOUT` 처리됩니다.
-- 현재 자동 재시도는 없으므로 프로세스 보상·재실행 정책을 별도로 구성합니다.
+- 자동 재시도는 없지만 `POST /rpa/jobs/{jobId}/retry`로 `FAILED`·`TIMEOUT` Job을 수동 재실행할 수 있습니다. 대상 작업의 멱등성을 먼저 확인합니다.
 
 ### Robot keyword를 찾지 못하는 경우
 
@@ -521,9 +582,17 @@ process-service를 여러 replica로 운영할 때 주의합니다.
 ### 브라우저가 보이지 않거나 영상이 없는 경우
 
 - 서버 워커의 `DISPLAY`, Xvfb, ffmpeg 프로세스와 `UENGINE_SCREEN_SIZE`를 확인합니다.
-- client 기본 패키지에는 Playwright가 포함되지 않는다는 점을 확인합니다.
+- client agent 최초 실행 시 Chromium 설치가 끝났는지, `%LOCALAPPDATA%\ms-playwright` 또는 `PLAYWRIGHT_BROWSERS_PATH`에 쓰기 권한이 있는지 확인합니다.
 - process-service의 `UENGINE_BASEPATH` 쓰기 권한과 영구 볼륨을 확인합니다.
 - 영상이 50MB를 초과하면 runner가 업로드하지 않습니다.
+
+### Windows agent가 실행되지 않는 경우
+
+- Microsoft Defender SmartScreen이 차단하면 조직에서 서명한 배포본인지 확인하고 보안 담당 정책에 따라 허용합니다.
+- tray 아이콘이 숨겨진 아이콘 영역에 있는지 확인합니다.
+- 화면 잠금, 로그아웃 또는 RDP 세션 종료 상태에서는 데스크톱 입력 자동화가 정상 동작하지 않을 수 있습니다.
+- 설정 파일 JSON과 `baseUrl`, 방화벽·프록시·사내 인증서 신뢰를 확인합니다.
+- 배포 전 `uengine-rpa-agent.exe --uengine-self-test`가 종료 코드 0을 반환하는지 확인합니다.
 
 ### 결과가 프로세스 변수에 반영되지 않는 경우
 
@@ -543,4 +612,8 @@ process-service를 여러 replica로 운영할 때 주의합니다.
 - [ ] RPA API가 신뢰된 네트워크로 제한됨
 - [ ] 로그와 입력값에 비밀정보가 남지 않음
 - [ ] timeout·장애·재실행 시나리오가 검증됨
+- [ ] `autoStart` 정책과 `WAITING` 사용자 실행 권한이 정의됨
+- [ ] Windows EXE가 Windows runner에서 빌드되고 자체 진단을 통과함
+- [ ] Windows EXE 코드 서명·SmartScreen과 최초 Chromium 설치가 검증됨
+- [ ] attended 자동화 PC가 로그인·잠금 해제 상태로 운영됨
 - [ ] 샘플 프로세스로 결과 변수와 다음 Activity 진행을 확인함

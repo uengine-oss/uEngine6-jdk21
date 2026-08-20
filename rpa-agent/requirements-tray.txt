@@ -1,3 +1,4 @@
 -r requirements.txt
 pystray>=0.19
-pyinstaller>=6.0
+# macOS onefile app bundle support is removed in PyInstaller 7.
+pyinstaller>=6.0,<7

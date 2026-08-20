@@ -3,6 +3,31 @@ import os
 import sys
 
 
+def _self_test():
+    """Validate modules that must be present in the frozen client package."""
+    import importlib.util
+
+    import PIL.Image  # noqa: F401
+    import playwright.sync_api  # noqa: F401
+    import pyperclip  # noqa: F401
+    import pystray  # noqa: F401
+    import robot  # noqa: F401
+
+    # pyautogui connects to X11 while importing on Linux. A package build can
+    # legitimately run without DISPLAY, so only resolve the frozen module there.
+    if sys.platform == "linux" and not os.getenv("DISPLAY"):
+        if importlib.util.find_spec("pyautogui") is None:
+            raise ImportError("pyautogui is not included in the package")
+    else:
+        import pyautogui  # noqa: F401
+
+    from uengine_rpa.UEngineLibrary import UEngineLibrary
+    from uengine_rpa.runner import RpaRunner
+
+    UEngineLibrary()
+    RpaRunner()
+
+
 def _fix_playwright_browsers_path():
     # pyinstaller-hooks-contrib 의 playwright 런타임 훅이 PLAYWRIGHT_BROWSERS_PATH=0
     # (= 번들 내부 .local-browsers 에서 브라우저를 찾음)을 setdefault 하는데, 우리는
@@ -26,7 +51,9 @@ if __name__ == "__main__":
     # 냉동(frozen) 바이너리 안에서는 sys.executable 이 파이썬이 아니라 이 바이너리
     # 자신이므로, runner 가 로봇 실행을 위해 자기 자신을 --uengine-robot 플래그로
     # 재실행한다. 그 호출을 여기서 가로채 robot CLI 로 위임한다.
-    if len(sys.argv) > 1 and sys.argv[1] == "--uengine-robot":
+    if len(sys.argv) > 1 and sys.argv[1] == "--uengine-self-test":
+        _self_test()
+    elif len(sys.argv) > 1 and sys.argv[1] == "--uengine-robot":
         from robot import run_cli
         run_cli(sys.argv[2:], exit=True)
     else:

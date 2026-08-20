@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Build the client tray agent as a single executable (PyInstaller onefile).
-# Result: dist/uengine-rpa-agent (macOS/Linux) or dist/uengine-rpa-agent.exe (Windows)
+# Result: dist/uengine-rpa-agent.app (macOS) or dist/uengine-rpa-agent (Linux)
 set -e
 cd "$(dirname "$0")"
 
@@ -14,14 +14,12 @@ pip install -q -r requirements-tray.txt
 rm -rf .venv-build/lib/python*/site-packages/playwright/driver/package/.local-browsers
 python -m playwright install chromium
 
-pyinstaller --noconfirm --onefile --windowed \
-  --name uengine-rpa-agent \
-  --collect-all robot \
-  --collect-all playwright \
-  --collect-all pyautogui \
-  --collect-all pyperclip \
-  --add-data "uengine_rpa/UEngineLibrary.py:uengine_rpa" \
-  --hidden-import uengine_rpa.UEngineLibrary \
-  tray_entry.py
+python -m PyInstaller --clean --noconfirm uengine-rpa-agent.spec
 
-echo "Built: dist/uengine-rpa-agent"
+if [ "$(uname -s)" = "Darwin" ]; then
+  dist/uengine-rpa-agent.app/Contents/MacOS/uengine-rpa-agent --uengine-self-test
+  echo "Built: dist/uengine-rpa-agent.app"
+else
+  dist/uengine-rpa-agent --uengine-self-test
+  echo "Built: dist/uengine-rpa-agent"
+fi

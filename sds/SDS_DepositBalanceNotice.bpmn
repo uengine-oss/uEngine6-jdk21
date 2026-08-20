@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<bpmn:definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:uengine="http://uengine" id="Definitions_1" name="예금잔액 통보" targetNamespace="http://bpmn.io/schema/bpmn" exporter="bpmn-js (https://demo.bpmn.io)" exporterVersion="16.4.0">
+<bpmn:definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:uengine="http://uengine" id="Definitions_1" name="예금잔액통보" targetNamespace="http://bpmn.io/schema/bpmn" exporter="bpmn-js (https://demo.bpmn.io)" exporterVersion="16.4.0">
   <bpmn:collaboration id="Collaboration_1">
-    <bpmn:participant id="Participant_1" name="예금잔액 통보" processRef="Process_1" />
+    <bpmn:participant id="Participant_1" name="예금잔액통보" processRef="Process_1" />
   </bpmn:collaboration>
-  <bpmn:process id="Process_1" isExecutable="true">
+  <bpmn:process id="Process_1" name="예금잔액통보" isExecutable="true">
     <bpmn:extensionElements>
-      <uengine:properties json="{&#34;definitionName&#34;:&#34;예금잔액 통보&#34;,&#34;version&#34;:&#34;0.4&#34;,&#34;shortDescription&#34;:{&#34;text&#34;:&#34;&#34;}}"><uengine:variable name="본부 일괄발송 예금계좌" type="Text" /><uengine:variable name="DM 반송여부" type="Text" /><uengine:variable name="예금잔액 이상" type="Text" /><uengine:variable name="일괄DM발송건수" type="Text" /><uengine:variable name="개별DM발송건수" type="Text" /></uengine:properties></bpmn:extensionElements>
+      <uengine:properties json="{&#34;definitionName&#34;:&#34;예금잔액통보&#34;,&#34;version&#34;:&#34;0.4&#34;,&#34;shortDescription&#34;:{&#34;text&#34;:&#34;&#34;}}"><uengine:variable name="본부 일괄발송 예금계좌" type="Text" /><uengine:variable name="DM 반송여부" type="Text" /><uengine:variable name="예금잔액 이상" type="Text" /><uengine:variable name="일괄DM발송건수" type="Text" /><uengine:variable name="개별DM발송건수" type="Text" /></uengine:properties></bpmn:extensionElements>
     <bpmn:laneSet id="LaneSet_1">
       <bpmn:lane id="Lane_0mc8070" name="고객">
         <bpmn:extensionElements>
