@@ -71,10 +71,28 @@ public class Gateway extends Activity {
 						otherwiseActivity = ts.getTargetActivity();
 						continue;
 					}
-					activities.add(ts.getTargetActivity());
+					Activity targetActivity = ts.getTargetActivity();
+					if (targetActivity == null && ts.getTargetRef() != null) {
+						targetActivity = getProcessDefinition().getActivity(ts.getTargetRef());
+						if (targetActivity != null) {
+							ts.setTargetActivity(targetActivity);
+						}
+					}
+					if (targetActivity != null) {
+						activities.add(targetActivity);
+					}
 				}
 			} else {
-				activities.add(ts.getTargetActivity());
+				Activity targetActivity = ts.getTargetActivity();
+				if (targetActivity == null && ts.getTargetRef() != null) {
+					targetActivity = getProcessDefinition().getActivity(ts.getTargetRef());
+					if (targetActivity != null) {
+						ts.setTargetActivity(targetActivity);
+					}
+				}
+				if (targetActivity != null) {
+					activities.add(targetActivity);
+				}
 			}
 		}
 		if (otherwiseFlag && activities.isEmpty()) {
