@@ -6,9 +6,9 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 import org.uengine.five.ProcessServiceApplication;
-import org.uengine.kernel.DefaultActivity;
 import org.uengine.kernel.ParameterContext;
 import org.uengine.kernel.ProcessInstance;
+import org.uengine.kernel.ReceiveActivity;
 import org.uengine.kernel.UEngineException;
 
 /**
@@ -23,7 +23,7 @@ import org.uengine.kernel.UEngineException;
  * {@link RpaJobService} 가 {@link #onJobResult(ProcessInstance, Map)} 를 호출해
  * 결과값을 ProcessVariable 로 매핑하고 fireComplete 로 프로세스를 진행시킨다.
  */
-public class RPAActivity extends DefaultActivity {
+public class RPAActivity extends ReceiveActivity {
 
     private static final long serialVersionUID = org.uengine.kernel.GlobalContext.SERIALIZATION_UID;
 
@@ -69,7 +69,8 @@ public class RPAActivity extends DefaultActivity {
     ParameterContext[] parameters;
 
     public RPAActivity() {
-        super("RPA");
+        super();
+        setName("RPA");
     }
 
     @Override
@@ -98,6 +99,9 @@ public class RPAActivity extends DefaultActivity {
         RpaJobService rpaJobService = ProcessServiceApplication.getApplicationContext()
                 .getBean(RpaJobService.class);
 
+        // ReceiveActivity가 현재 activity를 실행 중으로 등록해야 RPA 결과 콜백이
+        // instance.isRunning(tracingTag) 검증을 통과한다.
+        super.executeActivity(instance);
         rpaJobService.createJob(this, instance, inputs);
 
         // fireComplete 를 호출하지 않는다 — Job 결과가 도착할 때까지 RUNNING 상태 유지.

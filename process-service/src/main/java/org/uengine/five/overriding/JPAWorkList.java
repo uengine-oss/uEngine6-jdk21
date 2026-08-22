@@ -4,6 +4,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.uengine.five.entity.WorklistEntity;
 import org.uengine.five.lifecycle.BpmLifecycleService;
 import org.uengine.five.repository.WorklistRepository;
+import org.uengine.five.service.IAMService;
+import org.uengine.five.service.IAMServiceFactory;
 import org.uengine.five.service.WorkItemAssignmentStateService;
 import org.uengine.kernel.KeyedParameter;
 import org.uengine.kernel.RoleMapping;
@@ -18,6 +20,7 @@ import java.sql.Timestamp;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -99,6 +102,22 @@ public class JPAWorkList implements WorkList {
                 }
             }
 
+            String instanceId = (String)parameterMap.get(KeyedParameter.INSTANCEID);
+            String rootInstanceId = (String)parameterMap.get(KeyedParameter.ROOTINSTANCEID);
+            String tracingTag = ""+parameterMap.get(KeyedParameter.TRACINGTAG);
+
+            if (reservedTaskId == null && UEngineUtil.isNotEmpty(instanceId) && UEngineUtil.isNotEmpty(tracingTag)) {
+                Long instId = new Long(instanceId);
+                Long rootInstId = UEngineUtil.isNotEmpty(rootInstanceId) ? new Long(rootInstanceId) : instId;
+                Object executionScopeObj = parameterMap.get("executionScope");
+                String executionScope = executionScopeObj == null ? null : String.valueOf(executionScopeObj);
+                List<WorklistEntity> activeDuplicates =
+                        worklistRepository.findActiveByInstanceAndTracingTagForUpdate(rootInstId, instId, tracingTag, executionScope);
+                if (activeDuplicates != null && !activeDuplicates.isEmpty()) {
+                    return "" + activeDuplicates.get(0).getTaskId();
+                }
+            }
+
             final WorklistEntity wl;
 
             Long taskId;
@@ -120,11 +139,16 @@ public class JPAWorkList implements WorkList {
 
             String definitionName = (String)parameterMap.get("definitionName");
             String instanceName = (String)parameterMap.get("instanceName");
-            String instanceId = (String)parameterMap.get(KeyedParameter.INSTANCEID);
 
             wl.setPriority(priority);
             wl.setTool(""+parameterMap.get(KeyedParameter.TOOL));
             String endpoint = roleMapping != null ? roleMapping.getEndpoint() : null;
+            if (!UEngineUtil.isNotEmpty(endpoint)) {
+                endpoint = resolveEndpointByLaneRole(String.valueOf(parameterMap.get("roleName")));
+                if (roleMapping != null && UEngineUtil.isNotEmpty(endpoint)) {
+                    roleMapping.setEndpoint(endpoint);
+                }
+            }
             wl.setEndpoint(endpoint);
 
             //modified
@@ -427,5 +451,45 @@ public class JPAWorkList implements WorkList {
         return parameterMap;
     }
 
+    private String resolveEndpointByLaneRole(String roleName) {
+        if (!UEngineUtil.isNotEmpty(roleName)) {
+            return null;
+        }
+        try {
+            IAMService iamService = IAMServiceFactory.getDefault();
+            if (iamService == null) {
+                return null;
+            }
+            String trimmed = roleName.trim();
+            if ("영업점".equals(trimmed) || "본부".equals(trimmed) || "등록 심사".equals(trimmed)) {
+                return firstAvailable(iamService.getUsersByRole("manager"));
+            }
+            if ("고객/외부".equals(trimmed) || "신청 접수".equals(trimmed)) {
+                List<String> users = iamService.getUsersByRole("user");
+                for (String user : users) {
+                    if (UEngineUtil.isNotEmpty(user)
+                            && !iamService.hasScope(user, "manager")
+                            && !iamService.hasScope(user, "admin")) {
+                        return user;
+                    }
+                }
+                return firstAvailable(users);
+            }
+        } catch (Exception ignore) {
+        }
+        return null;
+    }
+
+    private String firstAvailable(List<String> users) {
+        if (users == null) {
+            return null;
+        }
+        for (String user : users) {
+            if (UEngineUtil.isNotEmpty(user)) {
+                return user;
+            }
+        }
+        return null;
+    }
 
 }

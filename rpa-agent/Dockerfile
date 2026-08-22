@@ -22,7 +22,8 @@ RUN pip install --no-cache-dir -r requirements.txt \
 
 COPY uengine_rpa/ uengine_rpa/
 COPY docker-entrypoint.sh /docker-entrypoint.sh
-RUN chmod +x /docker-entrypoint.sh
+# Windows 작업공간의 CRLF가 Linux shebang을 깨지 않도록 이미지 안에서 정규화한다.
+RUN sed -i 's/\r$//' /docker-entrypoint.sh && chmod +x /docker-entrypoint.sh
 
 ENV UENGINE_BASE_URL=http://host.docker.internal:9094 \
     UENGINE_POLL_INTERVAL=3 \

@@ -43,6 +43,10 @@ public class RpaJobService {
         job.setJobId(UUID.randomUUID().toString());
         job.setInstanceId(instance.getInstanceId());
         job.setTracingTag(activity.getTracingTag());
+        job.setExecutionScope(instance.getExecutionScopeContext() != null
+                ? instance.getExecutionScopeContext().getExecutionScope()
+                : null);
+        job.setLoopIndex(-1);
         job.setDefinitionId(instance.getProcessDefinition().getId());
         job.setActivityName(activity.getName());
 
@@ -61,8 +65,9 @@ public class RpaJobService {
 
         rpaJobRepository.save(job);
 
-        log.info("[RPA] job created: {} status={} mode={} instance={} activity={}({})", job.getJobId(),
-                job.getStatus(), mode, job.getInstanceId(), job.getActivityName(), job.getTracingTag());
+        log.info("[RPA] job created: {} status={} mode={} instance={} scope={} activity={}({})", job.getJobId(),
+                job.getStatus(), mode, job.getInstanceId(), job.getExecutionScope(), job.getActivityName(),
+                job.getTracingTag());
 
         return job;
     }
@@ -208,19 +213,36 @@ public class RpaJobService {
         rpaJobRepository.save(job);
 
         ProcessInstance instance = instanceService.getProcessInstanceLocal(job.getInstanceId());
+        String originalScope = instance.getExecutionScopeContext() != null
+                ? instance.getExecutionScopeContext().getExecutionScope()
+                : null;
+        if (job.getExecutionScope() != null) {
+            try {
+                instance.setExecutionScope(job.getExecutionScope());
+            } catch (RuntimeException missingScope) {
+                // 비동기 RPA 콜백은 새 반복 스코프가 영속화되기 전에 도착할 수 있다.
+                // 작업 생성 시 저장한 번호와 동일한 스코프를 다시 등록해 그 반복만 완료한다.
+                Activity scopeRoot = rpaActivityParent(instance, job.getTracingTag());
+                instance.issueNewExecutionScope(scopeRoot, scopeRoot, job.getExecutionScope());
+                instance.setExecutionScope(job.getExecutionScope());
+            }
+        }
+
         Activity activity = instance.getProcessDefinition().getActivity(job.getTracingTag());
 
         if (!(activity instanceof RPAActivity)) {
             log.warn("[RPA] activity {} of instance {} is not an RPAActivity — skip engine callback",
                     job.getTracingTag(), job.getInstanceId());
+            instance.setExecutionScope(originalScope);
             return;
         }
 
         RPAActivity rpaActivity = (RPAActivity) activity;
 
-        if (!instance.isRunning(rpaActivity.getTracingTag())) {
+        if (!instance.isRunning(rpaActivity.getTracingTag()) && job.getExecutionScope() == null) {
             log.warn("[RPA] activity {}({}) is not running for instance {} — result recorded, engine skip",
                     rpaActivity.getName(), rpaActivity.getTracingTag(), job.getInstanceId());
+            instance.setExecutionScope(originalScope);
             return;
         }
 
@@ -232,6 +254,8 @@ public class RpaJobService {
             rpaActivity.onJobFailed(instance, error);
             log.info("[RPA] job {} failed — activity {} faulted: {}", jobId, job.getTracingTag(), error);
         }
+        // onJobResult 이후 등록된 서브프로세스 완료 훅도 동일한 실행 스코프에서 실행된다.
+        // 여기서 루트로 복원하면 멀티 인스턴스 서브프로세스의 완료 처리가 실패한다.
     }
 
     /** 실행 제한 시간을 초과한 Job 들을 실패 처리 (폴링 시 게으른 수행). */
@@ -278,5 +302,10 @@ public class RpaJobService {
         } catch (Exception e) {
             return Map.of();
         }
+    }
+
+    private Activity rpaActivityParent(ProcessInstance instance, String tracingTag) throws Exception {
+        Activity activity = instance.getProcessDefinition().getActivity(tracingTag);
+        return activity.getParentActivity();
     }
 }

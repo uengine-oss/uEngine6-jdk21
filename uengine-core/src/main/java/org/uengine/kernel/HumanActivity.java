@@ -733,10 +733,11 @@ public class HumanActivity extends ReceiveActivity {
 				}
 			}
 		}
-		// If role mapping is not resolved at all, fall back to current user.
-		// NOTE: Do NOT collapse multi-mapping here. For racing/all distribution, every candidate should receive a workitem.
-		if (roleMapping == null || (roleMapping != null && roleMapping.size() > 1)) {
-		// if (roleMapping == null) {
+		// If an explicit role has no resolved user yet, create an unassigned
+		// role-scoped work item. Do not fall back to the current event actor here:
+		// in event-driven flows the actor is often the person completing the previous
+		// step, not the owner of this activity's lane.
+		if (roleMapping == null) {
 			/*
 			 * 2013/06/10
 			 * role mapping 이 되어있지 않은 경우에 경합모드로 변경
@@ -747,13 +748,8 @@ public class HumanActivity extends ReceiveActivity {
 			// ""+getRole().getDispatchingOption());
 			roleMapping = RoleMapping.create();
 
-			// TODO: later spring security will be utilized
-			// Authentication authentication =
-			// SecurityContextHolder.getContext().getAuthentication();
-			// Map principal = (Map) authentication.getPrincipal();
-			roleMapping.setEndpoint(GlobalContext.getUserId());
+			roleMapping.setName(getRole().getName());
 			instance.putRoleMapping(getRole().getName(), roleMapping);
-			// roleMapping.setResourceName((String) principal.get("user"));
 
 			// resourceName(resName)은 WorkList 저장 시점(JPAWorkList)에서 fill()로 채움
 			// kpv.put(KeyedParameter.DISPATCHINGOPTION, ""+Role.DISPATCHINGOPTION_RACING);

@@ -44,7 +44,11 @@ public class VariablePointer implements Serializable{
 
                 @Override
                 public Object logic(ProcessInstance instance) throws Exception {
-                    Object value = instance.getAt("", getKey(), getIndex());
+                    ProcessVariableValue values = instance.getMultiple("", getKey());
+                    if (values == null || getIndex() >= values.size())
+                        return null;
+                    values.setCursor(getIndex());
+                    Object value = values.getValue();
 
                     if(value instanceof VariablePointer){ //if value is variablepointer too, find the real value recursively.
                         return ((VariablePointer) value).getValue(instance);

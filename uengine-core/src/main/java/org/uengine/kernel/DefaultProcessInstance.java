@@ -799,6 +799,19 @@ public class DefaultProcessInstance extends AbstractProcessInstance {
 			pvv.moveToAdd();
 		}
 
+		// 이벤트 JSON에서 전달된 배열은 단일 변수 값으로 저장될 수 있다.
+		// 멀티 인스턴스는 각 배열 원소를 하나의 반복 값으로 취급해야 한다.
+		pvv.beforeFirst();
+		if (pvv.size() == 1 && pvv.getValue() instanceof java.util.Collection<?>) {
+			ProcessVariableValue expanded = new ProcessVariableValue();
+			expanded.setName(key);
+			for (Object item : (java.util.Collection<?>) pvv.getValue()) {
+				expanded.setValue((Serializable) item);
+				expanded.moveToAdd();
+			}
+			pvv = expanded;
+		}
+
 		pvv.beforeFirst();
 
 		if (pvv.size() == 0 || (pvv.size() == 1 && pvv.getValue() == null)) {

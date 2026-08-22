@@ -1,10 +1,17 @@
 package org.uengine.modeling.resource;
 
 import com.thoughtworks.xstream.XStream;
+import com.thoughtworks.xstream.converters.Converter;
+import com.thoughtworks.xstream.converters.MarshallingContext;
+import com.thoughtworks.xstream.converters.UnmarshallingContext;
+import com.thoughtworks.xstream.io.HierarchicalStreamReader;
+import com.thoughtworks.xstream.io.HierarchicalStreamWriter;
 import com.thoughtworks.xstream.security.WildcardTypePermission;
 import org.uengine.kernel.NeedArrangementToSerialize;
 
 import java.io.*;
+import java.lang.reflect.Method;
+import java.util.Map;
 
 /**
  * Created by jangjinyoung on 15. 7. 12..
@@ -21,6 +28,7 @@ public class Serializer {
                 "javax.**",
                 "jakarta.**"
         }));
+        xstream.registerConverter(new IndexedProcessVariableMapConverter());
     }
     public final static String DATABASE_ENCODING = "UTF-8";
 
@@ -67,6 +75,69 @@ public class Serializer {
             ((NeedArrangementToSerialize)obj).afterDeserialization();
 
         return obj;
+    }
+
+    static class IndexedProcessVariableMapConverter implements Converter {
+
+        private static final String TYPE_NAME = "org.uengine.kernel.IndexedProcessVariableMap";
+
+        @Override
+        public boolean canConvert(Class type) {
+            return TYPE_NAME.equals(type.getName());
+        }
+
+        @Override
+        public void marshal(Object source, HierarchicalStreamWriter writer, MarshallingContext context) {
+            try {
+                Method getMaxIndex = source.getClass().getMethod("getMaxIndex");
+                writer.addAttribute("maxIndex", String.valueOf(getMaxIndex.invoke(source)));
+            } catch (Exception ignored) {
+            }
+
+            for (Object entryObject : ((Map<?, ?>) source).entrySet()) {
+                Map.Entry<?, ?> entry = (Map.Entry<?, ?>) entryObject;
+                writer.startNode("entry");
+                writer.addAttribute("key", String.valueOf(entry.getKey()));
+                writer.startNode("value");
+                context.convertAnother(entry.getValue());
+                writer.endNode();
+                writer.endNode();
+            }
+        }
+
+        @Override
+        public Object unmarshal(HierarchicalStreamReader reader, UnmarshallingContext context) {
+            try {
+                Object map = Class.forName(TYPE_NAME).getDeclaredConstructor().newInstance();
+                String maxIndex = reader.getAttribute("maxIndex");
+                if (maxIndex != null) {
+                    Method setMaxIndex = map.getClass().getMethod("setMaxIndex", int.class);
+                    setMaxIndex.invoke(map, Integer.parseInt(maxIndex));
+                }
+
+                while (reader.hasMoreChildren()) {
+                    reader.moveDown();
+                    String key = reader.getAttribute("key");
+                    Object value = null;
+                    if (reader.hasMoreChildren()) {
+                        reader.moveDown();
+                        if (reader.hasMoreChildren()) {
+                            value = context.convertAnother(map, Object.class);
+                        } else {
+                            value = reader.getValue();
+                        }
+                        reader.moveUp();
+                    } else if (reader.getValue() != null) {
+                        value = reader.getValue();
+                    }
+                    ((Map<Object, Object>) map).put(Integer.valueOf(key), value);
+                    reader.moveUp();
+                }
+                return map;
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }
     }
 
 

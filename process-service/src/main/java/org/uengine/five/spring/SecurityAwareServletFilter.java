@@ -54,13 +54,12 @@ public class SecurityAwareServletFilter implements Filter {
 
                 List<String> groups = decodedJWT.getClaim("groups").asList(String.class);
 
-                // Keycloak Realm 설정에 따라 email mapper 가 클라이언트 scope 에 포함돼 있지 않을 수 있다.
-                // 그 경우 email claim 이 null 이라 SecurityAwareServletFilter.userId = null 로 덮어써져
-                // HumanActivity 의 endpoint fallback 이 setEndpoint(null) 로 끝나고 worklist 가 endpoint 없이 저장된다.
-                // → email → preferred_username → sub 순으로 fallback.
-                String userId = decodedJWT.getClaim("email").asString();
+                // BPM workitem endpoint 는 데모/업무 계정의 preferred_username 기준으로 생성된다.
+                // email 을 우선하면 endpoint=유, token user=you@uengine.org 처럼 완료 권한 검사가 어긋난다.
+                // preferred_username 이 없을 때만 email/sub 로 fallback 한다.
+                String userId = decodedJWT.getClaim("preferred_username").asString();
                 if (userId == null || userId.isEmpty()) {
-                    userId = decodedJWT.getClaim("preferred_username").asString();
+                    userId = decodedJWT.getClaim("email").asString();
                 }
                 if (userId == null || userId.isEmpty()) {
                     userId = decodedJWT.getClaim("sub").asString();
@@ -81,7 +80,7 @@ public class SecurityAwareServletFilter implements Filter {
                     SecurityAwareServletFilter.userId = userId;
                     UserContext.getThreadLocalInstance().setUserId(userId);
                 } else {
-                    System.err.println("[SecurityAwareServletFilter] JWT 에서 userId 추출 실패. claim 후보(email/preferred_username/sub) 모두 비어있음. Keycloak realm/client mapper 설정을 확인하세요.");
+                    System.err.println("[SecurityAwareServletFilter] JWT 에서 userId 추출 실패. claim 후보(preferred_username/email/sub) 모두 비어있음. Keycloak realm/client mapper 설정을 확인하세요.");
                 }
                 UserContext.getThreadLocalInstance().setScopes(roles);
                 UserContext.getThreadLocalInstance().setGroups(groups);

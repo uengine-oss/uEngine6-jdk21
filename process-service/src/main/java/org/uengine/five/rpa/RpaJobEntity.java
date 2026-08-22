@@ -29,6 +29,10 @@ public class RpaJobEntity {
 
     String instanceId;
     String tracingTag;
+    /** 멀티 인스턴스/서브프로세스 안에서 실행된 Job의 엔진 실행 스코프 */
+    String executionScope;
+    /** 멀티 인스턴스에서 이 Job 이 담당한 반복 순서 */
+    int loopIndex = -1;
     String definitionId;
     String activityName;
 
@@ -86,6 +90,22 @@ public class RpaJobEntity {
 
     public void setTracingTag(String tracingTag) {
         this.tracingTag = tracingTag;
+    }
+
+    public String getExecutionScope() {
+        return executionScope;
+    }
+
+    public void setExecutionScope(String executionScope) {
+        this.executionScope = executionScope;
+    }
+
+    public int getLoopIndex() {
+        return loopIndex;
+    }
+
+    public void setLoopIndex(int loopIndex) {
+        this.loopIndex = loopIndex;
     }
 
     public String getDefinitionId() {

@@ -5,7 +5,8 @@
 # ENTRYPOINT ["java","-Xmx256M","-Djava.security.egd=file:/dev/./urandom","-Dserver.port=9094","-jar","/app.jar"]
 
 FROM eclipse-temurin:21-jre-jammy
-COPY target/*-SNAPSHOT.jar process.jar
+WORKDIR /app
+COPY target/*-SNAPSHOT.jar /app/process.jar
 COPY src/main/resources/application.yml /app/application.yml
 EXPOSE 9294
 ENV JAVA_OPTS="-Xmx400M -Djava.security.egd=file:/dev/./urandom -Dfile.encoding=UTF-8 -Dstdout.encoding=UTF-8 -Dstderr.encoding=UTF-8"

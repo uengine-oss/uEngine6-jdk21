@@ -1904,6 +1904,13 @@ public class InstanceServiceImpl implements InstanceService {
         WorklistEntity worklistEntity = worklistRepository.findByIdForUpdate(Long.valueOf(taskId))
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
                         "No such work item where taskId = " + taskId));
+        if (workItem == null) {
+            workItem = new WorkItemResource();
+        }
+        if (!UEngineUtil.isNotEmpty(workItem.getExecScope())
+                && UEngineUtil.isNotEmpty(worklistEntity.getExecScope())) {
+            workItem.setExecScope(worklistEntity.getExecScope());
+        }
         String actorEndpoint = currentActorEndpoint();
         validateCompletionOwner(worklistEntity, actorEndpoint);
         GlobalContext.setUserId(actorEndpoint);
@@ -1933,6 +1940,9 @@ public class InstanceServiceImpl implements InstanceService {
 
         // map the argument list to variables change list
         Map<String, Object> parameterValues = workItem.getParameterValues();
+        if (parameterValues == null) {
+            parameterValues = Collections.emptyMap();
+        }
 
         try {
             ObjectMapper objectMapper = new ObjectMapper();
@@ -1943,6 +1953,12 @@ public class InstanceServiceImpl implements InstanceService {
             System.out.println("[InstanceServiceImpl] completeWorkItemInternal: calling fireReceived for activity="
                     + humanActivity.getName() + ", trcTag=" + humanActivity.getTracingTag());
             humanActivity.fireReceived(instance, parameterValues);
+            if (humanActivity.getParentActivity() instanceof SubProcess subProcess
+                    && subProcess.getForEachVariable() != null
+                    && UEngineUtil.isNotEmpty(workItem.getExecScope())
+                    && subProcess.isRunning(instance)) {
+                subProcess.fireComplete(instance);
+            }
             System.out.println("[InstanceServiceImpl] completeWorkItemInternal: fireReceived completed successfully");
         } catch (Exception e) {
             humanActivity.fireFault(instance, e);

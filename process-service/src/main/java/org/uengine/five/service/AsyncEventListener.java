@@ -204,6 +204,7 @@ public class AsyncEventListener {
 
             applyEventValues(instance, eventContent);
 
+            boolean received = false;
             activityLoop:
             for (Activity activity : instance.getCurrentRunningActivities()) {
                 for (EventSynchronization sync : activity.getEventSynchronizations()) {
@@ -219,6 +220,7 @@ public class AsyncEventListener {
                         } finally {
                             GlobalContext.setUserId(previousUserId);
                         }
+                        received = true;
                         break activityLoop;
                     }
                 }

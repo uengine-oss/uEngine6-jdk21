@@ -76,6 +76,19 @@ public interface WorklistRepository extends JpaRepository<WorklistEntity, Long> 
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select wl from WorklistEntity wl " +
+            "where ((wl.rootInstId = :rootInstId) or (wl.rootInstId is null and wl.instId = :rootInstId) or wl.instId = :instId) " +
+            "and wl.trcTag = :trcTag " +
+            "and ((:execScope is null and wl.execScope is null) or (:execScope is not null and wl.execScope = :execScope)) " +
+            "and (wl.status = 'NEW' or wl.status = 'RUNNING') " +
+            "order by wl.taskId asc")
+    List<WorklistEntity> findActiveByInstanceAndTracingTagForUpdate(
+            @Param("rootInstId") Long rootInstId,
+            @Param("instId") Long instId,
+            @Param("trcTag") String trcTag,
+            @Param("execScope") String execScope);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select wl from WorklistEntity wl " +
             "where wl.instId = :instId and wl.roleName = :roleName " +
             "and (wl.status = 'NEW' or wl.status = 'RUNNING') " +
             "order by wl.taskId asc")
