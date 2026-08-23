@@ -18,6 +18,12 @@ public class SecurityConfiguration {
     public SecurityWebFilterChain springSecurityFilterChain(
         ServerHttpSecurity http
     ) {
+        // Local corebank-web(5374)에서 BPM 화면을 iframe으로 표시할 수 있도록 한다.
+        http.headers(headers -> headers
+            .frameOptions(frameOptions -> frameOptions.disable())
+            .contentSecurityPolicy(csp -> csp.policyDirectives("frame-ancestors 'self' http://localhost:5374;"))
+        );
+
         ServerHttpSecurity.AuthorizeExchangeSpec authorizeExchange = http
             .cors()
             .and()

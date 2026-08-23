@@ -1,0 +1,1 @@
+<section><select-field name="시세조회가능여부" alias="시세조회가능여부" is_dynamic_load="fixed" items='[{"Y":"Y"},{"N":"N"}]' disabled="false" readonly="false"></select-field></section>

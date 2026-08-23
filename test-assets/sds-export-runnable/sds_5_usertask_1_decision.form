@@ -1,0 +1,1 @@
+<section><select-field name="본부 일괄발송 예금계좌" alias="본부 일괄발송 예금계좌" is_dynamic_load="fixed" items='[{"Y":"Y"},{"N":"N"}]' disabled="false" readonly="false"></select-field></section>

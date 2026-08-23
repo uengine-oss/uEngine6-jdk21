@@ -111,13 +111,13 @@ server:
 ---
 
 keycloak-client:
-  server-url: ${KEYCLOAK_URI:http://localhost:8080}
+  server-url: ${KEYCLOAK_URI:http://localhost:8280}
   internal-server-url: ${KEYCLOAK_INTERNAL_URI:${keycloak-client.server-url}}
-  gateway-uri: ${GATEWAY_URI:http://localhost:8088}
+  gateway-uri: ${GATEWAY_URI:http://localhost:8288}
   frontend-uri: ${FRONTEND_URI:http://localhost:5373}
 
 server:
-  port: ${GATEWAY_PORT:8088}
+  port: ${GATEWAY_PORT:8288}
 
 spring:
   config:

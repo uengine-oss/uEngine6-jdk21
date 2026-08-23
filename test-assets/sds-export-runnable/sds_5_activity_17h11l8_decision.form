@@ -1,0 +1,1 @@
+<section><select-field name="예금잔액 이상" alias="예금잔액 이상" is_dynamic_load="fixed" items='[{"Y":"Y"},{"N":"N"}]' disabled="false" readonly="false"></select-field></section>

@@ -11,6 +11,7 @@ import org.uengine.kernel.DeployFilter;
 import org.uengine.kernel.FieldDescriptor;
 import org.uengine.kernel.ProcessDefinition;
 import org.uengine.kernel.ReceiveActivity;
+import org.uengine.kernel.ScopeActivity;
 import org.uengine.kernel.UEngineException;
 import org.uengine.kernel.bpmn.CatchingRestMessageEvent;
 import org.uengine.kernel.bpmn.Event;
@@ -62,7 +63,7 @@ public class EventMappingDeployFilter implements DeployFilter {
 
         // Event nodes are handled above. Event synchronizations on normal activities
         // are receive mappings even when the activity directly follows a plain start node.
-        List<Activity> activities = definition.getChildActivities();
+        List<Activity> activities = collectChildActivities(definition);
         if (activities != null) {
             for (Activity activity : activities) {
                 if (activity instanceof ReceiveActivity
@@ -73,6 +74,27 @@ public class EventMappingDeployFilter implements DeployFilter {
             }
         }
 
+    }
+
+    private List<Activity> collectChildActivities(ScopeActivity scopeActivity) {
+        List<Activity> collected = new java.util.ArrayList<>();
+        collectChildActivities(scopeActivity, collected);
+        return collected;
+    }
+
+    private void collectChildActivities(ScopeActivity scopeActivity, List<Activity> collected) {
+        if (scopeActivity == null || scopeActivity.getChildActivities() == null) {
+            return;
+        }
+        for (Activity activity : scopeActivity.getChildActivities()) {
+            if (activity == null) {
+                continue;
+            }
+            collected.add(activity);
+            if (activity instanceof ScopeActivity) {
+                collectChildActivities((ScopeActivity) activity, collected);
+            }
+        }
     }
 
     private void saveEventMappingEntity(boolean isEvent, Activity activity, ProcessDefinition definition,

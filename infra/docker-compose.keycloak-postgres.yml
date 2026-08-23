@@ -26,7 +26,7 @@ services:
       KC_DB_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-uengine}
       KC_DB_USERNAME: ${POSTGRES_USER:-uengine}
       KC_DB_PASSWORD: ${POSTGRES_PASSWORD:-uengine}
-      KC_HOSTNAME: http://localhost:8080
+      KC_HOSTNAME: http://localhost:8280
     ports:
       - "8280:8080"
     volumes:
@@ -120,10 +120,10 @@ services:
       context: ../../process-gpt-vue3-hli
     environment:
       VITE_KEYCLOAK_MODE: installed
-      VITE_KEYCLOAK_URL: http://localhost:8080
+      VITE_KEYCLOAK_URL: http://localhost:8280
       VITE_KEYCLOAK_REALM: uengine
       VITE_KEYCLOAK_CLIENT_ID: uengine
-      VITE_GATEWAY_URL: http://localhost:8088
+      VITE_GATEWAY_URL: http://localhost:8288
     ports:
       - "5373:8080"
 
@@ -134,11 +134,11 @@ services:
     environment:
       SPRING_PROFILES_ACTIVE: keycloak-installed
       GATEWAY_PORT: 8288
-      GATEWAY_URI: http://localhost:8088
+      GATEWAY_URI: http://localhost:8288
       FRONTEND_URI: http://frontend:8080
-      KEYCLOAK_URI: http://localhost:8080
+      KEYCLOAK_URI: http://localhost:8280
       KEYCLOAK_INTERNAL_URI: http://keycloak:8080
-      KEYCLOAK_REALM: uengine (default realm)
+      KEYCLOAK_REALM: uengine
       KEYCLOAK_CLIENT_ID: uengine
       KEYCLOAK_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET:-66LpF19OpkpgKKpWHdgiCEKisx5AXqLA}
       PROCESS_SERVICE_URI: http://process-service:9294

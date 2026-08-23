@@ -322,7 +322,7 @@ server:
   port: ${PROCESS_SERVICE_PORT:9294}
 
 keycloak:
-  url: ${KEYCLOAK_URI:http://localhost:8080}
+  url: ${KEYCLOAK_URI:http://localhost:8280}
 
 ---
 # PostgreSQL profile for local and Docker deployments.

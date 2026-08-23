@@ -1,0 +1,1 @@
+<section><select-field name="주택소유수 조회도의여부" alias="주택소유수 조회도의여부" is_dynamic_load="fixed" items='[{"Y":"Y"},{"N":"N"}]' disabled="false" readonly="false"></select-field><select-field name="동의방식" alias="동의방식" is_dynamic_load="fixed" items='[{"대면":"대면"},{"비대면":"비대면"}]' disabled="false" readonly="false"></select-field></section>

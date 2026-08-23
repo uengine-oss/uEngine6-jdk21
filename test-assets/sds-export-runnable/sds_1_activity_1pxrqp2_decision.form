@@ -1,0 +1,1 @@
+<section><select-field name="승인 여부" alias="승인 여부" is_dynamic_load="fixed" items='[{"Y":"Y"},{"N":"N"}]' disabled="false" readonly="false"></select-field><select-field name="금리승인요청여부" alias="금리승인요청여부" is_dynamic_load="fixed" items='[{"Y":"Y"},{"N":"N"}]' disabled="false" readonly="false"></select-field></section>
