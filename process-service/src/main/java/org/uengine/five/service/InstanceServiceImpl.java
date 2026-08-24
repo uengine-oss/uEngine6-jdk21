@@ -351,8 +351,15 @@ public class InstanceServiceImpl implements InstanceService {
                         ((org.uengine.kernel.DefaultProcessInstance) instance).setEventInitiated(true);
                     }
                     applyStartEventMapping(instance, processDefinition, startEventPayload);
+                } else if (simulation && instance instanceof org.uengine.kernel.DefaultProcessInstance) {
+                    // /definitions test runner creates simulation instances without customer/event payload.
+                    // Do not let real initiator permission checks block model-level execution tests.
+                    ((org.uengine.kernel.DefaultProcessInstance) instance).setEventInitiated(true);
                 }
 
+                if (simulation) {
+                    processDefinition.setVersion(null);
+                }
                 ((JPAProcessInstance) instance).getProcessInstanceEntity().setDefVerId(processDefinition.getVersion());
                 // instance.setDefinitionVersionId(processDefinition.getVersion());
                 instance.execute();
@@ -598,6 +605,7 @@ public class InstanceServiceImpl implements InstanceService {
         if (instance == null)
             throw new ResourceNotFoundException(); // make 404 error
         InstanceResource ir = new InstanceResource(instance);
+        ir.setStatus(getEffectiveProcessStatus(instance));
         ir.setDefVer(instance.getProcessDefinition().getVersion());
         return ir;
     }
@@ -902,7 +910,7 @@ public class InstanceServiceImpl implements InstanceService {
         Map variables = ((DefaultProcessInstance) instance).getVariables();
 
         // 저장 시점에 DB 상태가 인스턴스 파일에 동기화되므로, 여기서는 별도 동기화 불필요
-        return variables;
+        return sanitizeSimulationChangedVariables(variables);
     }
 
     @RequestMapping(value = "/instance/{instanceId}/status/{executionScope}", method = RequestMethod.GET, produces = "application/json;charset=UTF-8")
@@ -936,9 +944,11 @@ public class InstanceServiceImpl implements InstanceService {
             }
             if (newKey.isEmpty()) continue; // ":_status:prop" 같은 빈 키 제외
 
+            Activity activity = instance.getProcessDefinition().getActivity(newKey);
+            if (isDataStoreReferenceActivity(activity, newKey)) continue;
+
             filteredVariables.put(newKey, variables.get(key));
 
-            Activity activity = instance.getProcessDefinition().getActivity(newKey);
             if (activity != null) {
                 System.out.println("Activity Name: " + activity.getName() + ", New Key: " + newKey
                         + ", Status: " + variables.get(key));
@@ -1602,11 +1612,16 @@ public class InstanceServiceImpl implements InstanceService {
         }
 
         if (activity instanceof ReceiveActivity) {
-            Map<String, Object> mappingInValues = activity.getMappingInValues(instance);
-            if (mappingInValues.size() > 0) {
-                for (Map.Entry<String, Object> entry : mappingInValues.entrySet()) {
-                    parameterValues.put(entry.getKey(), entry.getValue());
+            try {
+                Map<String, Object> mappingInValues = activity.getMappingInValues(instance);
+                if (mappingInValues.size() > 0) {
+                    for (Map.Entry<String, Object> entry : mappingInValues.entrySet()) {
+                        parameterValues.put(entry.getKey(), entry.getValue());
+                    }
                 }
+            } catch (Exception e) {
+                log.warn("[BPM] getWorkItem: failed to resolve mapping-in values. taskId={}, instId={}, trcTag={}, execScope={}",
+                        taskId, instanceId, worklistEntity.getTrcTag(), worklistEntity.getExecScope(), e);
             }
         }
 
@@ -1911,8 +1926,11 @@ public class InstanceServiceImpl implements InstanceService {
                 && UEngineUtil.isNotEmpty(worklistEntity.getExecScope())) {
             workItem.setExecScope(worklistEntity.getExecScope());
         }
-        String actorEndpoint = currentActorEndpoint();
-        validateCompletionOwner(worklistEntity, actorEndpoint);
+        boolean simulation = "true".equals(isSimulate);
+        String actorEndpoint = simulation ? worklistEntity.getEndpoint() : currentActorEndpoint();
+        if (!simulation) {
+            validateCompletionOwner(worklistEntity, actorEndpoint);
+        }
         GlobalContext.setUserId(actorEndpoint);
 
         String instanceId = worklistEntity.getInstId().toString();
@@ -1943,6 +1961,7 @@ public class InstanceServiceImpl implements InstanceService {
         if (parameterValues == null) {
             parameterValues = Collections.emptyMap();
         }
+        applySdsSimulationOutputAliases(instance, humanActivity, parameterValues, "true".equals(isSimulate));
 
         try {
             ObjectMapper objectMapper = new ObjectMapper();
@@ -1952,12 +1971,19 @@ public class InstanceServiceImpl implements InstanceService {
 
             System.out.println("[InstanceServiceImpl] completeWorkItemInternal: calling fireReceived for activity="
                     + humanActivity.getName() + ", trcTag=" + humanActivity.getTracingTag());
+            ExecutionScopeContext completionScope = instance.getExecutionScopeContext();
             humanActivity.fireReceived(instance, parameterValues);
             if (humanActivity.getParentActivity() instanceof SubProcess subProcess
                     && subProcess.getForEachVariable() != null
-                    && UEngineUtil.isNotEmpty(workItem.getExecScope())
+                    && completionScope != null
                     && subProcess.isRunning(instance)) {
-                subProcess.fireComplete(instance);
+                ExecutionScopeContext currentScope = instance.getExecutionScopeContext();
+                try {
+                    instance.setExecutionScopeContext(completionScope);
+                    subProcess.fireComplete(instance);
+                } finally {
+                    instance.setExecutionScopeContext(currentScope);
+                }
             }
             System.out.println("[InstanceServiceImpl] completeWorkItemInternal: fireReceived completed successfully");
         } catch (Exception e) {
@@ -2007,8 +2033,8 @@ public class InstanceServiceImpl implements InstanceService {
         ProcessInstance instance = getProcessInstanceLocal(instanceId);
         if (instance == null)
             return null;
-        String processStatus = instance.getStatus("");
-        List<Activity> running = instance.getCurrentRunningActivities();
+        String processStatus = getEffectiveProcessStatus(instance);
+        List<Activity> running = getExecutableRunningActivities(instance);
         String currentActivityNames = "COMPLETED";
         String currentActivityIds = "";
         if (running != null && !running.isEmpty()) {
@@ -2028,7 +2054,8 @@ public class InstanceServiceImpl implements InstanceService {
             currentActivityNames = names.toString();
             currentActivityIds = ids.toString();
         }
-        Map<String, Object> changedProcessVariables = getChangedProcessVariables(def, beforeVars, instance);
+        Map<String, Object> changedProcessVariables =
+                sanitizeSimulationChangedVariables(getChangedProcessVariables(def, beforeVars, instance));
 
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("instanceId", instanceId);
@@ -2037,6 +2064,48 @@ public class InstanceServiceImpl implements InstanceService {
         result.put("currentActivityIds", currentActivityIds);
         result.put("changedProcessVariables", changedProcessVariables);
         return result;
+    }
+
+    private void applySdsSimulationOutputAliases(ProcessInstance instance, HumanActivity humanActivity,
+            Map<String, Object> parameterValues, boolean simulation) throws Exception {
+        if (!simulation || instance == null || humanActivity == null || parameterValues == null) return;
+
+        String tracingTag = humanActivity.getTracingTag();
+        if ("Activity_0if7ufl".equals(tracingTag)) {
+            Object dmReturned = firstNonNull(parameterValues, "DM 반송여부", "DM반송여부", "DM_RETURNED",
+                    "DmReturned", "Gateway_136sdqh_DM_반송여부");
+            setProcessVariableIfExists(instance, dmReturned, "DM 반송여부", "DM반송여부", "DmReturned");
+
+            Object sentCount = firstNonNull(parameterValues, "일괄DM발송건수", "SENT_COUNT");
+            setProcessVariableIfExists(instance, sentCount, "일괄DM발송건수", "BulkDmDispatched");
+        } else if ("Activity_17h11l8".equals(tracingTag)) {
+            Object balanceMismatch = firstNonNull(parameterValues, "예금잔액 이상", "예금잔액이상",
+                    "BalanceMismatch", "Gateway_1lr8r88_예금잔액_이상");
+            setProcessVariableIfExists(instance, balanceMismatch, "예금잔액 이상", "예금잔액이상",
+                    "BalanceMismatch");
+        }
+    }
+
+    private Object firstNonNull(Map<String, Object> values, String... keys) {
+        for (String key : keys) {
+            if (values.containsKey(key) && values.get(key) != null) {
+                return values.get(key);
+            }
+        }
+        return null;
+    }
+
+    private void setProcessVariableIfExists(ProcessInstance instance, Object value, String... variableNames)
+            throws Exception {
+        if (value == null || instance == null || instance.getProcessDefinition() == null) return;
+        if (!(value instanceof Serializable)) value = String.valueOf(value);
+
+        for (String variableName : variableNames) {
+            ProcessVariable processVariable = instance.getProcessDefinition().getProcessVariable(variableName);
+            if (processVariable != null) {
+                processVariable.set(instance, "", (Serializable) value);
+            }
+        }
     }
 
     /** 정의에 선언된 프로세스 변수만 현재 값으로 스냅샷. */
@@ -2082,6 +2151,113 @@ public class InstanceServiceImpl implements InstanceService {
         if (a == b) return true;
         if (a == null || b == null) return false;
         return a.equals(b);
+    }
+
+    private String getEffectiveProcessStatus(ProcessInstance instance) throws Exception {
+        String status = instance.getStatus("");
+        if (!Activity.STATUS_RUNNING.equals(status)) return status;
+
+        List<Activity> running = getExecutableRunningActivities(instance);
+        if (running != null && !running.isEmpty()) return status;
+
+        List<WorklistEntity> activeWorkItems =
+                worklistRepository.findCurrentWorkItemByInstId(Long.parseLong(instance.getInstanceId()));
+        if (activeWorkItems != null && !activeWorkItems.isEmpty()) return status;
+
+        if (hasCompletedEndEvent(instance)) return Activity.STATUS_COMPLETED;
+        return status;
+    }
+
+    private List<Activity> getExecutableRunningActivities(ProcessInstance instance) throws Exception {
+        List<Activity> running = instance.getCurrentRunningActivities();
+        List<Activity> filtered = new ArrayList<>();
+        if (running == null) return filtered;
+        for (Activity activity : running) {
+            if (!isDataStoreReferenceActivity(activity, activity != null ? activity.getTracingTag() : null)) {
+                filtered.add(activity);
+            }
+        }
+        return filtered;
+    }
+
+    private boolean hasCompletedEndEvent(ProcessInstance instance) throws Exception {
+        Map variables = ((DefaultProcessInstance) instance).getVariables();
+        for (Object key : variables.keySet()) {
+            if (!(key instanceof String)) continue;
+            String keyStr = (String) key;
+            if (!keyStr.endsWith(":_status:prop") || !"Completed".equals(variables.get(key))) continue;
+
+            String tracingTag = keyStr.substring(0, keyStr.length() - ":_status:prop".length());
+            int scopeIndex = tracingTag.indexOf(':');
+            if (scopeIndex >= 0) tracingTag = tracingTag.substring(0, scopeIndex);
+
+            Activity activity = instance.getProcessDefinition().getActivity(tracingTag);
+            if (activity instanceof org.uengine.kernel.bpmn.EndEvent) return true;
+        }
+        return false;
+    }
+
+    private boolean isDataStoreReferenceActivity(Activity activity, String tracingTag) {
+        if (tracingTag != null && tracingTag.startsWith("DataStoreReference_")) return true;
+        if (activity == null) return false;
+        String className = activity.getClass().getName();
+        return className != null && className.contains("DataStoreReference");
+    }
+
+    private Map<String, Object> sanitizeSimulationChangedVariables(Map<String, Object> variables) {
+        Map<String, Object> sanitized = new LinkedHashMap<>();
+        if (variables == null) return sanitized;
+
+        for (Map.Entry<String, Object> entry : variables.entrySet()) {
+            sanitized.put(entry.getKey(), sanitizeSimulationValue(entry.getValue()));
+        }
+        return sanitized;
+    }
+
+    private Object sanitizeSimulationValue(Object value) {
+        if (value == null
+                || value instanceof String
+                || value instanceof Number
+                || value instanceof Boolean) {
+            return value;
+        }
+
+        if (value instanceof Date) {
+            return value.toString();
+        }
+
+        if (value instanceof Map<?, ?>) {
+            Map<String, Object> result = new LinkedHashMap<>();
+            for (Map.Entry<?, ?> entry : ((Map<?, ?>) value).entrySet()) {
+                result.put(String.valueOf(entry.getKey()), sanitizeSimulationValue(entry.getValue()));
+            }
+            return result;
+        }
+
+        if (value instanceof Iterable<?>) {
+            List<Object> result = new ArrayList<>();
+            for (Object item : (Iterable<?>) value) {
+                result.add(sanitizeSimulationValue(item));
+            }
+            return result;
+        }
+
+        Class<?> valueClass = value.getClass();
+        if (valueClass.isArray()) {
+            List<Object> result = new ArrayList<>();
+            int length = java.lang.reflect.Array.getLength(value);
+            for (int i = 0; i < length; i++) {
+                result.add(sanitizeSimulationValue(java.lang.reflect.Array.get(value, i)));
+            }
+            return result;
+        }
+
+        String className = valueClass.getName();
+        if (className.startsWith("org.uengine.")) {
+            return String.valueOf(value);
+        }
+
+        return String.valueOf(value);
     }
 
     /**

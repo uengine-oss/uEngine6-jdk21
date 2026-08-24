@@ -195,7 +195,8 @@ public class JPAWorkList implements WorkList {
                 }
             }
             wl.setResName(resName);
-            wl.setDefVerId(""+parameterMap.get(KeyedParameter.PROCESSDEFINITIONVERSION));
+            Object processDefinitionVersion = parameterMap.get(KeyedParameter.PROCESSDEFINITIONVERSION);
+            wl.setDefVerId(processDefinitionVersion == null ? null : String.valueOf(processDefinitionVersion));
             Object scopeObj = parameterMap.get("scope");
             String scope = scopeObj == null ? null : String.valueOf(scopeObj);
             wl.setScope(scope);
