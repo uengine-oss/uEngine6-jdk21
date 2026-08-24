@@ -2671,8 +2671,7 @@ public class InstanceServiceImpl implements InstanceService {
                         "No permission to unclaim this task. endpoint=" + worklistEntity.getEndpoint() + ", userId=" + actorEndpoint);
             }
 
-            assignmentStateService.rememberPreviousIfChanged(
-                    worklistEntity, null, null, worklistEntity.getGroupCd());
+            // assignmentStateService.rememberPreviousIfChanged(worklistEntity, null, null, worklistEntity.getGroupCd());
             worklistEntity.setEndpoint(null);
             worklistEntity.setResName(null);
             worklistRepository.save(worklistEntity);
@@ -2682,8 +2681,7 @@ public class InstanceServiceImpl implements InstanceService {
                 if (siblings != null) {
                     for (WorklistEntity wl : siblings) {
                         if (wl == null) continue;
-                        assignmentStateService.rememberPreviousIfChanged(
-                                wl, null, null, wl.getGroupCd());
+                        // assignmentStateService.rememberPreviousIfChanged(wl, null, null, wl.getGroupCd());
                         wl.setEndpoint(null);
                         wl.setResName(null);
                         worklistRepository.save(wl);
@@ -2699,7 +2697,7 @@ public class InstanceServiceImpl implements InstanceService {
                         "Work item is already claimed by " + worklistEntity.getEndpoint());
             }
             // 1) 현재 taskId의 endpoint/resName 보강
-            assignmentStateService.rememberPrevious(worklistEntity);
+            // assignmentStateService.rememberPrevious(worklistEntity);
             applyActorToWorklistIfEmpty(worklistEntity, actorEndpoint);
             worklistRepository.save(worklistEntity);
 
@@ -2714,7 +2712,7 @@ public class InstanceServiceImpl implements InstanceService {
                 if (siblings != null) {
                     for (WorklistEntity wl : siblings) {
                         if (wl == null) continue;
-                        assignmentStateService.rememberPrevious(wl);
+                        // assignmentStateService.rememberPrevious(wl);
                         applyActorToWorklistIfEmpty(wl, actorEndpoint);
                         worklistRepository.save(wl);
                     }
