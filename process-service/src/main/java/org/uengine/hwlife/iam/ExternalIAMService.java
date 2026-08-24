@@ -13,6 +13,7 @@ import org.uengine.hwlife.esbclient.client.EsbClient;
 import org.uengine.hwlife.iam.dto.FncgOrgInfo;
 import org.uengine.hwlife.iam.dto.FncgRoleInfo;
 import org.uengine.hwlife.iam.dto.UserSearchResponse;
+import org.uengine.hwlife.iam.dto.OrgSearchResponse;
 
 /**
  * 외부 IAM(ESB·사내 디렉터리 등) 연동 구현체.
@@ -97,11 +98,11 @@ public class ExternalIAMService implements IAMService {
      *
      * <p>TODO: ESB 기관 목록 조회로 교체. 현재는 연동 전 임시 하드코딩.</p>
      */
-    public List<FncgOrgInfo> getGroups() {
-        // TODO: esbClient().send(itfcId, rcveSrvcId, payload, OrgSearchResponse.class)
-        List<FncgOrgInfo> list = new ArrayList<>();
-        list.add(org("00320", "융자관리팀"));
-        return list;
+    public OrgSearchResponse getGroups() {
+        OrgSearchResponse response = esbClient().send("", "", null, OrgSearchResponse.class);
+        // List<FncgOrgInfo> list = new ArrayList<>();
+        // list.add(org("00320", "융자관리팀"));
+        return response;
     }
 
     /**
@@ -117,13 +118,6 @@ public class ExternalIAMService implements IAMService {
         list.add(role("FN210", "담당부장"));
         list.add(role("FN230", "대출심사역"));
         return list;
-    }
-
-    private static FncgOrgInfo org(String code, String name) {
-        FncgOrgInfo info = new FncgOrgInfo();
-        info.setFncgWndwOrgnCode(code);
-        info.setFncgWndwOrgnNm(name);
-        return info;
     }
 
     private static FncgRoleInfo role(String id, String name) {
@@ -146,10 +140,26 @@ public class ExternalIAMService implements IAMService {
         }
         response.setHndrEmnb(employeeNo);
         response.setHndrNm("사용자");
+
+        // 사용자 기관 정보 
         List<FncgOrgInfo> orgs = new ArrayList<>();
-        orgs.add(org("00320", "융자관리팀"));
-        orgs.add(org("00025", "00025"));
-        response.setFncgWndwCodeList(orgs);
+        FncgOrgInfo org = new FncgOrgInfo();
+        org.setOrgnCode("00320");
+        org.setOrgnAbrvNm("융자관리팀");
+        org.setOrgnNm("융자관리팀");
+        org.setFncgWndwOrgnCode("00320");
+        orgs.add(org);
+
+        FncgOrgInfo org2 = new FncgOrgInfo();
+        org2.setOrgnCode("00025");
+        org2.setOrgnAbrvNm("IT운영팀");
+        org2.setOrgnNm("IT운영팀");
+        org2.setFncgWndwOrgnCode("00025");
+        orgs.add(org2);
+        response.setBpmOrgnList(orgs);
+
+        // 사용자 권한 정보
+
         List<FncgRoleInfo> roles = new ArrayList<>();
         roles.add(role("FN230", "대출심사역"));
         response.setFncgCoreAtrtList(roles);

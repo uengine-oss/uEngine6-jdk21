@@ -11,7 +11,7 @@ public class UserSearchResponse {
     private String hndrEmnb; // 사원번호
     private String hndrNm; // 사원명
 
-    private List<FncgOrgInfo> fncgWndwCodeList = new ArrayList<>();    /** 보유 기관 코드 목록 */
+    private List<FncgOrgInfo> bpmOrgnList = new ArrayList<>();    /** 보유 기관 코드 목록 */
     private List<FncgRoleInfo> fncgCoreAtrtList = new ArrayList<>();     /** 보유 권한 코드 목록 */
 
     public String getHndrEmnb() {
@@ -30,12 +30,12 @@ public class UserSearchResponse {
         this.hndrNm = hndrNm;
     }
 
-    public List<FncgOrgInfo> getFncgWndwCodeList() {
-        return fncgWndwCodeList;
+    public List<FncgOrgInfo> getBpmOrgnList() {
+        return bpmOrgnList;
     }
 
-    public void setFncgWndwCodeList(List<FncgOrgInfo> fncgWndwCodeList) {
-        this.fncgWndwCodeList = fncgWndwCodeList != null ? fncgWndwCodeList : new ArrayList<>();
+    public void setBpmOrgnList(List<FncgOrgInfo> bpmOrgnList) {
+        this.bpmOrgnList = bpmOrgnList != null ? bpmOrgnList : new ArrayList<>();
     }
 
     public List<FncgRoleInfo> getFncgCoreAtrtList() {

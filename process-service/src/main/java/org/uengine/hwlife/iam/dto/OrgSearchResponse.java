@@ -8,13 +8,13 @@ import java.util.List;
  */
 public class OrgSearchResponse {
 
-    private List<FncgOrgInfo> fncgOrgnCodeList = new ArrayList<>();
+    private List<FncgOrgInfo> bpmOrgnList = new ArrayList<>();
 
-    public List<FncgOrgInfo> getFncgOrgnCodeList() {
-        return fncgOrgnCodeList;
+    public List<FncgOrgInfo> getBpmOrgnList() {
+        return bpmOrgnList;
     }
 
-    public void setFncgOrgnCodeList(List<FncgOrgInfo> fncgOrgnCodeList) {
-        this.fncgOrgnCodeList = fncgOrgnCodeList != null ? fncgOrgnCodeList : new ArrayList<>();
+    public void setBpmOrgnList(List<FncgOrgInfo> bpmOrgnList) {
+        this.bpmOrgnList = bpmOrgnList != null ? bpmOrgnList : new ArrayList<>();
     }
 }

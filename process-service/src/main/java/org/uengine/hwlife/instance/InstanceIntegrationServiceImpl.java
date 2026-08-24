@@ -552,10 +552,10 @@ public class InstanceIntegrationServiceImpl implements InstanceIntegrationServic
 
   /** 처리자 IAM 응답에 기관코드가 하나 이상 있는지. */
   private static boolean hasHandlerOrganization(UserSearchResponse handler) {
-    if (handler == null || handler.getFncgWndwCodeList() == null || handler.getFncgWndwCodeList().isEmpty()) {
+    if (handler == null || handler.getBpmOrgnList() == null || handler.getBpmOrgnList().isEmpty()) {
       return false;
     }
-    for (FncgOrgInfo org : handler.getFncgWndwCodeList()) {
+    for (FncgOrgInfo org : handler.getBpmOrgnList()) {
       if (org != null && trimToNull(org.getFncgWndwOrgnCode()) != null) {
         return true;
       }
@@ -568,10 +568,10 @@ public class InstanceIntegrationServiceImpl implements InstanceIntegrationServic
    */
   private static boolean isHandlerSameOrganization(WorklistEntity worklist, UserSearchResponse handler) {
     String groupCd = trimToNull(worklist.getGroupCd());
-    if (groupCd == null || handler == null || handler.getFncgWndwCodeList() == null) {
+    if (groupCd == null || handler == null || handler.getBpmOrgnList() == null) {
       return false;
     }
-    for (FncgOrgInfo org : handler.getFncgWndwCodeList()) {
+    for (FncgOrgInfo org : handler.getBpmOrgnList()) {
       if (org != null && groupCd.equals(trimToNull(org.getFncgWndwOrgnCode()))) {
         return true;
       }

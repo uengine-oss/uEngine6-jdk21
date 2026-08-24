@@ -19,7 +19,7 @@ public class IAMIntegrationServiceImpl implements IAMIntegrationService {
     @Override
     public OrgSearchResponse searchOrgs() throws Exception {
         OrgSearchResponse response = new OrgSearchResponse();
-        response.setFncgOrgnCodeList(externalIamService.getGroups());
+        response.setBpmOrgnList(externalIamService.getGroups().getBpmOrgnList());
         return response;
     }
 
