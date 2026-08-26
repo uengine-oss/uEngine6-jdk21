@@ -25,6 +25,8 @@
 - `BPM_DIM_ACTOR`: endpoint/group/role 기준 담당자
 - `BPM_FACT_PROC_INST`: 프로세스 기간, 상태, 태스크 집계
 - `BPM_FACT_TASK`: 처리시간, 이전 태스크 대기시간, 프로세스 lead time, 담당자/활동 키
+- `BPM_KPI_TARGET`: 기간별 전체 KPI 목표
+- `BPM_KPI_PROCESS_STATE`: 프로세스별 도메인, 라이프사이클 단계, 배포일
 
 사람 태스크는 `endpoint` 또는 `resName`이 있는 태스크입니다. 담당자가 없고 `tool` 또는 `actType`이 있는 태스크는 자동화 태스크로 분류합니다. `RETURN` 또는 `BACKTOHERE` 결정은 재작업으로 집계합니다. 음수 시간은 데이터 시각 역전으로 간주해 0으로 보정합니다.
 
@@ -49,6 +51,34 @@ curl http://localhost:9095/api/analytics/etl/status
 ```bash
 curl "http://localhost:9095/api/analytics/dashboard?from=2026-08-01&to=2026-08-31"
 ```
+
+### KPI/heatmap 더미 데이터
+
+PostgreSQL 분석 테이블에 KPI용 프로세스 Fact와 heatmap용 태스크/담당자/액티비티
+Fact를 함께 적재할 수 있습니다. 기본 실행은 최근 90일 동안 프로세스 1,800건과
+태스크 10,800건을 만들며, 다시 실행하면 기존 더미 데이터에 새 배치를 누적합니다.
+더미 Fact는 음수 ID와 `dummy_` process key를 사용하므로 실제 ETL 데이터와 구분됩니다.
+heatmap 셀에 별도 ID를 저장하지 않고, 각 이벤트는 `BPM_FACT_TASK.TASK_ID`로 식별하며
+`ACTIVITY_KEY`/`ACTOR_KEY`와 `STARTED_AT`을 축으로 집계합니다.
+사용자 지정 목록의 중복을 제외한 9개 프로세스 정의를 사용하며, KPI 단계는
+초안 2건, 검토 3건, 배포 완료 4건으로 생성합니다.
+
+```bash
+./analytics/scripts/seed-dashboard-dummy-data.sh
+
+# 생성 범위와 밀도 조절
+ANALYTICS_DUMMY_DAYS=30 \
+ANALYTICS_DUMMY_PROCESSES_PER_DAY=50 \
+ANALYTICS_DUMMY_TASKS_PER_PROCESS=8 \
+./analytics/scripts/seed-dashboard-dummy-data.sh
+
+# 이 스크립트로 만든 데이터만 제거
+./analytics/scripts/seed-dashboard-dummy-data.sh cleanup
+```
+
+접속 정보는 `POSTGRES_HOST`, `POSTGRES_PORT`, `POSTGRES_DB`, `POSTGRES_USER`,
+`POSTGRES_PASSWORD`, `UENGINE_DB_SCHEMA`로 변경할 수 있습니다. 전체 옵션은
+`./analytics/scripts/seed-dashboard-dummy-data.sh --help`에서 확인합니다.
 
 주기 실행은 기본적으로 꺼져 있습니다. 다음 환경 변수로 활성화합니다.
 

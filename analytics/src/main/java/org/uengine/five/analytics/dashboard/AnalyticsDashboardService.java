@@ -49,7 +49,8 @@ public class AnalyticsDashboardService {
                 summary,
                 statuses(parameters),
                 daily(parameters),
-                processes(parameters));
+                processes(parameters),
+                recentInstances());
     }
 
     private AnalyticsDashboardResponse.Summary summary(MapSqlParameterSource parameters) {
@@ -143,7 +144,36 @@ public class AnalyticsDashboardService {
                         resultSet.getLong("process_count"),
                         resultSet.getLong("completed_count"),
                         resultSet.getLong("average_duration_seconds"),
-                        resultSet.getLong("rework_task_count")));
+                    resultSet.getLong("rework_task_count")));
+    }
+
+    private List<AnalyticsDashboardResponse.RecentInstance> recentInstances() {
+        String sql = """
+                SELECT f.process_instance_id,
+                       COALESCE(NULLIF(TRIM(d.definition_name), ''),
+                                NULLIF(TRIM(d.definition_id), ''),
+                                f.process_key,
+                                'UNKNOWN') AS process_name,
+                       UPPER(COALESCE(NULLIF(TRIM(f.status), ''), 'UNKNOWN')) AS status,
+                       f.started_at,
+                       f.duration_seconds
+                  FROM bpm_fact_proc_inst f
+                  LEFT JOIN bpm_dim_process_def d ON d.process_key = f.process_key
+                 WHERE COALESCE(f.deleted, false) = false
+                   AND COALESCE(f.process_key, '') NOT LIKE 'dummy_%'
+                   AND f.started_at IS NOT NULL
+                 ORDER BY f.started_at DESC, f.process_instance_id DESC
+                 LIMIT 10
+                """;
+        return jdbcTemplate.query(sql, Map.of(), (resultSet, rowNumber) -> {
+            Number duration = (Number) resultSet.getObject("duration_seconds");
+            return new AnalyticsDashboardResponse.RecentInstance(
+                    Long.toString(resultSet.getLong("process_instance_id")),
+                    resultSet.getString("process_name"),
+                    resultSet.getString("status"),
+                    resultSet.getTimestamp("started_at").toInstant(),
+                    duration == null ? null : duration.longValue());
+        });
     }
 
     private long number(Map<String, Object> row, String key) {

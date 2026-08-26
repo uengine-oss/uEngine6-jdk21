@@ -2,6 +2,7 @@ package org.uengine.five.analytics.dashboard;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -13,7 +14,8 @@ public record AnalyticsDashboardResponse(
         Summary summary,
         List<StatusMetric> statuses,
         List<DailyMetric> daily,
-        List<ProcessMetric> processes) {
+        List<ProcessMetric> processes,
+        List<RecentInstance> recentInstances) {
 
     public record Summary(
             long processCount,
@@ -44,5 +46,13 @@ public record AnalyticsDashboardResponse(
             long completedProcessCount,
             long averageDurationSeconds,
             long reworkTaskCount) {
+    }
+
+    public record RecentInstance(
+            String id,
+            String processName,
+            String status,
+            Instant startedAt,
+            Long durationSeconds) {
     }
 }

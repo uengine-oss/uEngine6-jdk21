@@ -86,9 +86,33 @@ CREATE TABLE IF NOT EXISTS bpm_fact_task (
     source_updated_at timestamp with time zone
 );
 
+CREATE TABLE IF NOT EXISTS bpm_kpi_target (
+    target_id varchar(64) PRIMARY KEY,
+    period_type varchar(32) NOT NULL,
+    period_start date NOT NULL,
+    period_end date NOT NULL,
+    total_target integer NOT NULL,
+    created_at timestamp with time zone DEFAULT current_timestamp,
+    updated_at timestamp with time zone DEFAULT current_timestamp
+);
+
+CREATE TABLE IF NOT EXISTS bpm_kpi_process_state (
+    process_key varchar(32) PRIMARY KEY,
+    definition_path varchar(255) NOT NULL,
+    process_name varchar(255) NOT NULL,
+    domain_id varchar(64) NOT NULL,
+    domain_name varchar(255) NOT NULL,
+    lifecycle_stage varchar(32) NOT NULL,
+    deployed_at timestamp with time zone,
+    updated_at timestamp with time zone DEFAULT current_timestamp
+);
+
 CREATE INDEX IF NOT EXISTS idx_fact_proc_def ON bpm_fact_proc_inst(process_key);
 CREATE INDEX IF NOT EXISTS idx_fact_proc_started ON bpm_fact_proc_inst(started_at);
 CREATE INDEX IF NOT EXISTS idx_fact_task_inst ON bpm_fact_task(process_instance_id);
 CREATE INDEX IF NOT EXISTS idx_fact_task_activity ON bpm_fact_task(activity_key);
 CREATE INDEX IF NOT EXISTS idx_fact_task_actor ON bpm_fact_task(actor_key);
 CREATE INDEX IF NOT EXISTS idx_fact_task_started ON bpm_fact_task(started_at);
+CREATE INDEX IF NOT EXISTS idx_kpi_process_stage ON bpm_kpi_process_state(lifecycle_stage);
+CREATE INDEX IF NOT EXISTS idx_kpi_process_domain ON bpm_kpi_process_state(domain_id);
+CREATE INDEX IF NOT EXISTS idx_kpi_process_deployed ON bpm_kpi_process_state(deployed_at);

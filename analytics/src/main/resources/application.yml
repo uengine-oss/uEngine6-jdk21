@@ -2,7 +2,7 @@ spring:
   application:
     name: analytics
   datasource:
-    url: jdbc:postgresql://${POSTGRES_HOST:localhost}:${POSTGRES_PORT:5432}/${POSTGRES_DB:uengine}
+    url: jdbc:postgresql://${POSTGRES_HOST:localhost}:${POSTGRES_PORT:5432}/${POSTGRES_DB:uengine}?currentSchema=${UENGINE_DB_SCHEMA:public}
     username: ${POSTGRES_USER:uengine}
     password: ${POSTGRES_PASSWORD:uengine}
     driver-class-name: org.postgresql.Driver
