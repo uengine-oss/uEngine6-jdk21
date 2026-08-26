@@ -1007,10 +1007,34 @@ public class InstanceServiceImpl implements InstanceService {
      */
     @RequestMapping(value = "/instance/{instanceId}/worklists", method = RequestMethod.GET, produces = "application/json;charset=UTF-8")
     @ProcessTransactional(readOnly = true)
-    public ResponseEntity<List<WorklistEntity>> getAllTasksByInstanceId(@PathVariable("instanceId") String instanceId) {
+    public ResponseEntity<List<Map<String, Object>>> getAllTasksByInstanceId(@PathVariable("instanceId") String instanceId) {
         Long rootInstId = Long.parseLong(instanceId);
         List<WorklistEntity> tasks = processInstanceRepository.findAllWorklistsByRootInstId(rootInstId);
-        return ResponseEntity.ok(tasks);
+        List<Map<String, Object>> response = new ArrayList<>();
+        for (WorklistEntity worklistEntity : tasks) {
+            Map<String, Object> item = new LinkedHashMap<>();
+            item.put("taskId", worklistEntity.getTaskId());
+            item.put("instId", worklistEntity.getInstId());
+            item.put("rootInstId", worklistEntity.getRootInstId());
+            item.put("title", worklistEntity.getTitle());
+            item.put("description", worklistEntity.getDescription());
+            item.put("endpoint", worklistEntity.getEndpoint());
+            item.put("roleName", worklistEntity.getRoleName());
+            item.put("resName", worklistEntity.getResName());
+            item.put("defId", worklistEntity.getDefId());
+            item.put("defName", worklistEntity.getDefName());
+            item.put("defVerId", worklistEntity.getDefVerId());
+            item.put("trcTag", worklistEntity.getTrcTag());
+            item.put("tool", worklistEntity.getTool());
+            item.put("parameter", worklistEntity.getParameter());
+            item.put("status", worklistEntity.getStatus());
+            item.put("execScope", worklistEntity.getExecScope());
+            item.put("startDate", worklistEntity.getStartDate());
+            item.put("endDate", worklistEntity.getEndDate());
+            item.put("dueDate", worklistEntity.getDueDate());
+            response.add(item);
+        }
+        return ResponseEntity.ok(response);
     }
 
 
@@ -1061,6 +1085,14 @@ public class InstanceServiceImpl implements InstanceService {
     @ProcessTransactional
     public void setVariableWithTaskId(@PathVariable("instanceId") String instanceId,
             @PathVariable("taskId") String taskId, @PathVariable("varName") String varName,
+            @RequestBody String json) throws Exception {
+        setVariableWithTaskId(instanceId, taskId, varName, json, null);
+    }
+
+    @RequestMapping(value = "/instance/{instanceId}/task/{taskId}/variable", method = RequestMethod.POST, produces = "application/json; charset=UTF-8")
+    @ProcessTransactional
+    public void setVariableWithTaskIdByName(@PathVariable("instanceId") String instanceId,
+            @PathVariable("taskId") String taskId, @RequestParam("varName") String varName,
             @RequestBody String json) throws Exception {
         setVariableWithTaskId(instanceId, taskId, varName, json, null);
     }
@@ -1961,6 +1993,7 @@ public class InstanceServiceImpl implements InstanceService {
         if (parameterValues == null) {
             parameterValues = Collections.emptyMap();
         }
+        applyRootParameterValues(instance, workItem.getRootParameterValues());
         applySdsSimulationOutputAliases(instance, humanActivity, parameterValues, "true".equals(isSimulate));
 
         try {
@@ -2064,6 +2097,103 @@ public class InstanceServiceImpl implements InstanceService {
         result.put("currentActivityIds", currentActivityIds);
         result.put("changedProcessVariables", changedProcessVariables);
         return result;
+    }
+
+    /**
+     * Fires an interrupting boundary message for the execution scope that owns the
+     * selected work item. This keeps multi-instance document exclusions isolated to
+     * the selected document instead of broadcasting the message to every scope.
+     */
+    @RequestMapping(value = "/work-item/{taskId}/boundary-message/{eventTracingTag}", method = RequestMethod.POST, produces = "application/json;charset=UTF-8")
+    @ProcessTransactional
+    @Transactional(rollbackFor = { Exception.class })
+    public Map<String, Object> fireWorkItemBoundaryMessage(
+            @PathVariable("taskId") String taskId,
+            @PathVariable("eventTracingTag") String eventTracingTag,
+            @RequestBody(required = false) Map<String, Object> request) throws Exception {
+        WorklistEntity worklist = worklistRepository.findByIdForUpdate(Long.valueOf(taskId))
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        "No such work item where taskId = " + taskId));
+        String actorEndpoint = currentActorEndpoint();
+        validateCompletionOwner(worklist, actorEndpoint);
+        GlobalContext.setUserId(actorEndpoint);
+
+        ProcessInstance instance = getProcessInstanceLocal(String.valueOf(worklist.getInstId()));
+        if (instance == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Instance not found for taskId=" + taskId);
+        }
+        instance.setExecutionScope(worklist.getExecScope());
+
+        Activity attached = instance.getProcessDefinition().getActivity(worklist.getTrcTag());
+        Activity candidate = instance.getProcessDefinition().getActivity(eventTracingTag);
+        if (!(attached instanceof HumanActivity) || !(candidate instanceof Event boundaryEvent)
+                || !worklist.getTrcTag().equals(boundaryEvent.getAttachedToRef())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "The boundary event is not attached to the selected work item activity");
+        }
+
+        Object rawRootValues = request != null ? request.get("rootParameterValues") : null;
+        if (rawRootValues instanceof Map<?, ?> rootValues) {
+            applyRootParameterValues(instance, rootValues);
+        }
+        Object rawValues = request != null ? request.get("parameterValues") : null;
+        if (rawValues instanceof Map<?, ?> parameterValues) {
+            for (Map.Entry<?, ?> entry : parameterValues.entrySet()) {
+                if (entry.getKey() != null && entry.getValue() instanceof Serializable value) {
+                    instance.set("", String.valueOf(entry.getKey()), value);
+                }
+            }
+        }
+
+        ExecutionScopeContext completionScope = instance.getExecutionScopeContext();
+        if (!boundaryEvent.onMessage(instance, eventTracingTag)) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Boundary message was not accepted");
+        }
+        if (boundaryEvent.getParentActivity() instanceof SubProcess subProcess
+                && subProcess.getForEachVariable() != null
+                && completionScope != null
+                && subProcess.isRunning(instance)) {
+            ExecutionScopeContext currentScope = instance.getExecutionScopeContext();
+            try {
+                instance.setExecutionScopeContext(completionScope);
+                subProcess.fireComplete(instance);
+            } finally {
+                instance.setExecutionScopeContext(currentScope);
+            }
+        }
+
+        WorklistEntity completed = worklistRepository.findById(Long.valueOf(taskId)).orElse(worklist);
+        completed.setStatus("CANCELLED");
+        completed.setEndDate(new Date());
+        String description = completed.getDescription();
+        String marker = "[BOUNDARY_MESSAGE] " + eventTracingTag;
+        completed.setDescription(!UEngineUtil.isNotEmpty(description) ? marker : description + "\n" + marker);
+        worklistRepository.save(completed);
+
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("taskId", taskId);
+        result.put("instanceId", String.valueOf(worklist.getInstId()));
+        result.put("execScope", worklist.getExecScope());
+        result.put("eventTracingTag", eventTracingTag);
+        result.put("status", "COMPLETED");
+        return result;
+    }
+
+    private static void applyRootParameterValues(ProcessInstance instance, Map<?, ?> rootValues) throws Exception {
+        if (instance == null || rootValues == null || rootValues.isEmpty()) {
+            return;
+        }
+        ExecutionScopeContext currentScope = instance.getExecutionScopeContext();
+        try {
+            instance.setExecutionScopeContext(null);
+            for (Map.Entry<?, ?> entry : rootValues.entrySet()) {
+                if (entry.getKey() != null && entry.getValue() instanceof Serializable value) {
+                    instance.set("", String.valueOf(entry.getKey()), value);
+                }
+            }
+        } finally {
+            instance.setExecutionScopeContext(currentScope);
+        }
     }
 
     private void applySdsSimulationOutputAliases(ProcessInstance instance, HumanActivity humanActivity,

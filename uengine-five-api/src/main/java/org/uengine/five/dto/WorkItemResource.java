@@ -122,4 +122,16 @@ public class WorkItemResource { //extends RepresentationModel {
         this.parameterValues = parameterValues;
     }
 
+    @JsonProperty("rootParameterValues")
+    @JsonInclude(JsonInclude.Include.NON_EMPTY)
+    Map<String, Object> rootParameterValues;
+
+    public Map<String, Object> getRootParameterValues() {
+        return rootParameterValues;
+    }
+
+    public void setRootParameterValues(Map<String, Object> rootParameterValues) {
+        this.rootParameterValues = rootParameterValues;
+    }
+
 }

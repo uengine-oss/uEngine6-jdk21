@@ -6,6 +6,7 @@ package org.uengine.five.overriding;
 import org.uengine.five.service.WorkItemAssignmentStateService;
 import org.uengine.kernel.*;
 import org.uengine.kernel.bpmn.ServiceTask;
+import org.uengine.util.UEngineUtil;
 import org.uengine.webservices.worklist.WorkList;
 
 import java.io.Serializable;
@@ -134,7 +135,8 @@ public class InstanceDataAppendingActivityFilter implements ActivityFilter, Seri
 	 */
 	@Override
 	public void afterFault(Activity activity, ProcessInstance instance, FaultContext faultContext) throws Exception {
-		if (activity instanceof ServiceTask || activity instanceof ScriptActivity) {
+		if (activity instanceof ServiceTask || activity instanceof ScriptActivity
+				|| activity instanceof LocalEMailActivity) {
 			try {
 				RoleMapping rm = null;
 				if (activity instanceof ServiceTask) {
@@ -172,6 +174,14 @@ public class InstanceDataAppendingActivityFilter implements ActivityFilter, Seri
 						new KeyedParameter(KeyedParameter.PROCESSDEFINITION, instance.getProcessDefinition().getId()));
 				params.add(new KeyedParameter(KeyedParameter.DEFAULT_STATUS, Activity.STATUS_FAULT));
 				params.add(new KeyedParameter("status", Activity.STATUS_FAULT));
+				Throwable fault = faultContext == null ? null : faultContext.getFault();
+				while (fault != null && fault.getCause() != null && fault.getCause() != fault) {
+					fault = fault.getCause();
+				}
+				String faultMessage = fault != null && UEngineUtil.isNotEmpty(fault.getMessage())
+						? fault.getMessage()
+						: "알 수 없는 실행 오류";
+				params.add(new KeyedParameter("description", faultMessage));
 				params.add(new KeyedParameter("endpoint", rm.getEndpoint()));
 				params.add(new KeyedParameter("endDate", new java.util.Date()));
 				params.add(new KeyedParameter("assignType", 0));

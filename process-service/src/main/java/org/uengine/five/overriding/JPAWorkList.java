@@ -157,6 +157,8 @@ public class JPAWorkList implements WorkList {
             wl.setStartDate(startedTime);
 
             wl.setTitle(""+parameterMap.get(KeyedParameter.TITLE));
+            Object descriptionObj = parameterMap.get("description");
+            wl.setDescription(descriptionObj == null ? null : String.valueOf(descriptionObj));
             wl.setTrcTag(""+parameterMap.get(KeyedParameter.TRACINGTAG));
             wl.setInstId(new Long(""+parameterMap.get(KeyedParameter.INSTANCEID)));
             wl.setRootInstId(new Long(""+parameterMap.get(KeyedParameter.ROOTINSTANCEID)));
@@ -462,6 +464,15 @@ public class JPAWorkList implements WorkList {
                 return null;
             }
             String trimmed = roleName.trim();
+            if ("영업점 담당자".equals(trimmed)) {
+                return firstAvailable(iamService.getUsersByRole("branch-staff"));
+            }
+            if ("영업점 책임자".equals(trimmed)) {
+                return firstAvailable(iamService.getUsersByRole("manager"));
+            }
+            if ("본점".equals(trimmed)) {
+                return firstAvailable(iamService.getUsersByRole("head-office"));
+            }
             if ("영업점".equals(trimmed) || "본부".equals(trimmed) || "등록 심사".equals(trimmed)) {
                 return firstAvailable(iamService.getUsersByRole("manager"));
             }
