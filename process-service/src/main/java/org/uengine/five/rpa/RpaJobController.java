@@ -178,10 +178,16 @@ public class RpaJobController {
     }
 
     private File videoFile(String jobId) {
-        String base = System.getenv("UENGINE_BASEPATH");
-        if (base == null || base.isBlank())
-            base = System.getProperty("java.io.tmpdir");
-        File dir = new File(base, "rpa-videos");
+        String explicitPath = System.getenv("UENGINE_RPA_VIDEO_PATH");
+        File dir;
+        if (explicitPath != null && !explicitPath.isBlank()) {
+            dir = new File(explicitPath);
+        } else {
+            String base = System.getenv("UENGINE_BASEPATH");
+            if (base == null || base.isBlank())
+                base = System.getProperty("java.io.tmpdir");
+            dir = new File(base, "rpa-videos");
+        }
         dir.mkdirs();
         return new File(dir, jobId.replaceAll("[^a-zA-Z0-9\\-]", "") + ".webm");
     }

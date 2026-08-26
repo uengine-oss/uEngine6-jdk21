@@ -37,7 +37,7 @@ spring:
         - id: instance-servicce
           uri: http://localhost:9094
           predicates:
-            - Path=/worklist/**, /test/**, /instance/**, /work-item/** , /instances/**, /dry-run/**, /validate/**, /start-and-complete, /notifications/**, /business-rules, /business-rules/**, /inbox
+            - Path=/worklist/**, /test/**, /instance/**, /work-item/** , /instances/**, /dry-run/**, /validate/**, /start-and-complete, /notifications/**, /business-rules, /business-rules/**, /inbox, /rpa/**
         - id: inventory-service
           uri: http://localhost:8080
           predicates:
@@ -67,13 +67,41 @@ spring:
     gateway:
       routes:
         - id: execution
-          uri: http://localhost:8000
+          uri: ${EXECUTION_SERVICE_URI:http://host.docker.internal:8200}
           predicates:
-            - Path=/complete/**, /vision-complete/**,  
+            - Path=/complete/**, /vision-complete/**, /execution/**
+          filters:
+            - RewritePath=/execution/?(?<segment>.*), /$\{segment}
+        - id: events
+          uri: ${PROCESS_SERVICE_URI:http://process-service:9294}
+          predicates:
+            - Path=/events/**
+        - id: definition-service
+          uri: ${DEFINITION_SERVICE_URI:http://definition-service:9293}
+          predicates:
+            - Path=/definition/**, /version/**, /versions/**
+        - id: instance-service
+          uri: ${PROCESS_SERVICE_URI:http://process-service:9294}
+          predicates:
+            - Path=/worklist/**, /test/**, /instance/**, /work-item/**, /instances/**, /dry-run/**, /validate/**, /start-and-complete, /notifications/**, /business-rules, /business-rules/**, /inbox
+        - id: rpa
+          uri: ${PROCESS_SERVICE_URI:http://process-service:9294}
+          predicates:
+            - Path=/rpa/**
+        - id: analytics
+          uri: ${ANALYTICS_SERVICE_URI:http://analytics:9095}
+          predicates:
+            - Path=/analytics-api/**
+          filters:
+            - RewritePath=/analytics-api/?(?<segment>.*), /$\{segment}
+        - id: frontend
+          uri: ${FRONTEND_URI:http://frontend:8080}
+          predicates:
+            - Path=/**
       globalcors:
         corsConfigurations:
           '[/**]':
-            allowedOrigins:
+            allowedOriginPatterns:
               - "*"
             allowedMethods:
               - "*"
