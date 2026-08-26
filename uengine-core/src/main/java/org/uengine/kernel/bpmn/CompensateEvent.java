@@ -27,6 +27,10 @@ public class CompensateEvent extends Event {
 
     @Override
     public boolean onMessage(ProcessInstance instance, Object payload) throws Exception {
+        if (STATUS_COMPLETED.equals(getStatus(instance))) {
+            return true;
+        }
+
         fireComplete(instance); // run the connected activity
 
         // let error is not fired.

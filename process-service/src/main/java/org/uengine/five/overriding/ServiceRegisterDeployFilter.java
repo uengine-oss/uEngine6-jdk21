@@ -66,6 +66,10 @@ public class ServiceRegisterDeployFilter implements DeployFilter {
             if (activity instanceof CatchingRestMessageEvent) {
 
                 CatchingRestMessageEvent catchingMessageEvent = (CatchingRestMessageEvent) activity;
+                if (catchingMessageEvent.getServicePath() == null
+                        || catchingMessageEvent.getServicePath().isBlank()) {
+                    continue;
+                }
                 serviceEndpointEntity.setPath(catchingMessageEvent.getServicePath());
                 CatchEvent catchEvent = new CatchEvent();
                 catchEvent.setCorrelationKey(catchingMessageEvent.getCorrelationKey());

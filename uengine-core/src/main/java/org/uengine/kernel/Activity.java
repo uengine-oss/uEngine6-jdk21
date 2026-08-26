@@ -842,12 +842,15 @@ public abstract class Activity implements IElement, Validatable, java.io.Seriali
 		} else if (command.equals(ACTIVITY_COMPENSATED)) {
 			if (getParentActivity() != null)
 				getParentActivity().onEvent(CHILD_COMPENSATED, instance, payload);
-			for (Activity childActivity : getProcessDefinition().getChildActivities()) {
-				if (childActivity instanceof CompensateEvent) {
-					CompensateEvent compensateEvent = (CompensateEvent) childActivity;
-					if (compensateEvent.getAttachedToRef() != null
-							&& compensateEvent.getAttachedToRef().equals(getTracingTag())) {
-						compensateEvent.onMessage(instance, compensateEvent.getTracingTag());
+			if (instance.getProcessTransactionContext()
+					.getSharedContext("_compensationEventHandled_" + getTracingTag()) == null) {
+				for (Activity childActivity : getProcessDefinition().getChildActivities()) {
+					if (childActivity instanceof CompensateEvent) {
+						CompensateEvent compensateEvent = (CompensateEvent) childActivity;
+						if (compensateEvent.getAttachedToRef() != null
+								&& compensateEvent.getAttachedToRef().equals(getTracingTag())) {
+							compensateEvent.onMessage(instance, compensateEvent.getTracingTag());
+						}
 					}
 				}
 			}
@@ -1199,6 +1202,7 @@ public abstract class Activity implements IElement, Validatable, java.io.Seriali
 
 	public void executeAttachedEvent(ProcessInstance instance) throws Exception {
 		EventHandler[] eventHandlers = getEventHandlers();
+		Set<String> handledEventTracingTags = new HashSet<>();
 
 		if (eventHandlers != null) {
 			for (int i = 0; i < eventHandlers.length; i++) {
@@ -1213,6 +1217,7 @@ public abstract class Activity implements IElement, Validatable, java.io.Seriali
 					CompensateEvent activity = (CompensateEvent) instance.getProcessDefinition()
 							.getActivity(eventHandlers[i].getHandlerActivity().getTracingTag());
 					activity.onMessage(instance, eventHandlers);
+					handledEventTracingTags.add(activity.getTracingTag());
 				}
 			}
 		}
@@ -1220,7 +1225,8 @@ public abstract class Activity implements IElement, Validatable, java.io.Seriali
 		for (Activity childActivity : getProcessDefinition().getChildActivities()) {
 			if (childActivity instanceof Event) {
 				Event event = (Event) childActivity;
-				if (this.getTracingTag().equals(event.getAttachedToRef())) {
+				if (this.getTracingTag().equals(event.getAttachedToRef())
+						&& !handledEventTracingTags.contains(event.getTracingTag())) {
 					getProcessDefinition().fireMessage(event.getTracingTag(), instance, event.getTracingTag());
 
 					instance.setStatus(event.getTracingTag(), STATUS_READY);
@@ -1234,8 +1240,13 @@ public abstract class Activity implements IElement, Validatable, java.io.Seriali
 		reset(instance, STATUS_COMPENSATED);
 
 		executeAttachedEvent(instance);
-
-		fireCompensate(instance);
+		String handledKey = "_compensationEventHandled_" + getTracingTag();
+		instance.getProcessTransactionContext().setSharedContext(handledKey, Boolean.TRUE);
+		try {
+			fireCompensate(instance);
+		} finally {
+			instance.getProcessTransactionContext().setSharedContext(handledKey, null);
+		}
 	}
 
 	public void compensateOneStep(ProcessInstance instance) throws Exception {
@@ -2118,12 +2129,15 @@ public abstract class Activity implements IElement, Validatable, java.io.Seriali
 						// compensateToThis 시, 인터셉터가 ACTIVITY_COMPENSATED 이벤트를 가로채서(return true) 부모로의 전파를 막지만,
 						// 이로 인해 this 액티비티에 연결된 CompensateEvent 실행 로직(onEvent 내부)까지 도달하지 못하는 문제가 발생함.
 						// 따라서 인터셉터가 이벤트를 삼키기 전에, 여기서 직접 연결된 CompensateEvent를 찾아서 실행시켜줌.
-						for (Activity childActivity : getProcessDefinition().getChildActivities()) {
-							if (childActivity instanceof CompensateEvent) {
-								CompensateEvent compensateEvent = (CompensateEvent) childActivity;
-								if (compensateEvent.getAttachedToRef() != null
-										&& compensateEvent.getAttachedToRef().equals(getTracingTag())) {
-									compensateEvent.onMessage(instance, compensateEvent.getTracingTag());
+						if (instance.getProcessTransactionContext()
+								.getSharedContext("_compensationEventHandled_" + getTracingTag()) == null) {
+							for (Activity childActivity : getProcessDefinition().getChildActivities()) {
+								if (childActivity instanceof CompensateEvent) {
+									CompensateEvent compensateEvent = (CompensateEvent) childActivity;
+									if (compensateEvent.getAttachedToRef() != null
+											&& compensateEvent.getAttachedToRef().equals(getTracingTag())) {
+										compensateEvent.onMessage(instance, compensateEvent.getTracingTag());
+									}
 								}
 							}
 						}

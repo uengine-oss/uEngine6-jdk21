@@ -446,7 +446,7 @@ public class FlowActivity extends ComplexActivity {
                 final Event event = (Event) childActivity;
 
                 if (event.getAttachedToRef() != null) {
-                    if (event.getClass().equals(CompensateEvent.class)) {
+                    if (event instanceof CompensateEvent) {
                         Activity activity = getProcessDefinition().getActivity(event.getAttachedToRef());
                         EventHandler eventHandler = new EventHandler();
                         eventHandler.setTriggeringMethod(EventHandler.TRIGGERING_BY_COMPENSATION);

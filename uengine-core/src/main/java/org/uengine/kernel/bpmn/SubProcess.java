@@ -632,7 +632,11 @@ public class SubProcess extends ScopeActivity {
                     String executionScope = subProcessExecutionScope;
 
                     Vector completedSPIds = getSubprocessIds(instance, SUBPROCESS_INST_ID_COMPLETED);
-                    completedSPIds.add(instance.getInstanceId() + "@" + executionScope);
+                    String completedScopeId = instance.getInstanceId() + "@" + executionScope;
+                    if (completedSPIds.contains(completedScopeId)) {
+                        return false;
+                    }
+                    completedSPIds.add(completedScopeId);
                     setSubprocessIds(instance, completedSPIds, SUBPROCESS_INST_ID_COMPLETED);
 
                     Set spIdSet = getUncompletedSubProcessIds(instance);

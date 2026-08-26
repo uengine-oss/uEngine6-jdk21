@@ -582,11 +582,14 @@ public class BpmnXMLParser {
                             if (jsonText == null || jsonText.trim().isEmpty()) {
                                 continue;
                             }
-                            if (jsonText.contains("_type") && !className.contains("Event")) {
+                            if (jsonText.contains("_type") && !className.contains("Event")
+                                    && !className.equals("ManualTask")) {
                                 clazz = Activity.class;
                             }
 
-                            Object jsonObject = objectMapper.readValue(jsonText, clazz);
+                            Object jsonObject = className.equals("ManualTask")
+                                    ? task
+                                    : objectMapper.readValue(jsonText, clazz);
                             if (className.equals("SubProcess") && jsonObject instanceof SubProcess) {
                                 task = (SubProcess) jsonObject;
                             } else if (className.equals("BoundaryEvent")) {
@@ -603,6 +606,12 @@ public class BpmnXMLParser {
                     }
                 }
             }
+        }
+
+        if (className.equals("BoundaryEvent") && task instanceof Event) {
+            Event boundaryEvent = (Event) task;
+            boundaryEvent.setAttachedToRef(element.getAttribute("attachedToRef"));
+            boundaryEvent.setCancelActivity(!"false".equals(element.getAttribute("cancelActivity")));
         }
 
         if (task instanceof SubProcess) {
@@ -631,9 +640,9 @@ public class BpmnXMLParser {
 
     private String parseFullClassName(Element element, String className) {
         String fullClassName;
-        if (className.equals("Task")) {
+        if (className.equals("Task") || className.equals("ManualTask")) {
             fullClassName = "org.uengine.kernel.DefaultActivity";
-        } else if (className.equals("UserTask") || className.equals("ManualTask")) {
+        } else if (className.equals("UserTask")) {
             fullClassName = "org.uengine.kernel.HumanActivity";
         } else if (className.equals("ScriptTask")) {
             fullClassName = "org.uengine.kernel.ScriptActivity";

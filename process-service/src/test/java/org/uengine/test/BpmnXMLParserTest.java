@@ -21,21 +21,79 @@ import org.uengine.contexts.EventSynchronization;
 import org.uengine.contexts.MappingContext;
 import org.uengine.five.serializers.BpmnXMLParser;
 import org.uengine.kernel.Activity;
+import org.uengine.kernel.DefaultActivity;
 import org.uengine.kernel.Evaluate;
 import org.uengine.kernel.FieldDescriptor;
 import org.uengine.kernel.HumanActivity;
+import org.uengine.kernel.LocalEMailActivity;
 import org.uengine.kernel.MappingElement;
 import org.uengine.kernel.ProcessDefinition;
 import org.uengine.kernel.ProcessInstance;
 import org.uengine.kernel.ProcessVariable;
 import org.uengine.kernel.Role;
 import org.uengine.kernel.bpmn.BusinessRuleTask;
+import org.uengine.kernel.bpmn.CompensateBoundaryEvent;
 import org.uengine.kernel.bpmn.Event;
+import org.uengine.kernel.bpmn.ErrorBoundaryEvent;
 import org.uengine.kernel.bpmn.Gateway;
 import org.uengine.kernel.bpmn.SequenceFlow;
 import org.uengine.kernel.bpmn.SubProcess;
 
 public class BpmnXMLParserTest {
+
+    @Test
+    public void testManualTaskIsAutomaticAndIgnoresHumanActivityExtensionType() throws Exception {
+        String xml = "<bpmn:definitions xmlns:bpmn=\"http://www.omg.org/spec/BPMN/20100524/MODEL\" "
+                + "xmlns:uengine=\"http://uengine\" id=\"Definitions_Manual\" targetNamespace=\"test\">"
+                + "<bpmn:process id=\"Process_Manual\" isExecutable=\"true\">"
+                + "<bpmn:manualTask id=\"Manual_1\" name=\"manual\"><bpmn:extensionElements>"
+                + "<uengine:properties json=\"{&quot;_type&quot;:&quot;org.uengine.kernel.URLActivity&quot;,&quot;url&quot;:&quot;http://localhost/manual&quot;}\"/>"
+                + "</bpmn:extensionElements></bpmn:manualTask>"
+                + "</bpmn:process></bpmn:definitions>";
+
+        Activity parsed = new BpmnXMLParser().parse(xml).getActivity("Manual_1");
+
+        assertTrue(parsed instanceof DefaultActivity);
+        assertFalse(parsed instanceof HumanActivity);
+    }
+
+    @Test
+    public void testEmailSendTaskAndErrorBoundary() throws Exception {
+        String xml = "<bpmn:definitions xmlns:bpmn=\"http://www.omg.org/spec/BPMN/20100524/MODEL\" "
+                + "xmlns:uengine=\"http://uengine\" id=\"Definitions_Mail\" targetNamespace=\"test\">"
+                + "<bpmn:process id=\"Process_Mail\" isExecutable=\"true\">"
+                + "<bpmn:sendTask id=\"Send_Mail\" name=\"mail\"><bpmn:extensionElements>"
+                + "<uengine:properties json=\"{&quot;_type&quot;:&quot;org.uengine.kernel.LocalEMailActivity&quot;,&quot;to&quot;:&quot;m6023m@uengine.org&quot;}\"/>"
+                + "</bpmn:extensionElements></bpmn:sendTask>"
+                + "<bpmn:boundaryEvent id=\"Boundary_MailError\" attachedToRef=\"Send_Mail\">"
+                + "<bpmn:errorEventDefinition/></bpmn:boundaryEvent>"
+                + "</bpmn:process></bpmn:definitions>";
+
+        ProcessDefinition definition = new BpmnXMLParser().parse(xml);
+        assertTrue(definition.getActivity("Send_Mail") instanceof LocalEMailActivity);
+        assertTrue(definition.getActivity("Boundary_MailError") instanceof ErrorBoundaryEvent);
+        assertEquals("Send_Mail", ((Event) definition.getActivity("Boundary_MailError")).getAttachedToRef());
+    }
+
+    @Test
+    public void testBoundaryEventWithoutExtensionElementsKeepsAttachment() throws Exception {
+        String xml = "<bpmn:definitions xmlns:bpmn=\"http://www.omg.org/spec/BPMN/20100524/MODEL\" "
+                + "id=\"Definitions_Compensation\" targetNamespace=\"http://bpmn.io/schema/bpmn\">"
+                + "<bpmn:process id=\"Process_Compensation\" isExecutable=\"true\">"
+                + "<bpmn:userTask id=\"Task_Credit\" name=\"credit\"/>"
+                + "<bpmn:boundaryEvent id=\"Boundary_Compensate\" attachedToRef=\"Task_Credit\" cancelActivity=\"false\">"
+                + "<bpmn:compensateEventDefinition/>"
+                + "</bpmn:boundaryEvent>"
+                + "</bpmn:process></bpmn:definitions>";
+
+        ProcessDefinition definition = new BpmnXMLParser().parse(xml);
+        Activity parsed = definition.getActivity("Boundary_Compensate");
+
+        assertTrue(parsed instanceof CompensateBoundaryEvent);
+        Event boundary = (Event) parsed;
+        assertEquals("Task_Credit", boundary.getAttachedToRef());
+        assertFalse(boundary.isCancelActivity());
+    }
 
     // 가장 기본적인 태스크 하나만 있는 상태를 체크하는 테스트 코드
     @Test
