@@ -3,6 +3,7 @@ package org.uengine.hwlife.search.dto;
 import java.util.Date;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import org.uengine.hwlife.esbclient.dto.EsbCodes;
 
 /**
  * 나의 진행 검색 요청 — POST /search/my-progress JSON body.
@@ -10,9 +11,9 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 public class MyProgressRequest {
 
     private String bpmBswrClsfCode;
-    @JsonFormat(pattern = "yyyyMMdd")
+    @JsonFormat(pattern = EsbCodes.DATE)
     private Date rqstStarDate;
-    @JsonFormat(pattern = "yyyyMMdd")
+    @JsonFormat(pattern = EsbCodes.DATE)
     private Date rqstEndDate;
     private String fncgSuptTrgtDvsnCode;
     private String loanSubjDvsnCode;

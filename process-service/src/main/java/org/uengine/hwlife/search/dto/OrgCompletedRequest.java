@@ -3,6 +3,7 @@ package org.uengine.hwlife.search.dto;
 import java.util.Date;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import org.uengine.hwlife.esbclient.dto.EsbCodes;
 
 /**
  * 조직 완료 건 검색 요청 — POST /search/org-completed JSON body.
@@ -10,9 +11,9 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 public class OrgCompletedRequest {
 
     private String bpmBswrClsfCode;
-    @JsonFormat(pattern = "yyyyMMdd")
+    @JsonFormat(pattern = EsbCodes.DATE)
     private Date rqstStarDate;
-    @JsonFormat(pattern = "yyyyMMdd")
+    @JsonFormat(pattern = EsbCodes.DATE)
     private Date rqstEndDate;
     private String fncgSuptTrgtDvsnCode;
     private String loanSubjDvsnCode;
@@ -22,8 +23,6 @@ public class OrgCompletedRequest {
     private String sortOrdrVal;
     /** 메인/서브 루트 인스턴스 {@code defId} 필터. */
     private String bswrDvsnVal;
-    /** 현재 단위업무 {@code worklist.defId} 필터. */
-    private String fncgBpmPcesId;
 
     private String nextKey;
     private Integer pageSize;
@@ -106,14 +105,6 @@ public class OrgCompletedRequest {
 
     public void setBswrDvsnVal(String bswrDvsnVal) {
         this.bswrDvsnVal = bswrDvsnVal;
-    }
-
-    public String getFncgBpmPcesId() {
-        return fncgBpmPcesId;
-    }
-
-    public void setFncgBpmPcesId(String fncgBpmPcesId) {
-        this.fncgBpmPcesId = fncgBpmPcesId;
     }
 
     public String getNextKey() {

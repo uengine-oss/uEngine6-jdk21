@@ -29,7 +29,7 @@ public class OrgRunningItem {
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = EsbCodes.DTTM_SEC, timezone = "Asia/Seoul")
     private Date uworStarDttm;
     private String bpmBswrClsfCode;
-    private String fncgBpmtaskLstId;
+    private String fncgBpmTaskLstId;
     private String fncgBpmPcesIntcId;
     private String bswrDvsnVal; // root.defId (메인/서브)
     private String fncgBpmPcesId; // worklist.defId
@@ -162,12 +162,12 @@ public class OrgRunningItem {
         this.bpmBswrClsfCode = bpmBswrClsfCode;
     }
 
-    public String getFncgBpmtaskLstId() {
-        return fncgBpmtaskLstId;
+    public String getFncgBpmTaskLstId() {
+        return fncgBpmTaskLstId;
     }
 
-    public void setFncgBpmtaskLstId(String fncgBpmtaskLstId) {
-        this.fncgBpmtaskLstId = fncgBpmtaskLstId;
+    public void setFncgBpmTaskLstId(String fncgBpmTaskLstId) {
+        this.fncgBpmTaskLstId = fncgBpmTaskLstId;
     }
 
     public String getFncgBpmPcesIntcId() {

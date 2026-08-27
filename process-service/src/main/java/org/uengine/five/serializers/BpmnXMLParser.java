@@ -167,8 +167,8 @@ public class BpmnXMLParser {
     class LaneInfo {
         public HashMap<String, String> taskToLaneMap;
         public HashMap<String, Map<String, Object>> laneCoordinate;
-        public HashMap<String, Integer> laneYValue;
-        public HashMap<String, Integer> laneXValue;
+        public HashMap<String, Double> laneYValue;
+        public HashMap<String, Double> laneXValue;
 
         LaneInfo() {
             this.taskToLaneMap = new HashMap<>();
@@ -176,6 +176,14 @@ public class BpmnXMLParser {
             this.laneYValue = new HashMap<>();
             this.laneXValue = new HashMap<>();
         }
+    }
+
+    /** BPMN dc:Bounds 좌표는 스펙상 real 타입(소수 가능)이므로 double로 파싱한다. */
+    private static double parseBoundsCoordinate(String value) {
+        if (value == null || value.isBlank()) {
+            return 0.0;
+        }
+        return Double.parseDouble(value.trim());
     }
 
     void parseActivities(Node processNode, ScopeActivity processDefinition) throws Exception {
@@ -257,14 +265,14 @@ public class BpmnXMLParser {
         return new Role(); // Return a default role if no JSON is found
     }
 
-    public String getRoleNameInLocation(Map<String, Map<String, Object>> laneInfo, int x, int y) {
+    public String getRoleNameInLocation(Map<String, Map<String, Object>> laneInfo, double x, double y) {
         for (Map.Entry<String, Map<String, Object>> entry : laneInfo.entrySet()) {
             Map<String, Object> dimensions = entry.getValue();
             String isHorizontal = (String) dimensions.get("isHorizontal");
-            int minX = (int) dimensions.get("minX");
-            int maxX = (int) dimensions.get("maxX");
-            int minY = (int) dimensions.get("minY");
-            int maxY = (int) dimensions.get("maxY");
+            double minX = ((Number) dimensions.get("minX")).doubleValue();
+            double maxX = ((Number) dimensions.get("maxX")).doubleValue();
+            double minY = ((Number) dimensions.get("minY")).doubleValue();
+            double maxY = ((Number) dimensions.get("maxY")).doubleValue();
             if ("true".equals(isHorizontal)) {
                 if (y >= minY && y <= maxY) {
                     return entry.getKey();
@@ -297,14 +305,14 @@ public class BpmnXMLParser {
             String bpmnElement = lane.getAttribute("bpmnElement");
             if (laneIdToNameMap.containsKey(bpmnElement)) {
                 Element bounds = (Element) lane.getElementsByTagName("dc:Bounds").item(0);
-                int x = Integer.parseInt(bounds.getAttribute("x"));
-                int y = Integer.parseInt(bounds.getAttribute("y"));
-                int width = Integer.parseInt(bounds.getAttribute("width"));
-                int height = Integer.parseInt(bounds.getAttribute("height"));
-                int minX = x;
-                int maxX = x + width;
-                int minY = y;
-                int maxY = y + height;
+                double x = parseBoundsCoordinate(bounds.getAttribute("x"));
+                double y = parseBoundsCoordinate(bounds.getAttribute("y"));
+                double width = parseBoundsCoordinate(bounds.getAttribute("width"));
+                double height = parseBoundsCoordinate(bounds.getAttribute("height"));
+                double minX = x;
+                double maxX = x + width;
+                double minY = y;
+                double maxY = y + height;
                 String isHorizontal = lane.getAttribute("isHorizontal");
 
                 String name = laneIdToNameMap.get(bpmnElement);
@@ -323,10 +331,10 @@ public class BpmnXMLParser {
         return laneInfo;
     }
 
-    public HashMap<String, Integer> extractFirstYValueForBPMNDI(Element element) throws Exception {
+    public HashMap<String, Double> extractFirstYValueForBPMNDI(Element element) throws Exception {
         Document document = element.getOwnerDocument();
         NodeList shapes = document.getElementsByTagName("*");
-        HashMap<String, Integer> yValues = new HashMap<>();
+        HashMap<String, Double> yValues = new HashMap<>();
 
         for (int i = 0; i < shapes.getLength(); i++) {
             Element shape = (Element) shapes.item(i);
@@ -337,7 +345,7 @@ public class BpmnXMLParser {
                 }
                 Element bounds = (Element) shape.getElementsByTagName("dc:Bounds").item(0);
                 if (bounds != null) {
-                    int y = Integer.parseInt(bounds.getAttribute("y"));
+                    double y = parseBoundsCoordinate(bounds.getAttribute("y"));
                     yValues.put(bpmnElement, y);
                 }
             }
@@ -346,10 +354,10 @@ public class BpmnXMLParser {
         return yValues;
     }
 
-    public HashMap<String, Integer> extractFirstXValueForBPMNDI(Element element) throws Exception {
+    public HashMap<String, Double> extractFirstXValueForBPMNDI(Element element) throws Exception {
         Document document = element.getOwnerDocument();
         NodeList shapes = document.getElementsByTagName("*");
-        HashMap<String, Integer> xValues = new HashMap<>();
+        HashMap<String, Double> xValues = new HashMap<>();
 
         for (int i = 0; i < shapes.getLength(); i++) {
             Element shape = (Element) shapes.item(i);
@@ -360,7 +368,7 @@ public class BpmnXMLParser {
                 }
                 Element bounds = (Element) shape.getElementsByTagName("dc:Bounds").item(0);
                 if (bounds != null) {
-                    int x = Integer.parseInt(bounds.getAttribute("x"));
+                    double x = parseBoundsCoordinate(bounds.getAttribute("x"));
                     xValues.put(bpmnElement, x);
                 }
             }
@@ -1052,8 +1060,8 @@ public class BpmnXMLParser {
         if (laneInfo.laneXValue.get(id) == null) {
             return null;
         }
-        int xValue = laneInfo.laneXValue.get(id) != null ? laneInfo.laneXValue.get(id) : 0; // null 체크 추가
-        int yValue = laneInfo.laneYValue.get(id) != null ? laneInfo.laneYValue.get(id) : 0; // null 체크 추가
+        double xValue = laneInfo.laneXValue.get(id) != null ? laneInfo.laneXValue.get(id) : 0.0;
+        double yValue = laneInfo.laneYValue.get(id) != null ? laneInfo.laneYValue.get(id) : 0.0;
         if (laneRoleName == null || laneRoleName.equals("")) {
             laneRoleName = getRoleNameInLocation(laneInfo.laneCoordinate, xValue, yValue);
         }

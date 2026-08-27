@@ -20,6 +20,7 @@ import org.uengine.five.entity.WorklistEntity;
 import org.uengine.five.repository.ProcessInstanceRepository;
 import org.uengine.five.repository.WorklistRepository;
 import org.uengine.five.service.RootInstanceResolver;
+import org.uengine.webservices.worklist.DefaultWorkList;
 import org.uengine.hwlife.esbclient.dto.EsbCommonHeader;
 import org.uengine.hwlife.esbclient.support.EsbRequestBodyAdvice;
 import org.uengine.hwlife.search.dto.BulkAssignSearchRequest;
@@ -59,7 +60,9 @@ public class WorkSearchServiceImpl implements WorkSearchService {
   private static final String DEFAULT_RQST_DVSN_CODE = "N";
 
   private final MyTodoSearchRepository myTodoSearchRepository;
+  private final MyProgressSearchRepository myProgressSearchRepository;
   private final OrgRunningSearchRepository orgRunningSearchRepository;
+  private final OrgCompletedSearchRepository orgCompletedSearchRepository;
   private final BulkAssignSearchRepository bulkAssignSearchRepository;
   private final ProcessInstanceRepository processInstanceRepository;
   private final WorklistRepository worklistRepository;
@@ -67,21 +70,21 @@ public class WorkSearchServiceImpl implements WorkSearchService {
 
   public WorkSearchServiceImpl(
       MyTodoSearchRepository myTodoSearchRepository,
+      MyProgressSearchRepository myProgressSearchRepository,
       OrgRunningSearchRepository orgRunningSearchRepository,
+      OrgCompletedSearchRepository orgCompletedSearchRepository,
       BulkAssignSearchRepository bulkAssignSearchRepository,
       ProcessInstanceRepository processInstanceRepository,
       WorklistRepository worklistRepository,
       RootInstanceResolver rootInstanceResolver) {
     this.myTodoSearchRepository = myTodoSearchRepository;
+    this.myProgressSearchRepository = myProgressSearchRepository;
     this.orgRunningSearchRepository = orgRunningSearchRepository;
+    this.orgCompletedSearchRepository = orgCompletedSearchRepository;
     this.bulkAssignSearchRepository = bulkAssignSearchRepository;
     this.processInstanceRepository = processInstanceRepository;
     this.worklistRepository = worklistRepository;
     this.rootInstanceResolver = rootInstanceResolver;
-  }
-
-  private static ResponseStatusException notImplemented(String operation) {
-    return new ResponseStatusException(HttpStatus.NOT_IMPLEMENTED, operation + " is not implemented yet");
   }
 
   @Override
@@ -94,13 +97,12 @@ public class WorkSearchServiceImpl implements WorkSearchService {
       throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "header.emnb is required");
     }
 
-    MyTodoRequest normalizedRequest = requireMyTodoRequest(request);
+    MyTodoRequest normalizedRequest = normalizeMyTodoRequest(request);
     Long cursorId = parseNextKey(normalizedRequest.getNextKey());
-    int pageSize = normalizePageSize(normalizedRequest.getPageSize());
     MyTodoSearchRepository.SearchResult result = myTodoSearchRepository.search(
         normalizedRequest,
         cursorId,
-        pageSize,
+        normalizedRequest.getPageSize(),
         emnb,
         belnOrgnCode);
 
@@ -117,7 +119,28 @@ public class WorkSearchServiceImpl implements WorkSearchService {
   @Override
   @Transactional(readOnly = true)
   public MyProgressResponse searchMyProgress(@RequestBody MyProgressRequest request) {
-    throw notImplemented("searchMyProgress");
+    EsbCommonHeader header = EsbRequestBodyAdvice.currentHeader();
+    String emnb = trimToNull(header != null ? header.getEmnb() : null);
+    if (emnb == null) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "header.emnb is required");
+    }
+
+    MyProgressRequest normalizedRequest = normalizeMyProgressRequest(request);
+    Long cursorId = parseNextKey(normalizedRequest.getNextKey());
+    MyProgressSearchRepository.SearchResult result = myProgressSearchRepository.search(
+        normalizedRequest,
+        cursorId,
+        normalizedRequest.getPageSize(),
+        emnb);
+
+    Map<Long, ProcessInstanceEntity> rootInstances = rootInstanceResolver.preload(result.items());
+    MyProgressResponse response = new MyProgressResponse();
+    response.setTotCont(result.totalCount());
+    response.setNextKey(result.nextKey());
+    response.setTodoPrgsList(result.items().stream()
+        .map(worklist -> toMyProgressItem(worklist, rootInstances))
+        .collect(Collectors.toList()));
+    return response;
   }
 
   @Override
@@ -143,7 +166,26 @@ public class WorkSearchServiceImpl implements WorkSearchService {
   @Override
   @Transactional(readOnly = true)
   public OrgCompletedResponse searchOrgCompleted(@RequestBody OrgCompletedRequest request) {
-    throw notImplemented("searchOrgCompleted");
+    EsbCommonHeader header = EsbRequestBodyAdvice.currentHeader();
+    String belnOrgnCode = trimToNull(header != null ? header.getBelnOrgnCode() : null);
+
+    OrgCompletedRequest normalizedRequest = normalizeOrgCompletedRequest(request);
+    Long cursorId = parseNextKey(normalizedRequest.getNextKey(), "fncgBpmPcesIntcId");
+    OrgCompletedSearchRepository.SearchResult result = orgCompletedSearchRepository.search(
+        normalizedRequest,
+        cursorId,
+        normalizedRequest.getPageSize(),
+        belnOrgnCode);
+
+    Map<Long, ProcessInstanceEntity> rootInstances =
+        rootInstanceResolver.preloadInstances(result.items());
+    OrgCompletedResponse response = new OrgCompletedResponse();
+    response.setTotCont(result.totalCount());
+    response.setNextKey(result.nextKey());
+    response.setOrgnCpltList(result.items().stream()
+        .map(instance -> toOrgCompletedItem(instance, rootInstances))
+        .collect(Collectors.toList()));
+    return response;
   }
 
   @Override
@@ -198,6 +240,9 @@ public class WorkSearchServiceImpl implements WorkSearchService {
     }
 
     for (WorklistEntity worklist : worklists) {
+      if (!isWorklistFiltered(worklist.getStatus())) {
+        continue;
+      }
       resultItems.add(toWorklistByInstIdItem(worklist));
     }
     return response;
@@ -263,7 +308,8 @@ public class WorkSearchServiceImpl implements WorkSearchService {
     Long instId = worklist.getInstId();
     ProcessInstanceEntity rootInstance = rootInstanceResolver.resolve(instId, rootInstances);
     MyTodoItem item = new MyTodoItem();
-
+    
+    item.setBpmBswrClsfCode(instance == null ? null : instance.getBswrClsfCode());
     item.setCustId(instance == null ? null : instance.getCustId());
     item.setLoanCntcNo(instance == null ? null : instance.getLoanCntcNo());
     item.setFncgSuptTrgtDvsnCode(instance == null ? null : instance.getFncgSuptTrgtDvsnCode());
@@ -300,39 +346,6 @@ public class WorkSearchServiceImpl implements WorkSearchService {
     return item;
   }
 
-  private OrgRunningItem toOrgRunningItem(
-      WorklistEntity worklist, Map<Long, ProcessInstanceEntity> rootInstances) {
-    ProcessInstanceEntity instance = worklist.getProcessInstance();
-    Long instId = worklist.getInstId();
-    ProcessInstanceEntity rootInstance = rootInstanceResolver.resolve(instId, rootInstances);
-    OrgRunningItem item = new OrgRunningItem();
-
-    item.setStarDttm(instance == null ? null : instance.getStartedDate());
-    item.setLoanCntcNo(instance == null ? null : instance.getLoanCntcNo());
-    item.setFncgSuptTrgtDvsnCode(instance == null ? null : instance.getFncgSuptTrgtDvsnCode());
-    item.setLoanSubjDvsnCode(instance == null ? null : instance.getLoanSubjDvsnCode());
-    item.setCustId(instance == null ? null : instance.getCustId());
-    item.setFncgMneyUsagClsfCode(instance == null ? null : instance.getFncgMneyUsagClsfCode());
-    item.setLoanHopeDate(instance == null ? null : instance.getLoanHopeDate());
-    item.setLoanPcesMgmtNo(instance == null ? null : instance.getCorrKey());
-    item.setReptHndrEmnb(rootInstance == null ? null : rootInstance.getInitEp());
-    item.setReptHndrFncgOrgnCode(rootInstance == null ? null : rootInstance.getInitGroupCd());
-    item.setHndrEmnb(worklist.getEndpoint());
-    item.setHndrOrgnCode(trimToNull(worklist.getGroupCd()));
-    item.setUworNm(worklist.getTitle());
-    item.setFncgBpmTaskTrcgNm(worklist.getTrcTag());
-    item.setUworStarDttm(worklist.getStartDate());
-    item.setFncgBpmtaskLstId(
-        worklist.getTaskId() == null ? null : String.valueOf(worklist.getTaskId()));
-    item.setFncgBpmPcesIntcId(
-        instance == null || instance.getInstId() == null
-            ? null
-            : String.valueOf(instance.getInstId()));
-    item.setBswrDvsnVal(rootInstance == null ? null : rootInstance.getDefId());
-    item.setFncgBpmPcesId(worklist.getDefId());
-    return item;
-  }
-
   /** MyProgress 매핑 — {@code bswrDvsnVal}=root {@code defId}, {@code fncgBpmPcesId}=worklist {@code defId}. */
   MyProgressItem toMyProgressItem(
       WorklistEntity worklist, Map<Long, ProcessInstanceEntity> rootInstances) {
@@ -353,8 +366,9 @@ public class WorkSearchServiceImpl implements WorkSearchService {
     item.setReptHndrFncgOrgnCode(rootInstance == null ? null : rootInstance.getInitGroupCd());
     item.setHndrEmnb(worklist.getEndpoint());
     item.setHndrOrgnCode(trimToNull(worklist.getGroupCd()));
+    item.setStarDttm(instance == null ? null : instance.getStartedDate());
     item.setBpmBswrClsfCode(instance == null ? null : instance.getBswrClsfCode());
-    item.setFncgBpmtaskLstId(
+    item.setFncgBpmTaskLstId(
         worklist.getTaskId() == null ? null : String.valueOf(worklist.getTaskId()));
     item.setFncgBpmPcesIntcId(
         instId == null ? null : String.valueOf(instId));
@@ -363,11 +377,43 @@ public class WorkSearchServiceImpl implements WorkSearchService {
     return item;
   }
 
-  /** OrgCompleted 매핑 — {@code bswrDvsnVal}=root {@code defId}, {@code fncgBpmPcesId}=worklist {@code defId}. */
-  OrgCompletedItem toOrgCompletedItem(
-      WorklistEntity worklist, Map<Long, ProcessInstanceEntity> rootInstances) {
+  private OrgRunningItem toOrgRunningItem(
+    WorklistEntity worklist, Map<Long, ProcessInstanceEntity> rootInstances) {
     ProcessInstanceEntity instance = worklist.getProcessInstance();
     Long instId = worklist.getInstId();
+    ProcessInstanceEntity rootInstance = rootInstanceResolver.resolve(instId, rootInstances);
+    OrgRunningItem item = new OrgRunningItem();
+
+    item.setStarDttm(instance == null ? null : instance.getStartedDate());
+    item.setLoanCntcNo(instance == null ? null : instance.getLoanCntcNo());
+    item.setFncgSuptTrgtDvsnCode(instance == null ? null : instance.getFncgSuptTrgtDvsnCode());
+    item.setLoanSubjDvsnCode(instance == null ? null : instance.getLoanSubjDvsnCode());
+    item.setCustId(instance == null ? null : instance.getCustId());
+    item.setFncgMneyUsagClsfCode(instance == null ? null : instance.getFncgMneyUsagClsfCode());
+    item.setLoanHopeDate(instance == null ? null : instance.getLoanHopeDate());
+    item.setLoanPcesMgmtNo(instance == null ? null : instance.getCorrKey());
+    item.setReptHndrEmnb(rootInstance == null ? null : rootInstance.getInitEp());
+    item.setReptHndrFncgOrgnCode(rootInstance == null ? null : rootInstance.getInitGroupCd());
+    item.setHndrEmnb(worklist.getEndpoint());
+    item.setHndrOrgnCode(trimToNull(worklist.getGroupCd()));
+    item.setUworNm(worklist.getTitle());
+    item.setFncgBpmTaskTrcgNm(worklist.getTrcTag());
+    item.setUworStarDttm(worklist.getStartDate());
+    item.setFncgBpmTaskLstId(
+        worklist.getTaskId() == null ? null : String.valueOf(worklist.getTaskId()));
+    item.setFncgBpmPcesIntcId(
+        instance == null || instance.getInstId() == null
+            ? null
+            : String.valueOf(instance.getInstId()));
+    item.setBswrDvsnVal(rootInstance == null ? null : rootInstance.getDefId());
+    item.setFncgBpmPcesId(worklist.getDefId());
+    return item;
+  }
+
+  /** OrgCompleted 매핑 — {@code bswrDvsnVal}=root {@code defId}. */
+  OrgCompletedItem toOrgCompletedItem(
+      ProcessInstanceEntity instance, Map<Long, ProcessInstanceEntity> rootInstances) {
+    Long instId = instance == null ? null : instance.getInstId();
     ProcessInstanceEntity rootInstance = rootInstanceResolver.resolve(instId, rootInstances);
     OrgCompletedItem item = new OrgCompletedItem();
     item.setStarDttm(instance == null ? null : instance.getStartedDate());
@@ -382,12 +428,9 @@ public class WorkSearchServiceImpl implements WorkSearchService {
     item.setReptHndrFncgOrgnCode(rootInstance == null ? null : rootInstance.getInitGroupCd());
     item.setEndDttm(instance == null ? null : instance.getFinishedDate());
     item.setBpmBswrClsfCode(instance == null ? null : instance.getBswrClsfCode());
-    item.setFncgBpmtaskLstId(
-        worklist.getTaskId() == null ? null : String.valueOf(worklist.getTaskId()));
-    item.setFncgBpmPcesIntcId(
-        instId == null ? null : String.valueOf(instId));
+    item.setFncgBpmPcesIntcId(instId == null ? null : String.valueOf(instId));
     item.setBswrDvsnVal(rootInstance == null ? null : rootInstance.getDefId());
-    item.setFncgBpmPcesId(worklist.getDefId());
+
     return item;
   }
 
@@ -404,6 +447,14 @@ public class WorkSearchServiceImpl implements WorkSearchService {
     item.setBswrDvsnVal(rootInstance == null ? null : rootInstance.getDefId());
 
     return item;
+  }
+
+  private static boolean isWorklistFiltered(String status) {
+    if (status == null) {
+      return false;
+    }
+    String normalized = status.trim().toUpperCase();
+    return DefaultWorkList.WORKITEM_STATUS_NEW.equals(normalized) || DefaultWorkList.WORKITEM_STATUS_COMPLETED.equals(normalized);
   }
 
   private static WorklistByInstIdResponseItem toWorklistByInstIdItem(WorklistEntity worklist) {
@@ -453,20 +504,24 @@ public class WorkSearchServiceImpl implements WorkSearchService {
   }
 
   private static Long parseNextKey(String nextKey) {
+    return parseNextKey(nextKey, "fncgBpmTaskLstId");
+  }
+
+  private static Long parseNextKey(String nextKey, String fieldName) {
     String value = trimToNull(nextKey);
     if (value == null) {
       return null;
     }
     try {
-      long taskId = Long.parseLong(value);
-      if (taskId <= 0) {
+      long id = Long.parseLong(value);
+      if (id <= 0) {
         throw new NumberFormatException("nextKey must be positive");
       }
-      return taskId;
+      return id;
     } catch (NumberFormatException exception) {
       throw new ResponseStatusException(
           HttpStatus.BAD_REQUEST,
-          "nextKey must be a positive fncgBpmTaskLstId",
+          "nextKey must be a positive " + fieldName,
           exception);
     }
   }
@@ -478,11 +533,31 @@ public class WorkSearchServiceImpl implements WorkSearchService {
     return Math.max(1, Math.min(pageSize, MAX_PAGE_SIZE));
   }
 
-  private static MyTodoRequest requireMyTodoRequest(MyTodoRequest request) {
-    if (request == null) {
-      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "request body is required");
-    }
-    return request;
+  /**
+   * 나의 할일 검색 요청 정규화.
+   * <ul>
+   *   <li>{@code pageSize}: 없으면 {@link #DEFAULT_PAGE_SIZE} (1~{@link #MAX_PAGE_SIZE})</li>
+   *   <li>날짜({@code starDate}/{@code endDate}, {@code hopeStarDate}/{@code hopeEndDate}):
+   *       없으면 기간 제한 없음, 있으면 해당 범위만 필터</li>
+   * </ul>
+   */
+  private static MyTodoRequest normalizeMyTodoRequest(MyTodoRequest request) {
+    MyTodoRequest normalized = request == null ? new MyTodoRequest() : request;
+    normalized.setPageSize(normalizePageSize(normalized.getPageSize()));
+    return normalized;
+  }
+
+  /**
+   * 나의 진행 검색 요청 정규화.
+   * <ul>
+   *   <li>{@code pageSize}: 없으면 {@link #DEFAULT_PAGE_SIZE} (1~{@link #MAX_PAGE_SIZE})</li>
+   *   <li>날짜({@code rqstStarDate}/{@code rqstEndDate}): 없으면 기간 제한 없음, 있으면 해당 범위만 필터</li>
+   * </ul>
+   */
+  private static MyProgressRequest normalizeMyProgressRequest(MyProgressRequest request) {
+    MyProgressRequest normalized = request == null ? new MyProgressRequest() : request;
+    normalized.setPageSize(normalizePageSize(normalized.getPageSize()));
+    return normalized;
   }
 
   /**
@@ -517,6 +592,26 @@ public class WorkSearchServiceImpl implements WorkSearchService {
     normalized.setRqstEndDate(end);
     return normalized;
   }
+
+  private static OrgCompletedRequest normalizeOrgCompletedRequest(OrgCompletedRequest request) {
+    OrgCompletedRequest normalized = request == null ? new OrgCompletedRequest() : request;
+    normalized.setPageSize(normalizePageSize(normalized.getPageSize()));
+
+    Date start = normalized.getRqstStarDate();
+    Date end = normalized.getRqstEndDate();
+    if (start == null && end == null) {
+      end = new Date();
+      start = plusDays(end, -DEFAULT_DATE_RANGE_DAYS);
+    } else if (start == null) {
+      start = plusDays(end, -DEFAULT_DATE_RANGE_DAYS);
+    } else if (end == null) {
+      end = plusDays(start, DEFAULT_DATE_RANGE_DAYS);
+    }
+    normalized.setRqstStarDate(start);
+    normalized.setRqstEndDate(end);
+    return normalized;
+  }
+
 
   private static Date plusDays(Date value, int days) {
     Calendar calendar = Calendar.getInstance(TimeZone.getTimeZone("Asia/Seoul"));

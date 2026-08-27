@@ -8,16 +8,16 @@ import java.util.List;
  */
 public class OrgCompletedResponse {
 
-    private List<OrgCompletedItem> orgnCpltlist = new ArrayList<>();
+    private List<OrgCompletedItem> orgnCpltList = new ArrayList<>();
     private String nextKey;
     private Integer totCont;
 
-    public List<OrgCompletedItem> getOrgnCpltlist() {
-        return orgnCpltlist;
+    public List<OrgCompletedItem> getOrgnCpltList() {
+        return orgnCpltList;
     }
 
-    public void setOrgnCpltlist(List<OrgCompletedItem> orgnCpltlist) {
-        this.orgnCpltlist = orgnCpltlist;
+    public void setOrgnCpltList(List<OrgCompletedItem> orgnCpltList) {
+        this.orgnCpltList = orgnCpltList;
     }
 
     public String getNextKey() {

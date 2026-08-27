@@ -10,6 +10,7 @@ import org.springframework.stereotype.Repository;
 import org.uengine.five.entity.ProcessInstanceEntity;
 import org.uengine.five.entity.WorklistEntity;
 import org.uengine.hwlife.search.dto.OrgRunningRequest;
+import org.uengine.webservices.worklist.DefaultWorkList;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -126,7 +127,7 @@ public class OrgRunningSearchRepository {
       Join<WorklistEntity, ProcessInstanceEntity> instance,
       OrgRunningRequest request) {
     List<Predicate> predicates = new ArrayList<>();
-    predicates.add(builder.upper(worklist.get("status")).in("NEW", "RUNNING"));
+    predicates.add(builder.upper(worklist.get("status")).in(DefaultWorkList.WORKITEM_STATUS_NEW));
     // root_inst_id 기준 루트 인스턴스 def_id == bswrDvsnVal
     addRootDefId(builder, query, predicates, instance, request.getBswrDvsnVal());
     // 현재 단위업무 defId == fncgBpmPcesId
@@ -153,7 +154,7 @@ public class OrgRunningSearchRepository {
         request.getFncgMneyUsagClsfCode());
     addText(builder, predicates, instance.get("loanCntcNo"), request.getLoanCntcNo());
     addText(builder, predicates, instance.get("custId"), request.getCustId());
-    addOrganization(builder, predicates, instance, request);
+    addOrganization(builder, predicates, worklist, instance, request);
     return predicates.toArray(Predicate[]::new);
   }
 
@@ -227,11 +228,12 @@ public class OrgRunningSearchRepository {
   }
   /**
    * 요청기관({@code rqstDvsnCode=Y}): {@code bpm_procinst.init_group_cd}<br>
-   * 진행기관({@code rqstDvsnCode=N}, 기본): {@code bpm_procinst.curr_group_cd}
+   * 진행기관({@code rqstDvsnCode=N}, 기본): 진행중 단위업무의 {@code bpm_worklist.group_cd}
    */
   private static void addOrganization(
       CriteriaBuilder builder,
       List<Predicate> predicates,
+      Root<WorklistEntity> worklist,
       Join<WorklistEntity, ProcessInstanceEntity> instance,
       OrgRunningRequest request) {
     String organizationCode = trimToNull(request.getFncgWndwOrgnCode());
@@ -242,7 +244,7 @@ public class OrgRunningSearchRepository {
       predicates.add(builder.equal(instance.get("initGroupCd"), organizationCode));
       return;
     }
-    predicates.add(builder.equal(instance.get("currGroupCd"), organizationCode));
+    predicates.add(builder.equal(worklist.get("groupCd"), organizationCode));
   }
 
   private static Predicate cursorPredicate(
@@ -346,7 +348,7 @@ public class OrgRunningSearchRepository {
       if ("uworStarDttm".equals(value) || "startDate".equals(value)) {
         return WORK_STARTED_DATE;
       }
-      if ("fncgBpmtaskLstId".equals(value)
+      if ("fncgBpmTaskLstId".equals(value)
           || "fncgBpmTaskLstId".equals(value)
           || "taskId".equals(value)) {
         return TASK_ID;

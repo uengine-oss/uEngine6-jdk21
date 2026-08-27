@@ -2,8 +2,8 @@ package org.uengine.hwlife.search.dto;
 
 import java.util.Date;
 
-import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonFormat;
+import org.uengine.hwlife.esbclient.dto.EsbCodes;
 
 /**
  * 나의 할일 검색 요청 — POST /search/my-todo JSON body.
@@ -17,13 +17,13 @@ public class MyTodoRequest {
     private String fncgSuptTrgtDvsnCode;
     private String loanSubjDvsnCode;
     private String fncgMneyUsagClsfCode;
-    @JsonFormat(pattern = "yyyyMMdd")
+    @JsonFormat(pattern = EsbCodes.DATE)
     private Date starDate;
-    @JsonFormat(pattern = "yyyyMMdd")
+    @JsonFormat(pattern = EsbCodes.DATE)
     private Date endDate;
-    @JsonFormat(pattern = "yyyyMMdd")
+    @JsonFormat(pattern = EsbCodes.DATE)
     private Date hopeStarDate;
-    @JsonFormat(pattern = "yyyyMMdd")
+    @JsonFormat(pattern = EsbCodes.DATE)
     private Date hopeEndDate;
 
     /** 요청기관 필터 — {@code bpm_procinst.init_group_cd} 와 일치. */

@@ -24,10 +24,8 @@ public class OrgCompletedItem {
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = EsbCodes.DTTM_SEC, timezone = "Asia/Seoul")
     private Date endDttm;
     private String bpmBswrClsfCode;
-    private String fncgBpmtaskLstId;
     private String fncgBpmPcesIntcId;
     private String bswrDvsnVal; // root.defId (메인/서브)
-    private String fncgBpmPcesId; // worklist.defId
 
     public Date getStarDttm() {
         return starDttm;
@@ -125,14 +123,6 @@ public class OrgCompletedItem {
         this.bpmBswrClsfCode = bpmBswrClsfCode;
     }
 
-    public String getFncgBpmtaskLstId() {
-        return fncgBpmtaskLstId;
-    }
-
-    public void setFncgBpmtaskLstId(String fncgBpmtaskLstId) {
-        this.fncgBpmtaskLstId = fncgBpmtaskLstId;
-    }
-
     public String getFncgBpmPcesIntcId() {
         return fncgBpmPcesIntcId;
     }
@@ -147,13 +137,5 @@ public class OrgCompletedItem {
 
     public void setBswrDvsnVal(String bswrDvsnVal) {
         this.bswrDvsnVal = bswrDvsnVal;
-    }
-
-    public String getFncgBpmPcesId() {
-        return fncgBpmPcesId;
-    }
-
-    public void setFncgBpmPcesId(String fncgBpmPcesId) {
-        this.fncgBpmPcesId = fncgBpmPcesId;
     }
 }

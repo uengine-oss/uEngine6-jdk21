@@ -9,7 +9,8 @@ import java.util.TimeZone;
 import org.springframework.stereotype.Repository;
 import org.uengine.five.entity.ProcessInstanceEntity;
 import org.uengine.five.entity.WorklistEntity;
-import org.uengine.hwlife.search.dto.MyTodoRequest;
+import org.uengine.hwlife.search.dto.MyProgressRequest;
+import org.uengine.kernel.Activity;
 import org.uengine.webservices.worklist.DefaultWorkList;
 
 import jakarta.persistence.EntityManager;
@@ -29,24 +30,23 @@ import jakarta.persistence.criteria.Root;
 import jakarta.persistence.criteria.Subquery;
 
 @Repository
-public class MyTodoSearchRepository {
+public class MyProgressSearchRepository {
 
   @PersistenceContext
   private EntityManager entityManager;
 
-  public MyTodoSearchRepository() {
+  public MyProgressSearchRepository() {
   }
 
-  MyTodoSearchRepository(EntityManager entityManager) {
+  MyProgressSearchRepository(EntityManager entityManager) {
     this.entityManager = entityManager;
   }
 
   public SearchResult search(
-      MyTodoRequest request,
+      MyProgressRequest request,
       Long cursorId,
       int pageSize,
-      String emnb,
-      String belnOrgnCode) {
+      String emnb) {
     CriteriaBuilder builder = entityManager.getCriteriaBuilder();
     String sortKey = sortKey(request);
     CursorPosition cursor = findCursor(builder, cursorId, sortKey);
@@ -58,7 +58,7 @@ public class MyTodoSearchRepository {
     Root<WorklistEntity> worklist = dataQuery.from(WorklistEntity.class);
     Join<WorklistEntity, ProcessInstanceEntity> instance = fetchProcessInstance(worklist);
     List<Predicate> dataPredicates = new ArrayList<>(
-        List.of(predicates(builder, dataQuery, worklist, instance, request, emnb, belnOrgnCode)));
+        List.of(predicates(builder, dataQuery, worklist, instance, request, emnb)));
     // nextKey(taskId)는 정렬·비즈니스 필터가 아니라, 정렬된 결과의 페이지 커서다.
     if (cursor != null) {
       dataPredicates.add(cursorPredicate(builder, worklist, instance, sortKey, cursor));
@@ -87,7 +87,7 @@ public class MyTodoSearchRepository {
     Join<WorklistEntity, ProcessInstanceEntity> countInstance =
         countWorklist.join("processInstance", JoinType.LEFT);
     countQuery.select(builder.count(countWorklist))
-        .where(predicates(builder, countQuery, countWorklist, countInstance, request, emnb, belnOrgnCode));
+        .where(predicates(builder, countQuery, countWorklist, countInstance, request, emnb));
     long totalCount = entityManager.createQuery(countQuery).getSingleResult();
 
     return new SearchResult(items, Math.toIntExact(totalCount), nextKey);
@@ -133,43 +133,60 @@ public class MyTodoSearchRepository {
       AbstractQuery<?> query,
       Root<WorklistEntity> worklist,
       Join<WorklistEntity, ProcessInstanceEntity> instance,
-      MyTodoRequest request,
-      String emnb,
-      String belnOrgnCode) {
+      MyProgressRequest request,
+      String emnb) {
     List<Predicate> predicates = new ArrayList<>();
-    // 1) 진행중(NEW) 건
-    predicates.add(builder.equal(worklist.get("status"), DefaultWorkList.WORKITEM_STATUS_NEW));
-    // 2) 본인 할당 건 OR 3) 소속기관 선점 미선점 건
-    predicates.add(accessPredicate(builder, worklist, emnb, belnOrgnCode));
+    // 1) 인스턴스 진행중
+    predicates.add(builder.equal(instance.get("status"), Activity.STATUS_RUNNING));
+    // 2) 현재 단위업무 (조직진행현황·현재 워크아이템과 동일)
+    predicates.add(builder.upper(worklist.get("status")).in(DefaultWorkList.WORKITEM_STATUS_NEW));
+    // 3) 본인이 한 번이라도 완료 처리한 업무 (루트 인스턴스 기준, 서브프로세스 포함)
+    predicates.add(involvementPredicate(builder, query, worklist, emnb));
 
-    // root_inst_id 기준 루트 인스턴스 def_id == bswrDvsnVal
     addRootDefId(builder, query, predicates, instance, request.getBswrDvsnVal());
-    // 현재 단위업무 defId == fncgBpmPcesId
     addText(builder, predicates, worklist.get("defId"), request.getFncgBpmPcesId());
-    // 단위업무명: worklist.title == uworNm
     addText(builder, predicates, worklist.get("title"), request.getUworNm());
     addText(builder, predicates, instance.get("bswrClsfCode"), request.getBpmBswrClsfCode());
     addText(builder, predicates, instance.get("custId"), request.getCustId());
     addText(builder, predicates, instance.get("loanCntcNo"), request.getLoanCntcNo());
-    addText(builder, predicates, instance.get("corrKey"), request.getLoanPcesMgmtNo());
     addText(builder, predicates, instance.get("fncgSuptTrgtDvsnCode"), request.getFncgSuptTrgtDvsnCode());
     addText(builder, predicates, instance.get("loanSubjDvsnCode"), request.getLoanSubjDvsnCode());
     addText(builder, predicates, instance.get("fncgMneyUsagClsfCode"), request.getFncgMneyUsagClsfCode());
-    // 요청기관 필터 (fncgWndwOrgnCode → bpm_procinst.init_group_cd)
     addText(builder, predicates, instance.get("initGroupCd"), request.getFncgWndwOrgnCode());
     addDateRange(
         builder,
         predicates,
-        worklist.get("startDate"),
-        request.getStarDate(),
-        request.getEndDate());
-    addDateRange(
-        builder,
-        predicates,
-        instance.get("loanHopeDate"),
-        request.getHopeStarDate(),
-        request.getHopeEndDate());
+        instance.get("startedDate"),
+        request.getRqstStarDate(),
+        request.getRqstEndDate());
     return predicates.toArray(Predicate[]::new);
+  }
+
+  /**
+   * 같은 루트 인스턴스에서 요청자 사번이 완료({@code COMPLETED})한 워크리스트가 있는지.
+   * {@code coalesce(rootInstId, instId)} 로 서브프로세스까지 한 업무로 본다.
+   */
+  private static Predicate involvementPredicate(
+      CriteriaBuilder builder,
+      AbstractQuery<?> query,
+      Root<WorklistEntity> worklist,
+      String emnb) {
+    String handler = trimToNull(emnb);
+    if (handler == null) {
+      return builder.disjunction();
+    }
+    Subquery<Long> involved = query.subquery(Long.class);
+    Root<WorklistEntity> completed = involved.from(WorklistEntity.class);
+    Expression<Long> currentRoot =
+        builder.coalesce(worklist.get("rootInstId"), worklist.get("instId"));
+    Expression<Long> completedRoot =
+        builder.coalesce(completed.get("rootInstId"), completed.get("instId"));
+    involved.select(completed.get("taskId"))
+        .where(
+            builder.equal(completedRoot, currentRoot),
+            builder.equal(builder.upper(completed.get("status")), DefaultWorkList.WORKITEM_STATUS_COMPLETED),
+            builder.equal(completed.get("endpoint"), handler));
+    return builder.exists(involved);
   }
 
   /**
@@ -266,7 +283,7 @@ public class MyTodoSearchRepository {
     throw new IllegalArgumentException("Unsupported sortOrdrVal: " + sortKey);
   }
 
-  private String sortKey(MyTodoRequest request) {
+  private String sortKey(MyProgressRequest request) {
     String value = trimToNull(request.getSortOrdrVal());
     if (value == null) {
       return "taskId";
@@ -290,36 +307,6 @@ public class MyTodoSearchRepository {
 
   private static boolean isTaskIdSort(String sortKey) {
     return "taskId".equals(trimToNull(sortKey));
-  }
-
-  /**
-   * 나의 업무함 접근 조건.
-   * <ul>
-   *   <li>본인 할당: {@code endpoint == emnb}</li>
-   *   <li>기관 선점 미선점: {@code dispatchOption == 1 AND groupCd == belnOrgnCode AND endpoint IS NULL}</li>
-   * </ul>
-   */
-  private static Predicate accessPredicate(
-      CriteriaBuilder builder,
-      Root<WorklistEntity> worklist,
-      String emnb,
-      String belnOrgnCode) {
-    String handler = trimToNull(emnb);
-    String organization = trimToNull(belnOrgnCode);
-
-    Path<String> endpoint = worklist.get("endpoint");
-    Path<String> groupCd = worklist.get("groupCd");
-    Predicate assignedToMe =
-        handler == null ? builder.disjunction() : builder.equal(endpoint, handler);
-    Predicate claimable =
-        organization == null
-            ? builder.disjunction()
-            : builder.and(
-                builder.equal(worklist.get("dispatchOption"), 1),
-                builder.isNull(endpoint),
-                builder.equal(builder.trim(groupCd), organization));
-
-    return builder.or(assignedToMe, claimable);
   }
 
   private static void addText(

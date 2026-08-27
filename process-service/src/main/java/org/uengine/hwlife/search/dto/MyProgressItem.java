@@ -3,6 +3,7 @@ package org.uengine.hwlife.search.dto;
 import java.util.Date;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import org.uengine.hwlife.esbclient.dto.EsbCodes;
 
 /**
  * 나의 진행 검색 결과 항목 — {@link MyProgressResponse#getTodoPrgsList()} 요소.
@@ -23,9 +24,10 @@ public class MyProgressItem {
     private String reptHndrFncgOrgnCode;
     private String hndrEmnb;
     private String hndrOrgnCode;
-    private String starDttm; // instance.startedDate
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = EsbCodes.DTTM_SEC, timezone = "Asia/Seoul")
+    private Date starDttm; // instance.startedDate
     private String bpmBswrClsfCode;
-    private String fncgBpmtaskLstId;
+    private String fncgBpmTaskLstId;
     private String fncgBpmPcesIntcId;
     private String bswrDvsnVal; // root.defId (메인/서브)
     private String fncgBpmPcesId; // worklist.defId
@@ -134,11 +136,11 @@ public class MyProgressItem {
         this.hndrOrgnCode = hndrOrgnCode;
     }
 
-    public String getStarDttm() {
+    public Date getStarDttm() {
         return starDttm;
     }
 
-    public void setStarDttm(String starDttm) {
+    public void setStarDttm(Date starDttm) {
         this.starDttm = starDttm;
     }
 
@@ -150,12 +152,12 @@ public class MyProgressItem {
         this.bpmBswrClsfCode = bpmBswrClsfCode;
     }
 
-    public String getFncgBpmtaskLstId() {
-        return fncgBpmtaskLstId;
+    public String getFncgBpmTaskLstId() {
+        return fncgBpmTaskLstId;
     }
 
-    public void setFncgBpmtaskLstId(String fncgBpmtaskLstId) {
-        this.fncgBpmtaskLstId = fncgBpmtaskLstId;
+    public void setFncgBpmTaskLstId(String fncgBpmTaskLstId) {
+        this.fncgBpmTaskLstId = fncgBpmTaskLstId;
     }
 
     public String getFncgBpmPcesIntcId() {

@@ -8,9 +8,8 @@ import java.util.TimeZone;
 
 import org.springframework.stereotype.Repository;
 import org.uengine.five.entity.ProcessInstanceEntity;
-import org.uengine.five.entity.WorklistEntity;
-import org.uengine.hwlife.search.dto.MyTodoRequest;
-import org.uengine.webservices.worklist.DefaultWorkList;
+import org.uengine.hwlife.search.dto.OrgCompletedRequest;
+import org.uengine.kernel.Activity;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -20,33 +19,34 @@ import jakarta.persistence.criteria.AbstractQuery;
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.Expression;
-import jakarta.persistence.criteria.Fetch;
-import jakarta.persistence.criteria.Join;
-import jakarta.persistence.criteria.JoinType;
 import jakarta.persistence.criteria.Path;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Root;
 import jakarta.persistence.criteria.Subquery;
 
 @Repository
-public class MyTodoSearchRepository {
+public class OrgCompletedSearchRepository {
 
   @PersistenceContext
   private EntityManager entityManager;
 
-  public MyTodoSearchRepository() {
+  public OrgCompletedSearchRepository() {
   }
 
-  MyTodoSearchRepository(EntityManager entityManager) {
+  OrgCompletedSearchRepository(EntityManager entityManager) {
     this.entityManager = entityManager;
   }
 
   public SearchResult search(
-      MyTodoRequest request,
+      OrgCompletedRequest request,
       Long cursorId,
       int pageSize,
-      String emnb,
       String belnOrgnCode) {
+    String organizationCode = organizationCode(request, belnOrgnCode);
+    if (organizationCode == null) {
+      return new SearchResult(List.of(), 0, null);
+    }
+
     CriteriaBuilder builder = entityManager.getCriteriaBuilder();
     String sortKey = sortKey(request);
     CursorPosition cursor = findCursor(builder, cursorId, sortKey);
@@ -54,26 +54,25 @@ public class MyTodoSearchRepository {
       return new SearchResult(List.of(), 0, null);
     }
 
-    CriteriaQuery<WorklistEntity> dataQuery = builder.createQuery(WorklistEntity.class);
-    Root<WorklistEntity> worklist = dataQuery.from(WorklistEntity.class);
-    Join<WorklistEntity, ProcessInstanceEntity> instance = fetchProcessInstance(worklist);
+    CriteriaQuery<ProcessInstanceEntity> dataQuery = builder.createQuery(ProcessInstanceEntity.class);
+    Root<ProcessInstanceEntity> instance = dataQuery.from(ProcessInstanceEntity.class);
     List<Predicate> dataPredicates = new ArrayList<>(
-        List.of(predicates(builder, dataQuery, worklist, instance, request, emnb, belnOrgnCode)));
-    // nextKey(taskId)는 정렬·비즈니스 필터가 아니라, 정렬된 결과의 페이지 커서다.
+        List.of(predicates(builder, dataQuery, instance, request, organizationCode)));
+    // nextKey(instId)는 정렬·비즈니스 필터가 아니라, 정렬된 결과의 페이지 커서다.
     if (cursor != null) {
-      dataPredicates.add(cursorPredicate(builder, worklist, instance, sortKey, cursor));
+      dataPredicates.add(cursorPredicate(builder, instance, sortKey, cursor));
     }
-    dataQuery.select(worklist)
+    dataQuery.select(instance)
         .where(dataPredicates.toArray(Predicate[]::new))
-        .orderBy(sortOrders(builder, worklist, instance, sortKey));
+        .orderBy(sortOrders(builder, instance, sortKey));
 
-    TypedQuery<WorklistEntity> query = entityManager.createQuery(dataQuery);
+    TypedQuery<ProcessInstanceEntity> query = entityManager.createQuery(dataQuery);
     query.setMaxResults(pageSize + 1);
-    List<WorklistEntity> fetchedItems = query.getResultList();
+    List<ProcessInstanceEntity> fetchedItems = query.getResultList();
     String nextKey = fetchedItems.size() > pageSize
-        ? String.valueOf(fetchedItems.get(pageSize).getTaskId())
+        ? String.valueOf(fetchedItems.get(pageSize).getInstId())
         : null;
-    List<WorklistEntity> items = fetchedItems.size() > pageSize
+    List<ProcessInstanceEntity> items = fetchedItems.size() > pageSize
         ? fetchedItems.subList(0, pageSize)
         : fetchedItems;
 
@@ -83,11 +82,9 @@ public class MyTodoSearchRepository {
     }
 
     CriteriaQuery<Long> countQuery = builder.createQuery(Long.class);
-    Root<WorklistEntity> countWorklist = countQuery.from(WorklistEntity.class);
-    Join<WorklistEntity, ProcessInstanceEntity> countInstance =
-        countWorklist.join("processInstance", JoinType.LEFT);
-    countQuery.select(builder.count(countWorklist))
-        .where(predicates(builder, countQuery, countWorklist, countInstance, request, emnb, belnOrgnCode));
+    Root<ProcessInstanceEntity> countInstance = countQuery.from(ProcessInstanceEntity.class);
+    countQuery.select(builder.count(countInstance))
+        .where(predicates(builder, countQuery, countInstance, request, organizationCode));
     long totalCount = entityManager.createQuery(countQuery).getSingleResult();
 
     return new SearchResult(items, Math.toIntExact(totalCount), nextKey);
@@ -100,18 +97,16 @@ public class MyTodoSearchRepository {
     if (cursorId == null) {
       return null;
     }
-    if (isTaskIdSort(sortKey)) {
+    if (isInstIdSort(sortKey)) {
       return new CursorPosition(null, cursorId);
     }
 
     CriteriaQuery<Tuple> cursorQuery = builder.createTupleQuery();
-    Root<WorklistEntity> worklist = cursorQuery.from(WorklistEntity.class);
-    Join<WorklistEntity, ProcessInstanceEntity> instance =
-        worklist.join("processInstance", JoinType.LEFT);
+    Root<ProcessInstanceEntity> instance = cursorQuery.from(ProcessInstanceEntity.class);
     cursorQuery.multiselect(
-            worklist.get("taskId").alias("taskId"),
-            dateSortPath(worklist, instance, sortKey).alias("sortValue"))
-        .where(builder.equal(worklist.get("taskId"), cursorId));
+            instance.get("instId").alias("instId"),
+            dateSortPath(instance, sortKey).alias("sortValue"))
+        .where(builder.equal(instance.get("instId"), cursorId));
     List<Tuple> rows = entityManager.createQuery(cursorQuery)
         .setMaxResults(1)
         .getResultList();
@@ -120,67 +115,42 @@ public class MyTodoSearchRepository {
         : new CursorPosition(rows.get(0).get("sortValue", Date.class), cursorId);
   }
 
-  @SuppressWarnings("unchecked")
-  private static Join<WorklistEntity, ProcessInstanceEntity> fetchProcessInstance(
-      Root<WorklistEntity> worklist) {
-    Fetch<WorklistEntity, ProcessInstanceEntity> fetch =
-        worklist.fetch("processInstance", JoinType.LEFT);
-    return (Join<WorklistEntity, ProcessInstanceEntity>) fetch;
-  }
-
   private static Predicate[] predicates(
       CriteriaBuilder builder,
       AbstractQuery<?> query,
-      Root<WorklistEntity> worklist,
-      Join<WorklistEntity, ProcessInstanceEntity> instance,
-      MyTodoRequest request,
-      String emnb,
-      String belnOrgnCode) {
+      Root<ProcessInstanceEntity> instance,
+      OrgCompletedRequest request,
+      String organizationCode) {
     List<Predicate> predicates = new ArrayList<>();
-    // 1) 진행중(NEW) 건
-    predicates.add(builder.equal(worklist.get("status"), DefaultWorkList.WORKITEM_STATUS_NEW));
-    // 2) 본인 할당 건 OR 3) 소속기관 선점 미선점 건
-    predicates.add(accessPredicate(builder, worklist, emnb, belnOrgnCode));
+    // 1) 인스턴스 종료(Completed)
+    predicates.add(builder.equal(instance.get("status"), Activity.STATUS_COMPLETED));
+    // 2) 요청기관: fncgWndwOrgnCode 우선, 없으면 ESB header.belnOrgnCode → init_group_cd
+    predicates.add(builder.equal(instance.get("initGroupCd"), organizationCode));
 
-    // root_inst_id 기준 루트 인스턴스 def_id == bswrDvsnVal
     addRootDefId(builder, query, predicates, instance, request.getBswrDvsnVal());
-    // 현재 단위업무 defId == fncgBpmPcesId
-    addText(builder, predicates, worklist.get("defId"), request.getFncgBpmPcesId());
-    // 단위업무명: worklist.title == uworNm
-    addText(builder, predicates, worklist.get("title"), request.getUworNm());
     addText(builder, predicates, instance.get("bswrClsfCode"), request.getBpmBswrClsfCode());
     addText(builder, predicates, instance.get("custId"), request.getCustId());
     addText(builder, predicates, instance.get("loanCntcNo"), request.getLoanCntcNo());
-    addText(builder, predicates, instance.get("corrKey"), request.getLoanPcesMgmtNo());
     addText(builder, predicates, instance.get("fncgSuptTrgtDvsnCode"), request.getFncgSuptTrgtDvsnCode());
     addText(builder, predicates, instance.get("loanSubjDvsnCode"), request.getLoanSubjDvsnCode());
-    addText(builder, predicates, instance.get("fncgMneyUsagClsfCode"), request.getFncgMneyUsagClsfCode());
-    // 요청기관 필터 (fncgWndwOrgnCode → bpm_procinst.init_group_cd)
-    addText(builder, predicates, instance.get("initGroupCd"), request.getFncgWndwOrgnCode());
     addDateRange(
         builder,
         predicates,
-        worklist.get("startDate"),
-        request.getStarDate(),
-        request.getEndDate());
-    addDateRange(
-        builder,
-        predicates,
-        instance.get("loanHopeDate"),
-        request.getHopeStarDate(),
-        request.getHopeEndDate());
+        instance.get("startedDate"),
+        request.getRqstStarDate(),
+        request.getRqstEndDate());
     return predicates.toArray(Predicate[]::new);
   }
 
   /**
-   * 서브프로세스 단위업무도 루트 프로세스 정의로 필터링한다.
+   * 서브프로세스도 루트 프로세스 정의로 필터링한다.
    * {@code coalesce(instance.rootInstId, instance.instId)} 의 {@code defId == bswrDvsnVal}.
    */
   private static void addRootDefId(
       CriteriaBuilder builder,
       AbstractQuery<?> query,
       List<Predicate> predicates,
-      Join<WorklistEntity, ProcessInstanceEntity> instance,
+      Root<ProcessInstanceEntity> instance,
       String bswrDvsnVal) {
     String value = trimToNull(bswrDvsnVal);
     if (value == null) {
@@ -199,26 +169,25 @@ public class MyTodoSearchRepository {
 
   private Predicate cursorPredicate(
       CriteriaBuilder builder,
-      Root<WorklistEntity> worklist,
-      Join<WorklistEntity, ProcessInstanceEntity> instance,
+      Root<ProcessInstanceEntity> instance,
       String sortKey,
       CursorPosition cursor) {
-    Path<Long> taskId = worklist.get("taskId");
-    if (isTaskIdSort(sortKey)) {
-      return compareInclusive(builder, taskId, cursor.taskId());
+    Path<Long> instId = instance.get("instId");
+    if (isInstIdSort(sortKey)) {
+      return compareInclusive(builder, instId, cursor.instId());
     }
-    Path<Date> sortPath = dateSortPath(worklist, instance, sortKey);
+    Path<Date> sortPath = dateSortPath(instance, sortKey);
     if (cursor.sortValue() == null) {
       return builder.and(
           builder.isNull(sortPath),
-          compareInclusive(builder, taskId, cursor.taskId()));
+          compareInclusive(builder, instId, cursor.instId()));
     }
     return builder.or(
         builder.isNull(sortPath),
         compare(builder, sortPath, cursor.sortValue()),
         builder.and(
             builder.equal(sortPath, cursor.sortValue()),
-            compareInclusive(builder, taskId, cursor.taskId())));
+            compareInclusive(builder, instId, cursor.instId())));
   }
 
   private static <T extends Comparable<? super T>> Predicate compare(
@@ -237,46 +206,40 @@ public class MyTodoSearchRepository {
 
   private List<jakarta.persistence.criteria.Order> sortOrders(
       CriteriaBuilder builder,
-      Root<WorklistEntity> worklist,
-      Join<WorklistEntity, ProcessInstanceEntity> instance,
+      Root<ProcessInstanceEntity> instance,
       String sortKey) {
-    if (isTaskIdSort(sortKey)) {
-      return List.of(builder.desc(worklist.get("taskId")));
+    if (isInstIdSort(sortKey)) {
+      return List.of(builder.desc(instance.get("instId")));
     }
-    Path<Date> sortPath = dateSortPath(worklist, instance, sortKey);
+    Path<Date> sortPath = dateSortPath(instance, sortKey);
     return List.of(
         builder.asc(builder.selectCase().when(builder.isNull(sortPath), 1).otherwise(0)),
         builder.desc(sortPath),
-        builder.desc(worklist.get("taskId")));
+        builder.desc(instance.get("instId")));
   }
 
-  private Path<Date> dateSortPath(
-      Root<WorklistEntity> worklist,
-      Join<WorklistEntity, ProcessInstanceEntity> instance,
-      String sortKey) {
-    if (isTaskIdSort(sortKey)) {
-      throw new IllegalArgumentException("taskId is not a date sort field");
+  private Path<Date> dateSortPath(Root<ProcessInstanceEntity> instance, String sortKey) {
+    if (isInstIdSort(sortKey)) {
+      throw new IllegalArgumentException("instId is not a date sort field");
     }
     if (hasAttribute(ProcessInstanceEntity.class, sortKey)) {
       return instance.get(sortKey);
     }
-    if (hasAttribute(WorklistEntity.class, sortKey)) {
-      return worklist.get(sortKey);
-    }
     throw new IllegalArgumentException("Unsupported sortOrdrVal: " + sortKey);
   }
 
-  private String sortKey(MyTodoRequest request) {
+  /**
+   * {@code sortOrdrVal} 이 인스턴스 속성명이면 그대로 사용하고, 없거나 미지원이면 {@code instId}.
+   */
+  private String sortKey(OrgCompletedRequest request) {
     String value = trimToNull(request.getSortOrdrVal());
-    if (value == null) {
-      return "taskId";
+    if (value == null || isInstIdSort(value) || "taskId".equals(value)) {
+      return "instId";
     }
-    if (isTaskIdSort(value)
-        || hasAttribute(ProcessInstanceEntity.class, value)
-        || hasAttribute(WorklistEntity.class, value)) {
+    if (hasAttribute(ProcessInstanceEntity.class, value)) {
       return value;
     }
-    return "taskId";
+    return "instId";
   }
 
   private boolean hasAttribute(Class<?> entityType, String attributeName) {
@@ -288,38 +251,19 @@ public class MyTodoSearchRepository {
     }
   }
 
-  private static boolean isTaskIdSort(String sortKey) {
-    return "taskId".equals(trimToNull(sortKey));
+  private static boolean isInstIdSort(String sortKey) {
+    return "instId".equals(trimToNull(sortKey));
   }
 
   /**
-   * 나의 업무함 접근 조건.
-   * <ul>
-   *   <li>본인 할당: {@code endpoint == emnb}</li>
-   *   <li>기관 선점 미선점: {@code dispatchOption == 1 AND groupCd == belnOrgnCode AND endpoint IS NULL}</li>
-   * </ul>
+   * 요청기관: {@code fncgWndwOrgnCode} 가 있으면 그 값, 없으면 ESB header {@code belnOrgnCode}.
    */
-  private static Predicate accessPredicate(
-      CriteriaBuilder builder,
-      Root<WorklistEntity> worklist,
-      String emnb,
-      String belnOrgnCode) {
-    String handler = trimToNull(emnb);
-    String organization = trimToNull(belnOrgnCode);
-
-    Path<String> endpoint = worklist.get("endpoint");
-    Path<String> groupCd = worklist.get("groupCd");
-    Predicate assignedToMe =
-        handler == null ? builder.disjunction() : builder.equal(endpoint, handler);
-    Predicate claimable =
-        organization == null
-            ? builder.disjunction()
-            : builder.and(
-                builder.equal(worklist.get("dispatchOption"), 1),
-                builder.isNull(endpoint),
-                builder.equal(builder.trim(groupCd), organization));
-
-    return builder.or(assignedToMe, claimable);
+  private static String organizationCode(OrgCompletedRequest request, String belnOrgnCode) {
+    String requested = request == null ? null : trimToNull(request.getFncgWndwOrgnCode());
+    if (requested != null) {
+      return requested;
+    }
+    return trimToNull(belnOrgnCode);
   }
 
   private static void addText(
@@ -374,18 +318,18 @@ public class MyTodoSearchRepository {
     return trimmed.isEmpty() ? null : trimmed;
   }
 
-  public record SearchResult(List<WorklistEntity> items, int totalCount, String nextKey) {
+  public record SearchResult(List<ProcessInstanceEntity> items, int totalCount, String nextKey) {
 
     public SearchResult {
       items = List.copyOf(items);
     }
 
-    public SearchResult(List<WorklistEntity> items, int totalCount) {
+    public SearchResult(List<ProcessInstanceEntity> items, int totalCount) {
       this(items, totalCount, null);
     }
   }
 
-  private record CursorPosition(Date sortValue, Long taskId) {
+  private record CursorPosition(Date sortValue, Long instId) {
   }
 
 }

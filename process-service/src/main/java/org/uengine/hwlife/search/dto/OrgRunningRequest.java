@@ -3,6 +3,7 @@ package org.uengine.hwlife.search.dto;
 import java.util.Date;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import org.uengine.hwlife.esbclient.dto.EsbCodes;
 
 /**
  * 조직 진행 건 검색 요청 — POST /search/org-running JSON body.
@@ -15,9 +16,9 @@ public class OrgRunningRequest {
 
     private String bpmBswrClsfCode;
 
-    @JsonFormat(pattern = "yyyyMMdd")
+    @JsonFormat(pattern = EsbCodes.DATE)
     private Date rqstStarDate;
-    @JsonFormat(pattern = "yyyyMMdd")
+    @JsonFormat(pattern = EsbCodes.DATE)
     private Date rqstEndDate;
 
     private String fncgSuptTrgtDvsnCode;
