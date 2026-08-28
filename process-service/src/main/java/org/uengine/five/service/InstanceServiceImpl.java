@@ -2701,10 +2701,6 @@ public class InstanceServiceImpl implements InstanceService {
             applyActorToWorklistIfEmpty(worklistEntity, actorEndpoint);
             worklistRepository.save(worklistEntity);
 
-            // ── [HOOK] 업무 배정 확정 (경합 선점 claim) ──────────────
-            if (bpmLifecycleService != null) {
-                bpmLifecycleService.onTaskAssigned(worklistEntity);
-            }
 
             // 2) 동일 역할 + 동일 groupCd/scope/assignType 그룹의 다른 workitem들도 함께 소유자 세팅
             if (rootInstId != null && roleName != null && assignType != null) {
@@ -2720,6 +2716,15 @@ public class InstanceServiceImpl implements InstanceService {
             }
 
         }
+        String instanceId = String.valueOf(worklistEntity.getInstId());
+        ProcessInstance instance = getProcessInstanceLocal(instanceId);
+
+        // ── [HOOK] 업무 배정  변경 ──────────────
+        if (bpmLifecycleService != null) {
+            bpmLifecycleService.onTaskAssignmentChanged(
+                    worklistEntity, ProcessTransactionContext.getThreadLocalInstance());
+        }
+
         assignmentStateService.finish(assignmentContext);
     }
 
@@ -3142,7 +3147,8 @@ public class InstanceServiceImpl implements InstanceService {
         }
         if (bpmLifecycleService != null) {
             for (WorklistEntity changedWorkitem : changed) {
-                bpmLifecycleService.onTaskAssignmentChanged(changedWorkitem, changedWorkitem.getPrevEndpoint());
+                bpmLifecycleService.onTaskAssignmentChanged(
+                        changedWorkitem, ProcessTransactionContext.getThreadLocalInstance());
             }
         }
         assignmentStateService.finish(assignmentContext);

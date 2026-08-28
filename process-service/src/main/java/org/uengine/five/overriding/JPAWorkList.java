@@ -19,6 +19,7 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * Created by uengine on 2017. 8. 13..
@@ -250,7 +251,7 @@ public class JPAWorkList implements WorkList {
             // ── [HOOK] 업무 배정 (최초) ──────────────────────────────────
             // endpoint 가 있으면 즉시 배정 확정. 경합(endpoint=null)은 claim 시 발행.
             if (bpmLifecycleService != null) {
-                bpmLifecycleService.onTaskAssigned(wl);
+                bpmLifecycleService.onTaskAssigned(wl, tc);
             }
 
             return ""+taskId;
@@ -289,7 +290,7 @@ public class JPAWorkList implements WorkList {
 
             // ── [HOOK] 업무 종료 (취소·스킵) ──────────────────────────────
             if (bpmLifecycleService != null) {
-                bpmLifecycleService.onTaskTerminated(wl);
+                bpmLifecycleService.onTaskTerminated(wl, tc);
             }
 
         }catch(Exception e){
@@ -323,7 +324,7 @@ public class JPAWorkList implements WorkList {
 
             // ── [HOOK] 업무 종료 (보상) ────────────────────────────────────
             if (bpmLifecycleService != null) {
-                bpmLifecycleService.onTaskTerminated(wl);
+                bpmLifecycleService.onTaskTerminated(wl, tc);
             }
 
         }catch(Exception e){
@@ -349,7 +350,7 @@ public class JPAWorkList implements WorkList {
 
             // ── [HOOK] 업무 종료 (정상 완료) ──────────────────────────────
             if (bpmLifecycleService != null) {
-                bpmLifecycleService.onTaskTerminated(wl);
+                bpmLifecycleService.onTaskTerminated(wl, tc);
             }
 
         }catch(Exception e){
@@ -401,20 +402,21 @@ public class JPAWorkList implements WorkList {
 
             worklistRepository.save(wlDAO);
 
-            // ── [HOOK] 업무 종료 (위임으로 인한 원 workitem 종료) ────────
-            if (bpmLifecycleService != null
-                    && DefaultWorkList.WORKITEM_STATUS_DELEGATED.equalsIgnoreCase(terminateStatus)) {
-                bpmLifecycleService.onTaskTerminated(wlDAO);
-            }
-
-            // ── [HOOK] 담당자 변경 ────────────────────────────────────────
-            // endpoint 가 바뀌었고, 종료(DELEGATED)가 아닌 단순 재배정인 경우
-            if (bpmLifecycleService != null
-                    && !DefaultWorkList.WORKITEM_STATUS_DELEGATED.equalsIgnoreCase(terminateStatus)) {
+            if (bpmLifecycleService != null) {
+                boolean delegatedTermination =
+                        DefaultWorkList.WORKITEM_STATUS_DELEGATED.equalsIgnoreCase(terminateStatus);
                 String newEndpoint = wlDAO.getEndpoint();
-                if (UEngineUtil.isNotEmpty(newEndpoint) && !newEndpoint.equals(previousEndpoint)) {
-                    bpmLifecycleService.onTaskAssignmentChanged(wlDAO, previousEndpoint);
+                boolean endpointChanged = UEngineUtil.isNotEmpty(newEndpoint)
+                        && !Objects.equals(newEndpoint, previousEndpoint);
+
+                if (delegatedTermination) {
+                    // 완전 위임: 원 workitem DELEGATED 종료 (신규 workitem은 executeActivity에서 별도 생성)
+                    bpmLifecycleService.onTaskTerminated(wlDAO, tc);
+                } else if (endpointChanged) {
+                    // 원소유 유지 위임·담당자 재배정: endpoint 변경만 (DRAFT 저장 등은 제외)
+                    bpmLifecycleService.onTaskAssignmentChanged(wlDAO, tc);
                 }
+                // 그 외(DRAFT·dispatchOption·dueDate 변경 등): lifecycle 알림 없음
             }
 
         }catch(Exception e){

@@ -52,9 +52,16 @@ filter:
   payload:
     enabled: false
 
+event-inbox:
+  provider: ${EVENT_INBOX_PROVIDER:default}
+
 # ESB 인바운드 { header, payload } → @RequestBody DTO unwrap (EsbRequestBodyAdvice)
 esb:
   inbound-unwrap:
+    enabled: false
+  outbound-wrap:
+    enabled: false
+  lifecycle:
     enabled: false
 ---
 # 개발 환경 (기본 프로파일)
@@ -121,10 +128,6 @@ keycloak:
   clientId: ${KEYCLOAK_ADMIN_CLIENT_ID:admin-cli}
   username: ${KEYCLOAK_ADMIN_USERNAME:${KEYCLOAK_USERNAME:admin}}
   password: ${KEYCLOAK_ADMIN_PASSWORD:${KEYCLOAK_PASSWORD:admin}}
-
-external:
-  iam:
-    base-url: ${EXTERNAL_IAM_BASE_URL:}
 
 esb:
   base-url: ${ESB_BASE_URL:http://dev-esb.company.com/esb}
@@ -199,10 +202,6 @@ keycloak:
   username: ${KEYCLOAK_ADMIN_USERNAME:${KEYCLOAK_USERNAME:admin}}
   password: ${KEYCLOAK_ADMIN_PASSWORD:${KEYCLOAK_PASSWORD:}}
 
-external:
-  iam:
-    base-url: ${EXTERNAL_IAM_BASE_URL:}
-
 esb:
   base-url: ${ESB_BASE_URL:http://qa-esb.company.com/esb}
   connect-timeout-ms: ${ESB_CONNECT_TIMEOUT_MS:5000}
@@ -276,10 +275,6 @@ keycloak:
   clientId: ${KEYCLOAK_ADMIN_CLIENT_ID:admin-cli}
   username: ${KEYCLOAK_ADMIN_USERNAME:${KEYCLOAK_USERNAME:}}
   password: ${KEYCLOAK_ADMIN_PASSWORD:${KEYCLOAK_PASSWORD:}}
-
-external:
-  iam:
-    base-url: ${EXTERNAL_IAM_BASE_URL:}
 
 esb:
   base-url: ${ESB_BASE_URL:https://esb.company.com/esb}

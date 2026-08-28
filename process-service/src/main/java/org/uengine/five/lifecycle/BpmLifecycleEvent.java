@@ -1,60 +1,97 @@
 package org.uengine.five.lifecycle;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
+import org.uengine.five.entity.ProcessInstanceEntity;
+import org.uengine.five.entity.WorklistEntity;
 
 /**
  * BPM 업무/프로세스 생명주기 이벤트 메시지 객체.
  * <p>
  * eventType 별 의미:
  * <ul>
- *   <li>{@link BpmLifecycleEventType#TASK_ASSIGNED}          - 업무 최초 배정</li>
- *   <li>{@link BpmLifecycleEventType#TASK_ASSIGNMENT_CHANGED} - 담당자 변경 (위임·재배정)</li>
- *   <li>{@link BpmLifecycleEventType#TASK_TERMINATED}        - 업무 종료 (완료·스킵·취소 등)</li>
- *   <li>{@link BpmLifecycleEventType#PROCESS_COMPLETED}      - 메인 프로세스 인스턴스 전체 종료</li>
+ *   <li>{@link #TASK_ASSIGNED}          - 업무 최초 배정</li>
+ *   <li>{@link #TASK_ASSIGNMENT_CHANGED} - 담당자 변경 (위임·재배정)</li>
+ *   <li>{@link #TASK_TERMINATED}        - 업무 종료 (완료·스킵·취소 등)</li>
+ *   <li>{@link #PROCESS_COMPLETED}      - 메인 프로세스 인스턴스 전체 종료</li>
  * </ul>
  */
 public class BpmLifecycleEvent {
 
-    private String eventType;
-    private String endpoint;
-    @JsonProperty("prev_endpoint")
-    private String prevEndpoint;
-    private Long taskId;
-    private Long instanceId;
-    private Long rootInstId;
-    private String tracingTag;
+    /** 업무 최초 배정 (생성 시 endpoint 확정, claim) */
+    public static final String TASK_ASSIGNED           = "TASK_ASSIGNED";
 
-    public String getEventType() { return eventType; }
-    public void setEventType(String eventType) { this.eventType = eventType; }
+    /** 담당자 변경 (위임, endpoint 재배정) */
+    public static final String TASK_ASSIGNMENT_CHANGED = "TASK_ASSIGNMENT_CHANGED";
 
-    public String getEndpoint() { return endpoint; }
-    public void setEndpoint(String endpoint) { this.endpoint = endpoint; }
+    /** 업무 종료 (완료·스킵·취소·보상·위임 종료) */
+    public static final String TASK_TERMINATED         = "TASK_TERMINATED";
 
-    public String getPrevEndpoint() { return prevEndpoint; }
-    public void setPrevEndpoint(String prevEndpoint) { this.prevEndpoint = prevEndpoint; }
+    /** 메인 프로세스 인스턴스 전체 종료 (서브프로세스 제외) */
+    public static final String PROCESS_COMPLETED       = "PROCESS_COMPLETED";
 
-    public Long getTaskId() { return taskId; }
-    public void setTaskId(Long taskId) { this.taskId = taskId; }
 
-    public Long getInstanceId() { return instanceId; }
-    public void setInstanceId(Long instanceId) { this.instanceId = instanceId; }
+    private String loanPcesMgmtNo; // 대출프로세스관리번호 
+    private String fncgBpmTaskTrcgNm; // BPM 추적 태그
+    private String fncgBpmUworSttsCntn; // 현재 진행중인 단위업무(WORKITME) 상태 
+    private String prgsSttsNm; // 인스턴스 상태 
+    private String hndrEmnb; // 담당자 사번
+    private String apvlYn; // 결재 유형의 업무 여부
+    private String imgeScanYn; // 이미지 스캔 여부 
 
-    public Long getRootInstId() { return rootInstId; }
-    public void setRootInstId(Long rootInstId) { this.rootInstId = rootInstId; }
 
-    public String getTracingTag() { return tracingTag; }
-    public void setTracingTag(String tracingTag) { this.tracingTag = tracingTag; }
-
-    @Override
-    public String toString() {
-        return "BpmLifecycleEvent{" +
-                "eventType='" + eventType + '\'' +
-                ", taskId=" + taskId +
-                ", instanceId=" + instanceId +
-                ", rootInstId=" + rootInstId +
-                ", tracingTag='" + tracingTag + '\'' +
-                ", endpoint='" + endpoint + '\'' +
-                ", prev_endpoint='" + prevEndpoint + '\'' +
-                '}';
+    public String getLoanPcesMgmtNo() {
+        return loanPcesMgmtNo;
     }
+
+    public void setLoanPcesMgmtNo(String loanPcesMgmtNo) {
+        this.loanPcesMgmtNo = loanPcesMgmtNo;
+    }
+
+    public String getFncgBpmTaskTrcgNm() {
+        return fncgBpmTaskTrcgNm;
+    }
+
+    public void setFncgBpmTaskTrcgNm(String fncgBpmTaskTrcgNm) {
+        this.fncgBpmTaskTrcgNm = fncgBpmTaskTrcgNm;
+    }
+
+    public String getFncgBpmUworSttsCntn() {
+        return fncgBpmUworSttsCntn;
+    }
+
+    public void setFncgBpmUworSttsCntn(String fncgBpmUworSttsCntn) {
+        this.fncgBpmUworSttsCntn = fncgBpmUworSttsCntn;
+    }
+
+    public String getPrgsSttsNm() {
+        return prgsSttsNm;
+    }
+
+    public void setPrgsSttsNm(String prgsSttsNm) {
+        this.prgsSttsNm = prgsSttsNm;
+    }
+    
+    public String getHndrEmnb() {
+        return hndrEmnb;
+    }
+
+    public void setHndrEmnb(String hndrEmnb) {
+        this.hndrEmnb = hndrEmnb;
+    }
+
+    public String getApvlYn() {
+        return apvlYn;
+    }
+
+    public void setApvlYn(String apvlYn) {
+        this.apvlYn = apvlYn;
+    }
+
+    public String getImgeScanYn() {
+        return imgeScanYn;
+    }
+
+    public void setImgeScanYn(String imgeScanYn) {
+        this.imgeScanYn = imgeScanYn;
+    }
+
 }
