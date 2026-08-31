@@ -75,4 +75,13 @@ public interface AbsenceRepository extends JpaRepository<AbsenceEntity, Long> {
                                              @Param("agentUserId") String agentUserId,
                                              @Param("newAbscStarDttm") Date newAbscStarDttm,
                                              @Param("newAbscEndDttm") Date newAbscEndDttm);
+
+    /** 현재 시각 기준 활성 부재(해제되지 않고 기간 내) 조회 — 대결자 라우팅용. */
+    @Query("select a from AbsenceEntity a "
+            + "where a.userId = :userId "
+            + "  and a.abscRscsDttm is null "
+            + "  and a.abscStarDttm <= :now "
+            + "  and (a.abscEndDttm is null or a.abscEndDttm >= :now) "
+            + "order by a.abscStarDttm desc")
+    List<AbsenceEntity> findActiveByUserIdAt(@Param("userId") String userId, @Param("now") Date now);
 }

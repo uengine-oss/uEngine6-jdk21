@@ -10,9 +10,9 @@ public class RuleCandidate {
 
     private final String endpoint;
     private final String difficulty;
-    private final double weight;
+    private final int weight;
 
-    public RuleCandidate(String endpoint, String difficulty, double weight) {
+    public RuleCandidate(String endpoint, String difficulty, int weight) {
         this.endpoint = endpoint;
         this.difficulty = difficulty;
         this.weight = weight;
@@ -27,7 +27,7 @@ public class RuleCandidate {
     }
 
     /** 목표 부하 비중. GAP 계산(weight - 현재 진행건수)의 기준값. */
-    public double getWeight() {
+    public int getWeight() {
         return weight;
     }
 }

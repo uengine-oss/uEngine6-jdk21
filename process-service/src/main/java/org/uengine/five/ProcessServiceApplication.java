@@ -17,12 +17,10 @@ import org.springframework.context.annotation.Scope;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.uengine.five.overriding.ActivityQueue;
 import org.uengine.five.overriding.EventMappingDeployFilter;
-import org.uengine.hwlife.iam.ExternalIAMService;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
+import org.uengine.five.config.IAMServiceRegister;
 import org.uengine.five.service.IAMCompanyRoleMapping;
-import org.uengine.five.service.IAMServiceFactory;
-import org.uengine.five.service.KeycloakIAMService;
 import org.uengine.five.overriding.InstanceNameFilter;
 import org.uengine.five.overriding.PayloadFilter;
 import org.uengine.five.overriding.ServiceRegisterDeployFilter;
@@ -58,23 +56,20 @@ public class ProcessServiceApplication {
     }
 
     public static void main(String[] args) {
+        IAMServiceRegister.registerAll();
         bootstrapAfterContextReady(SpringApplication.run(ProcessServiceApplication.class, args));
     }
 
-    /** WAR 배포 시 main() 미호출 → 기동 완료 후 한 번만 보완 등록 */
+    /** WAR 배포 시 main() 미호출 대비 */
     @EventListener(ApplicationReadyEvent.class)
     void onApplicationReady(ApplicationReadyEvent event) {
-        if (applicationContext == null) {
-            bootstrapAfterContextReady(event.getApplicationContext());
-        }
+        bootstrapAfterContextReady(event.getApplicationContext());
     }
 
     private static void bootstrapAfterContextReady(ApplicationContext ctx) {
         applicationContext = ctx;
         GlobalContext.setComponentFactory(new SpringComponentFactory());
-
-        IAMServiceFactory.register("keycloak", KeycloakIAMService.getDefault());
-        IAMServiceFactory.register("external", ExternalIAMService.getDefault());
+        IAMServiceRegister.registerAll();
     }
 
     /**

@@ -49,13 +49,14 @@ public class RoleMappingEntity {//implements RoleMappingDAO {
 
     String groupId;
 
-    Number assignType;
+    // Number 는 Hibernate 가 Serializable(bytea) 로 매핑함 → PG integer 컬럼과 충돌.
+    int assignType;
 
     String assignParam1;
 
     String dispatchParam1;
 
-    Number dispatchOption;
+    int dispatchOption;
 
     String policyId;
     String difficulty;
@@ -128,11 +129,11 @@ public class RoleMappingEntity {//implements RoleMappingDAO {
         this.groupId = groupId;
     }
 
-    public Number getAssignType() {
+    public int getAssignType() {
         return assignType;
     }
 
-    public void setAssignType(Number assignType) {
+    public void setAssignType(int assignType) {
         this.assignType = assignType;
     }
 
@@ -152,11 +153,11 @@ public class RoleMappingEntity {//implements RoleMappingDAO {
         this.dispatchParam1 = dispatchParam1;
     }
 
-    public Number getDispatchOption() {
+    public int getDispatchOption() {
         return dispatchOption;
     }
 
-    public void setDispatchOption(Number dispatchOption) {
+    public void setDispatchOption(int dispatchOption) {
         this.dispatchOption = dispatchOption;
     }
 }

@@ -127,8 +127,8 @@ public class ExternalEventInboxRequest {
     /** BPM 업무분류코드 → bpm_procinst.bswr_clsf_code */
     private String bpmBswrClsfCode; // 업무분류코드 (inst.bswrClsfCode)
 
-    // /** MI 가입여부 */
-    // private String miJoinYn;
+    /** MI 가입여부 */
+    private String sgiKindCode; // 서울보증보험종류코드
 
     public String getLoanPcesMgmtNo() { return loanPcesMgmtNo; }
     public void setLoanPcesMgmtNo(String loanPcesMgmtNo) { this.loanPcesMgmtNo = loanPcesMgmtNo; }
@@ -217,6 +217,6 @@ public class ExternalEventInboxRequest {
     public String getBpmBswrClsfCode() { return bpmBswrClsfCode; }
     public void setBpmBswrClsfCode(String bpmBswrClsfCode) { this.bpmBswrClsfCode = bpmBswrClsfCode; }
 
-    // public String getMiJoinYn() { return miJoinYn; }
-    // public void setMiJoinYn(String miJoinYn) { this.miJoinYn = miJoinYn; }
+    public String getSgiKindCode() { return sgiKindCode; }
+    public void setSgiKindCode(String sgiKindCode) { this.sgiKindCode = sgiKindCode; }
 }

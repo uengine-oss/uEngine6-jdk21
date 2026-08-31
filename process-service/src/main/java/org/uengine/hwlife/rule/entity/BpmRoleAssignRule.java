@@ -15,7 +15,8 @@ import jakarta.persistence.Table;
  *
  * <p>정책(POLICY_ID) + 난이도(DIFFICULTY) 별로 배정 후보 담당자(ENDPOINT)와
  * 목표 부하 비중(WEIGHT)을 정의한다. 외부 역량 기준정보(ESB)에서
- * 정책(POLICY_ID) 단위로 동기화되며 SYNCED_AT 으로 적재 시각을 추적한다.</p>
+ * 정책(POLICY_ID) 단위로 ESB에서 동기화되며, SYNCED_AT 으로 적재 시각을 추적한다.
+ * (policyId, difficulty)에 활성 처리자가 없을 때만 외부 동기화를 수행한다.</p>
  */
 @Entity
 @Table(name = "BPM_ROLE_ASSIGN_RULE")
@@ -36,11 +37,14 @@ public class BpmRoleAssignRule {
 
     private String endpoint;
 
-    private Double weight;
+    private Integer weight;
 
-    /** 사용 여부 ('Y'/'N'). 활성 규칙만 후보로 사용. */
-    @Column(length = 1)
-    private String useYn;
+    /**
+     * 사용 여부 (boolean).
+     * ESB Y/N 적재 시 Y=true, N=false 로 저장하고, 후보 조회 시에는 반대로 해석한다
+     * (true=활성, false=비활성).
+     */
+    private Boolean useYn;
 
     private Date syncedAt;
 
@@ -76,19 +80,19 @@ public class BpmRoleAssignRule {
         this.endpoint = endpoint;
     }
 
-    public Double getWeight() {
+    public Integer getWeight() {
         return weight;
     }
 
-    public void setWeight(Double weight) {
+    public void setWeight(Integer weight) {
         this.weight = weight;
     }
 
-    public String getUseYn() {
+    public Boolean getUseYn() {
         return useYn;
     }
 
-    public void setUseYn(String useYn) {
+    public void setUseYn(Boolean useYn) {
         this.useYn = useYn;
     }
 
