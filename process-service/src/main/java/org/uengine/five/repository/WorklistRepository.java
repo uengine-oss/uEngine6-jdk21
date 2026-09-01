@@ -74,6 +74,11 @@ public interface WorklistRepository extends JpaRepository<WorklistEntity, Long> 
             "order by wl.taskId asc")
     List<WorklistEntity> findActiveByRootOrInstance(@Param("rootInstId") Long rootInstId);
 
+    @Query("select wl from WorklistEntity wl " +
+            "where ((wl.rootInstId = :rootInstId) or (wl.rootInstId is null and wl.instId = :rootInstId)) " +
+            "order by wl.taskId asc")
+    List<WorklistEntity> findHistoryByRootOrInstance(@Param("rootInstId") Long rootInstId);
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select wl from WorklistEntity wl " +
             "where wl.instId = :instId and wl.roleName = :roleName " +
