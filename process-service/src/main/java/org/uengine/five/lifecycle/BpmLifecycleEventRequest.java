@@ -18,7 +18,7 @@ import java.util.Date;
  *   <li>{@link #PROCESS_COMPLETED}      - 메인 프로세스 인스턴스 전체 종료</li>
  * </ul>
  */
-public class BpmLifecycleEvent {
+public class BpmLifecycleEventRequest {
 
     /** 업무 최초 배정 (생성 시 endpoint 확정, claim) */
     public static final String TASK_ASSIGNED           = "TASK_ASSIGNED";

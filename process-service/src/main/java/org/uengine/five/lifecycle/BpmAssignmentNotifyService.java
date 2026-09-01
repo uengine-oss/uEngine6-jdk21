@@ -39,7 +39,7 @@ public class BpmAssignmentNotifyService {
             return;
         }
 
-        BpmLifecycleEvent event = new BpmLifecycleEvent();
+        BpmLifecycleEventRequest event = new BpmLifecycleEventRequest();
         event.setLoanPcesMgmtNo(pi == null ? null : pi.getCorrKey());
         event.setFncgBpmTaskTrcgNm(wl.getTrcTag());
         event.setFncgBpmUworSttsCntn(wl.getStatus());
@@ -54,23 +54,26 @@ public class BpmAssignmentNotifyService {
         }
         log.debug("[BpmAssignment] ESB send ok | {}", event);
 
-        sendViaEsb(event);
+        sendWorkItemAssignmentNotify(event);
     }
 
-    private void sendViaEsb(BpmLifecycleEvent event) {
+    private BpmLifecycleEventResponse sendWorkItemAssignmentNotify(BpmLifecycleEventRequest event) {
+        BpmLifecycleEventResponse response = new BpmLifecycleEventResponse();
         if (esbClient == null) {
             log.warn("[BpmAssignment] ESB send skipped (EsbClient bean not available) | {}", event);
-            return;
+            return response;
         }
 
 
         try {
-            esbClient.send("", "", event, Void.class);
+            response = esbClient.send("", "", event, BpmLifecycleEventResponse.class);
             log.trace("[BpmAssignment] ESB send ok | {}", event);
+            return response;
         } catch (EsbException ex) {
             log.warn("[BpmAssignment] ESB send failed | event={} reason={}", event, ex.getMessage());
         } catch (RuntimeException ex) {
             log.warn("[BpmAssignment] ESB send failed | event={}", event, ex);
         }
+        return response;
     }
 }

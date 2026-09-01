@@ -21,7 +21,7 @@ public class BpmWorkStatusNotifyService {
         if (wl == null) {
             return;
         }
-        BpmLifecycleEvent event = new BpmLifecycleEvent();
+        BpmLifecycleEventRequest event = new BpmLifecycleEventRequest();
         // event.setEventType(BpmLifecycleEvent.TASK_TERMINATED);
 
         // log.debug("[BpmWorkStatus] {} | taskId={} instId={} endpoint={}",
@@ -38,7 +38,7 @@ public class BpmWorkStatusNotifyService {
         if (wl == null) {
             return;
         }
-        BpmLifecycleEvent event = new BpmLifecycleEvent();
+        BpmLifecycleEventRequest event = new BpmLifecycleEventRequest();
         // event.setEventType(BpmLifecycleEvent.TASK_ASSIGNMENT_CHANGED);
         // event.setPrevEndpoint(previousEndpoint);
 
@@ -56,7 +56,7 @@ public class BpmWorkStatusNotifyService {
         if (wl == null) {
             return;
         }
-        BpmLifecycleEvent event = new BpmLifecycleEvent();
+        BpmLifecycleEventRequest event = new BpmLifecycleEventRequest();
         // event.setEventType(BpmLifecycleEvent.TASK_TERMINATED);
 
         // log.debug("[BpmWorkStatus] {} | taskId={} instId={} endpoint={}",
@@ -73,7 +73,7 @@ public class BpmWorkStatusNotifyService {
         if (pi == null || pi.isSubProcess()) {
             return;
         }
-        BpmLifecycleEvent event = new BpmLifecycleEvent();
+        BpmLifecycleEventRequest event = new BpmLifecycleEventRequest();
         // event.setEventType(BpmLifecycleEvent.PROCESS_COMPLETED);
 
         // log.debug("[BpmWorkStatus] {} | instId={} rootInstId={}",
@@ -85,7 +85,7 @@ public class BpmWorkStatusNotifyService {
     /**
      * 추후 ESB·기타 채널로 상태 알림을 송신한다.
      */
-    private void dispatch(BpmLifecycleEvent event) {
+    private void dispatch(BpmLifecycleEventRequest event) {
         log.trace("[BpmWorkStatus] dispatch stub (not implemented) | {}", event);
     }
 }
