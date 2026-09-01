@@ -49,7 +49,12 @@ public class EsbClientImpl implements EsbClient {
 
     @Override
     public <T, R> R send(String itfcId, String rcveSrvcId, T payload, Class<R> responseType) {
-        EsbCommonHeader header = headerFactory.create(itfcId, rcveSrvcId);
+        return send(itfcId, rcveSrvcId, null, payload, responseType);
+    }
+
+    @Override
+    public <T, R> R send(String itfcId, String rcveSrvcId, String rcveSysCode, T payload, Class<R> responseType) {
+        EsbCommonHeader header = headerFactory.create(itfcId, rcveSrvcId, rcveSysCode);
         EsbRequest<T> request = EsbRequest.<T>builder()
                 .header(header)
                 .payload(payload)

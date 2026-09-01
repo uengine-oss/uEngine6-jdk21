@@ -24,7 +24,7 @@ import org.uengine.hwlife.esbclient.dto.EsbCommonHeader;
  *   <li>설정: serverType ({@code esb.server-type}) — application.yml/환경변수 값</li>
  *   <li>시스템 공통부: trnmSysCode, prsnInfoIncsYn, rspnDvsnCode, ipAddr, tlgrCretDttm …</li>
  *   <li>요청정보: rqstDttm, rqsrIp, baseLang/Cnty/Crny … (emnb 등은 호출 후 setter 로 추가)</li>
- *   <li>가변(인자): itfcId, rcveSrvcId</li>
+     *   <li>가변(인자): itfcId, rcveSrvcId, rcveSysCode(미지정 시 LCS)</li>
  * </ul>
  */
 @Component
@@ -46,14 +46,25 @@ public class EsbHeaderFactory {
      * @return 요청용 ESB 공통 헤더
      */
     public EsbCommonHeader create(String itfcId, String rcveSrvcId) {
+        return create(itfcId, rcveSrvcId, null);
+    }
+
+    /**
+     * @param itfcId      인터페이스 아이디
+     * @param rcveSrvcId  수신 서비스 아이디 (호출 측에서 전달)
+     * @param rcveSysCode 수신 시스템 코드 (null/blank 이면 LCS)
+     * @return 요청용 ESB 공통 헤더
+     */
+    public EsbCommonHeader create(String itfcId, String rcveSrvcId, String rcveSysCode) {
         String now = now();
         String hostIp = localIp();
         // ESB ipAddr: 10.20.30.40 → 010020030040 (길이 12)
         String ipAddr = toEsbIpAddr(hostIp);
         return EsbCommonHeader.builder()
+                .trnmSysCode("LBM")        
                 .itfcId(itfcId)
                 .rcveSrvcId(rcveSrvcId)
-                .trnmSysCode("BPM_CODE")
+                .rcveSysCode(resolveRcveSysCode(rcveSysCode))
                 .ipAddr(ipAddr)
                 .tlgrCretDttm(now)
                 .rqstDttm(now)
@@ -68,6 +79,13 @@ public class EsbHeaderFactory {
                 .baseCnty("KOR")
                 .baseCrny("KRW")
                 .build();
+    }
+
+    private static String resolveRcveSysCode(String rcveSysCode) {
+        if (rcveSysCode == null || rcveSysCode.isBlank()) {
+            return "LCS";
+        }
+        return rcveSysCode.trim();
     }
 
     private String now() {

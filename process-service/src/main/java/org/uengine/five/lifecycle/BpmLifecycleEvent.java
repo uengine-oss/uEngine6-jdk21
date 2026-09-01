@@ -2,6 +2,10 @@ package org.uengine.five.lifecycle;
 
 import org.uengine.five.entity.ProcessInstanceEntity;
 import org.uengine.five.entity.WorklistEntity;
+import org.uengine.hwlife.esbclient.dto.EsbCodes;
+
+import com.fasterxml.jackson.annotation.JsonFormat;
+import java.util.Date;
 
 /**
  * BPM 업무/프로세스 생명주기 이벤트 메시지 객체.
@@ -29,15 +33,55 @@ public class BpmLifecycleEvent {
     public static final String PROCESS_COMPLETED       = "PROCESS_COMPLETED";
 
 
-    private String loanPcesMgmtNo; // 대출프로세스관리번호 
     private String fncgBpmTaskTrcgNm; // BPM 추적 태그
-    private String fncgBpmUworSttsCntn; // 현재 진행중인 단위업무(WORKITME) 상태 
-    private String prgsSttsNm; // 인스턴스 상태 
+    private String uworNm;
     private String hndrEmnb; // 담당자 사번
+    private String hndrOrgnCode;
+
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = EsbCodes.DTTM_SEC, timezone = "Asia/Seoul")
+    private Date uworStarDttm;
+    private String fncgBpmUworSttsCntn; // 현재 진행중인 단위업무(WORKITME) 상태 
+    private String fncgBpmTaskLstId;
+    private String fncgBpmPcesIntcId;
+
+    private String loanPcesMgmtNo; // 대출프로세스관리번호 
+    private String prgsSttsNm; // 인스턴스 상태 
     private String apvlYn; // 결재 유형의 업무 여부
     private String imgeScanYn; // 이미지 스캔 여부 
 
 
+    public String getUworNm() {
+        return uworNm;
+    }
+
+    public void setUworNm(String uworNm) {
+        this.uworNm = uworNm;
+    }
+
+    public String getHndrOrgnCode() {
+        return hndrOrgnCode;
+    }
+
+    public void setHndrOrgnCode(String hndrOrgnCode) {
+        this.hndrOrgnCode = hndrOrgnCode;
+    }
+
+    public String getFncgBpmTaskLstId() {
+        return fncgBpmTaskLstId;
+    }
+
+    public void setFncgBpmTaskLstId(String fncgBpmTaskLstId) {
+        this.fncgBpmTaskLstId = fncgBpmTaskLstId;
+    }
+
+    public String getFncgBpmPcesIntcId() {
+        return fncgBpmPcesIntcId;
+    }
+
+    public void setFncgBpmPcesIntcId(String fncgBpmPcesIntcId) {
+        this.fncgBpmPcesIntcId = fncgBpmPcesIntcId;
+    }
+     
     public String getLoanPcesMgmtNo() {
         return loanPcesMgmtNo;
     }

@@ -330,7 +330,7 @@ public class WorkSearchServiceImpl implements WorkSearchService {
     item.setBefoFncgOrgnCode(worklist.getPrevGroupCd());
     item.setHndrEmnb(worklist.getEndpoint());
     item.setHndrNm(worklist.getResName());
-    item.setHndrOrgnCode(firstNonBlank(worklist.getGroupCd(), worklist.getScope()));
+    item.setHndrOrgnCode(trimToNull(worklist.getGroupCd()));
     item.setScrnUrlAddr(worklist.getTool());
     item.setFncgBpmTaskLstId(
         worklist.getTaskId() == null ? null : String.valueOf(worklist.getTaskId()));
@@ -463,7 +463,7 @@ public class WorkSearchServiceImpl implements WorkSearchService {
     item.setUworNm(worklist.getTitle());
     item.setHndrEmnb(worklist.getEndpoint());
     item.setHndrNm(worklist.getResName());
-    item.setHndrOrgnCode(firstNonBlank(worklist.getGroupCd(), worklist.getScope()));
+    item.setHndrOrgnCode(trimToNull(worklist.getGroupCd()));
     item.setUworStarDttm(worklist.getStartDate());
     item.setUworEndDttm(worklist.getEndDate());
     item.setFncgBpmUworSttsCntn(worklist.getStatus());
