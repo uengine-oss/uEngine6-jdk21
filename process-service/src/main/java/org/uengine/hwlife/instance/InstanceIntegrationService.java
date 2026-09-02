@@ -92,8 +92,8 @@ public interface InstanceIntegrationService {
    *
    * <pre>POST /instance/jump</pre>
    */
-  @RequestMapping(value = "/jump", method = RequestMethod.POST, produces = "application/json;charset=UTF-8")
-  TaskJumpResponse jumpToForward(@RequestBody TaskJumpRequest request) throws Exception;
+  // @RequestMapping(value = "/jump", method = RequestMethod.POST, produces = "application/json;charset=UTF-8")
+  // TaskJumpResponse jumpToForward(@RequestBody TaskJumpRequest request) throws Exception;
 
   /**
    * 업무 상태 동기화 — 외부 시스템 기준 인스턴스·워크리스트 상태 반영.

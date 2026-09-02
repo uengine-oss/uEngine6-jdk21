@@ -1347,18 +1347,18 @@ public class InstanceIntegrationServiceImpl implements InstanceIntegrationServic
     }
   }
 
-  @Override
-  @Transactional(rollbackFor = { Exception.class })
-  public TaskJumpResponse jumpToForward(@RequestBody TaskJumpRequest request) throws Exception {
-    WorklistEntity worklist = worklistRepository.findById(Long.parseLong(request.getTaskId())).orElse(null);
-    if (worklist == null) {
-      throw new ResponseStatusException(HttpStatus.NOT_FOUND,
-          "No such work item where taskId = " + request.getTaskId());
-    }
-    InstanceResource instance = instanceService.backToHere(
-        String.valueOf(worklist.getInstId()), request.getTargetTracingTag());
-    return TaskJumpResponse.from(instance, request);
-  }
+  // @Override
+  // @Transactional(rollbackFor = { Exception.class })
+  // public TaskJumpResponse jumpToForward(@RequestBody TaskJumpRequest request) throws Exception {
+  //   WorklistEntity worklist = worklistRepository.findById(Long.parseLong(request.getTaskId())).orElse(null);
+  //   if (worklist == null) {
+  //     throw new ResponseStatusException(HttpStatus.NOT_FOUND,
+  //         "No such work item where taskId = " + request.getTaskId());
+  //   }
+  //   InstanceResource instance = instanceService.backToHere(
+  //       String.valueOf(worklist.getInstId()), request.getTargetTracingTag());
+  //   return TaskJumpResponse.from(instance, request);
+  // }
 
   @Override
   @Transactional
