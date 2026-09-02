@@ -76,7 +76,6 @@ class InstanceIntegrationServiceImplTaskTransitionTest {
     when(instance.isRunning("current-task")).thenReturn(true);
 
     TaskSkipRequest request = new TaskSkipRequest();
-    request.setHndrEmnb("hong");
     request.setFncgBpmTaskLstId("101");
 
     TaskSkipResponse response = service.skipWorklist(request);
@@ -91,7 +90,6 @@ class InstanceIntegrationServiceImplTaskTransitionTest {
     when(worklistRepository.findById(101L))
         .thenReturn(Optional.of(workitem(101L, 200L, "kim", "RUNNING")));
     TaskSkipRequest request = new TaskSkipRequest();
-    request.setHndrEmnb("hong");
     request.setFncgBpmTaskLstId("101");
 
     ResponseStatusException error = assertThrows(
@@ -184,7 +182,6 @@ class InstanceIntegrationServiceImplTaskTransitionTest {
 
   private static TaskReturnRequest returnRequest(String handler, String instanceId, String tracingTag) {
     TaskReturnRequest request = new TaskReturnRequest();
-    request.setHndrEmnb(handler);
     request.setFncgBpmPcesIntcId(instanceId);
     request.setFncgBpmTaskTrcgNm(tracingTag);
     return request;

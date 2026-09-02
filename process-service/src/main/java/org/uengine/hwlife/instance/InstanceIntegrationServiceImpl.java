@@ -982,59 +982,44 @@ public class InstanceIntegrationServiceImpl implements InstanceIntegrationServic
     if (request == null) {
       throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Request body is required");
     }
-
-    String handler = requireText(request.getHndrEmnb(), "hndrEmnb is required");
+    String hndrEmnb = requireText(request.getHndrEmnb(), "hndrEmnb is required");
     String taskId = requireText(request.getFncgBpmTaskLstId(), "fncgBpmTaskLstId is required");
     WorklistEntity worklist = findWorklist(taskId);
-    validateActiveOwner(worklist, handler);
 
-    String originalUserId = UserContext.getThreadLocalInstance().getUserId();
-    String originalGlobalUserId = GlobalContext.getUserId();
-    try {
-      UserContext.getThreadLocalInstance().setUserId(handler);
-      GlobalContext.setUserId(handler);
-
-      ProcessInstance instance = requireProcessInstance(worklist);
-      HumanActivity humanActivity = requireRunningHumanActivity(instance, worklist, "skip");
-      String activityStatus = humanActivity.getStatus(instance);
-      if (!Activity.isSkippable(activityStatus) || humanActivity.isNotificationWorkitem()) {
-        throw new ResponseStatusException(HttpStatus.CONFLICT, "Work item is not skippable");
-      }
-      for (Activity activity : safeActivities(instance)) {
-        if (activity instanceof org.uengine.kernel.bpmn.Event) {
-          org.uengine.kernel.bpmn.Event event = (org.uengine.kernel.bpmn.Event) activity;
-          if (humanActivity.getTracingTag().equals(event.getAttachedToRef())) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT,
-                "Boundary event attached: " + event.getTracingTag());
-          }
+    ProcessInstance instance = requireProcessInstance(worklist);
+    HumanActivity humanActivity = requireRunningHumanActivity(instance, worklist, "skip");
+    String activityStatus = humanActivity.getStatus(instance);
+    if (!Activity.isSkippable(activityStatus) || humanActivity.isNotificationWorkitem()) {
+      throw new ResponseStatusException(HttpStatus.CONFLICT, "Work item is not skippable");
+    }
+    for (Activity activity : safeActivities(instance)) {
+      if (activity instanceof org.uengine.kernel.bpmn.Event) {
+        org.uengine.kernel.bpmn.Event event = (org.uengine.kernel.bpmn.Event) activity;
+        if (humanActivity.getTracingTag().equals(event.getAttachedToRef())) {
+          throw new ResponseStatusException(HttpStatus.CONFLICT,
+              "Boundary event attached: " + event.getTracingTag());
         }
       }
-      List<Activity> nextActivities;
-      try {
-        nextActivities = humanActivity.getPossibleNextActivities(instance, worklist.getExecScope());
-      } catch (Exception e) {
-        throw new ResponseStatusException(HttpStatus.CONFLICT,
-            "Cannot evaluate next activities: " + e.getMessage(), e);
-      }
-      if (nextActivities == null || nextActivities.isEmpty()) {
-        throw new ResponseStatusException(HttpStatus.CONFLICT,
-            "No possible next activity from current state");
-      }
-
-      applyExecutionScope(instance, worklist.getExecScope());
-      instance.getProcessDefinition().flowControl("skip", instance, humanActivity.getTracingTag());
-
-      WorklistEntity after = worklistRepository.findById(worklist.getTaskId()).orElse(worklist);
-      after.setStatus("SKIPPED");
-      after.setEndDate(new Date());
-      if (trimToNull(after.getEndpoint()) == null) {
-        after.setEndpoint(handler);
-      }
-      worklistRepository.save(after);
-    } finally {
-      UserContext.getThreadLocalInstance().setUserId(originalUserId);
-      GlobalContext.setUserId(originalGlobalUserId);
     }
+    List<Activity> nextActivities;
+    try {
+      nextActivities = humanActivity.getPossibleNextActivities(instance, worklist.getExecScope());
+    } catch (Exception e) {
+      throw new ResponseStatusException(HttpStatus.CONFLICT,
+          "Cannot evaluate next activities: " + e.getMessage(), e);
+    }
+    if (nextActivities == null || nextActivities.isEmpty()) {
+      throw new ResponseStatusException(HttpStatus.CONFLICT,
+          "No possible next activity from current state");
+    }
+
+    applyExecutionScope(instance, worklist.getExecScope());
+    instance.getProcessDefinition().flowControl("skip", instance, humanActivity.getTracingTag());
+
+    WorklistEntity after = worklistRepository.findById(worklist.getTaskId()).orElse(worklist);
+    after.setStatus("SKIPPED");
+    after.setEndDate(new Date());
+    worklistRepository.save(after);
 
     TaskSkipResponse response = new TaskSkipResponse();
     response.setPrcsRsltCntn(EsbCodes.MSGE_CODE_SUCCESS);
@@ -1049,7 +1034,7 @@ public class InstanceIntegrationServiceImpl implements InstanceIntegrationServic
       throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Request body is required");
     }
 
-    String handler = requireText(request.getHndrEmnb(), "hndrEmnb is required");
+    String hndrEmnb = requireText(request.getHndrEmnb(), "hndrEmnb is required");
     String instanceId = requireText(request.getFncgBpmPcesIntcId(), "fncgBpmPcesIntcId is required");
     String targetTracingTag = requireText(request.getFncgBpmTaskTrcgNm(), "fncgBpmTaskTrcgNm is required");
     Long numericInstanceId = parseLong(instanceId, "fncgBpmPcesIntcId must be a number");
@@ -1062,63 +1047,8 @@ public class InstanceIntegrationServiceImpl implements InstanceIntegrationServic
       throw new ResponseStatusException(HttpStatus.NOT_FOUND,
           "No active work item for fncgBpmPcesIntcId=" + instanceId);
     }
-
-    List<WorklistEntity> ownedWorkitems = new ArrayList<>();
-    for (WorklistEntity workitem : activeWorkitems) {
-      if (handler.equals(trimToNull(workitem.getEndpoint()))) {
-        ownedWorkitems.add(workitem);
-      }
-    }
-    if (ownedWorkitems.isEmpty()) {
-      throw new ResponseStatusException(HttpStatus.FORBIDDEN,
-          "No active work item owned by hndrEmnb=" + handler);
-    }
-
-    String originalUserId = UserContext.getThreadLocalInstance().getUserId();
-    String originalGlobalUserId = GlobalContext.getUserId();
-    try {
-      UserContext.getThreadLocalInstance().setUserId(handler);
-      GlobalContext.setUserId(handler);
-
-      ReturnTarget selected = null;
-      for (WorklistEntity workitem : ownedWorkitems) {
-        ReturnTarget candidate = resolveReturnTarget(workitem, targetTracingTag);
-        if (candidate != null) {
-          if (selected != null) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT,
-                "Multiple active work items can return to fncgBpmTaskTrcgNm=" + targetTracingTag);
-          }
-          selected = candidate;
-        }
-      }
-      if (selected == null) {
-        throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-            "fncgBpmTaskTrcgNm is not a valid previous task: " + targetTracingTag);
-      }
-
-      selected.current.setStatus(DefaultWorkList.WORKITEM_STATUS_SUSPENDED);
-      worklistRepository.save(selected.current);
-      applyExecutionScope(selected.instance, selected.history.getExecScope());
-
-      String engineUserId = trimToNull(selected.history.getEndpoint());
-      if (engineUserId == null) {
-        engineUserId = handler;
-      }
-      try {
-        UserContext.getThreadLocalInstance().setUserId(engineUserId);
-        GlobalContext.setUserId(engineUserId);
-        selected.activity.backToHere(selected.instance);
-      } catch (Exception e) {
-        throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
-            "Return failed: " + e.getMessage(), e);
-      } finally {
-        UserContext.getThreadLocalInstance().setUserId(handler);
-        GlobalContext.setUserId(handler);
-      }
-    } finally {
-      UserContext.getThreadLocalInstance().setUserId(originalUserId);
-      GlobalContext.setUserId(originalGlobalUserId);
-    }
+   
+    instanceService.backToHere(instanceId, targetTracingTag);
 
     TaskReturnResponse response = new TaskReturnResponse();
     response.setPrcsRsltCntn(EsbCodes.MSGE_CODE_SUCCESS);
@@ -1132,39 +1062,6 @@ public class InstanceIntegrationServiceImpl implements InstanceIntegrationServic
             "No such work item where fncgBpmTaskLstId=" + taskId));
   }
 
-  private static void validateActiveOwner(WorklistEntity worklist, String handler) {
-    String status = trimToNull(worklist.getStatus());
-    if (!"NEW".equalsIgnoreCase(status) && !"RUNNING".equalsIgnoreCase(status)) {
-      throw new ResponseStatusException(HttpStatus.CONFLICT, "Work item is not active");
-    }
-    if (!handler.equals(trimToNull(worklist.getEndpoint()))) {
-      throw new ResponseStatusException(HttpStatus.FORBIDDEN,
-          "Work item is not owned by hndrEmnb=" + handler);
-    }
-  }
-
-  private ReturnTarget resolveReturnTarget(WorklistEntity current, String targetTracingTag) throws Exception {
-    ProcessInstance instance = requireProcessInstance(current);
-    HumanActivity currentActivity = requireRunningHumanActivity(instance, current, "return");
-    Activity targetActivity = null;
-    for (Activity previous : collectPreviousHumanActivities(currentActivity)) {
-      if (targetTracingTag.equals(trimToNull(previous.getTracingTag()))) {
-        targetActivity = previous;
-        break;
-      }
-    }
-    if (targetActivity == null) {
-      return null;
-    }
-
-    Long rootInstId = rootInstanceId(current);
-    WorklistEntity targetHistory = latestCompletedHistory(
-        worklistRepository.findHistoryByRootOrInstance(rootInstId), targetTracingTag, current.getExecScope());
-    if (targetHistory == null) {
-      return null;
-    }
-    return new ReturnTarget(current, instance, targetActivity, targetHistory);
-  }
 
   private ProcessInstance requireProcessInstance(WorklistEntity current) throws Exception {
     ProcessInstance instance = instanceService.getProcessInstanceLocal(String.valueOf(current.getInstId()));
@@ -1198,119 +1095,6 @@ public class InstanceIntegrationServiceImpl implements InstanceIntegrationServic
     String normalized = trimToNull(executionScope);
     if (normalized != null) {
       instance.setExecutionScope(normalized);
-    }
-  }
-
-  private static Long rootInstanceId(WorklistEntity workitem) {
-    return workitem.getRootInstId() == null ? workitem.getInstId() : workitem.getRootInstId().longValue();
-  }
-
-  private static List<Activity> collectPreviousHumanActivities(Activity currentActivity) {
-    Deque<Activity> queue = new ArrayDeque<>();
-    List<Activity> result = new ArrayList<>();
-    Set<String> visited = new HashSet<>();
-    Set<String> added = new LinkedHashSet<>();
-    addPreviousActivities(queue, currentActivity);
-
-    int guard = 0;
-    while (!queue.isEmpty() && guard++ < 5000) {
-      Activity activity = queue.poll();
-      if (activity == null) {
-        continue;
-      }
-      String tracingTag = activity.getTracingTag();
-      if (tracingTag != null && !visited.add(tracingTag)) {
-        continue;
-      }
-      if (activity instanceof HumanActivity) {
-        if (tracingTag == null || added.add(tracingTag)) {
-          result.add(activity);
-        }
-      } else {
-        addPreviousActivities(queue, activity);
-      }
-    }
-    return result;
-  }
-
-  private static void addPreviousActivities(Deque<Activity> queue, Activity activity) {
-    List<SequenceFlow> incomings = activity.getIncomingSequenceFlows();
-    if (incomings != null && !incomings.isEmpty()) {
-      for (SequenceFlow incoming : incomings) {
-        if (incoming != null && incoming.getSourceActivity() != null) {
-          queue.add(incoming.getSourceActivity());
-        }
-      }
-      return;
-    }
-    Vector previous = activity.getPreviousActivities();
-    if (previous != null) {
-      for (Object candidate : previous) {
-        if (candidate instanceof Activity) {
-          queue.add((Activity) candidate);
-        }
-      }
-    }
-  }
-
-  private static WorklistEntity latestCompletedHistory(
-      List<WorklistEntity> history, String tracingTag, String executionScope) {
-    WorklistEntity sameScope = latestCompletedHistory(history, tracingTag, executionScope, true);
-    return sameScope != null ? sameScope : latestCompletedHistory(history, tracingTag, executionScope, false);
-  }
-
-  private static WorklistEntity latestCompletedHistory(
-      List<WorklistEntity> history, String tracingTag, String executionScope, boolean requireSameScope) {
-    if (history == null) {
-      return null;
-    }
-    WorklistEntity best = null;
-    for (WorklistEntity candidate : history) {
-      if (candidate == null || !tracingTag.equals(trimToNull(candidate.getTrcTag()))) {
-        continue;
-      }
-      String status = trimToNull(candidate.getStatus());
-      if (!"COMPLETED".equalsIgnoreCase(status) && !"SKIPPED".equalsIgnoreCase(status)) {
-        continue;
-      }
-      if (requireSameScope && trimToNull(executionScope) != null
-          && !executionScope.equals(candidate.getExecScope())) {
-        continue;
-      }
-      if (best == null || isLater(candidate, best)) {
-        best = candidate;
-      }
-    }
-    return best;
-  }
-
-  private static boolean isLater(WorklistEntity candidate, WorklistEntity currentBest) {
-    if (candidate.getEndDate() != null && currentBest.getEndDate() == null) {
-      return true;
-    }
-    if (candidate.getEndDate() != null && currentBest.getEndDate() != null) {
-      return candidate.getEndDate().after(currentBest.getEndDate());
-    }
-    return candidate.getEndDate() == null && currentBest.getEndDate() == null
-        && candidate.getTaskId() != null && currentBest.getTaskId() != null
-        && candidate.getTaskId() > currentBest.getTaskId();
-  }
-
-  private static final class ReturnTarget {
-    private final WorklistEntity current;
-    private final ProcessInstance instance;
-    private final Activity activity;
-    private final WorklistEntity history;
-
-    private ReturnTarget(
-        WorklistEntity current,
-        ProcessInstance instance,
-        Activity activity,
-        WorklistEntity history) {
-      this.current = current;
-      this.instance = instance;
-      this.activity = activity;
-      this.history = history;
     }
   }
 
