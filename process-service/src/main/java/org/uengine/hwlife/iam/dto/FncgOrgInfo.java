@@ -10,44 +10,9 @@ package org.uengine.hwlife.iam.dto;
 public class FncgOrgInfo {
 
     /** 기관 코드 */
-    private String orgnCode;
-    private String orgnNm;
-    private String orgnAbrvNm;
-    private String hgrnOrgnCode;
     private String fncgWndwOrgnCode;
-   
-
-    public String getOrgnCode() {
-        return orgnCode;
-    }
-
-    public void setOrgnCode(String orgnCode) {
-        this.orgnCode = orgnCode;
-    }
-
-    public String getOrgnNm() {
-        return orgnNm;
-    }
-
-    public void setOrgnNm(String orgnNm) {
-        this.orgnNm = orgnNm;
-    }
-
-    public String getOrgnAbrvNm() {
-        return orgnAbrvNm;
-    }
-
-    public void setOrgnAbrvNm(String orgnAbrvNm) {
-        this.orgnAbrvNm = orgnAbrvNm;
-    }
-
-    public String getHgrnOrgnCode() {
-        return hgrnOrgnCode;
-    }
-
-    public void setHgrnOrgnCode(String hgrnOrgnCode) {
-        this.hgrnOrgnCode = hgrnOrgnCode;
-    }
+    private String fncgWndwOrgnNm;
+    private String fncgWndwOrgnAbrvNm;
 
     public String getFncgWndwOrgnCode() {
         return fncgWndwOrgnCode;
@@ -57,4 +22,19 @@ public class FncgOrgInfo {
         this.fncgWndwOrgnCode = fncgWndwOrgnCode;
     }
 
+    public String getFncgWndwOrgnNm() {
+        return fncgWndwOrgnNm;
+    }
+
+    public void setFncgWndwOrgnNm(String fncgWndwOrgnNm) {
+        this.fncgWndwOrgnNm = fncgWndwOrgnNm;
+    }
+
+    public String getFncgWndwOrgnAbrvNm() {
+        return fncgWndwOrgnAbrvNm;
+    }
+
+    public void setFncgWndwOrgnAbrvNm(String fncgWndwOrgnAbrvNm) {
+        this.fncgWndwOrgnAbrvNm = fncgWndwOrgnAbrvNm;
+    }
 }

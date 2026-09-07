@@ -26,7 +26,7 @@ public class IAMIntegrationServiceImpl implements IAMIntegrationService {
     @Override
     public RoleSearchResponse searchRoles() throws Exception {
         RoleSearchResponse response = new RoleSearchResponse();
-        response.setFncgCoreAtrtList(externalIamService.getRoles());
+        response.setBpmAtrtList(externalIamService.getRoles().getBpmAtrtList());
         return response;
     }
 

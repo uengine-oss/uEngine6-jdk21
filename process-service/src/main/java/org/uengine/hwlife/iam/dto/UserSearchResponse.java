@@ -12,7 +12,7 @@ public class UserSearchResponse {
     private String hndrNm; // 사원명
 
     private List<FncgOrgInfo> bpmOrgnList = new ArrayList<>();    /** 보유 기관 코드 목록 */
-    private List<FncgRoleInfo> fncgCoreAtrtList = new ArrayList<>();     /** 보유 권한 코드 목록 */
+    private List<FncgRoleInfo> bpmAtrtList = new ArrayList<>();     /** 보유 권한 코드 목록 */
 
     public String getHndrEmnb() {
         return hndrEmnb;
@@ -38,11 +38,11 @@ public class UserSearchResponse {
         this.bpmOrgnList = bpmOrgnList != null ? bpmOrgnList : new ArrayList<>();
     }
 
-    public List<FncgRoleInfo> getFncgCoreAtrtList() {
-        return fncgCoreAtrtList;
+    public List<FncgRoleInfo> getBpmAtrtList() {
+        return bpmAtrtList;
     }
 
-    public void setFncgCoreAtrtList(List<FncgRoleInfo> fncgCoreAtrtList) {
-        this.fncgCoreAtrtList = fncgCoreAtrtList != null ? fncgCoreAtrtList : new ArrayList<>();
+    public void setBpmAtrtList(List<FncgRoleInfo> bpmAtrtList) {
+        this.bpmAtrtList = bpmAtrtList != null ? bpmAtrtList : new ArrayList<>();
     }
 }

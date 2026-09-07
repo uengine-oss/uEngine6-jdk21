@@ -14,6 +14,7 @@ import org.uengine.hwlife.iam.dto.FncgOrgInfo;
 import org.uengine.hwlife.iam.dto.FncgRoleInfo;
 import org.uengine.hwlife.iam.dto.UserSearchResponse;
 import org.uengine.hwlife.iam.dto.OrgSearchResponse;
+import org.uengine.hwlife.iam.dto.RoleSearchResponse;
 
 /**
  * 외부 IAM(ESB·사내 디렉터리 등) 연동 구현체.
@@ -111,13 +112,15 @@ public class ExternalIAMService implements IAMService {
      *
      * <p>TODO: ESB 권한 목록 조회로 교체. 현재는 연동 전 임시 하드코딩.</p>
      */
-    public List<FncgRoleInfo> getRoles() {
+    public RoleSearchResponse getRoles() {
         // TODO: esbClient().send(itfcId, rcveSrvcId, payload, RoleSearchResponse.class)
+        RoleSearchResponse response = new RoleSearchResponse();
         List<FncgRoleInfo> list = new ArrayList<>();
         list.add(role("FN120", "사업부장"));
         list.add(role("FN210", "담당부장"));
         list.add(role("FN230", "대출심사역"));
-        return list;
+        response.setBpmAtrtList(list);
+        return response;
     }
 
     private static FncgRoleInfo role(String id, String name) {
@@ -144,17 +147,15 @@ public class ExternalIAMService implements IAMService {
         // 사용자 기관 정보 
         List<FncgOrgInfo> orgs = new ArrayList<>();
         FncgOrgInfo org = new FncgOrgInfo();
-        org.setOrgnCode("00320");
-        org.setOrgnAbrvNm("융자관리팀");
-        org.setOrgnNm("융자관리팀");
         org.setFncgWndwOrgnCode("00320");
+        org.setFncgWndwOrgnAbrvNm("융자관리팀");
+        org.setFncgWndwOrgnNm("융자관리팀");
         orgs.add(org);
 
         FncgOrgInfo org2 = new FncgOrgInfo();
-        org2.setOrgnCode("00025");
-        org2.setOrgnAbrvNm("IT운영팀");
-        org2.setOrgnNm("IT운영팀");
         org2.setFncgWndwOrgnCode("00025");
+        org2.setFncgWndwOrgnAbrvNm("IT운영팀");
+        org2.setFncgWndwOrgnNm("IT운영팀");
         orgs.add(org2);
         response.setBpmOrgnList(orgs);
 
@@ -162,7 +163,7 @@ public class ExternalIAMService implements IAMService {
 
         List<FncgRoleInfo> roles = new ArrayList<>();
         roles.add(role("FN230", "대출심사역"));
-        response.setFncgCoreAtrtList(roles);
+        response.setBpmAtrtList(roles);
         return response;
     }
 

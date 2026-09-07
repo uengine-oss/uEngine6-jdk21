@@ -8,13 +8,13 @@ import java.util.List;
  */
 public class RoleSearchResponse {
 
-    private List<FncgRoleInfo> fncgCoreAtrtList = new ArrayList<>();
+    private List<FncgRoleInfo> bpmAtrtList = new ArrayList<>();
 
-    public List<FncgRoleInfo> getFncgCoreAtrtList() {
-        return fncgCoreAtrtList;
+    public List<FncgRoleInfo> getBpmAtrtList() {
+        return bpmAtrtList;
     }
 
-    public void setFncgCoreAtrtList(List<FncgRoleInfo> fncgCoreAtrtList) {
-        this.fncgCoreAtrtList = fncgCoreAtrtList != null ? fncgCoreAtrtList : new ArrayList<>();
+    public void setBpmAtrtList(List<FncgRoleInfo> bpmAtrtList) {
+        this.bpmAtrtList = bpmAtrtList != null ? bpmAtrtList : new ArrayList<>();
     }
 }
