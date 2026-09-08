@@ -130,6 +130,9 @@ public class ExternalEventInboxRequest {
     /** MI 가입여부 */
     private String sgiKindCode; // 서울보증보험종류코드
 
+    /** MI 가입여부 */
+    private String fncgOtpyMthdDvsnCode; // 서울보증보험종류코드
+
     public String getLoanPcesMgmtNo() { return loanPcesMgmtNo; }
     public void setLoanPcesMgmtNo(String loanPcesMgmtNo) { this.loanPcesMgmtNo = loanPcesMgmtNo; }
 
@@ -219,4 +222,7 @@ public class ExternalEventInboxRequest {
 
     public String getSgiKindCode() { return sgiKindCode; }
     public void setSgiKindCode(String sgiKindCode) { this.sgiKindCode = sgiKindCode; }
+
+    public String getFncgOtpyMthdDvsnCode() { return fncgOtpyMthdDvsnCode; }
+    public void setFncgOtpyMthdDvsnCode(String fncgOtpyMthdDvsnCode) { this.fncgOtpyMthdDvsnCode = fncgOtpyMthdDvsnCode; }
 }
