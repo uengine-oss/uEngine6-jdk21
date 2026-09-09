@@ -1,20 +1,26 @@
 package org.uengine.five.messaging;
 
+import java.util.function.BiFunction;
+import java.util.function.Function;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.uengine.five.dto.EventInboxRequest;
 import org.uengine.five.dto.EventInboxResponse;
 
 /**
  * Event Inbox 공통 인입 구현.
  *
- * <p>NOTE: 의도적으로 {@code @Transactional} 을 두지 않는다.
+ * <p>NOTE: {@link #enqueue} 는 의도적으로 {@code @Transactional} 을 두지 않는다.
  * Postgres 는 트랜잭션 안에서 UNIQUE 위반이 나면 트랜잭션이 abort 되어
  * 이후 같은 트랜잭션에서 SELECT 를 못 하므로, 중복 행 조회를 위해 트랜잭션을 걸지 않는다.
  * {@code repo.save(...)} / {@code repo.findFirstBy...} 는 각자 자체 트랜잭션을 가진다.</p>
+ *
+ * <p>{@link #enqueueWithCorrKeyFromId} 만 id 채번 후 corrKey 확정을 한 트랜잭션으로 묶는다.</p>
  */
 @Service
 @ConditionalOnProperty(name = "uengine.messaging.mode", havingValue = "polling")
@@ -64,6 +70,31 @@ public class EventInboxEnqueueServiceImpl implements EventInboxEnqueueService {
                     existing != null ? existing.getCreatedAt() : null);
         }
 
+        return EventInboxResponse.success(eventName, corrKey, ev.getCreatedAt());
+    }
+
+    @Override
+    @Transactional
+    public EventInboxResponse enqueueWithCorrKeyFromId(
+            String eventName,
+            String payloadJson,
+            Function<Long, String> corrKeyFromId,
+            BiFunction<String, String, String> payloadWithCorrKey) {
+        String normalizedPayload = payloadJson != null ? payloadJson : "{}";
+
+        EventInbox ev = new EventInbox();
+        ev.setEventName(eventName);
+        ev.setPayload(normalizedPayload);
+        // SEQUENCE 로 id 할당 (커밋 전이라 폴러에 안 보임)
+        repo.save(ev);
+
+        String corrKey = corrKeyFromId.apply(ev.getId());
+        String finalPayload = payloadWithCorrKey.apply(normalizedPayload, corrKey);
+        ev.setCorrKey(corrKey);
+        ev.setPayload(finalPayload != null ? finalPayload : normalizedPayload);
+
+        log.info("[inbox] enqueued with id-based corrKey (corrKey={}, eventName={}, id={})",
+                corrKey, eventName, ev.getId());
         return EventInboxResponse.success(eventName, corrKey, ev.getCreatedAt());
     }
 

@@ -1,7 +1,5 @@
 package org.uengine.hwlife.events;
 
-import java.io.IOException;
-
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 import org.uengine.five.ProcessServiceApplication;
@@ -13,12 +11,10 @@ import org.uengine.hwlife.esbclient.dto.EsbCommonHeader;
 import org.uengine.hwlife.esbclient.support.EsbEnvelope;
 import org.uengine.hwlife.events.dto.ExternalEventInboxRequest;
 import org.uengine.hwlife.events.dto.ExternalEventInboxResponse;
+import org.uengine.hwlife.events.dto.ExternalItgtApvlInboxRequest;
+import org.uengine.hwlife.events.dto.ExternalItgtApvlInboxResponse;
 
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonToken;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 
 
 /**
@@ -38,6 +34,7 @@ public class ExternalEventInboxServiceImpl implements ExternalEventInboxService 
 
     private final EventInboxEnqueueService enqueueService;
     private final ObjectMapper objectMapper = ProcessServiceApplication.createTypedJsonObjectMapper();
+    private final ExternalEsbInboxSupport esbSupport = new ExternalEsbInboxSupport(objectMapper);
 
     public ExternalEventInboxServiceImpl(EventInboxEnqueueService enqueueService) {
         this.enqueueService = enqueueService;
@@ -70,7 +67,8 @@ public class ExternalEventInboxServiceImpl implements ExternalEventInboxService 
         ExternalEventInboxRequest payload;
         String rawPayloadJson;
         try {
-            IncomingEsbRequest incoming = parseIncomingRequest(requestBodyJson);
+            ExternalEsbInboxSupport.IncomingEsbRequest incoming =
+                    esbSupport.parseIncomingRequest(requestBodyJson);
             header = incoming.header;
             rawPayloadJson = incoming.rawPayloadJson;
             payload = objectMapper.readValue(rawPayloadJson, ExternalEventInboxRequest.class);
@@ -85,7 +83,8 @@ public class ExternalEventInboxServiceImpl implements ExternalEventInboxService 
         String loanPcesMgmtNo = payload.getLoanPcesMgmtNo();
         String evntNm = payload.getEvntNm();
 
-        if (isBlank(loanPcesMgmtNo) || isBlank(evntNm)) {
+        if (ExternalEsbInboxSupport.isBlank(loanPcesMgmtNo)
+                || ExternalEsbInboxSupport.isBlank(evntNm)) {
             // 성공 응답 + payload 업무 실패 (LBM010002)
             return EventInboxReceiveResult.success(
                     EsbEnvelope.success(
@@ -95,7 +94,7 @@ public class ExternalEventInboxServiceImpl implements ExternalEventInboxService 
 
         String inboxPayload;
         try {
-            inboxPayload = enrichPayloadWithHeaderFields(rawPayloadJson, header);
+            inboxPayload = esbSupport.enrichPayloadWithHeaderFields(rawPayloadJson, header);
         } catch (Exception e) {
             return EventInboxReceiveResult.failed(
                     EsbEnvelope.failed(
@@ -119,125 +118,90 @@ public class ExternalEventInboxServiceImpl implements ExternalEventInboxService 
     }
 
     /**
-     * 요청 본문을 한 번 스트리밍 파싱해 {@code header} 와 {@code payload} 원문을 추출한다.
+     * 통합승인(ItgtApvl) Inbox 수신({@code /inbox-apvl}).
+     *
+     * <p>{@code loanPcesMgmtNo} 기준:
+     * <ul>
+     *   <li>있으면 → 그 값이 corrKey (= loanPcesMgmtNo)</li>
+     *   <li>없으면 → {@code 20 + yyyyMMdd + (BPM_EVENT_INBOX.id % 1000000)(6자리)} 채번
+     *       (= corrKey = loanPcesMgmtNo), payload/응답에 반영</li>
+     * </ul>
+     * 필수값은 {@code evntNm} 만.</p>
      */
-    private IncomingEsbRequest parseIncomingRequest(String requestBodyJson) throws IOException {
-        if (requestBodyJson == null || requestBodyJson.isBlank()) {
-            return new IncomingEsbRequest(null, "{}");
+    @Override
+    public EventInboxReceiveResult receiveApvlEvent(String requestBodyJson) {
+        EsbCommonHeader header;
+        ExternalItgtApvlInboxRequest payload;
+        String rawPayloadJson;
+        try {
+            ExternalEsbInboxSupport.IncomingEsbRequest incoming =
+                    esbSupport.parseIncomingRequest(requestBodyJson);
+            header = incoming.header;
+            rawPayloadJson = incoming.rawPayloadJson;
+            payload = objectMapper.readValue(rawPayloadJson, ExternalItgtApvlInboxRequest.class);
+        } catch (Exception e) {
+            return EventInboxReceiveResult.failed(
+                    EsbEnvelope.failed(
+                            null,
+                            ExternalItgtApvlInboxResponse.failed(null, null, "LBM010001")));
         }
-        EsbCommonHeader header = null;
-        String rawPayloadJson = null;
-        try (JsonParser parser = objectMapper.createParser(requestBodyJson)) {
-            JsonToken token;
-            while ((token = parser.nextToken()) != null) {
-                if (token != JsonToken.FIELD_NAME) {
-                    continue;
-                }
-                String fieldName = parser.currentName();
-                token = parser.nextToken();
-                if (token == null) {
-                    break;
-                }
-                if ("header".equals(fieldName)) {
-                    if (header == null) {
-                        header = parseHeaderValue(token, parser);
-                    } else {
-                        skipJsonValue(parser, token);
-                    }
-                    continue;
-                }
-                if ("payload".equals(fieldName)) {
-                    if (rawPayloadJson == null) {
-                        rawPayloadJson = sliceJsonValue(requestBodyJson, parser, token);
-                    } else {
-                        skipJsonValue(parser, token);
-                    }
-                    continue;
-                }
-                skipJsonValue(parser, token);
+
+        String loanPcesMgmtNo = payload.getLoanPcesMgmtNo();
+        String evntNm = payload.getEvntNm();
+
+        if (ExternalEsbInboxSupport.isBlank(evntNm)) {
+            return EventInboxReceiveResult.success(
+                    EsbEnvelope.success(
+                            header,
+                            ExternalItgtApvlInboxResponse.failed(loanPcesMgmtNo, evntNm, "LBM010002")));
+        }
+
+        String inboxPayload;
+        try {
+            inboxPayload = esbSupport.enrichPayloadWithHeaderFields(rawPayloadJson, header);
+        } catch (Exception e) {
+            return EventInboxReceiveResult.failed(
+                    EsbEnvelope.failed(
+                            header,
+                            ExternalItgtApvlInboxResponse.failed(loanPcesMgmtNo, evntNm, "LBM010001")));
+        }
+
+        EventInboxResponse coreResponse;
+        if (ExternalEsbInboxSupport.isBlank(loanPcesMgmtNo)) {
+            try {
+                coreResponse = enqueueService.enqueueWithCorrKeyFromId(
+                        evntNm,
+                        inboxPayload,
+                        ExternalEsbInboxSupport::formatLoanPcesMgmtNo,
+                        (payloadJson, corrKey) -> {
+                            try {
+                                return esbSupport.putLoanPcesMgmtNo(payloadJson, corrKey);
+                            } catch (Exception e) {
+                                throw new IllegalStateException(
+                                        "failed to put loanPcesMgmtNo into inbox payload", e);
+                            }
+                        });
+                // 채번 == corrKey == loanPcesMgmtNo
+                loanPcesMgmtNo = coreResponse.getCorrKey();
+            } catch (Exception e) {
+                return EventInboxReceiveResult.failed(
+                        EsbEnvelope.failed(
+                                header,
+                                ExternalItgtApvlInboxResponse.failed(null, evntNm, "LBM010001")));
             }
-        }
-        return new IncomingEsbRequest(header, rawPayloadJson != null ? rawPayloadJson : requestBodyJson);
-    }
-
-    private EsbCommonHeader parseHeaderValue(JsonToken token, JsonParser parser) throws IOException {
-        if (token == JsonToken.VALUE_NULL) {
-            return null;
-        }
-        JsonNode headerNode = objectMapper.readTree(parser);
-        return objectMapper.treeToValue(headerNode, EsbCommonHeader.class);
-    }
-
-    /**
-     * 요청 JSON 에서 현재 토큰 위치의 값을 원문 substring 으로 추출한다.
-     */
-    private String sliceJsonValue(String requestBodyJson, JsonParser parser, JsonToken token)
-            throws IOException {
-        if (token == JsonToken.VALUE_NULL) {
-            return "{}";
-        }
-        int start = (int) parser.currentTokenLocation().getCharOffset();
-        if (token == JsonToken.START_OBJECT || token == JsonToken.START_ARRAY) {
-            parser.skipChildren();
-            int end = (int) parser.currentTokenLocation().getCharOffset() + 1;
-            return requestBodyJson.substring(start, end);
-        }
-        parser.nextToken();
-        int end = (int) parser.currentTokenLocation().getCharOffset();
-        return requestBodyJson.substring(start, end);
-    }
-
-    private void skipJsonValue(JsonParser parser, JsonToken token) throws IOException {
-        if (token == JsonToken.START_OBJECT || token == JsonToken.START_ARRAY) {
-            parser.skipChildren();
-            return;
-        }
-        if (token != JsonToken.VALUE_NULL) {
-            parser.nextToken();
-        }
-    }
-
-    /**
-     * Inbox 저장용 payload — 요청 payload 에 {@code esbHeader} 객체를 추가한다.
-     */
-    private String enrichPayloadWithHeaderFields(String payloadJson, EsbCommonHeader header) throws IOException {
-        if (header == null) {
-            return payloadJson;
-        }
-        String emnb = header.getEmnb();
-        String belnOrgnCode = header.getBelnOrgnCode();
-        if (isBlank(emnb) && isBlank(belnOrgnCode)) {
-            return payloadJson;
+        } else {
+            // 요청 loanPcesMgmtNo == corrKey
+            coreResponse = enqueueService.enqueue(
+                    new EventInboxRequest(evntNm, loanPcesMgmtNo, inboxPayload));
         }
 
-        JsonNode root = objectMapper.readTree(payloadJson);
-        if (!root.isObject()) {
-            return payloadJson;
+        if (EventInboxResponse.STATUS_FAILED.equals(coreResponse.getStatus())) {
+            return EventInboxReceiveResult.success(
+                    EsbEnvelope.success(
+                            header,
+                            ExternalItgtApvlInboxResponse.failed(loanPcesMgmtNo, evntNm, "LBM010003")));
         }
-        ObjectNode object = (ObjectNode) root;
-        ObjectNode esbHeader = objectMapper.createObjectNode();
-        if (!isBlank(emnb)) {
-            esbHeader.put("emnb", emnb.trim());
-        }
-        if (!isBlank(belnOrgnCode)) {
-            esbHeader.put("belnOrgnCode", belnOrgnCode.trim());
-        }
-        object.set("esbHeader", esbHeader);
-        return objectMapper.writeValueAsString(object);
-    }
-
-    private static boolean isBlank(String value) {
-        return value == null || value.isBlank();
-    }
-
-    /** parseIncomingRequest 반환용 — header + payload 원문. */
-    private static final class IncomingEsbRequest {
-        final EsbCommonHeader header;
-        final String rawPayloadJson;
-
-        IncomingEsbRequest(EsbCommonHeader header, String rawPayloadJson) {
-            this.header = header;
-            this.rawPayloadJson = rawPayloadJson;
-        }
+        return EventInboxReceiveResult.success(
+                EsbEnvelope.success(header, ExternalItgtApvlInboxResponse.success(loanPcesMgmtNo, evntNm)));
     }
 }

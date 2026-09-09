@@ -1,5 +1,8 @@
 package org.uengine.five.messaging;
 
+import java.util.function.BiFunction;
+import java.util.function.Function;
+
 import org.uengine.five.dto.EventInboxRequest;
 import org.uengine.five.dto.EventInboxResponse;
 
@@ -15,4 +18,16 @@ import org.uengine.five.dto.EventInboxResponse;
 public interface EventInboxEnqueueService {
 
     EventInboxResponse enqueue(EventInboxRequest request);
+
+    /**
+     * Inbox INSERT 시 SEQUENCE 로 할당된 {@code BPM_EVENT_INBOX.id} 로 corrKey 를 확정한다.
+     *
+     * <p>같은 트랜잭션에서 id 확보 → corrKey/payload 세팅 후 커밋한다.
+     * 반환 {@link EventInboxResponse#getCorrKey()} 가 채번된 업무키이다.</p>
+     */
+    EventInboxResponse enqueueWithCorrKeyFromId(
+            String eventName,
+            String payloadJson,
+            Function<Long, String> corrKeyFromId,
+            BiFunction<String, String, String> payloadWithCorrKey);
 }
