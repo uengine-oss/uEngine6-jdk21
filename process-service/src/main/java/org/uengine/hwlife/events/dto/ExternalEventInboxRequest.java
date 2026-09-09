@@ -130,8 +130,14 @@ public class ExternalEventInboxRequest {
     /** MI 가입여부 */
     private String sgiKindCode; // 서울보증보험종류코드
 
-    /** MI 가입여부 */
-    private String fncgOtpyMthdDvsnCode; // 서울보증보험종류코드
+    /** 융자지급방법구분코드 */
+    private String fncgOtpyMthdDvsnCode; // 융자지급방법구분코드
+
+     /** 동일예금주여부 */
+    private String sameAchrYn; // 동일예금주여부
+
+      /** 대출상환확인완료여부 */
+    private String loanRpmtCnfmCpltYn; // 대출상환확인완료여부
 
     public String getLoanPcesMgmtNo() { return loanPcesMgmtNo; }
     public void setLoanPcesMgmtNo(String loanPcesMgmtNo) { this.loanPcesMgmtNo = loanPcesMgmtNo; }
@@ -225,4 +231,10 @@ public class ExternalEventInboxRequest {
 
     public String getFncgOtpyMthdDvsnCode() { return fncgOtpyMthdDvsnCode; }
     public void setFncgOtpyMthdDvsnCode(String fncgOtpyMthdDvsnCode) { this.fncgOtpyMthdDvsnCode = fncgOtpyMthdDvsnCode; }
+
+    public String getSameAchrYn() { return sameAchrYn; }
+    public void setSameAchrYn(String sameAchrYn) { this.sameAchrYn = sameAchrYn; }
+
+    public String getLoanRpmtCnfmCpltYn() { return loanRpmtCnfmCpltYn; }
+    public void setLoanRpmtCnfmCpltYn(String loanRpmtCnfmCpltYn) { this.loanRpmtCnfmCpltYn = loanRpmtCnfmCpltYn; }
 }
