@@ -89,6 +89,7 @@ import org.uengine.five.scenario.Scenario;
 import org.uengine.five.scenario.ScenarioController;
 import org.uengine.five.serializers.BpmnXMLParser;
 import org.uengine.five.spring.SecurityAwareServletFilter;
+import org.uengine.hwlife.overriding.ProcessInstanceAttributeMapper;
 import org.uengine.kernel.AbstractProcessInstance;
 import org.uengine.kernel.Activity;
 import org.uengine.kernel.ActivityInstanceContext;

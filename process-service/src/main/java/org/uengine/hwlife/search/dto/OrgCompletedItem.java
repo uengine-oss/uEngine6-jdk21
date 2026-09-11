@@ -26,6 +26,7 @@ public class OrgCompletedItem {
     private String bpmBswrClsfCode;
     private String fncgBpmPcesIntcId;
     private String bswrDvsnVal; // root.defId (메인/서브)
+    private String bswrCntn;
 
     public Date getStarDttm() {
         return starDttm;
@@ -137,5 +138,13 @@ public class OrgCompletedItem {
 
     public void setBswrDvsnVal(String bswrDvsnVal) {
         this.bswrDvsnVal = bswrDvsnVal;
+    }
+
+    public String getBswrCntn() {
+        return bswrCntn;
+    }
+
+    public void setBswrCntn(String bswrCntn) {
+        this.bswrCntn = bswrCntn;
     }
 }

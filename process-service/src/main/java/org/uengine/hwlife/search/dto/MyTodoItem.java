@@ -45,6 +45,7 @@ public class MyTodoItem {
     private String imgeScanYn; // 이미지스캔여부
     private String bswrDvsnVal; // root.defId (메인/서브)
     private String fncgBpmPcesId; // worklist.defId
+    private String bswrCntn;
 
     public String getCustId() {
         return custId;
@@ -300,5 +301,13 @@ public class MyTodoItem {
 
     public void setFncgBpmPcesId(String fncgBpmPcesId) {
         this.fncgBpmPcesId = fncgBpmPcesId;
+    }
+
+    public String getBswrCntn() {
+        return bswrCntn;
+    }
+
+    public void setBswrCntn(String bswrCntn) {
+        this.bswrCntn = bswrCntn;
     }
 }

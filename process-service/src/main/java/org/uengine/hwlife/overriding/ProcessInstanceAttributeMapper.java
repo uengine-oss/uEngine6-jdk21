@@ -1,4 +1,4 @@
-package org.uengine.five.service;
+package org.uengine.hwlife.overriding;
 
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -9,6 +9,9 @@ import java.util.Map;
 import org.springframework.stereotype.Component;
 import org.uengine.five.entity.ProcessInstanceEntity;
 
+/**
+ * 커스텀 인스턴스 속성 매핑 — inbox/startEvent payload → {@link ProcessInstanceEntity}.
+ */
 @Component
 public class ProcessInstanceAttributeMapper {
 
@@ -27,6 +30,11 @@ public class ProcessInstanceAttributeMapper {
         instance.setFncgMneyUsagClsfCode(text(payload.get("fncgMneyUsagClsfCode")));
         instance.setBswrClsfCode(text(payload.get("bpmBswrClsfCode")));
 
+        String bswrCntn = text(payload.get("bswrCntn"));
+        if (bswrCntn != null) {
+            instance.setInfo(bswrCntn);
+        }
+
         Date loanHopeDate = date(payload.get("loanHopeDate"));
         if (loanHopeDate != null) {
             instance.setLoanHopeDate(loanHopeDate);
@@ -40,7 +48,6 @@ public class ProcessInstanceAttributeMapper {
      * 인스턴스 생성 시점({@code InstanceServiceImpl#start}) 에만 적용되며,
      * 워크리스트/RoleMapping 경로에서는 init_ep·init_group_cd 를 채우지 않는다.
      */
-    @SuppressWarnings("unchecked")
     private void applyEsbHeaderInitiator(ProcessInstanceEntity instance, Map<String, Object> payload) {
         Object esbHeaderObj = payload.get("esbHeader");
         if (!(esbHeaderObj instanceof Map<?, ?> esbHeader)) {

@@ -343,6 +343,8 @@ public class WorkSearchServiceImpl implements WorkSearchService {
     item.setMnorExstYn(toYn(worklist.getDelegated()));
     item.setApvlYn(toYn(worklist.getApvlYn()));
     item.setImgeScanYn(toYn(worklist.getImgeScanYn()));
+    item.setBswrCntn(rootInstance == null ? null : rootInstance.getInfo());
+    
     return item;
   }
 
@@ -374,6 +376,8 @@ public class WorkSearchServiceImpl implements WorkSearchService {
         instId == null ? null : String.valueOf(instId));
     item.setBswrDvsnVal(rootInstance == null ? null : rootInstance.getDefId());
     item.setFncgBpmPcesId(worklist.getDefId());
+    item.setBswrCntn(rootInstance == null ? null : rootInstance.getInfo());
+
     return item;
   }
 
@@ -407,6 +411,8 @@ public class WorkSearchServiceImpl implements WorkSearchService {
             : String.valueOf(instance.getInstId()));
     item.setBswrDvsnVal(rootInstance == null ? null : rootInstance.getDefId());
     item.setFncgBpmPcesId(worklist.getDefId());
+    item.setBswrCntn(rootInstance == null ? null : rootInstance.getInfo());
+
     return item;
   }
 
@@ -430,6 +436,7 @@ public class WorkSearchServiceImpl implements WorkSearchService {
     item.setBpmBswrClsfCode(instance == null ? null : instance.getBswrClsfCode());
     item.setFncgBpmPcesIntcId(instId == null ? null : String.valueOf(instId));
     item.setBswrDvsnVal(rootInstance == null ? null : rootInstance.getDefId());
+    item.setBswrCntn(rootInstance == null ? null : rootInstance.getInfo());
 
     return item;
   }

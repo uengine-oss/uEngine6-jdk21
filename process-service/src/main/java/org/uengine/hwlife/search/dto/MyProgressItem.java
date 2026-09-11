@@ -31,6 +31,7 @@ public class MyProgressItem {
     private String fncgBpmPcesIntcId;
     private String bswrDvsnVal; // root.defId (메인/서브)
     private String fncgBpmPcesId; // worklist.defId
+    private String bswrCntn;
 
     public String getLoanCntcNo() {
         return loanCntcNo;
@@ -182,5 +183,13 @@ public class MyProgressItem {
 
     public void setFncgBpmPcesId(String fncgBpmPcesId) {
         this.fncgBpmPcesId = fncgBpmPcesId;
+    }
+
+    public String getBswrCntn() {
+        return bswrCntn;
+    }
+
+    public void setBswrCntn(String bswrCntn) {
+        this.bswrCntn = bswrCntn;
     }
 }

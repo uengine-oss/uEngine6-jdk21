@@ -104,31 +104,35 @@ final class ExternalEsbInboxSupport {
     }
 
     /**
-     * Inbox 저장용 payload — 요청 payload 에 {@code esbHeader} 객체를 추가한다.
+     * Inbox 저장용 payload enrich.
+     * <ul>
+     *   <li>ESB header 의 {@code emnb}/{@code belnOrgnCode} → {@code esbHeader} 객체 (있을 때만)</li>
+     *   <li>{@code bpmBswrClsfCode} — 호출부가 결정한 값
+     *       ({@code /inbox}=요청값 또는 기본 10, {@code /inbox-apvl}=요청값 또는 기본 20)</li>
+     * </ul>
      */
-    String enrichPayloadWithHeaderFields(String payloadJson, EsbCommonHeader header) throws IOException {
-        if (header == null) {
-            return payloadJson;
-        }
-        String emnb = header.getEmnb();
-        String belnOrgnCode = header.getBelnOrgnCode();
-        if (isBlank(emnb) && isBlank(belnOrgnCode)) {
-            return payloadJson;
-        }
+    String enrichInboxPayload(String payloadJson, EsbCommonHeader header, String bpmBswrClsfCode)
+            throws IOException {
+        JsonNode root = objectMapper.readTree(payloadJson != null ? payloadJson : "{}");
+        ObjectNode object = root.isObject()
+                ? (ObjectNode) root
+                : objectMapper.createObjectNode();
 
-        JsonNode root = objectMapper.readTree(payloadJson);
-        if (!root.isObject()) {
-            return payloadJson;
+        if (header != null) {
+            String emnb = header.getEmnb();
+            String belnOrgnCode = header.getBelnOrgnCode();
+            if (!isBlank(emnb) || !isBlank(belnOrgnCode)) {
+                ObjectNode esbHeader = objectMapper.createObjectNode();
+                if (!isBlank(emnb)) {
+                    esbHeader.put("emnb", emnb.trim());
+                }
+                if (!isBlank(belnOrgnCode)) {
+                    esbHeader.put("belnOrgnCode", belnOrgnCode.trim());
+                }
+                object.set("esbHeader", esbHeader);
+            }
         }
-        ObjectNode object = (ObjectNode) root;
-        ObjectNode esbHeader = objectMapper.createObjectNode();
-        if (!isBlank(emnb)) {
-            esbHeader.put("emnb", emnb.trim());
-        }
-        if (!isBlank(belnOrgnCode)) {
-            esbHeader.put("belnOrgnCode", belnOrgnCode.trim());
-        }
-        object.set("esbHeader", esbHeader);
+        object.put("bpmBswrClsfCode", bpmBswrClsfCode);
         return objectMapper.writeValueAsString(object);
     }
 

@@ -11,6 +11,7 @@ import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 import org.uengine.five.entity.ProcessInstanceEntity;
+import org.uengine.hwlife.overriding.ProcessInstanceAttributeMapper;
 
 class ProcessInstanceAttributeMapperTest {
 

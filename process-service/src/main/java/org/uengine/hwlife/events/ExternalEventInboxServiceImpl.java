@@ -22,9 +22,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  *
  * <p>ESB header/payload 전문을 받아 payload 업무 필드를 Inbox 에 enqueue 한다.
  * DB {@code payload} 컬럼에는 요청 payload 에 {@code esbHeader}
- * ({@code emnb}, {@code belnOrgnCode}) 를 추가한 JSON 을 저장한다.
+ * ({@code emnb}, {@code belnOrgnCode}) 와 엔드포인트별 {@code bpmBswrClsfCode}
+ * ({@code /inbox}=요청값 또는 기본 10, {@code /inbox-apvl}=요청값 또는 기본 20) 를 추가한 JSON 을 저장한다.
  * 필수값 검증은 요청 payload 원문 문자열을 {@link ExternalEventInboxRequest} 로
- * 파싱해 수행한다(검증은 원문 기준, 저장 시에만 header 필드 병합).
+ * 파싱해 수행한다(검증은 원문 기준, 저장 시에만 enrich).
  * 성공/실패 모두 동일 응답 형태(HTTP 200 + header/payload)이며,
  * 업무 결과는 항상 {@code payload}({@link ExternalEventInboxResponse}) 에 담는다.</p>
  */
@@ -94,7 +95,11 @@ public class ExternalEventInboxServiceImpl implements ExternalEventInboxService 
 
         String inboxPayload;
         try {
-            inboxPayload = esbSupport.enrichPayloadWithHeaderFields(rawPayloadJson, header);
+            // 요청에 bpmBswrClsfCode 있으면 그대로, 없으면 기본 10
+            String bpmBswrClsfCode = !ExternalEsbInboxSupport.isBlank(payload.getBpmBswrClsfCode())
+                    ? payload.getBpmBswrClsfCode().trim()
+                    : "10";
+            inboxPayload = esbSupport.enrichInboxPayload(rawPayloadJson, header, bpmBswrClsfCode);
         } catch (Exception e) {
             return EventInboxReceiveResult.failed(
                     EsbEnvelope.failed(
@@ -158,7 +163,11 @@ public class ExternalEventInboxServiceImpl implements ExternalEventInboxService 
 
         String inboxPayload;
         try {
-            inboxPayload = esbSupport.enrichPayloadWithHeaderFields(rawPayloadJson, header);
+            // 요청에 bpmBswrClsfCode 있으면 그대로, 없으면 기본 20
+            String bpmBswrClsfCode = !ExternalEsbInboxSupport.isBlank(payload.getBpmBswrClsfCode())
+                    ? payload.getBpmBswrClsfCode().trim()
+                    : "20";
+            inboxPayload = esbSupport.enrichInboxPayload(rawPayloadJson, header, bpmBswrClsfCode);
         } catch (Exception e) {
             return EventInboxReceiveResult.failed(
                     EsbEnvelope.failed(
