@@ -2692,6 +2692,7 @@ public class InstanceServiceImpl implements InstanceService {
         } else {
             if (UEngineUtil.isNotEmpty(worklistEntity.getEndpoint())) {
                 if (actorEndpoint.equals(worklistEntity.getEndpoint())) {
+                    persistClaimedLane(worklistEntity);
                     return;
                 }
                 throw new ResponseStatusException(HttpStatus.CONFLICT,
@@ -2717,8 +2718,7 @@ public class InstanceServiceImpl implements InstanceService {
             }
 
         }
-        String instanceId = String.valueOf(worklistEntity.getInstId());
-        ProcessInstance instance = getProcessInstanceLocal(instanceId);
+        persistClaimedLane(worklistEntity);
 
         // ── [HOOK] 업무 배정  변경 ──────────────
         if (bpmLifecycleService != null) {
@@ -2727,6 +2727,23 @@ public class InstanceServiceImpl implements InstanceService {
         }
 
         assignmentStateService.finish(assignmentContext);
+    }
+
+    private void persistClaimedLane(WorklistEntity workitem) throws Exception {
+        if (workitem.getInstId() == null || !hasText(workitem.getRoleName())) return;
+        ProcessInstance instance = getProcessInstanceLocal(String.valueOf(workitem.getInstId()));
+        RoleMapping mapping = instance.getRoleMapping(workitem.getRoleName());
+        if (mapping == null) {
+            mapping = RoleMapping.create();
+            mapping.setName(workitem.getRoleName());
+            mapping.setGroupName(workitem.getGroupCd());
+            mapping.setScope(workitem.getScope());
+            mapping.setAssignType(workitem.getAssignType());
+            mapping.setDispatchingOption(workitem.getDispatchOption());
+        }
+        mapping.setEndpoint(workitem.getEndpoint());
+        mapping.setResourceName(workitem.getResName());
+        instance.putRoleMapping(workitem.getRoleName(), mapping);
     }
 
     private void applyActorToWorklistIfEmpty(WorklistEntity wl, String actorEndpoint) {
