@@ -2,6 +2,7 @@ package org.uengine.five.service;
 
 import java.util.List;
 import java.util.Map;
+import java.util.HashSet;
 
 /**
  * IAM(Identity & Access Management) 공급자 추상화 인터페이스.
@@ -47,6 +48,31 @@ public interface IAMService {
      * 사용자가 속한 그룹 목록을 조회합니다.
      */
     List<String> getUserGroups(String userId) throws Exception;
+
+    default boolean isValidUser(String userId) throws Exception {
+        return getUserById(userId) != null;
+    }
+
+    default boolean isValidGroup(String groupName) throws Exception {
+        List<String> users = getUsersByGroup(groupName);
+        return users != null && !users.isEmpty();
+    }
+
+    default boolean isValidRole(String roleName) throws Exception {
+        List<String> users = getUsersByRole(roleName);
+        return users != null && !users.isEmpty();
+    }
+
+    default boolean isValidGroupRole(String groupName, String roleName) throws Exception {
+        List<String> groupUsers = getUsersByGroup(groupName);
+        List<String> roleUsers = getUsersByRole(roleName);
+        if (groupUsers == null || roleUsers == null) {
+            return false;
+        }
+        HashSet<String> intersection = new HashSet<>(groupUsers);
+        intersection.retainAll(roleUsers);
+        return !intersection.isEmpty();
+    }
 
     /**
      * 편의 메서드: 사용자가 특정 scope을 가지고 있는지 확인합니다.

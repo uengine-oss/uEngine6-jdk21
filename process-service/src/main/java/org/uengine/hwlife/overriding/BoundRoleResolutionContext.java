@@ -10,6 +10,11 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import org.uengine.five.overriding.IAMRoleResolutionContext;
+import org.uengine.five.service.IAMService;
+import org.uengine.five.service.IAMServiceFactory;
+import org.uengine.kernel.DirectRoleResolutionContext;
+import org.uengine.kernel.DynamicRoleMappingContext;
 import org.uengine.kernel.GlobalContext;
 import org.uengine.kernel.IContainsMapping;
 import org.uengine.kernel.ProcessDefinition;
@@ -40,7 +45,8 @@ import org.uengine.kernel.RoleResolutionContext;
  * <p>해석 규칙: binding 변수에 값이 있으면 override, 없으면 {@code base} 정적 기본값 유지.
  * 정의 객체는 mutate 하지 않고 clone 후 적용한다.</p>
  */
-public class BoundRoleResolutionContext extends RoleResolutionContext implements IContainsMapping {
+public class BoundRoleResolutionContext extends RoleResolutionContext
+        implements IContainsMapping, DynamicRoleMappingContext {
 
     private static final long serialVersionUID = GlobalContext.SERIALIZATION_UID;
 
@@ -73,13 +79,6 @@ public class BoundRoleResolutionContext extends RoleResolutionContext implements
     @SuppressWarnings("rawtypes")
     public RoleMapping getActualMapping(ProcessDefinition pd, ProcessInstance instance,
                                         String tracingTag, Map options) throws Exception {
-        String boundEndpoint = getBindingValue(instance, tracingTag, "endpoint");
-        if (boundEndpoint != null) {
-            RoleMapping mapping = RoleMapping.create();
-            mapping.setEndpoint(boundEndpoint);
-            return mapping;
-        }
-
         RoleResolutionContext resolved = resolve(instance, tracingTag);
         RoleMapping mapping = resolved.getActualMapping(pd, instance, tracingTag, options);
         applyResultBindings(mapping, instance, tracingTag);
@@ -87,14 +86,56 @@ public class BoundRoleResolutionContext extends RoleResolutionContext implements
     }
 
     @Override
+    @SuppressWarnings("rawtypes")
+    public RoleMapping resolveRoleMapping(ProcessDefinition pd, ProcessInstance instance,
+                                          String tracingTag, RoleMapping currentMapping,
+                                          Map options) throws Exception {
+        if (base == null) {
+            throw new IllegalStateException("BoundRoleResolutionContext: base RoleResolutionContext is required");
+        }
+        if (bindings == null || bindings.isEmpty()) {
+            return currentMapping != null ? currentMapping : resolveBaseMapping(pd, instance, tracingTag, options);
+        }
+
+        LinkedHashMap<String, String> values = readCompleteBindingValues(instance, tracingTag);
+        if (values == null) {
+            return currentMapping != null ? currentMapping : resolveBaseMapping(pd, instance, tracingTag, options);
+        }
+
+        try {
+            RoleResolutionContext resolved = resolveWithValues(values);
+            RoleMapping candidate = resolved.getActualMapping(pd, instance, tracingTag, options);
+            if (candidate == null || !isValidAssignment(resolved, candidate)) {
+                return currentMapping != null ? currentMapping : resolveBaseMapping(pd, instance, tracingTag, options);
+            }
+            return currentMapping != null && hasSameAssignmentCriteria(currentMapping, candidate)
+                    ? currentMapping
+                    : candidate;
+        } catch (Exception e) {
+            return currentMapping != null ? currentMapping : resolveBaseMapping(pd, instance, tracingTag, options);
+        }
+    }
+
+    @Override
     public boolean containsMapping(ProcessInstance instance, RoleMapping testingRoleMapping)
             throws Exception {
-        String boundEndpoint = getBindingValue(instance, null, "endpoint");
-        if (boundEndpoint != null) {
-            return testingRoleMapping != null
-                    && boundEndpoint.equals(testingRoleMapping.getEndpoint());
+        if (base == null) {
+            throw new IllegalStateException("BoundRoleResolutionContext: base RoleResolutionContext is required");
         }
-        RoleResolutionContext resolved = resolve(instance, null);
+        RoleResolutionContext resolved = base;
+        LinkedHashMap<String, String> values = readCompleteBindingValues(instance, null);
+        if (values != null) {
+            try {
+                RoleResolutionContext candidateContext = resolveWithValues(values);
+                RoleMapping candidate = candidateContext.getActualMapping(
+                        null, instance, null, Collections.emptyMap());
+                if (candidate != null && isValidAssignment(candidateContext, candidate)) {
+                    resolved = candidateContext;
+                }
+            } catch (Exception ignored) {
+                resolved = base;
+            }
+        }
         if (resolved instanceof IContainsMapping) {
             return ((IContainsMapping) resolved).containsMapping(instance, testingRoleMapping);
         }
@@ -154,6 +195,79 @@ public class BoundRoleResolutionContext extends RoleResolutionContext implements
         return clone;
     }
 
+    private RoleResolutionContext resolveWithValues(Map<String, String> values) throws Exception {
+        RoleResolutionContext clone = cloneContext(base);
+        for (Map.Entry<String, String> entry : values.entrySet()) {
+            if ("endpoint".equals(entry.getKey()) && clone instanceof DirectRoleResolutionContext) {
+                ((DirectRoleResolutionContext) clone).setEndpoint(entry.getValue());
+            } else {
+                setProperty(clone, entry.getKey(), entry.getValue());
+            }
+        }
+        return clone;
+    }
+
+    @SuppressWarnings("rawtypes")
+    private RoleMapping resolveBaseMapping(ProcessDefinition pd, ProcessInstance instance,
+                                           String tracingTag, Map options) throws Exception {
+        return base.getActualMapping(pd, instance, tracingTag, options);
+    }
+
+    private LinkedHashMap<String, String> readCompleteBindingValues(
+            ProcessInstance instance, String tracingTag) throws Exception {
+        LinkedHashMap<String, String> values = new LinkedHashMap<>();
+        for (Map.Entry<String, String> entry : bindings.entrySet()) {
+            if (!isSupportedBinding(entry.getKey()) || !isNotEmpty(entry.getValue())) {
+                return null;
+            }
+            String value = readVar(instance, tracingTag, entry.getValue());
+            if (value == null) {
+                return null;
+            }
+            values.put(entry.getKey(), value);
+        }
+        return values;
+    }
+
+    private boolean isValidAssignment(RoleResolutionContext resolved, RoleMapping mapping) throws Exception {
+        IAMService iam = getIamService();
+        if (resolved instanceof DirectRoleResolutionContext) {
+            return isNotEmpty(mapping.getEndpoint()) && iam.isValidUser(mapping.getEndpoint());
+        }
+        if (resolved instanceof IAMRoleResolutionContext) {
+            IAMRoleResolutionContext context = (IAMRoleResolutionContext) resolved;
+            boolean hasGroup = isNotEmpty(context.getGroupName());
+            boolean hasRole = isNotEmpty(context.getScope());
+            if (hasGroup && hasRole) {
+                return iam.isValidGroupRole(context.getGroupName(), context.getScope());
+            }
+            return hasGroup ? iam.isValidGroup(context.getGroupName())
+                    : hasRole && iam.isValidRole(context.getScope());
+        }
+        return true;
+    }
+
+    protected IAMService getIamService() {
+        return IAMServiceFactory.getDefault();
+    }
+
+    private static boolean hasSameAssignmentCriteria(RoleMapping current, RoleMapping candidate) {
+        if (isNotEmpty(candidate.getEndpoint())) {
+            return candidate.getEndpoint().equals(current.getEndpoint());
+        }
+        return same(candidate.getGroupName(), current.getGroupName())
+                && same(candidate.getScope(), current.getScope())
+                && candidate.getAssignType() == current.getAssignType();
+    }
+
+    private static boolean isSupportedBinding(String property) {
+        return "endpoint".equals(property) || "groupName".equals(property) || "scope".equals(property);
+    }
+
+    private static boolean same(String left, String right) {
+        return left == null ? right == null : left.equals(right);
+    }
+
     private void applyResultBindings(RoleMapping mapping, ProcessInstance instance, String tracingTag)
             throws Exception {
         if (mapping == null || bindings == null || bindings.isEmpty()) {
@@ -188,6 +302,9 @@ public class BoundRoleResolutionContext extends RoleResolutionContext implements
             v = instance.getProperty(tracingTag, varKey);
         }
         if (v == null) {
+            return null;
+        }
+        if (!(v instanceof CharSequence) && !(v instanceof Number)) {
             return null;
         }
         String s = String.valueOf(v).trim();
