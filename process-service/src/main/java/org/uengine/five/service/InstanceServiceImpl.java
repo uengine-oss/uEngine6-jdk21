@@ -552,6 +552,12 @@ public class InstanceServiceImpl implements InstanceService {
         TestDefinitionRegistry.remove(instanceId);
     }
 
+    @RequestMapping(value = "/instance/{instanceId}/delete", method = RequestMethod.POST, produces = "application/json;charset=UTF-8")
+    @Transactional
+    public void deleteInstancePost(@PathVariable("instanceId") String instanceId) throws Exception {
+        deleteInstance(instanceId);
+    }
+
     @RequestMapping(value = "/instance/{instanceId}/suspend", method = RequestMethod.POST)
     @ProcessTransactional
     public InstanceResource suspend(@PathVariable("instanceId") String instanceId) throws Exception {
@@ -1091,7 +1097,7 @@ public class InstanceServiceImpl implements InstanceService {
     // Spring Data rest 에서는 자동객체를 JSON으로 바인딩 해주지만, 원래 스프링에서는 리스폰스에 대해 스프링 프레임웤이 해석할
     // 수 있는 미디어타입을 xml 에 일일히 설정했었음.
     // produces 의 의미는. 리스폰스 헤더에 콘텐트타입을 설정해줌. 그래야 브라우저가 json 객체로 받아들인다.
-    @RequestMapping(value = "/instance/{instanceId}/role-mapping/{roleName}", method = RequestMethod.POST, produces = "application/json; charset=UTF-8")
+    @RequestMapping(value = "/instance/{instanceId}/role-mapping/{roleName}", method = RequestMethod.POST, params = "!action", produces = "application/json; charset=UTF-8")
     @org.springframework.transaction.annotation.Transactional
     @ProcessTransactional
     public Object setRoleMapping(@PathVariable("instanceId") String instanceId,
@@ -1127,6 +1133,14 @@ public class InstanceServiceImpl implements InstanceService {
         assignmentStateService.synchronize(Long.valueOf(instanceId));
 
         return rm;
+    }
+
+    @RequestMapping(value = "/instance/{instanceId}/role-mapping/{roleName}", method = RequestMethod.POST, params = "action=update", produces = "application/json; charset=UTF-8")
+    @org.springframework.transaction.annotation.Transactional
+    @ProcessTransactional
+    public Object updateRoleMappingPost(@PathVariable("instanceId") String instanceId,
+            @PathVariable("roleName") String roleName, @RequestBody RoleMappingCommand roleMapping) throws Exception {
+        return putRoleMapping(instanceId, roleName, roleMapping);
     }
 
     @RequestMapping(value = "/instance/{instanceId}/role-mapping/{roleName}", method = RequestMethod.PUT, produces = "application/json; charset=UTF-8")
@@ -1774,6 +1788,11 @@ public class InstanceServiceImpl implements InstanceService {
             });
         }
 
+    }
+
+    @RequestMapping(value = "/test/**", method = RequestMethod.POST, params = "action=delete", produces = "application/json;charset=UTF-8")
+    public void deleteTestPost(HttpServletRequest request, @RequestBody Map<String, Object> testData) throws Exception {
+        deleteTest(request, testData);
     }
 
     @RequestMapping(value = "/test/**", method = RequestMethod.DELETE, produces = "application/json;charset=UTF-8")

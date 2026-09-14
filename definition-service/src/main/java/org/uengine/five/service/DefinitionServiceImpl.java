@@ -439,7 +439,18 @@ public class DefinitionServiceImpl implements DefinitionService, DefinitionXMLSe
         return new DefinitionResource(resource);
     }
 
-    @RequestMapping(value = DEFINITION + "/**", method = { RequestMethod.POST })
+    @RequestMapping(value = DEFINITION + "/**", method = RequestMethod.POST, params = "action=move", produces = "application/json;charset=UTF-8")
+    public DefinitionResource renameOrMovePost(@RequestBody DefinitionResource definition, HttpServletRequest request)
+            throws Exception {
+        return renameOrMove(definition, request);
+    }
+
+    @RequestMapping(value = DEFINITION + "/**", method = RequestMethod.POST, params = "action=delete")
+    public void deleteDefinitionPost(HttpServletRequest request) throws Exception {
+        deleteDefinition(request);
+    }
+
+    @RequestMapping(value = DEFINITION + "/**", method = { RequestMethod.POST }, params = "!action")
     public DefinitionResource createFolder(@RequestBody DefinitionResource newResource_, HttpServletRequest request)
             throws Exception {
 
@@ -749,14 +760,14 @@ public class DefinitionServiceImpl implements DefinitionService, DefinitionXMLSe
     /**
      * Feign-friendly raw definition saver (full path via query param).
      */
-    @RequestMapping(value = DEFINITION_RAW, method = RequestMethod.PUT, produces = "application/json;charset=UTF-8")
+    @RequestMapping(value = DEFINITION_RAW, method = { RequestMethod.PUT, RequestMethod.POST }, produces = "application/json;charset=UTF-8")
     public DefinitionResource putRawDefinitionByParam(@RequestParam("defPath") String definitionPath,
             @RequestBody DefinitionRequest definitionRequest) throws Exception {
         // putRawDefinition(String, …) 경유 시 동일 시그니처 재귀/프록시 혼선 방지 — 코어로 직접 위임
         return saveRawDefinitionCore(definitionPath, definitionRequest);
     }
 
-    @RequestMapping(value = DEFINITION_SYSTEM + "/**", method = { RequestMethod.POST, RequestMethod.PUT })
+    @RequestMapping(value = DEFINITION_SYSTEM + "/**", method = { RequestMethod.POST, RequestMethod.PUT }, params = "!action")
     public DefinitionResource putRawSystem(@RequestBody String definition, HttpServletRequest request)
             throws Exception {
 
