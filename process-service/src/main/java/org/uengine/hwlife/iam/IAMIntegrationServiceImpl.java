@@ -32,11 +32,15 @@ public class IAMIntegrationServiceImpl implements IAMIntegrationService {
 
     @Override
     public UserSearchResponse searchUser(UserSearchRequest request) throws Exception {
-        UserSearchResponse response = new UserSearchResponse();
         if (request == null || request.getHndrEmnb() == null || request.getHndrEmnb().isBlank()) {
-            return response;
+            return null;
         }
-        return externalIamService.getUser(request.getHndrEmnb());
+        UserSearchResponse response = externalIamService.getUser(request.getHndrEmnb());
+        // 유효하지 않은 사번(필드가 비어 있는 응답)도 null 로 통일
+        if (response == null || response.getHndrEmnb() == null || response.getHndrEmnb().isBlank()) {
+            return null;
+        }
+        return response;
     }
 
     @Override

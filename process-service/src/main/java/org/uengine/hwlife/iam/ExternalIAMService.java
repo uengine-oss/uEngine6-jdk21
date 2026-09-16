@@ -137,10 +137,10 @@ public class ExternalIAMService implements IAMService {
      */
     public UserSearchResponse getUser(String employeeNo) {
         // TODO: esbClient().send(itfcId, rcveSrvcId, payload, UserSearchResponse.class)
-        UserSearchResponse response = new UserSearchResponse();
         if (!hasText(employeeNo)) {
-            return response;
+            return null;
         }
+        UserSearchResponse response = new UserSearchResponse();
         response.setHndrEmnb(employeeNo);
         response.setHndrNm("사용자");
 
