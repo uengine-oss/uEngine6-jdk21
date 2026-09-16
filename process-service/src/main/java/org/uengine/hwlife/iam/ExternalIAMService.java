@@ -94,6 +94,31 @@ public class ExternalIAMService implements IAMService {
         return new ArrayList<>();
     }
 
+    @Override
+    public boolean isValidGroup(String groupName) {
+        if (!hasText(groupName)) {
+            return false;
+        }
+        OrgSearchResponse response = getGroups();
+        return response != null && response.getBpmOrgnList().stream()
+                .anyMatch(org -> groupName.equals(org.getFncgWndwOrgnCode()));
+    }
+
+    @Override
+    public boolean isValidRole(String roleName) {
+        if (!hasText(roleName)) {
+            return false;
+        }
+        RoleSearchResponse response = getRoles();
+        return response != null && response.getBpmAtrtList().stream()
+                .anyMatch(role -> roleName.equals(role.getFncgCoreAtrtId()));
+    }
+
+    @Override
+    public boolean isValidGroupRole(String groupName, String roleName) {
+        return isValidGroup(groupName) && isValidRole(roleName);
+    }
+
     /**
      * 그룹 정보 목록 (코드·이름). {@link FncgOrgInfo}는 공통 응답 형태로 재사용합니다.
      *

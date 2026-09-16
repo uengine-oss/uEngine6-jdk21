@@ -14,7 +14,6 @@ import org.uengine.processdesigner.mapper.Transformer;
 import org.uengine.processdesigner.mapper.TransformerMapping;
 import org.uengine.util.UEngineUtil;
 
-import com.fasterxml.jackson.annotation.JsonSetter;
 
 public class ReceiveActivity extends DefaultActivity implements MessageListener, NeedArrangementToSerialize {
     private static final long serialVersionUID = org.uengine.kernel.GlobalContext.SERIALIZATION_UID;
@@ -112,21 +111,6 @@ public class ReceiveActivity extends DefaultActivity implements MessageListener,
 
     public void setFromRole(Role role) {
         fromRole = role;
-    }
-
-    @Override
-    @JsonSetter("role")
-    public void setRole(String roleName) {
-        super.setRole(roleName);
-
-        if (roleName == null || roleName.trim().isEmpty()) {
-            setFromRole((Role) null);
-            return;
-        }
-
-        Role role = new Role();
-        role.setName(roleName);
-        setFromRole(role);
     }
 
     /////////////////////////

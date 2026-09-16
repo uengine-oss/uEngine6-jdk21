@@ -6,6 +6,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -38,6 +39,11 @@ public class DefinitionLockController {
 
     @PutMapping(consumes = "application/json", produces = "application/json;charset=UTF-8")
     public DefinitionLockDto putLock(@RequestBody DefinitionLockDto body) {
+        return setLock(body);
+    }
+
+    @PostMapping(consumes = "application/json", produces = "application/json;charset=UTF-8")
+    public DefinitionLockDto setLock(@RequestBody DefinitionLockDto body) {
         String userId = body.getUserId();
         if (userId == null || userId.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "user_id is required");
@@ -46,7 +52,17 @@ public class DefinitionLockController {
         if (resourceId == null || resourceId.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "id is required");
         }
-        return definitionLockService.putLock(resourceId, userId);
+        return definitionLockService.setLock(resourceId, userId);
+    }
+
+    @PostMapping(value = "/release", consumes = "application/json")
+    public ResponseEntity<Void> releaseLock(@RequestBody DefinitionLockDto body) {
+        String resourceId = body.getId();
+        if (resourceId == null || resourceId.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "id is required");
+        }
+        definitionLockService.releaseLock(resourceId);
+        return ResponseEntity.noContent().build();
     }
 
     @DeleteMapping(params = "path")

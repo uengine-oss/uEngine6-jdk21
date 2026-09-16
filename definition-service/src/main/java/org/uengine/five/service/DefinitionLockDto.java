@@ -4,8 +4,9 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
  * Lock API 요청/응답 DTO.
- * GET 200, PUT 200: { "id": "...", "user_id": "..." }
- * PUT body: { "id": "...", "user_id": "..." }
+ * GET 200, POST 200: { "id": "...", "user_id": "..." }
+ * POST /definition/lock body: { "id": "...", "user_id": "..." }
+ * POST /definition/lock/release body: { "id": "..." }
  */
 public class DefinitionLockDto {
     private String id;

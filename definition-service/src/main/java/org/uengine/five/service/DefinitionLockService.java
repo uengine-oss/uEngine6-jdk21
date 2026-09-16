@@ -30,7 +30,7 @@ public class DefinitionLockService {
      * Lock 생성 또는 본인 lock 갱신(연장). 다른 사용자가 잡고 있으면 409.
      */
     @Transactional
-    public DefinitionLockDto putLock(String resourceId, String userId) {
+    public DefinitionLockDto setLock(String resourceId, String userId) {
         Optional<DefinitionLockEntity> existing = repository.findById(resourceId);
         if (existing.isEmpty()) {
             DefinitionLockEntity e = new DefinitionLockEntity();
@@ -50,12 +50,22 @@ public class DefinitionLockService {
         return toDto(e);
     }
 
+    @Transactional
+    public DefinitionLockDto putLock(String resourceId, String userId) {
+        return setLock(resourceId, userId);
+    }
+
     /**
      * Lock 해제(체크인). 해당 id만 맞으면 삭제.
      */
     @Transactional
-    public void deleteLock(String resourceId) {
+    public void releaseLock(String resourceId) {
         repository.deleteById(resourceId);
+    }
+
+    @Transactional
+    public void deleteLock(String resourceId) {
+        releaseLock(resourceId);
     }
 
     private DefinitionLockDto toDto(DefinitionLockEntity e) {

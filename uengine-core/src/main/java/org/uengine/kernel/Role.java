@@ -196,7 +196,17 @@ public class Role implements IElement, java.io.Serializable, Cloneable {
 		
 		if(role==null)
 			role = this;
-			
+
+		RoleResolutionContext resolutionContext = role.getRoleResolutionContext();
+		if(resolutionContext instanceof DynamicRoleMappingContext){
+			RoleMapping previousMapping = mapping;
+			mapping = ((DynamicRoleMappingContext) resolutionContext).resolveRoleMapping(
+					definition, inst, tracingTag, mapping, new java.util.Hashtable());
+			if(!isDontPersistResolutionResult() && mapping!=null && mapping!=previousMapping && inst!=null){
+				inst.putRoleMapping(getName(), mapping);
+			}
+		}
+
 		//clean up the existing resolution result when isDontPersistResolutionResult() option is true
 		if(mapping!=null && isDontPersistResolutionResult()){
 			mapping=null;
@@ -206,9 +216,9 @@ public class Role implements IElement, java.io.Serializable, Cloneable {
 		if(mapping==null) {
 			//try to use role resolution context		
 			Exception resolutionException = null;
-			if (role.getRoleResolutionContext()!=null) {
+			if (resolutionContext!=null) {
 				try{
-					mapping = role.getRoleResolutionContext().getActualMapping(definition, inst, tracingTag, new java.util.Hashtable()); // danger roop with DefaultCompanyRoleResolutionContext.java (line 64) 
+					mapping = resolutionContext.getActualMapping(definition, inst, tracingTag, new java.util.Hashtable()); // danger roop with DefaultCompanyRoleResolutionContext.java (line 64)
 				}catch(Exception e){
 					resolutionException = e;
 					e.printStackTrace();
