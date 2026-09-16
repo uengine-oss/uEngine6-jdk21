@@ -371,11 +371,25 @@ public class InstanceServiceImpl implements InstanceService {
                 }
             } catch (Exception e) {
                 e.printStackTrace();
+                if (isInitiationPermissionFailure(e)) {
+                    throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                            "The current user does not have permission to start this process.", e);
+                }
                 throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
                         "Error executing process instance: " + e.getMessage(), e);
             }
         }
         return null;
+    }
+
+    static boolean isInitiationPermissionFailure(Throwable error) {
+        for (Throwable current = error; current != null; current = current.getCause()) {
+            String message = current.getMessage();
+            if (message != null && message.contains("not permitted to initiate this process")) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**

@@ -10,6 +10,8 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.uengine.five.overriding.IAMRoleResolutionContext;
 import org.uengine.five.service.IAMService;
 import org.uengine.five.service.IAMServiceFactory;
@@ -49,6 +51,7 @@ public class BoundRoleResolutionContext extends RoleResolutionContext
         implements IContainsMapping, DynamicRoleMappingContext {
 
     private static final long serialVersionUID = GlobalContext.SERIALIZATION_UID;
+    private static final Logger log = LoggerFactory.getLogger(BoundRoleResolutionContext.class);
 
     /** 정적 기본값을 가진 실제 배분 전략. */
     private RoleResolutionContext base;
@@ -97,21 +100,25 @@ public class BoundRoleResolutionContext extends RoleResolutionContext
             return currentMapping != null ? currentMapping : resolveBaseMapping(pd, instance, tracingTag, options);
         }
 
-        LinkedHashMap<String, String> values = readCompleteBindingValues(instance, tracingTag);
-        if (values == null) {
+        LinkedHashMap<String, String> values = readAvailableBindingValues(instance, tracingTag);
+        if (values == null || values.isEmpty()) {
             return currentMapping != null ? currentMapping : resolveBaseMapping(pd, instance, tracingTag, options);
         }
 
         try {
-            RoleResolutionContext resolved = resolveWithValues(values);
+            RoleResolutionContext resolved = resolveWithValues(values, currentMapping);
             RoleMapping candidate = resolved.getActualMapping(pd, instance, tracingTag, options);
             if (candidate == null || !isValidAssignment(resolved, candidate)) {
+                log.warn("[BpmAssignment] Bound assignment rejected; keeping inherited/default mapping. tracingTag={}, values={}",
+                        tracingTag, values);
                 return currentMapping != null ? currentMapping : resolveBaseMapping(pd, instance, tracingTag, options);
             }
             return currentMapping != null && hasSameAssignmentCriteria(currentMapping, candidate)
                     ? currentMapping
                     : candidate;
         } catch (Exception e) {
+            log.warn("[BpmAssignment] Bound assignment lookup failed; keeping inherited/default mapping. tracingTag={}, values={}",
+                    tracingTag, values, e);
             return currentMapping != null ? currentMapping : resolveBaseMapping(pd, instance, tracingTag, options);
         }
     }
@@ -123,8 +130,8 @@ public class BoundRoleResolutionContext extends RoleResolutionContext
             throw new IllegalStateException("BoundRoleResolutionContext: base RoleResolutionContext is required");
         }
         RoleResolutionContext resolved = base;
-        LinkedHashMap<String, String> values = readCompleteBindingValues(instance, null);
-        if (values != null) {
+        LinkedHashMap<String, String> values = readAvailableBindingValues(instance, null);
+        if (values != null && !values.isEmpty()) {
             try {
                 RoleResolutionContext candidateContext = resolveWithValues(values);
                 RoleMapping candidate = candidateContext.getActualMapping(
@@ -196,7 +203,16 @@ public class BoundRoleResolutionContext extends RoleResolutionContext
     }
 
     private RoleResolutionContext resolveWithValues(Map<String, String> values) throws Exception {
+        return resolveWithValues(values, null);
+    }
+
+    private RoleResolutionContext resolveWithValues(Map<String, String> values, RoleMapping currentMapping) throws Exception {
         RoleResolutionContext clone = cloneContext(base);
+        if (clone instanceof IAMRoleResolutionContext && currentMapping != null) {
+            IAMRoleResolutionContext iam = (IAMRoleResolutionContext) clone;
+            iam.setGroupName(currentMapping.getGroupName());
+            iam.setScope(currentMapping.getScope());
+        }
         for (Map.Entry<String, String> entry : values.entrySet()) {
             if ("endpoint".equals(entry.getKey()) && clone instanceof DirectRoleResolutionContext) {
                 ((DirectRoleResolutionContext) clone).setEndpoint(entry.getValue());
@@ -213,7 +229,7 @@ public class BoundRoleResolutionContext extends RoleResolutionContext
         return base.getActualMapping(pd, instance, tracingTag, options);
     }
 
-    private LinkedHashMap<String, String> readCompleteBindingValues(
+    private LinkedHashMap<String, String> readAvailableBindingValues(
             ProcessInstance instance, String tracingTag) throws Exception {
         LinkedHashMap<String, String> values = new LinkedHashMap<>();
         for (Map.Entry<String, String> entry : bindings.entrySet()) {
@@ -222,7 +238,7 @@ public class BoundRoleResolutionContext extends RoleResolutionContext
             }
             String value = readVar(instance, tracingTag, entry.getValue());
             if (value == null) {
-                return null;
+                continue;
             }
             values.put(entry.getKey(), value);
         }

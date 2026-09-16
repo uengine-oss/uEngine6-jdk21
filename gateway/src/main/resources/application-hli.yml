@@ -1,0 +1,46 @@
+# HLI debug profile: keep the existing runtime routes in source control.
+server:
+  port: 8188
+spring:
+  cloud:
+    gateway:
+      httpclient:
+        connect-timeout: 3000
+        response-timeout: 3600000
+      routes:
+        - id: execution
+          uri: http://localhost:8000
+          predicates:
+            - Path=/complete/**, /vision-complete/**, /execution/**
+          filters:
+            - RewritePath=/execution/?(?<segment>.*), /$\{segment}
+        - id: events
+          uri: ${PROCESS_SERVICE_URL:http://localhost:9094}
+          predicates:
+            - Path=/events/**
+        - id: definition-servicce
+          uri: ${DEFINITION_SERVICE_URL:http://localhost:9093}
+          predicates:
+            - Path=/definition/**, /version/**, /versions/**
+        - id: instance-servicce
+          uri: ${PROCESS_SERVICE_URL:http://localhost:9094}
+          predicates:
+            - Path=/worklist/**, /test/**, /instance/**, /work-item/**, /instances/**, /dry-run/**, /validate/**, /start-and-complete, /business-rules, /business-rules/**, /inbox, /role-assign-rules, /loan-bpm/status/*, /iam/**
+        - id: inventory-service
+          uri: http://localhost:8080
+          predicates:
+            - Path=/inventories/**, /url-test/**
+        - id: frontend
+          uri: http://localhost:5273
+          predicates:
+            - Path=/**
+      globalcors:
+        corsConfigurations:
+          '[/**]':
+            allowedOriginPatterns:
+              - "*"
+            allowedMethods:
+              - "*"
+            allowedHeaders:
+              - "*"
+            allowCredentials: true
