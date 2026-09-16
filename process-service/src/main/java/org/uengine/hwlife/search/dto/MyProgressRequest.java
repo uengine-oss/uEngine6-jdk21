@@ -24,8 +24,6 @@ public class MyProgressRequest {
     private String sortOrdrVal;
     /** 메인/서브 루트 인스턴스 {@code defId} 필터. */
     private String bswrDvsnVal;
-    /** 현재 단위업무 {@code worklist.defId} 필터. */
-    private String fncgBpmPcesId;
     private String uworNm;
 
     private String nextKey;
@@ -117,14 +115,6 @@ public class MyProgressRequest {
 
     public void setBswrDvsnVal(String bswrDvsnVal) {
         this.bswrDvsnVal = bswrDvsnVal;
-    }
-
-    public String getFncgBpmPcesId() {
-        return fncgBpmPcesId;
-    }
-    
-    public void setFncgBpmPcesId(String fncgBpmPcesId) {
-        this.fncgBpmPcesId = fncgBpmPcesId;
     }
     
     public String getUworNm() {

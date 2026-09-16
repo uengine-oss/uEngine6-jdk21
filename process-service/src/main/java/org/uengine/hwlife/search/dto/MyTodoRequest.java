@@ -13,10 +13,10 @@ public class MyTodoRequest {
     private String bpmBswrClsfCode;
     private String custId;
     private String loanCntcNo;
-    private String loanPcesMgmtNo;
     private String fncgSuptTrgtDvsnCode;
     private String loanSubjDvsnCode;
     private String fncgMneyUsagClsfCode;
+    private String uworNm;
     @JsonFormat(pattern = EsbCodes.DATE)
     private Date starDate;
     @JsonFormat(pattern = EsbCodes.DATE)
@@ -25,16 +25,9 @@ public class MyTodoRequest {
     private Date hopeStarDate;
     @JsonFormat(pattern = EsbCodes.DATE)
     private Date hopeEndDate;
-
-    /** 요청기관 필터 — {@code bpm_procinst.init_group_cd} 와 일치. */
-    private String fncgWndwOrgnCode;
+    private String fncgWndwOrgnCode;  /** 요청기관 필터 — {@code bpm_procinst.init_group_cd} 와 일치. */
     private String sortOrdrVal;
-    /** 메인/서브 루트 인스턴스 {@code defId} 필터. */
-    private String bswrDvsnVal;
-    /** 현재 단위업무 {@code worklist.defId} 필터. */
-    private String fncgBpmPcesId;
-    private String uworNm;
-
+    private String bswrDvsnVal;  /** 메인/서브 루트 인스턴스 {@code rootinst.defId} 필터. */
     private String nextKey;
     private Integer pageSize;
 
@@ -60,14 +53,6 @@ public class MyTodoRequest {
 
     public void setLoanCntcNo(String loanCntcNo) {
         this.loanCntcNo = loanCntcNo;
-    }
-
-    public String getLoanPcesMgmtNo() {
-        return loanPcesMgmtNo;
-    }
-
-    public void setLoanPcesMgmtNo(String loanPcesMgmtNo) {
-        this.loanPcesMgmtNo = loanPcesMgmtNo;
     }
 
     public String getFncgSuptTrgtDvsnCode() {
@@ -108,14 +93,6 @@ public class MyTodoRequest {
 
     public void setBswrDvsnVal(String bswrDvsnVal) {
         this.bswrDvsnVal = bswrDvsnVal;
-    }
-
-    public String getFncgBpmPcesId() {
-        return fncgBpmPcesId;
-    }
-
-    public void setFncgBpmPcesId(String fncgBpmPcesId) {
-        this.fncgBpmPcesId = fncgBpmPcesId;
     }
 
     public Date getStarDate() {

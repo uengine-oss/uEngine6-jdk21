@@ -144,7 +144,6 @@ public class MyProgressSearchRepository {
     predicates.add(involvementPredicate(builder, query, worklist, emnb));
 
     addRootDefId(builder, query, predicates, instance, request.getBswrDvsnVal());
-    addText(builder, predicates, worklist.get("defId"), request.getFncgBpmPcesId());
     addText(builder, predicates, worklist.get("title"), request.getUworNm());
     addText(builder, predicates, instance.get("bswrClsfCode"), request.getBpmBswrClsfCode());
     addText(builder, predicates, instance.get("custId"), request.getCustId());

@@ -144,14 +144,11 @@ public class MyTodoSearchRepository {
 
     // root_inst_id 기준 루트 인스턴스 def_id == bswrDvsnVal
     addRootDefId(builder, query, predicates, instance, request.getBswrDvsnVal());
-    // 현재 단위업무 defId == fncgBpmPcesId
-    addText(builder, predicates, worklist.get("defId"), request.getFncgBpmPcesId());
     // 단위업무명: worklist.title == uworNm
     addText(builder, predicates, worklist.get("title"), request.getUworNm());
     addText(builder, predicates, instance.get("bswrClsfCode"), request.getBpmBswrClsfCode());
     addText(builder, predicates, instance.get("custId"), request.getCustId());
     addText(builder, predicates, instance.get("loanCntcNo"), request.getLoanCntcNo());
-    addText(builder, predicates, instance.get("corrKey"), request.getLoanPcesMgmtNo());
     addText(builder, predicates, instance.get("fncgSuptTrgtDvsnCode"), request.getFncgSuptTrgtDvsnCode());
     addText(builder, predicates, instance.get("loanSubjDvsnCode"), request.getLoanSubjDvsnCode());
     addText(builder, predicates, instance.get("fncgMneyUsagClsfCode"), request.getFncgMneyUsagClsfCode());
