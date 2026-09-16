@@ -1,15 +1,6 @@
 package org.uengine.hwlife.iam;
 
 import org.springframework.web.bind.annotation.RestController;
-import org.uengine.five.service.IAMServiceFactory;
-import org.uengine.five.service.KeycloakIAMService;
-import org.uengine.hwlife.iam.dto.FncgOrgInfo;
-import org.uengine.hwlife.iam.dto.FncgRoleInfo;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-
 import org.uengine.hwlife.iam.dto.ChangedIamSyncRequest;
 import org.uengine.hwlife.iam.dto.ChangedIamSyncResponse;
 import org.uengine.hwlife.iam.dto.RoleSearchResponse;
@@ -28,53 +19,15 @@ public class IAMIntegrationServiceImpl implements IAMIntegrationService {
     @Override
     public OrgSearchResponse searchOrgs() throws Exception {
         OrgSearchResponse response = new OrgSearchResponse();
-        if (getIamService() instanceof KeycloakIAMService keycloak) {
-            List<FncgOrgInfo> groups = new ArrayList<>();
-            addKeycloakGroups(keycloak.getGroupCandidates(), groups);
-            response.setBpmOrgnList(groups);
-            return response;
-        }
-        response.setBpmOrgnList(getExternalIamService().getGroups().getBpmOrgnList());
+        response.setBpmOrgnList(externalIamService.getGroups().getBpmOrgnList());
         return response;
     }
 
     @Override
     public RoleSearchResponse searchRoles() throws Exception {
         RoleSearchResponse response = new RoleSearchResponse();
-        if (getIamService() instanceof KeycloakIAMService keycloak) {
-            List<FncgRoleInfo> roles = new ArrayList<>();
-            for (Map<String, Object> candidate : keycloak.getRoleCandidates()) {
-                FncgRoleInfo role = new FncgRoleInfo();
-                role.setFncgCoreAtrtId((String) candidate.get("name"));
-                role.setFncgCoreAtrtNm((String) candidate.get("name"));
-                roles.add(role);
-            }
-            response.setBpmAtrtList(roles);
-            return response;
-        }
-        response.setBpmAtrtList(getExternalIamService().getRoles().getBpmAtrtList());
+        response.setBpmAtrtList(externalIamService.getRoles().getBpmAtrtList());
         return response;
-    }
-
-    @SuppressWarnings("unchecked")
-    private static void addKeycloakGroups(List<Map<String, Object>> candidates, List<FncgOrgInfo> groups) {
-        for (Map<String, Object> candidate : candidates) {
-            FncgOrgInfo group = new FncgOrgInfo();
-            group.setFncgWndwOrgnCode((String) candidate.get("name"));
-            group.setFncgWndwOrgnNm((String) candidate.get("name"));
-            groups.add(group);
-            if (candidate.get("subGroups") instanceof List<?> children) {
-                addKeycloakGroups((List<Map<String, Object>>) (List<?>) children, groups);
-            }
-        }
-    }
-
-    protected org.uengine.five.service.IAMService getIamService() {
-        return IAMServiceFactory.getDefault();
-    }
-
-    protected ExternalIAMService getExternalIamService() {
-        return externalIamService;
     }
 
     @Override

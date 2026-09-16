@@ -96,10 +96,12 @@ public class KeycloakIAMService implements IAMService {
         return "keycloak";
     }
 
+    @Override
     public List<Map<String, Object>> getGroupCandidates() throws Exception {
         return getCandidates("groups");
     }
 
+    @Override
     public List<Map<String, Object>> getRoleCandidates() throws Exception {
         return getCandidates("roles");
     }
