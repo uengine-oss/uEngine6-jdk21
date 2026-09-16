@@ -210,8 +210,12 @@ public class BoundRoleResolutionContext extends RoleResolutionContext
         RoleResolutionContext clone = cloneContext(base);
         if (clone instanceof IAMRoleResolutionContext && currentMapping != null) {
             IAMRoleResolutionContext iam = (IAMRoleResolutionContext) clone;
-            iam.setGroupName(currentMapping.getGroupName());
-            iam.setScope(currentMapping.getScope());
+            if (isNotEmpty(currentMapping.getGroupName())) {
+                iam.setGroupName(currentMapping.getGroupName());
+            }
+            if (isNotEmpty(currentMapping.getScope())) {
+                iam.setScope(currentMapping.getScope());
+            }
         }
         for (Map.Entry<String, String> entry : values.entrySet()) {
             if ("endpoint".equals(entry.getKey()) && clone instanceof DirectRoleResolutionContext) {
