@@ -978,7 +978,7 @@ public class InstanceServiceImpl implements InstanceService {
 
         List<WorklistEntity> worklistEntity = worklistRepository
                 .findCurrentWorkItemByInstId(Long.parseLong(instanceId));
-        return ResponseEntity.ok(worklistEntity);
+        return ResponseEntity.ok(worklistEntity.stream().map(InstanceServiceImpl::worklistResponse).toList());
     }
 
     @RequestMapping(value = "/instance/{instanceId}/completed", method = RequestMethod.GET, produces = "application/json;charset=UTF-8")
@@ -988,7 +988,7 @@ public class InstanceServiceImpl implements InstanceService {
 
         List<WorklistEntity> worklistEntity = worklistRepository
                 .findWorkListByInstId(Long.parseLong(instanceId));
-        return ResponseEntity.ok(worklistEntity);
+        return ResponseEntity.ok(worklistEntity.stream().map(InstanceServiceImpl::worklistResponse).toList());
     }
 
     /**
@@ -1000,7 +1000,13 @@ public class InstanceServiceImpl implements InstanceService {
     public ResponseEntity<List<WorklistEntity>> getAllTasksByInstanceId(@PathVariable("instanceId") String instanceId) {
         Long rootInstId = Long.parseLong(instanceId);
         List<WorklistEntity> tasks = processInstanceRepository.findAllWorklistsByRootInstId(rootInstId);
-        return ResponseEntity.ok(tasks);
+        return ResponseEntity.ok(tasks.stream().map(InstanceServiceImpl::worklistResponse).toList());
+    }
+
+    static WorklistEntity worklistResponse(WorklistEntity source) {
+        WorklistEntity response = new WorklistEntity();
+        org.springframework.beans.BeanUtils.copyProperties(source, response, "processInstance");
+        return response;
     }
 
 
@@ -1575,6 +1581,7 @@ public class InstanceServiceImpl implements InstanceService {
             throw new Exception("No such work item where taskId = " + taskId);
         }
 
+        WorkItemAccess.requireVisible(worklistEntity, currentActorEndpoint());
         String defId = worklistEntity.getDefId();
         ProcessDefinition definition = (ProcessDefinition) definitionService.getDefinition(defId,
                 worklistEntity.getDefVerId());
@@ -1582,7 +1589,7 @@ public class InstanceServiceImpl implements InstanceService {
 
         WorkItemResource workItem = new WorkItemResource();
         workItem.setActivity(activity); // defaultHandler
-        workItem.setWorklist(worklistEntity); // handler:http/
+        workItem.setWorklist(worklistResponse(worklistEntity)); // response without the entity back-reference
 
         String instanceId = worklistEntity.getInstId().toString();
         ProcessInstance instance = getProcessInstanceLocal(instanceId);
@@ -1607,7 +1614,7 @@ public class InstanceServiceImpl implements InstanceService {
             }
         }
 
-        if (activity instanceof ReceiveActivity) {
+        if (activity instanceof ReceiveActivity && ((ReceiveActivity) activity).getEventSynchronization() != null) {
             Map<String, Object> mappingInValues = activity.getMappingInValues(instance);
             if (mappingInValues.size() > 0) {
                 for (Map.Entry<String, Object> entry : mappingInValues.entrySet()) {
@@ -1625,8 +1632,6 @@ public class InstanceServiceImpl implements InstanceService {
                 workItem.setParameterValues(toJsonFriendlyMap(payloadValues));
             }
         }
-
-        workItem.getWorklist().setProcessInstance(null); // disconnect recursive json path
 
         return workItem;
     }
@@ -1660,6 +1665,7 @@ public class InstanceServiceImpl implements InstanceService {
             throws Exception {
 
         WorklistEntity worklistEntity = worklistRepository.findById(new Long(taskId)).get();
+        WorkItemAccess.requireVisible(worklistEntity, currentActorEndpoint());
 
         String instanceId = worklistEntity.getInstId().toString();
         ProcessInstance instance = getProcessInstanceLocal(instanceId);
@@ -2673,19 +2679,18 @@ public class InstanceServiceImpl implements InstanceService {
         boolean unclaim = (roleMapping == null || roleMapping.getEndpoint() == null
                 || roleMapping.getEndpoint().trim().isEmpty());
 
-        // unclaim은 반드시 로그인 사용자 컨텍스트가 필요
-        String actorEndpoint = null;
-        if (unclaim) {
-            actorEndpoint = UserContext.getThreadLocalInstance().getUserId();
-            if (actorEndpoint == null || actorEndpoint.trim().isEmpty()) {
-                actorEndpoint = SecurityAwareServletFilter.getUserId();
+        String actorEndpoint = currentActorEndpoint();
+        if (actorEndpoint == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Login is required");
+        }
+        if (!unclaim) {
+            if (!actorEndpoint.equals(roleMapping.getEndpoint().trim())) {
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Cannot claim as another user");
             }
-            if (actorEndpoint != null) actorEndpoint = actorEndpoint.trim();
-            if (actorEndpoint == null || actorEndpoint.isEmpty()) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "login user is required for unclaim");
+            if (hasText(worklistEntity.getEndpoint()) && !actorEndpoint.equals(worklistEntity.getEndpoint())) {
+                throw new ResponseStatusException(HttpStatus.CONFLICT, "Work item is already claimed");
             }
-        } else {
-            actorEndpoint = roleMapping.getEndpoint().trim();
+            WorkItemAccess.requireVisible(worklistEntity, actorEndpoint);
         }
 
         GlobalContext.setUserId(actorEndpoint);

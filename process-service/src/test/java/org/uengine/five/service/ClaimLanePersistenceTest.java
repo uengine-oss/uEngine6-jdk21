@@ -22,6 +22,9 @@ class ClaimLanePersistenceTest {
     private final RoleMapping lane = mock(RoleMapping.class, CALLS_REAL_METHODS);
 
     ClaimLanePersistenceTest() throws Exception {
+        UserContext.getThreadLocalInstance().setUserId("hong");
+        UserContext.getThreadLocalInstance().setGroups(java.util.List.of("00025"));
+        UserContext.getThreadLocalInstance().setScopes(java.util.List.of("scope"));
         service.worklistRepository = mock(WorklistRepository.class);
         service.assignmentStateService = mock(WorkItemAssignmentStateService.class);
         work.setTaskId(100L);
@@ -40,7 +43,7 @@ class ClaimLanePersistenceTest {
         when(instance.getRoleMapping("team")).thenReturn(lane);
     }
 
-    @AfterEach void clearUser() { UserContext.getThreadLocalInstance().setUserId(null); }
+    @AfterEach void clearUser() { UserContext.getThreadLocalInstance().setUserId(null); UserContext.getThreadLocalInstance().setGroups(null); UserContext.getThreadLocalInstance().setScopes(null); }
 
     @Test void claimPersistsOwnerAndPreservesLaneMetadata() throws Exception {
         RoleMappingCommand command = new RoleMappingCommand();
@@ -74,8 +77,8 @@ class ClaimLanePersistenceTest {
         lane.setEndpoint("kim");
         RoleMappingCommand command = new RoleMappingCommand();
         command.setEndpoint("hong");
-        assertThrows(org.springframework.web.server.ResponseStatusException.class,
-                () -> service.claimWorkItem("100", command));
+        assertEquals(409, assertThrows(org.springframework.web.server.ResponseStatusException.class,
+                () -> service.claimWorkItem("100", command)).getStatusCode().value());
         assertEquals("kim", lane.getEndpoint());
         verifyNoInteractions(instance);
     }

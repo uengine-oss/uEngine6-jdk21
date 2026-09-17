@@ -14,7 +14,9 @@ public final class IAMServiceRegister {
     }
 
     public static void registerAll() {
-        IAMServiceFactory.register("keycloak", KeycloakIAMService.getDefault());
         IAMServiceFactory.register("external", ExternalIAMService.getDefault());
+        if (!"external".equals(IAMServiceFactory.getDefaultProviderId())) {
+            IAMServiceFactory.register("keycloak", KeycloakIAMService.getDefault());
+        }
     }
 }

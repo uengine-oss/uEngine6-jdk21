@@ -54,11 +54,15 @@ public final class IAMServiceFactory {
      * @throws IllegalStateException 등록된 구현체가 없을 경우
      */
     public static IAMService getDefault() {
+        return get(getDefaultProviderId());
+    }
+
+    public static String getDefaultProviderId() {
         String providerId = System.getenv("IAM_PROVIDER");
         if (!UEngineUtil.isNotEmpty(providerId)) {
             providerId = GlobalContext.getPropertyString("iam.provider", DEFAULT_PROVIDER_ID);
         }
-        return get(providerId);
+        return providerId.trim().toLowerCase(java.util.Locale.ROOT);
     }
 
     /**

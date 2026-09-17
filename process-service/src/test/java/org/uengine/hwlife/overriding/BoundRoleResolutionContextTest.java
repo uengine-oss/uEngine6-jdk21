@@ -236,7 +236,8 @@ class BoundRoleResolutionContextTest {
     @Test
     void appliesGroupVariableAndPreservesInheritedScopeWhenRoleVariableIsMissing() throws Exception {
         IAMService iam = mock(IAMService.class);
-        when(iam.isValidGroupRole("ORG02", "ROLE03")).thenReturn(true);
+        when(iam.isValidGroup("ORG02")).thenReturn(true);
+        when(iam.isValidRole("ROLE03")).thenReturn(true);
         BoundRoleResolutionContext context = contextWithIam(iam);
         IAMRoleResolutionContext base = new IAMRoleResolutionContext();
         base.setGroupName("ORG01");
@@ -263,9 +264,10 @@ class BoundRoleResolutionContextTest {
     }
 
     @Test
-    void appliesGroupVariableAndPreservesStaticScopeWhenCurrentScopeIsMissing() throws Exception {
+    void appliesGroupVariableAndPreservesNullScopeWhenCurrentScopeIsMissing() throws Exception {
         IAMService iam = mock(IAMService.class);
-        when(iam.isValidGroupRole("ORG02", "ROLE01")).thenReturn(true);
+        when(iam.isValidGroup("ORG02")).thenReturn(true);
+        when(iam.isValidRole("ROLE01")).thenReturn(true);
         BoundRoleResolutionContext context = contextWithIam(iam);
         IAMRoleResolutionContext base = new IAMRoleResolutionContext();
         base.setGroupName("ORG01");
@@ -284,15 +286,16 @@ class BoundRoleResolutionContextTest {
         RoleMapping result = context.resolveRoleMapping(null, instance, "Task_2", current, java.util.Map.of());
 
         assertEquals("ORG02", result.getGroupName());
-        assertEquals("ROLE01", result.getScope());
+        assertNull(result.getScope());
         assertEquals("ORG01", current.getGroupName());
         assertNull(current.getScope());
     }
 
     @Test
-    void appliesRoleVariableAndPreservesStaticGroupWhenCurrentGroupIsMissing() throws Exception {
+    void appliesRoleVariableAndPreservesNullGroupWhenCurrentGroupIsMissing() throws Exception {
         IAMService iam = mock(IAMService.class);
-        when(iam.isValidGroupRole("ORG01", "ROLE02")).thenReturn(true);
+        when(iam.isValidGroup("ORG01")).thenReturn(true);
+        when(iam.isValidRole("ROLE02")).thenReturn(true);
         BoundRoleResolutionContext context = contextWithIam(iam);
         IAMRoleResolutionContext base = new IAMRoleResolutionContext();
         base.setGroupName("ORG01");
@@ -310,7 +313,7 @@ class BoundRoleResolutionContextTest {
 
         RoleMapping result = context.resolveRoleMapping(null, instance, "Task_2", current, java.util.Map.of());
 
-        assertEquals("ORG01", result.getGroupName());
+        assertNull(result.getGroupName());
         assertEquals("ROLE02", result.getScope());
         assertNull(current.getGroupName());
         assertEquals("ROLE01", current.getScope());
@@ -320,8 +323,8 @@ class BoundRoleResolutionContextTest {
     void appliesEitherSingleVariableAgainstDefaultsOnFirstAssignment() throws Exception {
         for (boolean groupOnly : new boolean[] { true, false }) {
             IAMService iam = mock(IAMService.class);
-            when(iam.isValidGroupRole(groupOnly ? "ORG02" : "ORG01", groupOnly ? "ROLE01" : "ROLE02"))
-                    .thenReturn(true);
+            when(iam.isValidGroup("ORG02")).thenReturn(true);
+            when(iam.isValidRole("ROLE02")).thenReturn(true);
             BoundRoleResolutionContext context = contextWithIam(iam);
             IAMRoleResolutionContext base = new IAMRoleResolutionContext();
             base.setGroupName("ORG01");
@@ -356,7 +359,8 @@ class BoundRoleResolutionContextTest {
     @Test
     void changesGroupRoleCriteriaButPreservesClaimWhenCriteriaAreUnchanged() throws Exception {
         IAMService iam = mock(IAMService.class);
-        when(iam.isValidGroupRole("ORG02", "ROLE02")).thenReturn(true);
+        when(iam.isValidGroup("ORG02")).thenReturn(true);
+        when(iam.isValidRole("ROLE02")).thenReturn(true);
         BoundRoleResolutionContext context = contextWithIam(iam);
         IAMRoleResolutionContext base = new IAMRoleResolutionContext();
         base.setGroupName("ORG01");
@@ -454,6 +458,29 @@ class BoundRoleResolutionContextTest {
 
         assertSame(current, context.resolveRoleMapping(
                 null, mock(ProcessInstance.class), "Task_2", current, java.util.Map.of()));
+    }
+
+    @Test
+    void rejectsNumericVariableEvenWhenItsStringFormIsAValidCode() throws Exception {
+        IAMService iam = mock(IAMService.class);
+        when(iam.isValidGroup("25")).thenReturn(true);
+        when(iam.isValidRole("ROLE01")).thenReturn(true);
+        BoundRoleResolutionContext context = contextWithIam(iam);
+        IAMRoleResolutionContext base = new IAMRoleResolutionContext();
+        base.setGroupName("ORG01");
+        base.setScope("ROLE01");
+        context.setBase(base);
+        context.setBindings(bindings("groupName", "orgCode"));
+        ProcessInstance instance = mock(ProcessInstance.class);
+        when(instance.get("", "orgCode")).thenReturn(25);
+        RoleMapping current = RoleMapping.create();
+        current.setGroupName("ORG02");
+        current.setScope("ROLE01");
+        current.setEndpoint("claimed-user");
+
+        assertSame(current, context.resolveRoleMapping(null, instance, "Task_2", current, java.util.Map.of()));
+        RoleMapping initial = context.resolveRoleMapping(null, instance, "Task_1", null, java.util.Map.of());
+        assertEquals("ORG01", initial.getGroupName());
     }
 
     private static BoundRoleResolutionContext contextWithIam(IAMService iam) {

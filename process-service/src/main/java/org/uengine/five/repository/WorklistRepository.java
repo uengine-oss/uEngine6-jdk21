@@ -32,15 +32,20 @@ public interface WorklistRepository extends JpaRepository<WorklistEntity, Long> 
     /**
      * ToDo 정의
      * - 기본: endpoint 가 나(principal.userId) 이거나, endpoint 가 내 scope(roles) 중 하나인 workitem
-     * - 추가: dispatchOption = 1(경합/RACING) 이고 endpoint 가 비어 있으면 groupCd 가 내 group 과 일치할 때 노출
+     * - 추가: 미선점 RACING 업무는 지정된 기관·권한 조건을 모두 만족할 때 노출
      * - 상태: COMPLETED / CANCELLED 는 제외
      */
 //     @Query("select wl from WorklistEntity wl where (wl.endpoint = ?#{principal.userId} or wl.endpoint in ?#{principal.scopes}) and (wl.status != 'COMPLETED') ")
     @Query("select wl from WorklistEntity wl " +
             "where (" +
-            "   (wl.endpoint = ?#{principal.userId} or wl.endpoint in ?#{principal.scopes})" +
-            "   or (wl.dispatchOption = 1 and wl.endpoint is null and wl.groupCd in ?#{principal.groups} and (wl.scope is null or wl.scope = 'null' or wl.scope in ?#{principal.scopes}))" +
-            "   or (wl.dispatchOption = 1 and wl.endpoint is null and wl.groupCd in ?#{T(org.uengine.contexts.UserContext).getThreadLocalInstance().getGroups()})" +
+            "   wl.endpoint = ?#{principal.userId}" +
+            "   or (wl.endpoint in ?#{principal.scopes}" +
+            "       and (wl.groupCd is null or wl.groupCd = '' or wl.groupCd = 'null' or wl.groupCd in ?#{principal.groups})" +
+            "       and (wl.scope is null or wl.scope = '' or wl.scope = 'null' or wl.scope in ?#{principal.scopes}))" +
+            "   or (wl.dispatchOption = 1 and wl.endpoint is null" +
+            "       and ((wl.groupCd is not null and wl.groupCd <> '' and wl.groupCd <> 'null') or (wl.scope is not null and wl.scope <> '' and wl.scope <> 'null'))" +
+            "       and (wl.groupCd is null or wl.groupCd = '' or wl.groupCd = 'null' or wl.groupCd in ?#{principal.groups})" +
+            "       and (wl.scope is null or wl.scope = '' or wl.scope = 'null' or wl.scope in ?#{principal.scopes}))" +
             ") and (wl.status != 'COMPLETED') ")
     public List<WorklistEntity> findToDo();
 

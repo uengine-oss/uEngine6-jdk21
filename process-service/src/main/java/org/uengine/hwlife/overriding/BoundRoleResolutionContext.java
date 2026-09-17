@@ -210,12 +210,8 @@ public class BoundRoleResolutionContext extends RoleResolutionContext
         RoleResolutionContext clone = cloneContext(base);
         if (clone instanceof IAMRoleResolutionContext && currentMapping != null) {
             IAMRoleResolutionContext iam = (IAMRoleResolutionContext) clone;
-            if (isNotEmpty(currentMapping.getGroupName())) {
-                iam.setGroupName(currentMapping.getGroupName());
-            }
-            if (isNotEmpty(currentMapping.getScope())) {
-                iam.setScope(currentMapping.getScope());
-            }
+            iam.setGroupName(currentMapping.getGroupName());
+            iam.setScope(currentMapping.getScope());
         }
         for (Map.Entry<String, String> entry : values.entrySet()) {
             if ("endpoint".equals(entry.getKey()) && clone instanceof DirectRoleResolutionContext) {
@@ -244,6 +240,17 @@ public class BoundRoleResolutionContext extends RoleResolutionContext
             if (value == null) {
                 continue;
             }
+            if (base instanceof IAMRoleResolutionContext) {
+                try {
+                    IAMService iam = getIamService();
+                    if ("groupName".equals(entry.getKey()) && !iam.isValidGroup(value)) continue;
+                    if ("scope".equals(entry.getKey()) && !iam.isValidRole(value)) continue;
+                } catch (Exception e) {
+                    log.warn("[BpmAssignment] Bound field lookup failed; retaining inherited field: {}",
+                            entry.getKey(), e);
+                    continue;
+                }
+            }
             values.put(entry.getKey(), value);
         }
         return values;
@@ -255,14 +262,9 @@ public class BoundRoleResolutionContext extends RoleResolutionContext
             return isNotEmpty(mapping.getEndpoint()) && iam.isValidUser(mapping.getEndpoint());
         }
         if (resolved instanceof IAMRoleResolutionContext) {
-            IAMRoleResolutionContext context = (IAMRoleResolutionContext) resolved;
-            boolean hasGroup = isNotEmpty(context.getGroupName());
-            boolean hasRole = isNotEmpty(context.getScope());
-            if (hasGroup && hasRole) {
-                return iam.isValidGroupRole(context.getGroupName(), context.getScope());
-            }
-            return hasGroup ? iam.isValidGroup(context.getGroupName())
-                    : hasRole && iam.isValidRole(context.getScope());
+            // Each supplied field was validated independently. An empty member
+            // intersection must not undo a valid process-variable override.
+            return true;
         }
         return true;
     }
@@ -324,7 +326,7 @@ public class BoundRoleResolutionContext extends RoleResolutionContext
         if (v == null) {
             return null;
         }
-        if (!(v instanceof CharSequence) && !(v instanceof Number)) {
+        if (!(v instanceof String)) {
             return null;
         }
         String s = String.valueOf(v).trim();
