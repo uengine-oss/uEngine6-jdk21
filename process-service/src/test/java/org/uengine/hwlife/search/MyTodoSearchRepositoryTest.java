@@ -66,13 +66,13 @@ class MyTodoSearchRepositoryTest {
 
     SearchResult first = search(request, null, 2);
     SearchResult second = search(request, Long.valueOf(first.nextKey()), 2);
-    SearchResult last = search(request, taskIdForInstance(1L), 2);
+    SearchResult last = search(request, 101L, 2);
 
     assertEquals(List.of(7L, 6L), instIds(first));
-    assertEquals(String.valueOf(taskIdForInstance(5L)), first.nextKey());
+    assertEquals("105", first.nextKey());
     assertEquals(7, first.totalCount());
     assertEquals(List.of(5L, 4L), instIds(second));
-    assertEquals(String.valueOf(taskIdForInstance(3L)), second.nextKey());
+    assertEquals("103", second.nextKey());
     assertEquals(7, second.totalCount());
     assertEquals(List.of(1L), instIds(last));
     assertEquals(null, last.nextKey());
@@ -155,7 +155,7 @@ class MyTodoSearchRepositoryTest {
       entityManager.getTransaction().commit();
 
       SearchResult result = new MyTodoSearchRepository(entityManager)
-          .search(request, null, 10, "different-user", "GROUP-ACCESS", List.of("SCOPE-ACCESS"));
+          .search(request, null, 10, "different-user", "GROUP-ACCESS");
 
       assertEquals(List.of(1L), instIds(result));
 
@@ -263,37 +263,8 @@ class MyTodoSearchRepositoryTest {
     }
   }
 
-  @Test
-  void claimableWorkRequiresEachSpecifiedCriterion() {
-    try (EntityManager em = sessionFactory.createEntityManager()) {
-      em.getTransaction().begin();
-      try {
-        WorklistEntity work = em.find(WorklistEntity.class, taskIdForInstance(1L));
-        work.setEndpoint(null); work.setDispatchOption(1); work.setScope("ROLE-X");
-        em.flush();
-        MyTodoSearchRepository repository = new MyTodoSearchRepository(em);
-        assertEquals(List.of(), instIds(repository.search(new MyTodoRequest(), null, 10,
-            "other", "GROUP", List.of("ROLE-Y"))));
-        assertEquals(List.of(1L), instIds(repository.search(new MyTodoRequest(), null, 10,
-            "other", "GROUP", List.of("ROLE-X"))));
-        assertEquals(List.of(), instIds(repository.search(new MyTodoRequest(), null, 10,
-            "other", "OTHER", List.of("ROLE-X"))));
-        work.setGroupCd(null); em.flush();
-        assertEquals(List.of(1L), instIds(repository.search(new MyTodoRequest(), null, 10,
-            "other", null, List.of("ROLE-X"))));
-      } finally { em.getTransaction().rollback(); }
-    }
-  }
-
   private static SearchResult search(MyTodoRequest request, Long cursor, int size) {
     return search(request, cursor, size, USER_ID, null);
-  }
-
-  private static Long taskIdForInstance(Long instanceId) {
-    try (EntityManager em = sessionFactory.createEntityManager()) {
-      return em.createQuery("select w.taskId from WorklistEntity w where w.instId = :id", Long.class)
-          .setParameter("id", instanceId).getSingleResult();
-    }
   }
 
   private static SearchResult search(

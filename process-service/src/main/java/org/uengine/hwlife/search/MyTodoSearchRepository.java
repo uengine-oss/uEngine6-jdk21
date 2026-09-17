@@ -47,11 +47,6 @@ public class MyTodoSearchRepository {
       int pageSize,
       String emnb,
       String belnOrgnCode) {
-    return search(request, cursorId, pageSize, emnb, belnOrgnCode, List.of());
-  }
-
-  public SearchResult search(MyTodoRequest request, Long cursorId, int pageSize,
-      String emnb, String belnOrgnCode, List<String> scopes) {
     CriteriaBuilder builder = entityManager.getCriteriaBuilder();
     String sortKey = sortKey(request);
     CursorPosition cursor = findCursor(builder, cursorId, sortKey);
@@ -63,7 +58,7 @@ public class MyTodoSearchRepository {
     Root<WorklistEntity> worklist = dataQuery.from(WorklistEntity.class);
     Join<WorklistEntity, ProcessInstanceEntity> instance = fetchProcessInstance(worklist);
     List<Predicate> dataPredicates = new ArrayList<>(
-        List.of(predicates(builder, dataQuery, worklist, instance, request, emnb, belnOrgnCode, scopes)));
+        List.of(predicates(builder, dataQuery, worklist, instance, request, emnb, belnOrgnCode)));
     // nextKey(taskId)는 정렬·비즈니스 필터가 아니라, 정렬된 결과의 페이지 커서다.
     if (cursor != null) {
       dataPredicates.add(cursorPredicate(builder, worklist, instance, sortKey, cursor));
@@ -92,7 +87,7 @@ public class MyTodoSearchRepository {
     Join<WorklistEntity, ProcessInstanceEntity> countInstance =
         countWorklist.join("processInstance", JoinType.LEFT);
     countQuery.select(builder.count(countWorklist))
-        .where(predicates(builder, countQuery, countWorklist, countInstance, request, emnb, belnOrgnCode, scopes));
+        .where(predicates(builder, countQuery, countWorklist, countInstance, request, emnb, belnOrgnCode));
     long totalCount = entityManager.createQuery(countQuery).getSingleResult();
 
     return new SearchResult(items, Math.toIntExact(totalCount), nextKey);
@@ -140,12 +135,12 @@ public class MyTodoSearchRepository {
       Join<WorklistEntity, ProcessInstanceEntity> instance,
       MyTodoRequest request,
       String emnb,
-      String belnOrgnCode, List<String> scopes) {
+      String belnOrgnCode) {
     List<Predicate> predicates = new ArrayList<>();
     // 1) 진행중(NEW) 건
     predicates.add(builder.equal(worklist.get("status"), DefaultWorkList.WORKITEM_STATUS_NEW));
     // 2) 본인 할당 건 OR 3) 소속기관 선점 미선점 건
-    predicates.add(accessPredicate(builder, worklist, emnb, belnOrgnCode, scopes));
+    predicates.add(accessPredicate(builder, worklist, emnb, belnOrgnCode));
 
     // root_inst_id 기준 루트 인스턴스 def_id == bswrDvsnVal
     addRootDefId(builder, query, predicates, instance, request.getBswrDvsnVal());
@@ -298,33 +293,28 @@ public class MyTodoSearchRepository {
    * 나의 업무함 접근 조건.
    * <ul>
    *   <li>본인 할당: {@code endpoint == emnb}</li>
-   *   <li>미선점 RACING 업무: 지정된 기관과 권한 조건을 각각 만족</li>
+   *   <li>기관 선점 미선점: {@code dispatchOption == 1 AND groupCd == belnOrgnCode AND endpoint IS NULL}</li>
    * </ul>
    */
   private static Predicate accessPredicate(
       CriteriaBuilder builder,
       Root<WorklistEntity> worklist,
       String emnb,
-      String belnOrgnCode, List<String> scopes) {
+      String belnOrgnCode) {
     String handler = trimToNull(emnb);
     String organization = trimToNull(belnOrgnCode);
 
     Path<String> endpoint = worklist.get("endpoint");
     Path<String> groupCd = worklist.get("groupCd");
-    Path<String> scope = worklist.get("scope");
-    Predicate scopeAllowed = builder.or(builder.isNull(scope), builder.equal(scope, ""),
-        builder.equal(scope, "null"), scopes == null || scopes.isEmpty()
-            ? builder.disjunction() : scope.in(scopes));
     Predicate assignedToMe =
         handler == null ? builder.disjunction() : builder.equal(endpoint, handler);
-    Predicate groupAllowed = builder.or(builder.isNull(groupCd), builder.equal(groupCd, ""),
-        builder.equal(groupCd, "null"), organization == null ? builder.disjunction()
-            : builder.equal(builder.trim(groupCd), organization));
-    Predicate hasCriteria = builder.or(
-        builder.and(builder.isNotNull(groupCd), builder.notEqual(groupCd, ""), builder.notEqual(groupCd, "null")),
-        builder.and(builder.isNotNull(scope), builder.notEqual(scope, ""), builder.notEqual(scope, "null")));
-    Predicate claimable = builder.and(builder.equal(worklist.get("dispatchOption"), 1),
-        builder.isNull(endpoint), hasCriteria, groupAllowed, scopeAllowed);
+    Predicate claimable =
+        organization == null
+            ? builder.disjunction()
+            : builder.and(
+                builder.equal(worklist.get("dispatchOption"), 1),
+                builder.isNull(endpoint),
+                builder.equal(builder.trim(groupCd), organization));
 
     return builder.or(assignedToMe, claimable);
   }

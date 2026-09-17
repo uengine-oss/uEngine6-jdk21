@@ -98,19 +98,13 @@ public class WorkSearchServiceImpl implements WorkSearchService {
     }
 
     MyTodoRequest normalizedRequest = normalizeMyTodoRequest(request);
-    List<String> scopes;
-    try {
-      scopes = org.uengine.five.service.IAMServiceFactory.getDefault().getUserScopes(emnb);
-    } catch (Exception e) {
-      throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "Unable to verify user permissions", e);
-    }
     Long cursorId = parseNextKey(normalizedRequest.getNextKey());
     MyTodoSearchRepository.SearchResult result = myTodoSearchRepository.search(
         normalizedRequest,
         cursorId,
         normalizedRequest.getPageSize(),
         emnb,
-        belnOrgnCode, scopes);
+        belnOrgnCode);
 
     Map<Long, ProcessInstanceEntity> rootInstances = rootInstanceResolver.preload(result.items());
     MyTodoResponse response = new MyTodoResponse();
