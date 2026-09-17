@@ -1,7 +1,5 @@
 package org.uengine.hwlife.overriding;
 
-import java.beans.Introspector;
-import java.beans.PropertyDescriptor;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.ObjectInputStream;
@@ -13,20 +11,25 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.uengine.five.overriding.IAMRoleResolutionContext;
-import org.uengine.five.service.IAMService;
-import org.uengine.five.service.IAMServiceFactory;
 import org.uengine.kernel.DirectRoleResolutionContext;
 import org.uengine.kernel.DynamicRoleMappingContext;
 import org.uengine.kernel.GlobalContext;
 import org.uengine.kernel.IContainsMapping;
 import org.uengine.kernel.ProcessDefinition;
 import org.uengine.kernel.ProcessInstance;
+import org.uengine.kernel.Role;
 import org.uengine.kernel.RoleMapping;
 import org.uengine.kernel.RoleResolutionContext;
 
 /**
- * 기존 {@link RoleResolutionContext}(IAM / Direct / RuleBased 등)를 감싸,
- * 프로세스 변수에서 동적으로 덮어쓴 뒤 위임하는 Decorator.
+ * 기존 {@link RoleResolutionContext}(IAM / Direct / RuleBased 등)를 감싸는 Decorator.
+ *
+ * <p>처리 순서:</p>
+ * <ol>
+ *   <li>{@code base.getActualMapping()} 으로 base 기본값 mapping 생성</li>
+ *   <li>instance 변수({@code bindings})가 있으면 해당 필드만 덮어쓰기</li>
+ *   <li>{@code assignType} 재계산</li>
+ * </ol>
  *
  * <p>BPMN lane JSON 예시:</p>
  * <pre>
@@ -43,9 +46,6 @@ import org.uengine.kernel.RoleResolutionContext;
  *   }
  * }
  * </pre>
- *
- * <p>해석 규칙: binding 변수에 값이 있으면 override, 없으면 {@code base} 정적 기본값 유지.
- * 정의 객체는 mutate 하지 않고 clone 후 적용한다.</p>
  */
 public class BoundRoleResolutionContext extends RoleResolutionContext
         implements IContainsMapping, DynamicRoleMappingContext {
@@ -82,10 +82,7 @@ public class BoundRoleResolutionContext extends RoleResolutionContext
     @SuppressWarnings("rawtypes")
     public RoleMapping getActualMapping(ProcessDefinition pd, ProcessInstance instance,
                                         String tracingTag, Map options) throws Exception {
-        RoleResolutionContext resolved = resolve(instance, tracingTag);
-        RoleMapping mapping = resolved.getActualMapping(pd, instance, tracingTag, options);
-        applyResultBindings(mapping, instance, tracingTag);
-        return mapping;
+        return buildBoundMapping(pd, instance, tracingTag, options);
     }
 
     @Override
@@ -96,30 +93,77 @@ public class BoundRoleResolutionContext extends RoleResolutionContext
         if (base == null) {
             throw new IllegalStateException("BoundRoleResolutionContext: base RoleResolutionContext is required");
         }
-        if (bindings == null || bindings.isEmpty()) {
-            return currentMapping != null ? currentMapping : resolveBaseMapping(pd, instance, tracingTag, options);
-        }
-
+        // bindings 없거나 instance 변수가 하나도 없으면: 기존 mapping 유지(클레임), 없으면 base
         LinkedHashMap<String, String> values = readAvailableBindingValues(instance, tracingTag);
-        if (values == null || values.isEmpty()) {
-            return currentMapping != null ? currentMapping : resolveBaseMapping(pd, instance, tracingTag, options);
+        if (bindings == null || bindings.isEmpty() || values.isEmpty()) {
+            return currentMapping != null ? currentMapping
+                    : resolveBaseMapping(pd, instance, tracingTag, options);
         }
 
         try {
-            RoleResolutionContext resolved = resolveWithValues(values, currentMapping);
-            RoleMapping candidate = resolved.getActualMapping(pd, instance, tracingTag, options);
-            if (candidate == null || !isValidAssignment(resolved, candidate)) {
-                log.warn("[BpmAssignment] Bound assignment rejected; keeping inherited/default mapping. tracingTag={}, values={}",
+            RoleMapping candidate = buildBoundMapping(pd, instance, tracingTag, options);
+            if (candidate == null) {
+                log.warn("[BpmAssignment] Bound assignment empty; falling back to base. tracingTag={}, values={}",
                         tracingTag, values);
-                return currentMapping != null ? currentMapping : resolveBaseMapping(pd, instance, tracingTag, options);
+                RoleMapping fallback = resolveBaseMapping(pd, instance, tracingTag, options);
+                applyAssignType(fallback);
+                return preferExistingIfSame(currentMapping, fallback);
             }
-            return currentMapping != null && hasSameAssignmentCriteria(currentMapping, candidate)
-                    ? currentMapping
-                    : candidate;
+            return preferExistingIfSame(currentMapping, candidate);
         } catch (Exception e) {
-            log.warn("[BpmAssignment] Bound assignment lookup failed; keeping inherited/default mapping. tracingTag={}, values={}",
+            log.warn("[BpmAssignment] Bound assignment lookup failed; falling back to base. tracingTag={}, values={}",
                     tracingTag, values, e);
-            return currentMapping != null ? currentMapping : resolveBaseMapping(pd, instance, tracingTag, options);
+            RoleMapping fallback = resolveBaseMapping(pd, instance, tracingTag, options);
+            applyAssignType(fallback);
+            return preferExistingIfSame(currentMapping, fallback);
+        }
+    }
+
+    /**
+     * 1) base.getActualMapping() → 2) instance 변수로 필드 덮어쓰기 → 3) assignType 재계산
+     */
+    @SuppressWarnings("rawtypes")
+    private RoleMapping buildBoundMapping(ProcessDefinition pd, ProcessInstance instance,
+                                         String tracingTag, Map options) throws Exception {
+        if (base == null) {
+            throw new IllegalStateException("BoundRoleResolutionContext: base RoleResolutionContext is required");
+        }
+        RoleMapping mapping = base.getActualMapping(pd, instance, tracingTag, options);
+        applyInstanceOverrides(mapping, instance, tracingTag);
+        applyAssignType(mapping);
+        if (log.isDebugEnabled()) {
+            log.debug("[BpmAssignment] Bound mapping built. groupName={}, scope={}, endpoint={}, assignType={}",
+                    mapping != null ? mapping.getGroupName() : null,
+                    mapping != null ? mapping.getScope() : null,
+                    mapping != null ? mapping.getEndpoint() : null,
+                    mapping != null ? mapping.getAssignType() : null);
+        }
+        return mapping;
+    }
+
+    /**
+     * base mapping 위에 instance 변수 값을 필드 단위로 덮어쓴다.
+     * 변수에 값이 있는 필드만 변경하고, 없으면 base mapping 값을 유지한다.
+     */
+    private void applyInstanceOverrides(RoleMapping mapping, ProcessInstance instance, String tracingTag)
+            throws Exception {
+        if (mapping == null) {
+            return;
+        }
+        LinkedHashMap<String, String> values = readAvailableBindingValues(instance, tracingTag);
+        if (values.isEmpty()) {
+            return;
+        }
+        for (Map.Entry<String, String> entry : values.entrySet()) {
+            String property = entry.getKey();
+            String value = entry.getValue();
+            if ("endpoint".equals(property)) {
+                mapping.setEndpoint(value);
+            } else if ("groupName".equals(property)) {
+                mapping.setGroupName(value);
+            } else if ("scope".equals(property)) {
+                mapping.setScope(value);
+            }
         }
     }
 
@@ -129,26 +173,41 @@ public class BoundRoleResolutionContext extends RoleResolutionContext
         if (base == null) {
             throw new IllegalStateException("BoundRoleResolutionContext: base RoleResolutionContext is required");
         }
-        RoleResolutionContext resolved = base;
-        LinkedHashMap<String, String> values = readAvailableBindingValues(instance, null);
-        if (values != null && !values.isEmpty()) {
-            try {
-                RoleResolutionContext candidateContext = resolveWithValues(values);
-                RoleMapping candidate = candidateContext.getActualMapping(
-                        null, instance, null, Collections.emptyMap());
-                if (candidate != null && isValidAssignment(candidateContext, candidate)) {
-                    resolved = candidateContext;
-                }
-            } catch (Exception ignored) {
-                resolved = base;
-            }
+        RoleMapping actualMapping = buildBoundMapping(null, instance, null, Collections.emptyMap());
+        if (base instanceof IContainsMapping) {
+            // IAM containsMapping 은 context 의 scope/groupName 을 보므로,
+            // 최종 mapping 값으로 clone 한 context 에 반영 후 위임한다.
+            RoleResolutionContext checkContext = contextWithMappingFields(actualMapping);
+            return ((IContainsMapping) checkContext).containsMapping(instance, testingRoleMapping);
         }
-        if (resolved instanceof IContainsMapping) {
-            return ((IContainsMapping) resolved).containsMapping(instance, testingRoleMapping);
-        }
-        RoleMapping actualMapping = resolved.getActualMapping(null, instance, null, Collections.emptyMap());
         return hasSameEndpoint(actualMapping, testingRoleMapping)
                 || hasSameResourceName(actualMapping, testingRoleMapping);
+    }
+
+    /** containsMapping 용: base clone 후 최종 mapping 필드를 반영. */
+    private RoleResolutionContext contextWithMappingFields(RoleMapping mapping) {
+        RoleResolutionContext clone = cloneContext(base);
+        if (mapping == null) {
+            return clone;
+        }
+        if (clone instanceof IAMRoleResolutionContext) {
+            IAMRoleResolutionContext iam = (IAMRoleResolutionContext) clone;
+            if (isNotEmpty(mapping.getGroupName())) {
+                iam.setGroupName(mapping.getGroupName());
+            }
+            if (isNotEmpty(mapping.getScope())) {
+                iam.setScope(mapping.getScope());
+            }
+        } else if (clone instanceof DirectRoleResolutionContext) {
+            DirectRoleResolutionContext direct = (DirectRoleResolutionContext) clone;
+            if (isNotEmpty(mapping.getEndpoint())) {
+                direct.setEndpoint(mapping.getEndpoint());
+            }
+            if (isNotEmpty(mapping.getResourceName())) {
+                direct.setResourceName(mapping.getResourceName());
+            }
+        }
+        return clone;
     }
 
     @Override
@@ -172,105 +231,44 @@ public class BoundRoleResolutionContext extends RoleResolutionContext
         return base != null ? base.getName() : "Bound Role Resolution";
     }
 
-    /**
-     * base 를 clone 한 뒤 bindings 로 속성을 override 한 인스턴스를 반환한다.
-     * bindings 가 비어 있으면 base 원본을 그대로 반환(읽기 전용 사용 가정).
-     */
-    RoleResolutionContext resolve(ProcessInstance instance, String tracingTag) throws Exception {
-        if (base == null) {
-            throw new IllegalStateException("BoundRoleResolutionContext: base RoleResolutionContext is required");
+    /** 배분 기준이 같으면 기존 mapping 을 재사용해 불필요한 putRoleMapping 을 막는다. */
+    private static RoleMapping preferExistingIfSame(RoleMapping current, RoleMapping candidate) {
+        if (candidate == null) {
+            return current;
         }
-        if (bindings == null || bindings.isEmpty()) {
-            return base;
+        if (current != null && hasSameAssignmentCriteria(current, candidate)) {
+            return current;
         }
-
-        RoleResolutionContext clone = cloneContext(base);
-        for (Map.Entry<String, String> entry : bindings.entrySet()) {
-            String property = entry.getKey();
-            String varKey = entry.getValue();
-            if ("endpoint".equals(property)) {
-                continue;
-            }
-            if (!isNotEmpty(property) || !isNotEmpty(varKey)) {
-                continue;
-            }
-            String override = readVar(instance, tracingTag, varKey);
-            if (override != null) {
-                setProperty(clone, property, override);
-            }
-        }
-        return clone;
-    }
-
-    private RoleResolutionContext resolveWithValues(Map<String, String> values) throws Exception {
-        return resolveWithValues(values, null);
-    }
-
-    private RoleResolutionContext resolveWithValues(Map<String, String> values, RoleMapping currentMapping) throws Exception {
-        RoleResolutionContext clone = cloneContext(base);
-        if (clone instanceof IAMRoleResolutionContext && currentMapping != null) {
-            IAMRoleResolutionContext iam = (IAMRoleResolutionContext) clone;
-            iam.setGroupName(currentMapping.getGroupName());
-            iam.setScope(currentMapping.getScope());
-        }
-        for (Map.Entry<String, String> entry : values.entrySet()) {
-            if ("endpoint".equals(entry.getKey()) && clone instanceof DirectRoleResolutionContext) {
-                ((DirectRoleResolutionContext) clone).setEndpoint(entry.getValue());
-            } else {
-                setProperty(clone, entry.getKey(), entry.getValue());
-            }
-        }
-        return clone;
+        return candidate;
     }
 
     @SuppressWarnings("rawtypes")
     private RoleMapping resolveBaseMapping(ProcessDefinition pd, ProcessInstance instance,
                                            String tracingTag, Map options) throws Exception {
-        return base.getActualMapping(pd, instance, tracingTag, options);
+        RoleMapping mapping = base.getActualMapping(pd, instance, tracingTag, options);
+        applyAssignType(mapping);
+        return mapping;
     }
 
     private LinkedHashMap<String, String> readAvailableBindingValues(
             ProcessInstance instance, String tracingTag) throws Exception {
         LinkedHashMap<String, String> values = new LinkedHashMap<>();
+        if (bindings == null || bindings.isEmpty()) {
+            return values;
+        }
         for (Map.Entry<String, String> entry : bindings.entrySet()) {
-            if (!isSupportedBinding(entry.getKey()) || !isNotEmpty(entry.getValue())) {
-                return null;
+            String property = entry.getKey();
+            String varKey = entry.getValue();
+            if (!isSupportedBinding(property) || !isNotEmpty(varKey)) {
+                continue;
             }
-            String value = readVar(instance, tracingTag, entry.getValue());
+            String value = readVar(instance, tracingTag, varKey);
             if (value == null) {
                 continue;
             }
-            if (base instanceof IAMRoleResolutionContext) {
-                try {
-                    IAMService iam = getIamService();
-                    if ("groupName".equals(entry.getKey()) && !iam.isValidGroup(value)) continue;
-                    if ("scope".equals(entry.getKey()) && !iam.isValidRole(value)) continue;
-                } catch (Exception e) {
-                    log.warn("[BpmAssignment] Bound field lookup failed; retaining inherited field: {}",
-                            entry.getKey(), e);
-                    continue;
-                }
-            }
-            values.put(entry.getKey(), value);
+            values.put(property, value);
         }
         return values;
-    }
-
-    private boolean isValidAssignment(RoleResolutionContext resolved, RoleMapping mapping) throws Exception {
-        IAMService iam = getIamService();
-        if (resolved instanceof DirectRoleResolutionContext) {
-            return isNotEmpty(mapping.getEndpoint()) && iam.isValidUser(mapping.getEndpoint());
-        }
-        if (resolved instanceof IAMRoleResolutionContext) {
-            // Each supplied field was validated independently. An empty member
-            // intersection must not undo a valid process-variable override.
-            return true;
-        }
-        return true;
-    }
-
-    protected IAMService getIamService() {
-        return IAMServiceFactory.getDefault();
     }
 
     private static boolean hasSameAssignmentCriteria(RoleMapping current, RoleMapping candidate) {
@@ -290,28 +288,38 @@ public class BoundRoleResolutionContext extends RoleResolutionContext
         return left == null ? right == null : left.equals(right);
     }
 
-    private void applyResultBindings(RoleMapping mapping, ProcessInstance instance, String tracingTag)
-            throws Exception {
-        if (mapping == null || bindings == null || bindings.isEmpty()) {
+    /**
+     * 최종 mapping 필드 기준으로 assignType 설정.
+     * <ul>
+     *   <li>{@link DirectRoleResolutionContext} base + endpoint → {@link Role#ASSIGNTYPE_USER} (0)</li>
+     *   <li>{@link IAMRoleResolutionContext} + groupName 만 → {@link Role#ASSIGNTYPE_GROUP} (3)</li>
+     *   <li>{@link IAMRoleResolutionContext} + scope 만 → {@link Role#ASSIGNTYPE_ROLE} (4)</li>
+     *   <li>{@link IAMRoleResolutionContext} + groupName + scope → {@link Role#ASSIGNTYPE_GROUP_ROLE} (5)</li>
+     * </ul>
+     */
+    private void applyAssignType(RoleMapping mapping) {
+        if (mapping == null) {
+            return;
+        }
+        boolean hasGroup = isNotEmpty(mapping.getGroupName());
+        boolean hasScope = isNotEmpty(mapping.getScope());
+
+        if (base instanceof DirectRoleResolutionContext) {
+            if (isNotEmpty(mapping.getEndpoint())) {
+                mapping.setAssignType(Role.ASSIGNTYPE_USER);
+            }
             return;
         }
 
-        String endpoint = getBindingValue(instance, tracingTag, "endpoint");
-        if (endpoint != null) {
-            mapping.setEndpoint(endpoint);
+        if (base instanceof IAMRoleResolutionContext) {
+            if (hasGroup && hasScope) {
+                mapping.setAssignType(Role.ASSIGNTYPE_GROUP_ROLE);
+            } else if (hasScope) {
+                mapping.setAssignType(Role.ASSIGNTYPE_ROLE);
+            } else if (hasGroup) {
+                mapping.setAssignType(Role.ASSIGNTYPE_GROUP);
+            }
         }
-    }
-
-    private String getBindingValue(ProcessInstance instance, String tracingTag, String propertyName)
-            throws Exception {
-        if (bindings == null || bindings.isEmpty()) {
-            return null;
-        }
-        String varKey = bindings.get(propertyName);
-        if (!isNotEmpty(varKey)) {
-            return null;
-        }
-        return readVar(instance, tracingTag, varKey);
     }
 
     private static String readVar(ProcessInstance instance, String tracingTag, String varKey)
@@ -324,9 +332,6 @@ public class BoundRoleResolutionContext extends RoleResolutionContext
             v = instance.getProperty(tracingTag, varKey);
         }
         if (v == null) {
-            return null;
-        }
-        if (!(v instanceof String)) {
             return null;
         }
         String s = String.valueOf(v).trim();
@@ -344,26 +349,6 @@ public class BoundRoleResolutionContext extends RoleResolutionContext
         } catch (Exception e) {
             throw new RuntimeException("BoundRoleResolutionContext: failed to clone base " +
                     source.getClass().getName(), e);
-        }
-    }
-
-    private static void setProperty(Object target, String propertyName, String value) throws Exception {
-        for (PropertyDescriptor pd : Introspector.getBeanInfo(target.getClass()).getPropertyDescriptors()) {
-            if (propertyName.equals(pd.getName()) && pd.getWriteMethod() != null) {
-                Class<?> type = pd.getWriteMethod().getParameterTypes()[0];
-                if (type == String.class || type == Object.class) {
-                    pd.getWriteMethod().invoke(target, value);
-                    return;
-                }
-            }
-        }
-        String setter = "set" + Character.toUpperCase(propertyName.charAt(0)) + propertyName.substring(1);
-        try {
-            target.getClass().getMethod(setter, String.class).invoke(target, value);
-        } catch (NoSuchMethodException e) {
-            throw new IllegalArgumentException(
-                    "BoundRoleResolutionContext: no writable String property '" + propertyName +
-                            "' on " + target.getClass().getName(), e);
         }
     }
 
