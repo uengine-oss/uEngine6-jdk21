@@ -144,14 +144,14 @@ public class OrgRunningSearchRepository {
     addText(
         builder,
         predicates,
-        instance.get("fncgSuptTrgtDvsnCode"),
-        request.getFncgSuptTrgtDvsnCode());
+        instance.get("loanCustClsfCode"),
+        request.getLoanCustClsfCode());
     addText(builder, predicates, instance.get("loanSubjDvsnCode"), request.getLoanSubjDvsnCode());
     addText(
         builder,
         predicates,
-        instance.get("fncgMneyUsagClsfCode"),
-        request.getFncgMneyUsagClsfCode());
+        instance.get("fncgMneyUsagDetlCode"),
+        request.getFncgMneyUsagDetlCode());
     addText(builder, predicates, instance.get("loanCntcNo"), request.getLoanCntcNo());
     addText(builder, predicates, instance.get("custId"), request.getCustId());
     addOrganization(builder, predicates, worklist, instance, request);

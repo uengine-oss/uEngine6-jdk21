@@ -152,9 +152,9 @@ class OrgRunningSearchRepositoryTest {
     OrgRunningRequest request = new OrgRunningRequest();
     request.setBpmBswrClsfCode("BSWR");
     request.setFncgBpmPcesId("ROOT-DEF-ID");
-    request.setFncgSuptTrgtDvsnCode("TARGET");
+    // request.setFncgSuptTrgtDvsnCode("TARGET");
     request.setLoanSubjDvsnCode("SUBJECT");
-    request.setFncgMneyUsagClsfCode("USAGE");
+    // request.setFncgMneyUsagClsfCode("USAGE");
     request.setLoanCntcNo("CONTACT");
     request.setCustId("CUST");
     request.setFncgWndwOrgnCode("SCOPE-A");
@@ -191,9 +191,9 @@ class OrgRunningSearchRepositoryTest {
     instance.setInitEp("reporter");
     instance.setBswrClsfCode("BSWR");
     instance.setFncgBswrDvsnCode("LOAN");
-    instance.setFncgSuptTrgtDvsnCode("TARGET");
+    // instance.setFncgSuptTrgtDvsnCode("TARGET");
     instance.setLoanSubjDvsnCode("SUBJECT");
-    instance.setFncgMneyUsagClsfCode("USAGE");
+    // instance.setFncgMneyUsagClsfCode("USAGE");
     instance.setLoanCntcNo("CONTACT");
     instance.setCustId("CUST");
     instance.setCorrKey("CORR-" + instanceId);

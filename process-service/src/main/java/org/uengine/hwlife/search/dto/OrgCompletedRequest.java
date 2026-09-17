@@ -15,7 +15,7 @@ public class OrgCompletedRequest {
     private Date rqstStarDate;
     @JsonFormat(pattern = EsbCodes.DATE)
     private Date rqstEndDate;
-    private String fncgSuptTrgtDvsnCode;
+    private String loanCustClsfCode;
     private String loanSubjDvsnCode;
     private String loanCntcNo;
     private String custId;
@@ -51,12 +51,12 @@ public class OrgCompletedRequest {
         this.rqstEndDate = rqstEndDate;
     }
 
-    public String getFncgSuptTrgtDvsnCode() {
-        return fncgSuptTrgtDvsnCode;
+    public String getLoanCustClsfCode() {
+        return loanCustClsfCode;
     }
 
-    public void setFncgSuptTrgtDvsnCode(String fncgSuptTrgtDvsnCode) {
-        this.fncgSuptTrgtDvsnCode = fncgSuptTrgtDvsnCode;
+    public void setLoanCustClsfCode(String loanCustClsfCode) {
+        this.loanCustClsfCode = loanCustClsfCode;
     }
 
     public String getLoanSubjDvsnCode() {

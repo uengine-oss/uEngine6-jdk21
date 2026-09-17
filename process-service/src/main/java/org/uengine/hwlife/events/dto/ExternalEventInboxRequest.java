@@ -52,7 +52,7 @@ public class ExternalEventInboxRequest {
     private String fncgBswrDvsnCode;
 
     /** 융자지원대상구분코드 */
-    private String fncgSuptTrgtDvsnCode;
+    private String loanCustClsfCode;
 
     /** 대출과목구분코드 */
     private String loanSubjDvsnCode;
@@ -100,7 +100,7 @@ public class ExternalEventInboxRequest {
     private String loanAprvRqstDvsnCode;
 
     /** 융자자금용도분류코드 */
-    private String fncgMneyUsagClsfCode;
+    private String fncgMneyUsagDetlCode;
 
     /** 접수 처리자 사원번호 */
     private String reptHndrEmnb;
@@ -151,8 +151,8 @@ public class ExternalEventInboxRequest {
     public String getFncgBswrDvsnCode() { return fncgBswrDvsnCode; }
     public void setFncgBswrDvsnCode(String fncgBswrDvsnCode) { this.fncgBswrDvsnCode = fncgBswrDvsnCode; }
 
-    public String getFncgSuptTrgtDvsnCode() { return fncgSuptTrgtDvsnCode; }
-    public void setFncgSuptTrgtDvsnCode(String fncgSuptTrgtDvsnCode) { this.fncgSuptTrgtDvsnCode = fncgSuptTrgtDvsnCode; }
+    public String getLoanCustClsfCode() { return loanCustClsfCode; }
+    public void setLoanCustClsfCode(String loanCustClsfCode) { this.loanCustClsfCode = loanCustClsfCode; }
 
     public String getLoanSubjDvsnCode() { return loanSubjDvsnCode; }
     public void setLoanSubjDvsnCode(String loanSubjDvsnCode) { this.loanSubjDvsnCode = loanSubjDvsnCode; }
@@ -199,8 +199,8 @@ public class ExternalEventInboxRequest {
     public String getLoanAprvRqstDvsnCode() { return loanAprvRqstDvsnCode; }
     public void setLoanAprvRqstDvsnCode(String loanAprvRqstDvsnCode) { this.loanAprvRqstDvsnCode = loanAprvRqstDvsnCode; }
 
-    public String getFncgMneyUsagClsfCode() { return fncgMneyUsagClsfCode; }
-    public void setFncgMneyUsagClsfCode(String fncgMneyUsagClsfCode) { this.fncgMneyUsagClsfCode = fncgMneyUsagClsfCode; }
+    public String getFncgMneyUsagDetlCode() { return fncgMneyUsagDetlCode; }
+    public void setFncgMneyUsagDetlCode(String fncgMneyUsagDetlCode) { this.fncgMneyUsagDetlCode = fncgMneyUsagDetlCode; }
 
     public String getReptHndrEmnb() { return reptHndrEmnb; }
     public void setReptHndrEmnb(String reptHndrEmnb) { this.reptHndrEmnb = reptHndrEmnb; }

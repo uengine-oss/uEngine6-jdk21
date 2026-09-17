@@ -69,9 +69,9 @@ class BulkAssignSearchRepositoryTest {
     request.setCustId("CUST");
     request.setLoanCntcNo("CONTACT");
     request.setLoanPcesMgmtNo("CORR-5");
-    request.setFncgSuptTrgtDvsnCode("TARGET");
+    // request.setFncgSuptTrgtDvsnCode("TARGET");
     request.setLoanSubjDvsnCode("SUBJECT");
-    request.setFncgMneyUsagClsfCode("USAGE");
+    // request.setFncgMneyUsagClsfCode("USAGE");
     request.setStarDate(date(TEST_DATE));
     request.setEndDate(date(TEST_DATE));
     request.setHopeStarDate(date(TEST_DATE));
@@ -112,9 +112,9 @@ class BulkAssignSearchRepositoryTest {
     instance.setStatus("Running");
     instance.setInitGroupCd("REQUEST-GROUP");
     instance.setBswrClsfCode("BSWR");
-    instance.setFncgSuptTrgtDvsnCode("TARGET");
+    // instance.setFncgSuptTrgtDvsnCode("TARGET");
     instance.setLoanSubjDvsnCode("SUBJECT");
-    instance.setFncgMneyUsagClsfCode("USAGE");
+    // instance.setFncgMneyUsagClsfCode("USAGE");
     instance.setLoanCntcNo("CONTACT");
     instance.setCustId(customerId);
     instance.setCorrKey("CORR-" + instanceId);

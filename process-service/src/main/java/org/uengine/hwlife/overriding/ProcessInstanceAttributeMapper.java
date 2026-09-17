@@ -25,9 +25,9 @@ public class ProcessInstanceAttributeMapper {
         instance.setCustId(text(payload.get("custId")));
         instance.setLoanCntcNo(text(payload.get("loanCntcNo")));
         instance.setFncgBswrDvsnCode(text(payload.get("fncgBswrDvsnCode")));
-        instance.setFncgSuptTrgtDvsnCode(text(payload.get("fncgSuptTrgtDvsnCode")));
+        instance.setLoanCustClsfCode(text(payload.get("loanCustClsfCode")));
         instance.setLoanSubjDvsnCode(text(payload.get("loanSubjDvsnCode")));
-        instance.setFncgMneyUsagClsfCode(text(payload.get("fncgMneyUsagClsfCode")));
+        instance.setFncgMneyUsagDetlCode(text(payload.get("fncgMneyUsagDetlCode")));
         instance.setBswrClsfCode(text(payload.get("bpmBswrClsfCode")));
 
         String bswrCntn = text(payload.get("bswrCntn"));

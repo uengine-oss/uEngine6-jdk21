@@ -13,10 +13,10 @@ public class OrgRunningItem {
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = EsbCodes.DTTM_SEC, timezone = "Asia/Seoul")
     private Date starDttm;
     private String loanCntcNo;
-    private String fncgSuptTrgtDvsnCode;
+    private String loanCustClsfCode;
     private String loanSubjDvsnCode;
     private String custId;
-    private String fncgMneyUsagClsfCode;
+    private String fncgMneyUsagDetlCode;
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = EsbCodes.DATE)
     private Date loanHopeDate;
     private String loanPcesMgmtNo;
@@ -51,12 +51,12 @@ public class OrgRunningItem {
         this.loanCntcNo = loanCntcNo;
     }
 
-    public String getFncgSuptTrgtDvsnCode() {
-        return fncgSuptTrgtDvsnCode;
+    public String getLoanCustClsfCode() {
+        return loanCustClsfCode;
     }
 
-    public void setFncgSuptTrgtDvsnCode(String fncgSuptTrgtDvsnCode) {
-        this.fncgSuptTrgtDvsnCode = fncgSuptTrgtDvsnCode;
+    public void setLoanCustClsfCode(String loanCustClsfCode) {
+        this.loanCustClsfCode = loanCustClsfCode;
     }
 
     public String getLoanSubjDvsnCode() {
@@ -75,12 +75,12 @@ public class OrgRunningItem {
         this.custId = custId;
     }
 
-    public String getFncgMneyUsagClsfCode() {
-        return fncgMneyUsagClsfCode;
+    public String getFncgMneyUsagDetlCode() {
+        return fncgMneyUsagDetlCode;
     }
 
-    public void setFncgMneyUsagClsfCode(String fncgMneyUsagClsfCode) {
-        this.fncgMneyUsagClsfCode = fncgMneyUsagClsfCode;
+    public void setFncgMneyUsagDetlCode(String fncgMneyUsagDetlCode) {
+        this.fncgMneyUsagDetlCode = fncgMneyUsagDetlCode;
     }
 
     public Date getLoanHopeDate() {

@@ -312,9 +312,9 @@ public class WorkSearchServiceImpl implements WorkSearchService {
     item.setBpmBswrClsfCode(instance == null ? null : instance.getBswrClsfCode());
     item.setCustId(instance == null ? null : instance.getCustId());
     item.setLoanCntcNo(instance == null ? null : instance.getLoanCntcNo());
-    item.setFncgSuptTrgtDvsnCode(instance == null ? null : instance.getFncgSuptTrgtDvsnCode());
+    item.setLoanCustClsfCode(instance == null ? null : instance.getLoanCustClsfCode());
     item.setLoanSubjDvsnCode(instance == null ? null : instance.getLoanSubjDvsnCode());
-    item.setFncgMneyUsagClsfCode(instance == null ? null : instance.getFncgMneyUsagClsfCode());
+    item.setFncgMneyUsagDetlCode(instance == null ? null : instance.getFncgMneyUsagDetlCode());
     item.setLoanHopeDate(instance == null ? null : instance.getLoanHopeDate());
     item.setLoanPcesMgmtNo(instance == null ? null : instance.getCorrKey());
     item.setFncgBpmTaskTrcgNm(worklist.getTrcTag());
@@ -356,9 +356,9 @@ public class WorkSearchServiceImpl implements WorkSearchService {
     ProcessInstanceEntity rootInstance = rootInstanceResolver.resolve(instId, rootInstances);
     MyProgressItem item = new MyProgressItem();
     item.setLoanCntcNo(instance == null ? null : instance.getLoanCntcNo());
-    item.setFncgSuptTrgtDvsnCode(instance == null ? null : instance.getFncgSuptTrgtDvsnCode());
+    item.setLoanCustClsfCode(instance == null ? null : instance.getLoanCustClsfCode());
     item.setLoanSubjDvsnCode(instance == null ? null : instance.getLoanSubjDvsnCode());
-    item.setFncgMneyUsagClsfCode(instance == null ? null : instance.getFncgMneyUsagClsfCode());
+    item.setFncgMneyUsagDetlCode(instance == null ? null : instance.getFncgMneyUsagDetlCode());
     item.setLoanHopeDate(instance == null ? null : instance.getLoanHopeDate());
     item.setCustId(instance == null ? null : instance.getCustId());
     item.setLoanPcesMgmtNo(instance == null ? null : instance.getCorrKey());
@@ -390,10 +390,10 @@ public class WorkSearchServiceImpl implements WorkSearchService {
 
     item.setStarDttm(instance == null ? null : instance.getStartedDate());
     item.setLoanCntcNo(instance == null ? null : instance.getLoanCntcNo());
-    item.setFncgSuptTrgtDvsnCode(instance == null ? null : instance.getFncgSuptTrgtDvsnCode());
+    item.setLoanCustClsfCode(instance == null ? null : instance.getLoanCustClsfCode());
     item.setLoanSubjDvsnCode(instance == null ? null : instance.getLoanSubjDvsnCode());
     item.setCustId(instance == null ? null : instance.getCustId());
-    item.setFncgMneyUsagClsfCode(instance == null ? null : instance.getFncgMneyUsagClsfCode());
+    item.setFncgMneyUsagDetlCode(instance == null ? null : instance.getFncgMneyUsagDetlCode());
     item.setLoanHopeDate(instance == null ? null : instance.getLoanHopeDate());
     item.setLoanPcesMgmtNo(instance == null ? null : instance.getCorrKey());
     item.setReptHndrEmnb(rootInstance == null ? null : rootInstance.getInitEp());
@@ -424,10 +424,10 @@ public class WorkSearchServiceImpl implements WorkSearchService {
     OrgCompletedItem item = new OrgCompletedItem();
     item.setStarDttm(instance == null ? null : instance.getStartedDate());
     item.setLoanCntcNo(instance == null ? null : instance.getLoanCntcNo());
-    item.setFncgSuptTrgtDvsnCode(instance == null ? null : instance.getFncgSuptTrgtDvsnCode());
+    item.setLoanCustClsfCode(instance == null ? null : instance.getLoanCustClsfCode());
     item.setLoanSubjDvsnCode(instance == null ? null : instance.getLoanSubjDvsnCode());
     item.setCustId(instance == null ? null : instance.getCustId());
-    item.setFncgMneyUsagClsfCode(instance == null ? null : instance.getFncgMneyUsagClsfCode());
+    item.setFncgMneyUsagDetlCode(instance == null ? null : instance.getFncgMneyUsagDetlCode());
     item.setLoanHopeDate(instance == null ? null : instance.getLoanHopeDate());
     item.setLoanPcesMgmtNo(instance == null ? null : instance.getCorrKey());
     item.setReptHndrEmnb(rootInstance == null ? null : rootInstance.getInitEp());

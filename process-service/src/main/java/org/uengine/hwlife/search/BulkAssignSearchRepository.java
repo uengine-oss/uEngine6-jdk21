@@ -86,9 +86,9 @@ public class BulkAssignSearchRepository {
     addText(builder, predicates, instance.get("bswrClsfCode"), request.getBpmBswrClsfCode());
     addText(builder, predicates, instance.get("custId"), request.getCustId());
     addText(builder, predicates, instance.get("loanCntcNo"), request.getLoanCntcNo());
-    addText(builder, predicates, instance.get("fncgSuptTrgtDvsnCode"), request.getFncgSuptTrgtDvsnCode());
+    addText(builder, predicates, instance.get("loanCustClsfCode"), request.getLoanCustClsfCode());
     addText(builder, predicates, instance.get("loanSubjDvsnCode"), request.getLoanSubjDvsnCode());
-    addText(builder, predicates, instance.get("fncgMneyUsagClsfCode"), request.getFncgMneyUsagClsfCode());
+    addText(builder, predicates, instance.get("fncgMneyUsagDetlCode"), request.getFncgMneyUsagDetlCode());
     addDateRange(builder, predicates, worklist.get("startDate"), request.getStarDate(), request.getEndDate());
     addDateRange(builder, predicates, instance.get("loanHopeDate"), request.getHopeStarDate(), request.getHopeEndDate());
     addText(builder, predicates, instance.get("initGroupCd"), request.getFncgWndwOrgnCode());

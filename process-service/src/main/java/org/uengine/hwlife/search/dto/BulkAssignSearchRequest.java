@@ -14,9 +14,9 @@ public class BulkAssignSearchRequest {
     private String custId;
     private String loanCntcNo;
     private String loanPcesMgmtNo;
-    private String fncgSuptTrgtDvsnCode;
+    private String loanCustClsfCode;
     private String loanSubjDvsnCode;
-    private String fncgMneyUsagClsfCode;
+    private String fncgMneyUsagDetlCode;
     @JsonFormat(pattern = EsbCodes.DATE)
     private Date starDate;
     @JsonFormat(pattern = EsbCodes.DATE)
@@ -56,11 +56,11 @@ public class BulkAssignSearchRequest {
     public void setLoanPcesMgmtNo(String loanPcesMgmtNo) {
         this.loanPcesMgmtNo = loanPcesMgmtNo;
     }
-    public String getFncgSuptTrgtDvsnCode() {
-        return fncgSuptTrgtDvsnCode;
+    public String getLoanCustClsfCode() {
+        return loanCustClsfCode;
     }
-    public void setFncgSuptTrgtDvsnCode(String fncgSuptTrgtDvsnCode) {
-        this.fncgSuptTrgtDvsnCode = fncgSuptTrgtDvsnCode;
+    public void setLoanCustClsfCode(String loanCustClsfCode) {
+        this.loanCustClsfCode = loanCustClsfCode;
     }
     public String getLoanSubjDvsnCode() {
         return loanSubjDvsnCode;
@@ -68,11 +68,11 @@ public class BulkAssignSearchRequest {
     public void setLoanSubjDvsnCode(String loanSubjDvsnCode) {
         this.loanSubjDvsnCode = loanSubjDvsnCode;
     }
-    public String getFncgMneyUsagClsfCode() {
-        return fncgMneyUsagClsfCode;
+    public String getFncgMneyUsagDetlCode() {
+        return fncgMneyUsagDetlCode;
     }
-    public void setFncgMneyUsagClsfCode(String fncgMneyUsagClsfCode) {
-        this.fncgMneyUsagClsfCode = fncgMneyUsagClsfCode;
+    public void setFncgMneyUsagDetlCode(String fncgMneyUsagDetlCode) {
+        this.fncgMneyUsagDetlCode = fncgMneyUsagDetlCode;
     }
     public Date getStarDate() {
         return starDate;

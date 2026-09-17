@@ -21,9 +21,9 @@ public class OrgRunningRequest {
     @JsonFormat(pattern = EsbCodes.DATE)
     private Date rqstEndDate;
 
-    private String fncgSuptTrgtDvsnCode;
+    private String loanCustClsfCode;
     private String loanSubjDvsnCode;
-    private String fncgMneyUsagClsfCode;
+    private String fncgMneyUsagDetlCode;
     private String loanCntcNo;
     private String custId;
     private String fncgWndwOrgnCode;
@@ -62,12 +62,12 @@ public class OrgRunningRequest {
         this.rqstEndDate = rqstEndDate;
     }
 
-    public String getFncgSuptTrgtDvsnCode() {
-        return fncgSuptTrgtDvsnCode;
+    public String getLoanCustClsfCode() {
+        return loanCustClsfCode;
     }
 
-    public void setFncgSuptTrgtDvsnCode(String fncgSuptTrgtDvsnCode) {
-        this.fncgSuptTrgtDvsnCode = fncgSuptTrgtDvsnCode;
+    public void setLoanCustClsfCode(String loanCustClsfCode) {
+        this.loanCustClsfCode = loanCustClsfCode;
     }
 
     public String getLoanSubjDvsnCode() {
@@ -78,12 +78,12 @@ public class OrgRunningRequest {
         this.loanSubjDvsnCode = loanSubjDvsnCode;
     }
 
-    public String getFncgMneyUsagClsfCode() {
-        return fncgMneyUsagClsfCode;
+    public String getFncgMneyUsagDetlCode() {
+        return fncgMneyUsagDetlCode;
     }
 
-    public void setFncgMneyUsagClsfCode(String fncgMneyUsagClsfCode) {
-        this.fncgMneyUsagClsfCode = fncgMneyUsagClsfCode;
+    public void setFncgMneyUsagDetlCode(String fncgMneyUsagDetlCode) {
+        this.fncgMneyUsagDetlCode = fncgMneyUsagDetlCode;
     }
 
     public String getLoanCntcNo() {

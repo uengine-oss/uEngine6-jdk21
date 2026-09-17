@@ -131,7 +131,7 @@ public class OrgCompletedSearchRepository {
     addText(builder, predicates, instance.get("bswrClsfCode"), request.getBpmBswrClsfCode());
     addText(builder, predicates, instance.get("custId"), request.getCustId());
     addText(builder, predicates, instance.get("loanCntcNo"), request.getLoanCntcNo());
-    addText(builder, predicates, instance.get("fncgSuptTrgtDvsnCode"), request.getFncgSuptTrgtDvsnCode());
+    addText(builder, predicates, instance.get("loanCustClsfCode"), request.getLoanCustClsfCode());
     addText(builder, predicates, instance.get("loanSubjDvsnCode"), request.getLoanSubjDvsnCode());
     addDateRange(
         builder,
