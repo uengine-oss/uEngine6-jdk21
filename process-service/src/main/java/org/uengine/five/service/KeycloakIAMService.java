@@ -40,6 +40,8 @@ public class KeycloakIAMService implements IAMService {
     private String adminUsername;
     private String adminPassword;
     private String adminRealm;
+    private volatile String cachedAdminAccessToken;
+    private volatile long cachedAdminTokenExpiresAtMillis;
 
     private KeycloakIAMService() {
         this.keycloakUrl = System.getenv("KEYCLOAK_URI");
@@ -94,7 +96,40 @@ public class KeycloakIAMService implements IAMService {
         return "keycloak";
     }
 
-    private String getAdminAccessToken() throws IOException, InterruptedException, URISyntaxException {
+    @Override
+    public List<Map<String, Object>> getGroupCandidates() throws Exception {
+        return getCandidates("groups");
+    }
+
+    @Override
+    public List<Map<String, Object>> getRoleCandidates() throws Exception {
+        return getCandidates("roles");
+    }
+
+    private List<Map<String, Object>> getCandidates(String resource) throws Exception {
+        String token = getAdminAccessToken();
+        List<Map<String, Object>> result = new ArrayList<>();
+        for (int first = 0; ; first += 100) {
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(new URI(keycloakUrl + "/admin/realms/" + realm + "/" + resource
+                            + "?first=" + first + "&max=100&briefRepresentation=false"))
+                    .header("Authorization", "Bearer " + token).GET().build();
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            if (response.statusCode() != 200) {
+                throw new IOException("IAM candidate lookup failed: " + response.statusCode());
+            }
+            List<Map<String, Object>> page = objectMapper.readValue(response.body(), new TypeReference<>() {});
+            result.addAll(page);
+            if (page.size() < 100) return result;
+        }
+    }
+
+    private synchronized String getAdminAccessToken() throws IOException, InterruptedException, URISyntaxException {
+        long now = System.currentTimeMillis();
+        if (UEngineUtil.isNotEmpty(cachedAdminAccessToken) && now < cachedAdminTokenExpiresAtMillis) {
+            return cachedAdminAccessToken;
+        }
+
         String tokenUrl = keycloakUrl + "/realms/" + adminRealm + "/protocol/openid-connect/token";
 
         Map<String, String> form = new LinkedHashMap<>();
@@ -129,7 +164,11 @@ public class KeycloakIAMService implements IAMService {
         if (response.statusCode() == 200) {
             Map<String, Object> tokenResponse = objectMapper.readValue(response.body(),
                     new TypeReference<Map<String, Object>>() {});
-            return (String) tokenResponse.get("access_token");
+            cachedAdminAccessToken = (String) tokenResponse.get("access_token");
+            Number expiresIn = (Number) tokenResponse.get("expires_in");
+            long lifetimeMillis = expiresIn != null ? expiresIn.longValue() * 1000L : 30_000L;
+            cachedAdminTokenExpiresAtMillis = now + Math.max(0L, lifetimeMillis - 5_000L);
+            return cachedAdminAccessToken;
         } else {
             throw new RuntimeException("Failed to get admin access token: " + response.statusCode() + " - " + response.body());
         }

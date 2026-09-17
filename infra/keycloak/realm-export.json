@@ -31,6 +31,10 @@
         {
           "name": "process-manager",
           "description": "프로세스 관리자 역할"
+        },
+        {
+          "name": "FN120",
+          "description": "HLI lane role FN120"
         }
       ]
     },
@@ -71,7 +75,7 @@
             "temporary": false
           }
         ],
-        "realmRoles": ["user"],
+        "realmRoles": ["user", "FN120"],
         "groups": ["/IT부서"],
         "attributes": {
           "department": ["영업부서"]

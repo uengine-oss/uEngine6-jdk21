@@ -234,8 +234,10 @@ class BoundRoleResolutionContextTest {
     }
 
     @Test
-    void keepsCurrentGroupRoleWhenOnlyOneBindingHasAValue() throws Exception {
-        BoundRoleResolutionContext context = contextWithIam(mock(IAMService.class));
+    void appliesGroupVariableAndPreservesInheritedScopeWhenRoleVariableIsMissing() throws Exception {
+        IAMService iam = mock(IAMService.class);
+        when(iam.isValidGroupRole("ORG02", "ROLE03")).thenReturn(true);
+        BoundRoleResolutionContext context = contextWithIam(iam);
         IAMRoleResolutionContext base = new IAMRoleResolutionContext();
         base.setGroupName("ORG01");
         base.setScope("ROLE01");
@@ -250,9 +252,91 @@ class BoundRoleResolutionContextTest {
         RoleMapping current = RoleMapping.create();
         current.setEndpoint("hong");
         current.setGroupName("ORG01");
+        current.setScope("ROLE03");
+
+        RoleMapping result = context.resolveRoleMapping(null, instance, "Task_2", current, java.util.Map.of());
+        assertEquals("ORG02", result.getGroupName());
+        assertEquals("ROLE03", result.getScope());
+        assertNull(result.getEndpoint());
+        assertEquals("ORG01", current.getGroupName());
+        assertEquals("ROLE01", base.getScope());
+    }
+
+    @Test
+    void appliesGroupVariableAndPreservesStaticScopeWhenCurrentScopeIsMissing() throws Exception {
+        IAMService iam = mock(IAMService.class);
+        when(iam.isValidGroupRole("ORG02", "ROLE01")).thenReturn(true);
+        BoundRoleResolutionContext context = contextWithIam(iam);
+        IAMRoleResolutionContext base = new IAMRoleResolutionContext();
+        base.setGroupName("ORG01");
+        base.setScope("ROLE01");
+        context.setBase(base);
+        LinkedHashMap<String, String> bindings = bindings("groupName", "orgCode");
+        bindings.put("scope", "roleCode");
+        context.setBindings(bindings);
+
+        ProcessInstance instance = mock(ProcessInstance.class);
+        when(instance.get("", "orgCode")).thenReturn("ORG02");
+        RoleMapping current = RoleMapping.create();
+        current.setGroupName("ORG01");
+        current.setScope(null);
+
+        RoleMapping result = context.resolveRoleMapping(null, instance, "Task_2", current, java.util.Map.of());
+
+        assertEquals("ORG02", result.getGroupName());
+        assertEquals("ROLE01", result.getScope());
+        assertEquals("ORG01", current.getGroupName());
+        assertNull(current.getScope());
+    }
+
+    @Test
+    void appliesRoleVariableAndPreservesStaticGroupWhenCurrentGroupIsMissing() throws Exception {
+        IAMService iam = mock(IAMService.class);
+        when(iam.isValidGroupRole("ORG01", "ROLE02")).thenReturn(true);
+        BoundRoleResolutionContext context = contextWithIam(iam);
+        IAMRoleResolutionContext base = new IAMRoleResolutionContext();
+        base.setGroupName("ORG01");
+        base.setScope("ROLE01");
+        context.setBase(base);
+        LinkedHashMap<String, String> bindings = bindings("groupName", "orgCode");
+        bindings.put("scope", "roleCode");
+        context.setBindings(bindings);
+
+        ProcessInstance instance = mock(ProcessInstance.class);
+        when(instance.get("", "roleCode")).thenReturn("ROLE02");
+        RoleMapping current = RoleMapping.create();
+        current.setGroupName(null);
         current.setScope("ROLE01");
 
-        assertSame(current, context.resolveRoleMapping(null, instance, "Task_2", current, java.util.Map.of()));
+        RoleMapping result = context.resolveRoleMapping(null, instance, "Task_2", current, java.util.Map.of());
+
+        assertEquals("ORG01", result.getGroupName());
+        assertEquals("ROLE02", result.getScope());
+        assertNull(current.getGroupName());
+        assertEquals("ROLE01", current.getScope());
+    }
+
+    @Test
+    void appliesEitherSingleVariableAgainstDefaultsOnFirstAssignment() throws Exception {
+        for (boolean groupOnly : new boolean[] { true, false }) {
+            IAMService iam = mock(IAMService.class);
+            when(iam.isValidGroupRole(groupOnly ? "ORG02" : "ORG01", groupOnly ? "ROLE01" : "ROLE02"))
+                    .thenReturn(true);
+            BoundRoleResolutionContext context = contextWithIam(iam);
+            IAMRoleResolutionContext base = new IAMRoleResolutionContext();
+            base.setGroupName("ORG01");
+            base.setScope("ROLE01");
+            context.setBase(base);
+            LinkedHashMap<String, String> binding = bindings("groupName", "orgCode");
+            binding.put("scope", "roleCode");
+            context.setBindings(binding);
+            ProcessInstance instance = mock(ProcessInstance.class);
+            when(instance.get("", groupOnly ? "orgCode" : "roleCode")).thenReturn(groupOnly ? "ORG02" : "ROLE02");
+
+            RoleMapping result = context.resolveRoleMapping(null, instance, "Task_1", null, java.util.Map.of());
+            assertEquals(groupOnly ? "ORG02" : "ORG01", result.getGroupName());
+            assertEquals(groupOnly ? "ROLE01" : "ROLE02", result.getScope());
+        }
     }
 
     @Test
