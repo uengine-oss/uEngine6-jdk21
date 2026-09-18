@@ -46,9 +46,11 @@ public class MyTodoSearchRepository {
       Long cursorId,
       int pageSize,
       String emnb,
-      String belnOrgnCode) {
+      String belnOrgnCode,
+      List<String> userScopes) {
     CriteriaBuilder builder = entityManager.getCriteriaBuilder();
     String sortKey = sortKey(request);
+    List<String> scopes = userScopes == null ? List.of() : userScopes;
     CursorPosition cursor = findCursor(builder, cursorId, sortKey);
     if (cursorId != null && cursor == null) {
       return new SearchResult(List.of(), 0, null);
@@ -58,7 +60,7 @@ public class MyTodoSearchRepository {
     Root<WorklistEntity> worklist = dataQuery.from(WorklistEntity.class);
     Join<WorklistEntity, ProcessInstanceEntity> instance = fetchProcessInstance(worklist);
     List<Predicate> dataPredicates = new ArrayList<>(
-        List.of(predicates(builder, dataQuery, worklist, instance, request, emnb, belnOrgnCode)));
+        List.of(predicates(builder, dataQuery, worklist, instance, request, emnb, belnOrgnCode, scopes)));
     // nextKey(taskId)는 정렬·비즈니스 필터가 아니라, 정렬된 결과의 페이지 커서다.
     if (cursor != null) {
       dataPredicates.add(cursorPredicate(builder, worklist, instance, sortKey, cursor));
@@ -87,7 +89,8 @@ public class MyTodoSearchRepository {
     Join<WorklistEntity, ProcessInstanceEntity> countInstance =
         countWorklist.join("processInstance", JoinType.LEFT);
     countQuery.select(builder.count(countWorklist))
-        .where(predicates(builder, countQuery, countWorklist, countInstance, request, emnb, belnOrgnCode));
+        .where(predicates(
+            builder, countQuery, countWorklist, countInstance, request, emnb, belnOrgnCode, scopes));
     long totalCount = entityManager.createQuery(countQuery).getSingleResult();
 
     return new SearchResult(items, Math.toIntExact(totalCount), nextKey);
@@ -135,12 +138,15 @@ public class MyTodoSearchRepository {
       Join<WorklistEntity, ProcessInstanceEntity> instance,
       MyTodoRequest request,
       String emnb,
-      String belnOrgnCode) {
+      String belnOrgnCode,
+      List<String> userScopes) {
     List<Predicate> predicates = new ArrayList<>();
     // 1) 진행중(NEW) 건
     predicates.add(builder.equal(worklist.get("status"), DefaultWorkList.WORKITEM_STATUS_NEW));
     // 2) 본인 할당 건 OR 3) 소속기관 선점 미선점 건
     predicates.add(accessPredicate(builder, worklist, emnb, belnOrgnCode));
+    // 4) scope 권한: 없거나 blank면 누구나, 있으면 사용자 권한 목록에 포함되어야 함
+    predicates.add(scopePredicate(builder, worklist, userScopes));
 
     // root_inst_id 기준 루트 인스턴스 def_id == bswrDvsnVal
     addRootDefId(builder, query, predicates, instance, request.getBswrDvsnVal());
@@ -167,6 +173,29 @@ public class MyTodoSearchRepository {
         request.getHopeStarDate(),
         request.getHopeEndDate());
     return predicates.toArray(Predicate[]::new);
+  }
+
+  /**
+   * 단위업무 권한(scope) 조건.
+   * <ul>
+   *   <li>{@code scope} 없음/blank/{@code "null"} → 누구나 가능</li>
+   *   <li>{@code scope} 있음 → 사용자 권한 목록({@code fncgCoreAtrtId})에 포함될 때만 가능</li>
+   * </ul>
+   */
+  private static Predicate scopePredicate(
+      CriteriaBuilder builder,
+      Root<WorklistEntity> worklist,
+      List<String> userScopes) {
+    Path<String> scope = worklist.get("scope");
+    Expression<String> trimmedScope = builder.trim(scope);
+    Predicate unrestricted = builder.or(
+        builder.isNull(scope),
+        builder.equal(trimmedScope, ""),
+        builder.equal(builder.lower(trimmedScope), "null"));
+    if (userScopes == null || userScopes.isEmpty()) {
+      return unrestricted;
+    }
+    return builder.or(unrestricted, trimmedScope.in(userScopes));
   }
 
   /**

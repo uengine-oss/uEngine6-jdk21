@@ -98,6 +98,7 @@ public class InstanceIntegrationServiceImpl implements InstanceIntegrationServic
    *   <li>{@code LBM050019} — claimWorkItem 업무 예외</li>
    *   <li>{@code LBM050020} — 기타 예외</li>
    *   <li>{@code LBM050021} — 위임된 업무는 선점 해제 불가</li>
+   *   <li>{@code LBM050022} — 업무 권한 없음(worklist.scope)</li>
    * </ul>
    *
    * <p>건별 성공/실패를 독립 처리하므로 바깥 {@code @Transactional} 을 두지 않는다
@@ -118,6 +119,9 @@ public class InstanceIntegrationServiceImpl implements InstanceIntegrationServic
 
     boolean unclaim = "1".equals(trimToNull(request.getDvsnVal()));
     UserContext.getThreadLocalInstance().setUserId(actorEndpoint);
+    List<String> userAuthorities = unclaim
+        ? List.of()
+        : ExternalIAMService.getDefault().resolveUserAuthorityIds(actorEndpoint);
 
     List<ClaimResponseItem> failList = new ArrayList<>();
     Set<String> seenTaskIds = new HashSet<>();
@@ -140,7 +144,8 @@ public class InstanceIntegrationServiceImpl implements InstanceIntegrationServic
           addClaimFailure(failList, item, "LBM050009");
           continue;
         }
-        String validationError = validateClaimRequest(worklist, item, actorEndpoint, belnOrgnCode, unclaim);
+        String validationError =
+            validateClaimRequest(worklist, item, actorEndpoint, belnOrgnCode, unclaim, userAuthorities);
         if (validationError != null) {
           addClaimFailure(failList, item, validationError);
           continue;
@@ -241,6 +246,7 @@ public class InstanceIntegrationServiceImpl implements InstanceIntegrationServic
    *   <li>{@code LBM050017} — 이미 선점 해제된 업무</li>
    *   <li>{@code LBM050018} — 본인 선점 건이 아님</li>
    *   <li>{@code LBM050021} — 위임된 업무는 선점 해제 불가</li>
+   *   <li>{@code LBM050022} — 업무 권한 없음(worklist.scope)</li>
    * </ul>
    */
   private String validateClaimRequest(
@@ -248,7 +254,8 @@ public class InstanceIntegrationServiceImpl implements InstanceIntegrationServic
       ClaimRequestItem requestItem,
       String actorEndpoint,
       String belnOrgnCode,
-      boolean unclaim) {
+      boolean unclaim,
+      List<String> userAuthorities) {
     String requestedInstanceId = requestItem == null ? null : trimToNull(requestItem.getFncgBpmPcesIntcId());
     if (requestedInstanceId != null
         && !requestedInstanceId.equals(String.valueOf(worklist.getInstId()))
@@ -266,7 +273,7 @@ public class InstanceIntegrationServiceImpl implements InstanceIntegrationServic
     if (!isSameOrganization(worklist, belnOrgnCode)) {
       return "LBM050015";
     }
-    
+
     String currentEndpoint = trimToNull(worklist.getEndpoint());
     if (unclaim) {
       if (Boolean.TRUE.equals(worklist.getDelegated())) {
@@ -281,6 +288,9 @@ public class InstanceIntegrationServiceImpl implements InstanceIntegrationServic
       return null;
     }
 
+    if (!hasWorkScopeAuthority(worklist, userAuthorities)) {
+      return "LBM050022";
+    }
     if (currentEndpoint != null && currentEndpoint.equals(actorEndpoint)) {
       return "LBM050012";
     }
@@ -288,6 +298,21 @@ public class InstanceIntegrationServiceImpl implements InstanceIntegrationServic
       return "LBM050013";
     }
     return null;
+  }
+
+  /**
+   * 선점 시 단위업무 권한(scope) 검증.
+   * <ul>
+   *   <li>{@code scope} 없음/blank/{@code "null"} → 누구나 가능</li>
+   *   <li>{@code scope} 있음 → 사용자 권한 목록에 포함될 때만 가능</li>
+   * </ul>
+   */
+  private static boolean hasWorkScopeAuthority(WorklistEntity worklist, List<String> userAuthorities) {
+    String scope = trimToNull(worklist == null ? null : worklist.getScope());
+    if (scope == null || "null".equalsIgnoreCase(scope)) {
+      return true;
+    }
+    return userAuthorities != null && userAuthorities.contains(scope);
   }
 
   /**
@@ -330,7 +355,7 @@ public class InstanceIntegrationServiceImpl implements InstanceIntegrationServic
    *   <li>{@code LBM040003} — header.emnb 없음</li>
    *   <li>{@code LBM040004} — hndrEmnb 없음</li>
    *   <li>{@code LBM040005} — 위임자(header.emnb)와 처리자가 동일</li>
-   *   <li>{@code LBM040006} — 처리자 IAM 조회 실패/기관정보 없음</li>
+   *   <li>{@code LBM040006} — 처리자 IAM 조회 실패 또는 hndrOrgnCode 없음</li>
    *   <li>{@code LBM040007} — fncgBpmTasklstId 없음</li>
    *   <li>{@code LBM040008} — 요청 내 fncgBpmTasklstId 중복</li>
    *   <li>{@code LBM040009} — fncgBpmTasklstId 비숫자</li>
@@ -361,20 +386,12 @@ public class InstanceIntegrationServiceImpl implements InstanceIntegrationServic
     EsbCommonHeader header = EsbRequestBodyAdvice.currentHeader();
     String actorEndpoint = trimToNull(header != null ? header.getEmnb() : null);
 
-    String commonError = resolveCommonDelegateError(request, bswrList, actorEndpoint, hndrEmnb);
+    String commonError =
+        resolveCommonDelegateError(request, bswrList, actorEndpoint, hndrEmnb, hndrOrgnCode);
     if (commonError != null) {
       return failedDelegateResponse(bswrList, 0, commonError);
     }
 
-    UserSearchResponse handler;
-    try {
-      handler = ExternalIAMService.getDefault().getUser(hndrEmnb);
-    } catch (Exception e) {
-      return failedDelegateResponse(bswrList, 0, "LBM040006");
-    }
-    if (!hasHandlerOrganization(handler)) {
-      return failedDelegateResponse(bswrList, 0, "LBM040006");
-    }
 
     String previousFilterUserId = SecurityAwareServletFilter.getUserId();
     UserContext.getThreadLocalInstance().setUserId(actorEndpoint);
@@ -405,7 +422,7 @@ public class InstanceIntegrationServiceImpl implements InstanceIntegrationServic
             addDelegateFailure(failList, item, "LBM040010");
             continue;
           }
-          String validationError = validateDelegateRequest(worklist, item, actorEndpoint, handler);
+          String validationError = validateDelegateRequest(worklist, item, actorEndpoint);
           if (validationError != null) {
             addDelegateFailure(failList, item, validationError);
             continue;
@@ -467,13 +484,15 @@ public class InstanceIntegrationServiceImpl implements InstanceIntegrationServic
    *   <li>{@code LBM040003} — header.emnb 없음</li>
    *   <li>{@code LBM040004} — hndrEmnb 없음</li>
    *   <li>{@code LBM040005} — 위임자와 처리자가 동일</li>
+   *   <li>{@code LBM040006} — hndrOrgnCode 없음</li>
    * </ul>
    */
   private static String resolveCommonDelegateError(
       DelegateRequest request,
       List<DelegateRequestItem> bswrList,
       String actorEndpoint,
-      String hndrEmnb) {
+      String hndrEmnb,
+      String hndrOrgnCode) {
     if (request == null) {
       return "LBM040001";
     }
@@ -488,6 +507,9 @@ public class InstanceIntegrationServiceImpl implements InstanceIntegrationServic
     }
     if (actorEndpoint.equals(hndrEmnb)) {
       return "LBM040005";
+    }
+    if (hndrOrgnCode == null) {
+      return "LBM040006";
     }
     return null;
   }
@@ -533,8 +555,7 @@ public class InstanceIntegrationServiceImpl implements InstanceIntegrationServic
   private String validateDelegateRequest(
       WorklistEntity worklist,
       DelegateRequestItem requestItem,
-      String actorEndpoint,
-      UserSearchResponse handler) {
+      String actorEndpoint) {
     String requestedInstanceId = requestItem == null ? null : trimToNull(requestItem.getFncgBpmPcesIntcId());
     if (requestedInstanceId != null
         && !requestedInstanceId.equals(String.valueOf(worklist.getInstId()))
@@ -555,41 +576,9 @@ public class InstanceIntegrationServiceImpl implements InstanceIntegrationServic
       return "LBM040014";
     }
 
-    // TODO: 동일 기관에서만 위임 가능 — 우선 비활성화
-    // if (!isHandlerSameOrganization(worklist, handler)) {
-    //   return "LBM040015";
-    // }
     return null;
   }
 
-  /** 처리자 IAM 응답에 기관코드가 하나 이상 있는지. */
-  private static boolean hasHandlerOrganization(UserSearchResponse handler) {
-    if (handler == null || handler.getBpmOrgnList() == null || handler.getBpmOrgnList().isEmpty()) {
-      return false;
-    }
-    for (FncgOrgInfo org : handler.getBpmOrgnList()) {
-      if (org != null && trimToNull(org.getFncgWndwOrgnCode()) != null) {
-        return true;
-      }
-    }
-    return false;
-  }
-
-  /**
-   * 업무 기관({@code worklist.groupCd})이 처리자({@code hndrEmnb}) IAM 보유 기관에 포함되는지.
-   */
-  private static boolean isHandlerSameOrganization(WorklistEntity worklist, UserSearchResponse handler) {
-    String groupCd = trimToNull(worklist.getGroupCd());
-    if (groupCd == null || handler == null || handler.getBpmOrgnList() == null) {
-      return false;
-    }
-    for (FncgOrgInfo org : handler.getBpmOrgnList()) {
-      if (org != null && groupCd.equals(trimToNull(org.getFncgWndwOrgnCode()))) {
-        return true;
-      }
-    }
-    return false;
-  }
 
   private static void addDelegateFailure(
       List<DelegateResponseItem> failList,

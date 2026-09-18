@@ -70,8 +70,6 @@ public class ExternalIAMService implements IAMService {
         return map;
     }
 
-
-
     @Override
     public List<String> getUsersByGroup(String groupName) throws Exception {
         return new ArrayList<>();
@@ -90,45 +88,6 @@ public class ExternalIAMService implements IAMService {
     @Override
     public List<String> getUserGroups(String userId) throws Exception {
         return new ArrayList<>();
-    }
-
-    @Override
-    public List<Map<String, Object>> getGroupCandidates() {
-        OrgSearchResponse response = getGroups();
-        if (response == null || response.getBpmOrgnList() == null) {
-            return List.of();
-        }
-        List<Map<String, Object>> candidates = new ArrayList<>();
-        for (FncgOrgInfo org : response.getBpmOrgnList()) {
-            if (org != null && hasText(org.getFncgWndwOrgnCode())) {
-                String name = hasText(org.getFncgWndwOrgnNm())
-                        ? org.getFncgWndwOrgnNm()
-                        : org.getFncgWndwOrgnAbrvNm();
-                candidates.add(Map.of(
-                        "id", org.getFncgWndwOrgnCode(),
-                        "name", hasText(name) ? name : org.getFncgWndwOrgnCode()));
-            }
-        }
-        return candidates;
-    }
-
-    @Override
-    public List<Map<String, Object>> getRoleCandidates() {
-        RoleSearchResponse response = getRoles();
-        if (response == null || response.getBpmAtrtList() == null) {
-            return List.of();
-        }
-        List<Map<String, Object>> candidates = new ArrayList<>();
-        for (FncgRoleInfo role : response.getBpmAtrtList()) {
-            if (role != null && hasText(role.getFncgCoreAtrtId())) {
-                candidates.add(Map.of(
-                        "id", role.getFncgCoreAtrtId(),
-                        "name", hasText(role.getFncgCoreAtrtNm())
-                                ? role.getFncgCoreAtrtNm()
-                                : role.getFncgCoreAtrtId()));
-            }
-        }
-        return candidates;
     }
 
     @Override
@@ -230,6 +189,33 @@ public class ExternalIAMService implements IAMService {
     }
 
     /**
+     * 사번의 보유 권한 코드({@code bpmAtrtList.fncgCoreAtrtId}) 목록.
+     * trim·빈값·{@code "null"} 제거. 조회 실패 시 빈 목록.
+     */
+    public List<String> resolveUserAuthorityIds(String employeeNo) {
+        UserSearchResponse user;
+        try {
+            user = getUser(employeeNo);
+        } catch (Exception e) {
+            return List.of();
+        }
+        if (user == null || user.getBpmAtrtList() == null || user.getBpmAtrtList().isEmpty()) {
+            return List.of();
+        }
+        List<String> authorities = new ArrayList<>();
+        for (FncgRoleInfo role : user.getBpmAtrtList()) {
+            if (role == null) {
+                continue;
+            }
+            String atrtId = trimToNull(role.getFncgCoreAtrtId());
+            if (atrtId != null && !"null".equalsIgnoreCase(atrtId)) {
+                authorities.add(atrtId);
+            }
+        }
+        return authorities;
+    }
+
+    /**
      * 사번으로 담당자(사용자) 단건 조회.
      */
     public Optional<UserContext> findUserByEmployeeNo(String employeeNo) {
@@ -248,6 +234,14 @@ public class ExternalIAMService implements IAMService {
 
     private Map<String, Object> toUserMap(UserContext user) {
         return Map.of("userId", user.getUserId());
+    }
+
+    private static String trimToNull(String value) {
+        if (value == null) {
+            return null;
+        }
+        String trimmed = value.trim();
+        return trimmed.isEmpty() ? null : trimmed;
     }
 
     private static boolean hasText(String s) {

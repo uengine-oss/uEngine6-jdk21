@@ -20,9 +20,9 @@ import org.uengine.five.entity.WorklistEntity;
 import org.uengine.five.repository.ProcessInstanceRepository;
 import org.uengine.five.repository.WorklistRepository;
 import org.uengine.five.service.RootInstanceResolver;
-import org.uengine.webservices.worklist.DefaultWorkList;
 import org.uengine.hwlife.esbclient.dto.EsbCommonHeader;
 import org.uengine.hwlife.esbclient.support.EsbRequestBodyAdvice;
+import org.uengine.hwlife.iam.ExternalIAMService;
 import org.uengine.hwlife.search.dto.BulkAssignSearchRequest;
 import org.uengine.hwlife.search.dto.BulkAssignSearchResponse;
 import org.uengine.hwlife.search.dto.BulkAssignSearchResponseItem;
@@ -45,6 +45,7 @@ import org.uengine.hwlife.search.dto.RunningWorkByCorrKeyResponseItem;
 import org.uengine.hwlife.search.dto.WorklistByInstIdRequest;
 import org.uengine.hwlife.search.dto.WorklistByInstIdResponse;
 import org.uengine.hwlife.search.dto.WorklistByInstIdResponseItem;
+import org.uengine.webservices.worklist.DefaultWorkList;
 
 /**
  * BPM 통합 검색 REST API 구현.
@@ -99,12 +100,14 @@ public class WorkSearchServiceImpl implements WorkSearchService {
 
     MyTodoRequest normalizedRequest = normalizeMyTodoRequest(request);
     Long cursorId = parseNextKey(normalizedRequest.getNextKey());
+    List<String> userScopes = resolveUserScopes(emnb);
     MyTodoSearchRepository.SearchResult result = myTodoSearchRepository.search(
         normalizedRequest,
         cursorId,
         normalizedRequest.getPageSize(),
         emnb,
-        belnOrgnCode);
+        belnOrgnCode,
+        userScopes);
 
     Map<Long, ProcessInstanceEntity> rootInstances = rootInstanceResolver.preload(result.items());
     MyTodoResponse response = new MyTodoResponse();
@@ -114,6 +117,14 @@ public class WorkSearchServiceImpl implements WorkSearchService {
         .map(worklist -> toMyTodoItem(worklist, rootInstances))
         .collect(Collectors.toList()));
     return response;
+  }
+
+  /**
+   * 사번으로 IAM 사용자 권한({@code bpmAtrtList.fncgCoreAtrtId}) 목록을 조회한다.
+   * 조회 실패 시 빈 목록 — scope 없는 업무만 노출된다.
+   */
+  private static List<String> resolveUserScopes(String emnb) {
+    return ExternalIAMService.getDefault().resolveUserAuthorityIds(emnb);
   }
 
   @Override

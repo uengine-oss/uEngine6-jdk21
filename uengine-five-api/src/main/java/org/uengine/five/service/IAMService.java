@@ -49,22 +49,6 @@ public interface IAMService {
      */
     List<String> getUserGroups(String userId) throws Exception;
 
-    /**
-     * 프로세스 설계 화면에서 선택할 그룹/기관 후보를 조회합니다.
-     * 각 항목은 최소한 {@code id} 또는 {@code name}을 제공해야 합니다.
-     */
-    default List<Map<String, Object>> getGroupCandidates() throws Exception {
-        return List.of();
-    }
-
-    /**
-     * 프로세스 설계 화면에서 선택할 역할/권한 후보를 조회합니다.
-     * 각 항목은 최소한 {@code id} 또는 {@code name}을 제공해야 합니다.
-     */
-    default List<Map<String, Object>> getRoleCandidates() throws Exception {
-        return List.of();
-    }
-
     default boolean isValidUser(String userId) throws Exception {
         return getUserById(userId) != null;
     }
