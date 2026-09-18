@@ -96,34 +96,6 @@ public class KeycloakIAMService implements IAMService {
         return "keycloak";
     }
 
-    @Override
-    public List<Map<String, Object>> getGroupCandidates() throws Exception {
-        return getCandidates("groups");
-    }
-
-    @Override
-    public List<Map<String, Object>> getRoleCandidates() throws Exception {
-        return getCandidates("roles");
-    }
-
-    private List<Map<String, Object>> getCandidates(String resource) throws Exception {
-        String token = getAdminAccessToken();
-        List<Map<String, Object>> result = new ArrayList<>();
-        for (int first = 0; ; first += 100) {
-            HttpRequest request = HttpRequest.newBuilder()
-                    .uri(new URI(keycloakUrl + "/admin/realms/" + realm + "/" + resource
-                            + "?first=" + first + "&max=100&briefRepresentation=false"))
-                    .header("Authorization", "Bearer " + token).GET().build();
-            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-            if (response.statusCode() != 200) {
-                throw new IOException("IAM candidate lookup failed: " + response.statusCode());
-            }
-            List<Map<String, Object>> page = objectMapper.readValue(response.body(), new TypeReference<>() {});
-            result.addAll(page);
-            if (page.size() < 100) return result;
-        }
-    }
-
     private synchronized String getAdminAccessToken() throws IOException, InterruptedException, URISyntaxException {
         long now = System.currentTimeMillis();
         if (UEngineUtil.isNotEmpty(cachedAdminAccessToken) && now < cachedAdminTokenExpiresAtMillis) {
