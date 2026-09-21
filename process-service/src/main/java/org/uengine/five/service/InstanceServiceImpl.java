@@ -93,6 +93,8 @@ import org.uengine.hwlife.overriding.ProcessInstanceAttributeMapper;
 import org.uengine.kernel.AbstractProcessInstance;
 import org.uengine.kernel.Activity;
 import org.uengine.kernel.ActivityInstanceContext;
+import org.uengine.kernel.KeyedParameter;
+import org.uengine.kernel.ResultPayload;
 import org.uengine.kernel.DefaultProcessInstance;
 import org.uengine.kernel.DeployFilter;
 import org.uengine.kernel.ExecutionScopeContext;
@@ -3766,8 +3768,8 @@ public class InstanceServiceImpl implements InstanceService {
 
     /**
      * 태스크 SKIP 실행
-     * - worklist 상태는 SKIPPED로 기록
-     * - 엔진(Activity.STATUS_SKIPPED)로 상태 변경 후 다음 태스크로 진행
+     * - 기존 프로세스 변수를 유지한 채 업무 완료 경로로 처리
+     * - worklist와 엔진 완료 처리 후 다음 태스크로 진행
      */
     @RequestMapping(value = "/work-item/{taskId}/skip", method = RequestMethod.POST, produces = "application/json;charset=UTF-8")
     @ProcessTransactional
@@ -3831,8 +3833,10 @@ public class InstanceServiceImpl implements InstanceService {
             instance.setExecutionScope(current.getExecScope().trim());
         }
 
-        // 엔진 상태 변경 + 다음 액티비티 진행
-        instance.getProcessDefinition().flowControl("skip", instance, humanActivity.getTracingTag());
+        // 폼 출력값 없이 지정한 업무를 완료하여 기존 프로세스 변수를 유지한다.
+        ResultPayload completion = new ResultPayload();
+        completion.setExtendedValue(new KeyedParameter(HumanActivity.PAYLOADKEY_TASKID, taskId));
+        humanActivity.fireReceived(instance, completion);
 
         // worklist 레코드 보강(결정/사유)
         try {
@@ -3855,9 +3859,6 @@ public class InstanceServiceImpl implements InstanceService {
                     String msg = "[SKIP] reason=" + command.getReason().trim();
                     after.setDescription(existing == null || existing.trim().isEmpty() ? msg : (existing + "\n" + msg));
                 }
-                // 엔진(JPAWorkList.cancelWorkItem)에서 status를 SKIPPED로 세팅하지만, 혹시 모르니 한 번 더 보장
-                after.setStatus("SKIPPED");
-                after.setEndDate(new Date());
                 worklistRepository.save(after);
             }
         } catch (Exception ignore) {
