@@ -189,6 +189,7 @@ public class ProcessInstanceEntity {// implements ProcessInstanceDAO {
     }
 
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "processInstance")
+    @JsonIgnore
     List<WorklistEntity> workLists;
 
     public List<WorklistEntity> getWorkLists() {
