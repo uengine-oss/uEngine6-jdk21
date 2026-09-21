@@ -978,8 +978,7 @@ public class InstanceServiceImpl implements InstanceService {
 
         List<WorklistEntity> worklistEntity = worklistRepository
                 .findCurrentWorkItemByInstId(Long.parseLong(instanceId));
-        return ResponseEntity.ok(worklistEntity);
-        // return ResponseEntity.ok(worklistEntity.stream().map(InstanceServiceImpl::worklistResponse).toList());
+        return ResponseEntity.ok(worklistEntity.stream().map(InstanceServiceImpl::worklistResponse).toList());
     }
 
     @RequestMapping(value = "/instance/{instanceId}/completed", method = RequestMethod.GET, produces = "application/json;charset=UTF-8")
@@ -1006,11 +1005,11 @@ public class InstanceServiceImpl implements InstanceService {
         // return ResponseEntity.ok(tasks.stream().map(InstanceServiceImpl::worklistResponse).toList());
     }
 
-    // static WorklistEntity worklistResponse(WorklistEntity source) {
-    //     WorklistEntity response = new WorklistEntity();
-    //     org.springframework.beans.BeanUtils.copyProperties(source, response, "processInstance");
-    //     return response;
-    // }
+    static WorklistEntity worklistResponse(WorklistEntity source) {
+        WorklistEntity response = new WorklistEntity();
+        org.springframework.beans.BeanUtils.copyProperties(source, response, "processInstance");
+        return response;
+    }
 
 
     @RequestMapping(value = "/instance/{instId}/variable/{varName}", method = RequestMethod.GET)
