@@ -3804,20 +3804,20 @@ public class InstanceServiceImpl implements InstanceService {
         HumanActivity humanActivity = (HumanActivity) currentActivity;
 
         // 권한 체크: 현재 담당자(Worklist 우선, 없으면 ActualMapping fallback)
-        String currentOwner = current.getEndpoint();
-        try {
-            if ((currentOwner == null || currentOwner.trim().isEmpty()) && humanActivity != null) {
-                RoleMapping actual = humanActivity.getActualMapping(instance);
-                if (actual != null) {
-                    currentOwner = actual.getEndpoint();
-                }
-            }
-        } catch (Exception ignore) {
-        }
-        if (requestUserId != null && currentOwner != null && !requestUserId.equals(currentOwner)) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
-                    "No permission to skip this task. currentOwner=" + currentOwner + ", userId=" + requestUserId);
-        }
+        // String currentOwner = current.getEndpoint();
+        // try {
+        //     if ((currentOwner == null || currentOwner.trim().isEmpty()) && humanActivity != null) {
+        //         RoleMapping actual = humanActivity.getActualMapping(instance);
+        //         if (actual != null) {
+        //             currentOwner = actual.getEndpoint();
+        //         }
+        //     }
+        // } catch (Exception ignore) {
+        // }
+        // if (requestUserId != null && currentOwner != null && !requestUserId.equals(currentOwner)) {
+        //     throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+        //             "No permission to skip this task. currentOwner=" + currentOwner + ", userId=" + requestUserId);
+        // }
 
         // 가능여부 재검증(TOCTOU 방지)
         TaskSkipAvailability availability = getTaskSkipAvailability(taskId);

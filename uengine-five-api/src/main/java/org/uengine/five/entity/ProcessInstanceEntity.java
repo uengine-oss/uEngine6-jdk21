@@ -188,6 +188,7 @@ public class ProcessInstanceEntity {// implements ProcessInstanceDAO {
         this.varLob = varLob;
     }
 
+    @JsonIgnore
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "processInstance")
     List<WorklistEntity> workLists;
 
