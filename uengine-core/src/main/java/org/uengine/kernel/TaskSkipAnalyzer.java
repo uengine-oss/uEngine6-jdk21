@@ -20,7 +20,7 @@ import org.uengine.kernel.bpmn.SequenceFlow;
  * - 이후 노드에서 해당 변수를
  *   - 입력 매핑(in / in-out)으로 사용하거나
  *   - outgoing SequenceFlow 조건에서 참조하면
- *   => SKIP 불가로 판단(보수적)
+ *   => 인스턴스에서 값이 없는 변수만 SKIP 불가로 판단
  */
 public final class TaskSkipAnalyzer {
 
@@ -57,6 +57,9 @@ public final class TaskSkipAnalyzer {
         ReceiveActivity current = (ReceiveActivity) currentActivity;
         ProcessDefinition def = instance.getProcessDefinition();
         Set<String> writtenVars = collectWrittenProcessVariableNames(def, current);
+        for (String varName : new ArrayList<>(writtenVars)) {
+            if (instance.get("", varName) != null) writtenVars.remove(varName);
+        }
         if (writtenVars.isEmpty()) return null;
 
         List<Activity> reachable = collectReachableActivities(currentActivity);
