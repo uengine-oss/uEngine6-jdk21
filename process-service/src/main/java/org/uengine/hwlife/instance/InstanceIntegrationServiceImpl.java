@@ -1016,7 +1016,7 @@ public class InstanceIntegrationServiceImpl implements InstanceIntegrationServic
   }
 
   @Override
-  @ProcessTransactional
+  // @ProcessTransactional
   @Transactional(rollbackFor = { Exception.class })
   public TaskReturnResponse returnToPrevious(@RequestBody TaskReturnRequest request) throws Exception {
     if (request == null) {
@@ -1027,6 +1027,8 @@ public class InstanceIntegrationServiceImpl implements InstanceIntegrationServic
     String instanceId = requireText(request.getFncgBpmPcesIntcId(), "fncgBpmPcesIntcId is required");
     String targetTracingTag = requireText(request.getFncgBpmTaskTrcgNm(), "fncgBpmTaskTrcgNm is required");
     Long numericInstanceId = parseLong(instanceId, "fncgBpmPcesIntcId must be a number");
+
+    // List<String> userAuthorities = ExternalIAMService.getDefault().resolveUserAuthorityIds(hndrEmnb);
 
     List<WorklistEntity> activeWorkitems = new ArrayList<>();
     addDistinctWorkitems(activeWorkitems, worklistRepository.findActiveByRootOrInstance(numericInstanceId));
