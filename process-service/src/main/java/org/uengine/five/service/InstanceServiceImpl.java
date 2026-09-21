@@ -978,7 +978,8 @@ public class InstanceServiceImpl implements InstanceService {
 
         List<WorklistEntity> worklistEntity = worklistRepository
                 .findCurrentWorkItemByInstId(Long.parseLong(instanceId));
-        return ResponseEntity.ok(worklistEntity.stream().map(InstanceServiceImpl::worklistResponse).toList());
+
+        return ResponseEntity.ok(worklistEntity);
     }
 
     @RequestMapping(value = "/instance/{instanceId}/completed", method = RequestMethod.GET, produces = "application/json;charset=UTF-8")
@@ -988,8 +989,8 @@ public class InstanceServiceImpl implements InstanceService {
 
         List<WorklistEntity> worklistEntity = worklistRepository
                 .findWorkListByInstId(Long.parseLong(instanceId));
+
         return ResponseEntity.ok(worklistEntity);
-        // return ResponseEntity.ok(worklistEntity.stream().map(InstanceServiceImpl::worklistResponse).toList());
     }
 
     /**
@@ -1001,16 +1002,9 @@ public class InstanceServiceImpl implements InstanceService {
     public ResponseEntity<List<WorklistEntity>> getAllTasksByInstanceId(@PathVariable("instanceId") String instanceId) {
         Long rootInstId = Long.parseLong(instanceId);
         List<WorklistEntity> tasks = processInstanceRepository.findAllWorklistsByRootInstId(rootInstId);
+
         return ResponseEntity.ok(tasks);
-        // return ResponseEntity.ok(tasks.stream().map(InstanceServiceImpl::worklistResponse).toList());
     }
-
-    static WorklistEntity worklistResponse(WorklistEntity source) {
-        WorklistEntity response = new WorklistEntity();
-        org.springframework.beans.BeanUtils.copyProperties(source, response, "processInstance");
-        return response;
-    }
-
 
     @RequestMapping(value = "/instance/{instId}/variable/{varName}", method = RequestMethod.GET)
     @ProcessTransactional(readOnly = true)
@@ -1592,7 +1586,6 @@ public class InstanceServiceImpl implements InstanceService {
         WorkItemResource workItem = new WorkItemResource();
         workItem.setActivity(activity); // defaultHandler
         workItem.setWorklist(worklistEntity);
-        // workItem.setWorklist(worklistResponse(worklistEntity)); // response without the entity back-reference
 
         String instanceId = worklistEntity.getInstId().toString();
         ProcessInstance instance = getProcessInstanceLocal(instanceId);
@@ -3693,12 +3686,6 @@ public class InstanceServiceImpl implements InstanceService {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "No such work item where taskId = " + taskId);
         }
 
-        // 컨텍스트 설정(조건 평가 등에 필요할 수 있음)
-        String userId = SecurityAwareServletFilter.getUserId();
-        if (userId != null) {
-            GlobalContext.setUserId(userId);
-        }
-
         String instanceId = String.valueOf(current.getInstId());
         ProcessInstance instance = getProcessInstanceLocal(instanceId);
         if (instance == null) {
@@ -3794,10 +3781,7 @@ public class InstanceServiceImpl implements InstanceService {
         }
 
         // 요청 사용자 컨텍스트
-        String requestUserId = UserContext.getThreadLocalInstance().getUserId();
-        if (requestUserId == null || requestUserId.trim().isEmpty()) {
-            requestUserId = SecurityAwareServletFilter.getUserId();
-        }
+        String requestUserId = command.getEndpoint();
         if (requestUserId != null && requestUserId.trim().length() > 0) {
             GlobalContext.setUserId(requestUserId);
         }

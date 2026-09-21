@@ -10,6 +10,7 @@ package org.uengine.five.dto;
 public class TaskSkipCommand {
 
     String reason;
+    String endpoint;
 
     public String getReason() {
         return reason;
@@ -17,6 +18,14 @@ public class TaskSkipCommand {
 
     public void setReason(String reason) {
         this.reason = reason;
+    }
+
+    public String getEndpoint() {
+        return endpoint;
+    }
+
+    public void setEndpoint(String endpoint) {
+        this.endpoint = endpoint;
     }
 }
 

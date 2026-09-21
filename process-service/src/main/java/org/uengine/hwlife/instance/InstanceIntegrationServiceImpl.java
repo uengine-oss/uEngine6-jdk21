@@ -965,7 +965,7 @@ public class InstanceIntegrationServiceImpl implements InstanceIntegrationServic
   }
 
   @Override
-  @ProcessTransactional
+  // @ProcessTransactional
   @Transactional(rollbackFor = { Exception.class })
   public TaskSkipResponse skipWorklist(@RequestBody TaskSkipRequest request) throws Exception {
     if (request == null) {
@@ -973,42 +973,13 @@ public class InstanceIntegrationServiceImpl implements InstanceIntegrationServic
     }
     String hndrEmnb = requireText(request.getHndrEmnb(), "hndrEmnb is required");
     String taskId = requireText(request.getFncgBpmTaskLstId(), "fncgBpmTaskLstId is required");
-    WorklistEntity worklist = findWorklist(taskId);
 
-    ProcessInstance instance = requireProcessInstance(worklist);
-    HumanActivity humanActivity = requireRunningHumanActivity(instance, worklist, "skip");
-    String activityStatus = humanActivity.getStatus(instance);
-    if (!Activity.isSkippable(activityStatus) || humanActivity.isNotificationWorkitem()) {
-      throw new ResponseStatusException(HttpStatus.CONFLICT, "Work item is not skippable");
-    }
-    for (Activity activity : safeActivities(instance)) {
-      if (activity instanceof org.uengine.kernel.bpmn.Event) {
-        org.uengine.kernel.bpmn.Event event = (org.uengine.kernel.bpmn.Event) activity;
-        if (humanActivity.getTracingTag().equals(event.getAttachedToRef())) {
-          throw new ResponseStatusException(HttpStatus.CONFLICT,
-              "Boundary event attached: " + event.getTracingTag());
-        }
-      }
-    }
-    List<Activity> nextActivities;
-    try {
-      nextActivities = humanActivity.getPossibleNextActivities(instance, worklist.getExecScope());
-    } catch (Exception e) {
-      throw new ResponseStatusException(HttpStatus.CONFLICT,
-          "Cannot evaluate next activities: " + e.getMessage(), e);
-    }
-    if (nextActivities == null || nextActivities.isEmpty()) {
-      throw new ResponseStatusException(HttpStatus.CONFLICT,
-          "No possible next activity from current state");
-    }
+    // List<String> userAuthorities = ExternalIAMService.getDefault().resolveUserAuthorityIds(hndrEmnb);
 
-    applyExecutionScope(instance, worklist.getExecScope());
-    instance.getProcessDefinition().flowControl("skip", instance, humanActivity.getTracingTag());
+    TaskSkipCommand command = new TaskSkipCommand();
+    command.setEndpoint(hndrEmnb);
 
-    WorklistEntity after = worklistRepository.findById(worklist.getTaskId()).orElse(worklist);
-    after.setStatus("SKIPPED");
-    after.setEndDate(new Date());
-    worklistRepository.save(after);
+    instanceService.skipWorkItem(taskId, command);
 
     TaskSkipResponse response = new TaskSkipResponse();
     response.setPrcsRsltCntn(EsbCodes.MSGE_CODE_SUCCESS);
@@ -1026,19 +997,9 @@ public class InstanceIntegrationServiceImpl implements InstanceIntegrationServic
     String hndrEmnb = requireText(request.getHndrEmnb(), "hndrEmnb is required");
     String instanceId = requireText(request.getFncgBpmPcesIntcId(), "fncgBpmPcesIntcId is required");
     String targetTracingTag = requireText(request.getFncgBpmTaskTrcgNm(), "fncgBpmTaskTrcgNm is required");
-    Long numericInstanceId = parseLong(instanceId, "fncgBpmPcesIntcId must be a number");
 
     // List<String> userAuthorities = ExternalIAMService.getDefault().resolveUserAuthorityIds(hndrEmnb);
 
-    List<WorklistEntity> activeWorkitems = new ArrayList<>();
-    addDistinctWorkitems(activeWorkitems, worklistRepository.findActiveByRootOrInstance(numericInstanceId));
-    addDistinctWorkitems(activeWorkitems,
-        worklistRepository.findByInstIdAndStatusIn(numericInstanceId, List.of("NEW", "RUNNING")));
-    if (activeWorkitems.isEmpty()) {
-      throw new ResponseStatusException(HttpStatus.NOT_FOUND,
-          "No active work item for fncgBpmPcesIntcId=" + instanceId);
-    }
-   
     instanceService.backToHere(instanceId, targetTracingTag);
 
     TaskReturnResponse response = new TaskReturnResponse();
