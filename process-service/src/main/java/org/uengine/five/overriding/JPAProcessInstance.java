@@ -136,6 +136,7 @@ public class JPAProcessInstance extends DefaultProcessInstance implements Transa
 
             getProcessInstanceEntity().setName(getProcessDefinition().getName());
             getProcessInstanceEntity().setDefId(procDefinition.getId());
+            getProcessInstanceEntity().setDefVerId(procDefinition.getVersion());
             getProcessInstanceEntity().setCorrKey(UUID.randomUUID().toString());
             getProcessInstanceEntity().setStatus(Activity.STATUS_READY);
             getProcessInstanceEntity().setDefName(procDefinition.getName());
@@ -163,6 +164,16 @@ public class JPAProcessInstance extends DefaultProcessInstance implements Transa
                 getProcessInstanceEntity()
                         .setDontReturn(((Boolean) options.get(DefaultProcessInstance.DONT_RETURN)).booleanValue());
                 getProcessInstanceEntity().setEventHandler(options.containsKey("isEventHandler"));
+
+                // main 은 실행 중이라 PTC 캐시에 있음 → corrKey 를 처음부터 상속
+                ProcessInstance mainPi = ProcessTransactionContext.getThreadLocalInstance()
+                        .getProcessInstanceInTransaction(
+                                (String) options.get(DefaultProcessInstance.RETURNING_PROCESS));
+                if (mainPi instanceof JPAProcessInstance) {
+                    mainProcessInstance = mainPi;
+                    String mainCorrKey = ((JPAProcessInstance) mainPi).getProcessInstanceEntity().getCorrKey();
+                    getProcessInstanceEntity().setCorrKey(mainCorrKey);
+                }
 
                 // TODO: need main process definition object instance from argument not the link
                 // (id) or the cache will provide the cached one
