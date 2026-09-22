@@ -28,6 +28,7 @@ import org.uengine.five.framework.ProcessTransactional;
 import org.uengine.five.repository.WorklistRepository;
 import org.uengine.five.service.InstanceServiceImpl;
 import org.uengine.five.spring.SecurityAwareServletFilter;
+import org.uengine.kernel.UEngineException;
 import org.uengine.kernel.Activity;
 import org.uengine.kernel.GlobalContext;
 import org.uengine.kernel.HumanActivity;
@@ -974,12 +975,21 @@ public class InstanceIntegrationServiceImpl implements InstanceIntegrationServic
     String hndrEmnb = requireText(request.getHndrEmnb(), "hndrEmnb is required");
     String taskId = requireText(request.getFncgBpmTaskLstId(), "fncgBpmTaskLstId is required");
 
-    // List<String> userAuthorities = ExternalIAMService.getDefault().resolveUserAuthorityIds(hndrEmnb);
 
-    TaskSkipCommand command = new TaskSkipCommand();
-    command.setEndpoint(hndrEmnb);
-
-    instanceService.skipWorkItem(taskId, command);
+    try {
+      // List<String> userAuthorities = !ExternalIAMService.getDefault().resolveUserAuthorityIds(hndrEmnb);
+      TaskSkipCommand command = new TaskSkipCommand();
+      command.setEndpoint(hndrEmnb);
+  
+      instanceService.skipWorkItem(taskId, command);
+    } catch (ResponseStatusException e) {
+      throw e;
+    } catch (UEngineException e) {
+      throw new ResponseStatusException(HttpStatus.CONFLICT, e.getMessage(), e);
+    } catch (Exception e) {
+      throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
+          e.getMessage() != null ? e.getMessage() : "Failed to skip workItem", e);
+    }
 
     TaskSkipResponse response = new TaskSkipResponse();
     response.setPrcsRsltCntn(EsbCodes.MSGE_CODE_SUCCESS);
@@ -998,9 +1008,20 @@ public class InstanceIntegrationServiceImpl implements InstanceIntegrationServic
     String instanceId = requireText(request.getFncgBpmPcesIntcId(), "fncgBpmPcesIntcId is required");
     String targetTracingTag = requireText(request.getFncgBpmTaskTrcgNm(), "fncgBpmTaskTrcgNm is required");
 
-    // List<String> userAuthorities = ExternalIAMService.getDefault().resolveUserAuthorityIds(hndrEmnb);
-
-    instanceService.backToHere(instanceId, targetTracingTag);
+    
+    // 프론트는 axios catch 의 e.response.data.message 를 쓰므로,
+    // 업무 실패도 HTTP 에러로 던져 skip 등과 동일하게 맞춘다.
+    try {
+      // List<String> userAuthorities = !ExternalIAMService.getDefault().resolveUserAuthorityIds(hndrEmnb);
+      instanceService.backToHere(instanceId, targetTracingTag);
+    } catch (ResponseStatusException e) {
+      throw e;
+    } catch (UEngineException e) {
+      throw new ResponseStatusException(HttpStatus.CONFLICT, e.getMessage(), e);
+    } catch (Exception e) {
+      throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
+          e.getMessage() != null ? e.getMessage() : "Failed to return to previous workItem", e);
+    }
 
     TaskReturnResponse response = new TaskReturnResponse();
     response.setPrcsRsltCntn(EsbCodes.MSGE_CODE_SUCCESS);
