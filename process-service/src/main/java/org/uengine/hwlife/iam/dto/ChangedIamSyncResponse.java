@@ -8,71 +8,31 @@ import java.util.List;
  */
 public class ChangedIamSyncResponse {
 
-    private int targetCount;
-    private int updatedCount;
-    private int failedCount;
-    private List<Item> failures = new ArrayList<>();
+    private int sucsCont;
+    private int failCont;
+    private List<ChangedIamSyncResponseItem> failList = new ArrayList<>();
 
-    public int getTargetCount() {
-        return targetCount;
+    public int getSucsCont() {
+        return sucsCont;
     }
 
-    public void setTargetCount(int targetCount) {
-        this.targetCount = targetCount;
+    public void setSucsCont(int sucsCont) {
+        this.sucsCont = sucsCont;
     }
 
-    public int getUpdatedCount() {
-        return updatedCount;
+    public int getFailCont() {
+        return failCont;
     }
 
-    public void setUpdatedCount(int updatedCount) {
-        this.updatedCount = updatedCount;
+    public void setFailCont(int failCont) {
+        this.failCont = failCont;
     }
 
-    public int getFailedCount() {
-        return failedCount;
+    public List<ChangedIamSyncResponseItem> getFailList() {
+        return failList;
     }
 
-    public void setFailedCount(int failedCount) {
-        this.failedCount = failedCount;
-    }
-
-    public List<Item> getFailures() {
-        return failures;
-    }
-
-    public void setFailures(List<Item> failures) {
-        this.failures = failures != null ? failures : new ArrayList<>();
-    }
-
-    public static class Item {
-
-        private Long instId;
-        private String taskId;
-        private String reason;
-
-        public Long getInstId() {
-            return instId;
-        }
-
-        public void setInstId(Long instId) {
-            this.instId = instId;
-        }
-
-        public String getTaskId() {
-            return taskId;
-        }
-
-        public void setTaskId(String taskId) {
-            this.taskId = taskId;
-        }
-
-        public String getReason() {
-            return reason;
-        }
-
-        public void setReason(String reason) {
-            this.reason = reason;
-        }
+    public void setFailList(List<ChangedIamSyncResponseItem> failList) {
+        this.failList = failList;
     }
 }
