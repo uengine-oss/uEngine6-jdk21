@@ -972,15 +972,19 @@ public class InstanceIntegrationServiceImpl implements InstanceIntegrationServic
     if (request == null) {
       throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Request body is required");
     }
-    String hndrEmnb = requireText(request.getHndrEmnb(), "hndrEmnb is required");
+   
+    String rqsrEmnb = requireText(request.getRqsrEmnb(), "rqsrEmnb is required"); 
     String taskId = requireText(request.getFncgBpmTaskLstId(), "fncgBpmTaskLstId is required");
-
+    String hndrEmnb = requireText(request.getHndrEmnb(), "hndrEmnb is required");
+    String hndrOrgnCode = request.getHndrOrgnCode();
+    String hndrAtrtId = request.getHndrAtrtId();
 
     try {
-      // List<String> userAuthorities = !ExternalIAMService.getDefault().resolveUserAuthorityIds(hndrEmnb);
+      // List<String> userAuthorities = !ExternalIAMService.getDefault().resolveUserAuthorityIds(rqsrEmnb);
       TaskSkipCommand command = new TaskSkipCommand();
       command.setEndpoint(hndrEmnb);
-  
+      command.setGroupName(hndrOrgnCode);
+      command.setScope(hndrAtrtId);
       instanceService.skipWorkItem(taskId, command);
     } catch (ResponseStatusException e) {
       throw e;
@@ -1004,7 +1008,7 @@ public class InstanceIntegrationServiceImpl implements InstanceIntegrationServic
       throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Request body is required");
     }
 
-    String hndrEmnb = requireText(request.getHndrEmnb(), "hndrEmnb is required");
+    String rqsrEmnb = requireText(request.getRqsrEmnb(), "rqsrEmnb is required");
     String instanceId = requireText(request.getFncgBpmPcesIntcId(), "fncgBpmPcesIntcId is required");
     String targetTracingTag = requireText(request.getFncgBpmTaskTrcgNm(), "fncgBpmTaskTrcgNm is required");
 
@@ -1012,7 +1016,7 @@ public class InstanceIntegrationServiceImpl implements InstanceIntegrationServic
     // 프론트는 axios catch 의 e.response.data.message 를 쓰므로,
     // 업무 실패도 HTTP 에러로 던져 skip 등과 동일하게 맞춘다.
     try {
-      // List<String> userAuthorities = !ExternalIAMService.getDefault().resolveUserAuthorityIds(hndrEmnb);
+      // List<String> userAuthorities = !ExternalIAMService.getDefault().resolveUserAuthorityIds(rqsrEmnb);
       instanceService.backToHere(instanceId, targetTracingTag);
     } catch (ResponseStatusException e) {
       throw e;

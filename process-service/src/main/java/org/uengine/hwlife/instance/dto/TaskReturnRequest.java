@@ -5,16 +5,16 @@ package org.uengine.hwlife.instance.dto;
  */
 public class TaskReturnRequest {
 
-    private String hndrEmnb;
+    private String rqsrEmnb;
     private String fncgBpmPcesIntcId;
     private String fncgBpmTaskTrcgNm;
 
-    public String getHndrEmnb() {
-        return hndrEmnb;
+    public String getRqsrEmnb() {
+        return rqsrEmnb;
     }
 
-    public void setHndrEmnb(String hndrEmnb) {
-        this.hndrEmnb = hndrEmnb;
+    public void setRqsrEmnb(String rqsrEmnb) {
+        this.rqsrEmnb = rqsrEmnb;
     }
 
     public String getFncgBpmPcesIntcId() {

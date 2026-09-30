@@ -2783,6 +2783,108 @@ public class InstanceServiceImpl implements InstanceService {
         instance.putRoleMapping(workitem.getRoleName(), mapping);
     }
 
+    /**
+     * SKIP 요청값을 workitem.assignType 기준으로 검증한다.
+     * - 0 USER: endpoint
+     * - 3 GROUP: groupName + endpoint
+     * - 4 ROLE: scope + endpoint
+     * - 5 GROUP_ROLE: groupName + scope + endpoint
+     */
+    private void validateTaskSkipCommand(WorklistEntity workitem, TaskSkipCommand command) {
+        if (command == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "command is required");
+        }
+        if (workitem == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Work item not found");
+        }
+
+        int assignType = workitem.getAssignType();
+        if (!hasText(command.getEndpoint())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "endpoint is required");
+        }
+
+        switch (assignType) {
+            case Role.ASSIGNTYPE_USER:
+                return;
+            case Role.ASSIGNTYPE_GROUP:
+                if (!hasText(command.getGroupName())) {
+                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "groupName is required");
+                }
+                return;
+            case Role.ASSIGNTYPE_ROLE:
+                if (!hasText(command.getScope())) {
+                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "scope is required");
+                }
+                return;
+            case Role.ASSIGNTYPE_GROUP_ROLE:
+                if (!hasText(command.getGroupName())) {
+                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "groupName is required");
+                }
+                if (!hasText(command.getScope())) {
+                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "scope is required");
+                }
+                return;
+            default:
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                        "Unsupported assignType for skip: " + assignType);
+        }
+    }
+
+    /**
+     * SKIP 처리자를 해당 Lane(roleName) 인스턴스 RoleMapping에 고정한다.
+     * assignType/dispatchingOption은 workitem 고정값, endpoint/groupName/scope는 command 값을 세팅.
+     */
+    private void persistSkippedLane(ProcessInstance instance, WorklistEntity workitem, TaskSkipCommand command)
+            throws Exception {
+        RoleMapping mapping = RoleMapping.create();
+        mapping.setName(workitem.getRoleName());
+        mapping.setAssignType(workitem.getAssignType());
+        mapping.setDispatchingOption(workitem.getDispatchOption());
+        mapping.setEndpoint(command.getEndpoint().trim());
+        mapping.setGroupName(hasText(command.getGroupName()) ? command.getGroupName().trim() : null);
+        mapping.setScope(hasText(command.getScope()) ? command.getScope().trim() : null);
+        try {
+            mapping.fill();
+        } catch (Exception ignore) {
+        }
+        instance.putRoleMapping(workitem.getRoleName(), mapping);
+    }
+
+    /**
+     * SKIP 처리자(command)를 worklist에 무조건 덮어쓴다.
+     */
+    private void applySkippedActorToWorklist(WorklistEntity wl, TaskSkipCommand command) {
+        if (wl == null || command == null || !hasText(command.getEndpoint())) {
+            return;
+        }
+
+        String endpoint = command.getEndpoint().trim();
+        wl.setEndpoint(endpoint);
+        wl.setGroupCd(hasText(command.getGroupName()) ? command.getGroupName().trim() : null);
+        wl.setScope(hasText(command.getScope()) ? command.getScope().trim() : null);
+
+        try {
+            RoleMapping rm = RoleMapping.create();
+            rm.setEndpoint(endpoint);
+            rm.setAssignType(wl.getAssignType());
+            if (hasText(wl.getScope())) {
+                rm.setScope(wl.getScope());
+            }
+            if (hasText(wl.getGroupCd())) {
+                rm.setGroupName(wl.getGroupCd());
+            }
+            rm.fill();
+            String filled = rm.getResourceName();
+            if (UEngineUtil.isNotEmpty(filled)) {
+                wl.setResName(filled);
+            } else {
+                wl.setResName(endpoint);
+            }
+        } catch (Exception ignore) {
+            wl.setResName(endpoint);
+        }
+    }
+
     private void applyActorToWorklistIfEmpty(WorklistEntity wl, String actorEndpoint) {
         if (wl == null || actorEndpoint == null || actorEndpoint.trim().isEmpty()) return;
 
@@ -3774,24 +3876,23 @@ public class InstanceServiceImpl implements InstanceService {
     @RequestMapping(value = "/work-item/{taskId}/skip", method = RequestMethod.POST, produces = "application/json;charset=UTF-8")
     @ProcessTransactional
     @Transactional(rollbackFor = { Exception.class })
-    public TaskSkipResult skipWorkItem(
-            @PathVariable("taskId") String taskId,
-            @RequestBody(required = false) TaskSkipCommand command) throws Exception {
+    public TaskSkipResult skipWorkItem(@PathVariable("taskId") String taskId, @RequestBody TaskSkipCommand command) throws Exception {
 
         if (taskId == null || taskId.equals("null")) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "taskId is required");
-        }
-
-        // 요청 사용자 컨텍스트
-        String requestUserId = command.getEndpoint();
-        if (requestUserId != null && requestUserId.trim().length() > 0) {
-            GlobalContext.setUserId(requestUserId);
         }
 
         WorklistEntity current = worklistRepository.findById(new Long(taskId)).orElse(null);
         if (current == null) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "No such work item where taskId = " + taskId);
         }
+
+        // assignType 기준 필수값 검증 후 command 값을 무조건 사용
+        validateTaskSkipCommand(current, command);
+
+        // 요청 사용자 컨텍스트
+        String requestUserId = command.getEndpoint().trim();
+        GlobalContext.setUserId(requestUserId);
 
         String instanceId = String.valueOf(current.getInstId());
         ProcessInstance instance = getProcessInstanceLocal(instanceId);
@@ -3805,28 +3906,15 @@ public class InstanceServiceImpl implements InstanceService {
         }
         HumanActivity humanActivity = (HumanActivity) currentActivity;
 
-        // 권한 체크: 현재 담당자(Worklist 우선, 없으면 ActualMapping fallback)
-        // String currentOwner = current.getEndpoint();
-        // try {
-        //     if ((currentOwner == null || currentOwner.trim().isEmpty()) && humanActivity != null) {
-        //         RoleMapping actual = humanActivity.getActualMapping(instance);
-        //         if (actual != null) {
-        //             currentOwner = actual.getEndpoint();
-        //         }
-        //     }
-        // } catch (Exception ignore) {
-        // }
-        // if (requestUserId != null && currentOwner != null && !requestUserId.equals(currentOwner)) {
-        //     throw new ResponseStatusException(HttpStatus.FORBIDDEN,
-        //             "No permission to skip this task. currentOwner=" + currentOwner + ", userId=" + requestUserId);
-        // }
-
         // 가능여부 재검증(TOCTOU 방지)
         TaskSkipAvailability availability = getTaskSkipAvailability(taskId);
         if (!availability.isEnabled()) {
             throw new ResponseStatusException(HttpStatus.CONFLICT,
                     availability.getReason() != null ? availability.getReason() : "Not allowed.");
         }
+
+        // Lane RoleMapping 고정 (완료 전에 반영 → fireReceived/onComplete가 동일 매핑을 참조)
+        persistSkippedLane(instance, current, command);
 
         // execScope 반영 후 SKIP
         if (current.getExecScope() != null && current.getExecScope().trim().length() > 0) {
@@ -3838,32 +3926,12 @@ public class InstanceServiceImpl implements InstanceService {
         completion.setExtendedValue(new KeyedParameter(HumanActivity.PAYLOADKEY_TASKID, taskId));
         humanActivity.fireReceived(instance, completion);
 
-        // worklist 레코드 보강(결정/사유)
-        try {
-            WorklistEntity after = worklistRepository.findById(new Long(taskId)).orElse(null);
-            if (after != null) {
-                // SKIP 수행자 정보 보강 (endpoint/resName이 비어있으면 요청 사용자로 기록)
-                try {
-                    if (requestUserId != null && requestUserId.trim().length() > 0) {
-                        applyActorToWorklistIfEmpty(after, requestUserId);
-                    }
-                } catch (Exception ignore) {
-                }
-
-                // after.setDecision("SKIP");
-                if (command != null && command.getReason() != null && command.getReason().trim().length() > 0) {
-                    if (after.getReason() == null || after.getReason().trim().isEmpty()) {
-                        after.setReason(command.getReason()); // 그대로 저장
-                    }
-                    String existing = after.getDescription();
-                    String msg = "[SKIP] reason=" + command.getReason().trim();
-                    after.setDescription(existing == null || existing.trim().isEmpty() ? msg : (existing + "\n" + msg));
-                }
-                worklistRepository.save(after);
-            }
-        } catch (Exception ignore) {
+        WorklistEntity after = worklistRepository.findById(new Long(taskId)).orElse(null);
+        if (after != null) {
+            applySkippedActorToWorklist(after, command);
+            worklistRepository.save(after);
         }
-
+    
         Long rootInstId = current.getRootInstId() == null ? current.getInstId() : current.getRootInstId().longValue();
         List<WorklistEntity> currents = worklistRepository.findCurrentWorkItemByInstId(rootInstId);
         List<Long> currentTaskIds = new ArrayList<>();

@@ -58,10 +58,12 @@ public class IAMRoleResolutionContext extends RoleResolutionContext implements I
         // assignType: 둘 다 = GROUP_ROLE, 권한만 = ROLE, 그룹만 = GROUP
         if (hasScope && hasGroup) {
             roleMapping.setAssignType(Role.ASSIGNTYPE_GROUP_ROLE);
+            roleMapping.setGroup(true);
         } else if (hasScope) {
             roleMapping.setAssignType(Role.ASSIGNTYPE_ROLE);
         } else {
             roleMapping.setAssignType(Role.ASSIGNTYPE_GROUP);
+            roleMapping.setGroup(true);
         }
 
         return roleMapping;
