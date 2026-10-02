@@ -10,6 +10,7 @@ public class RunningWorkByCorrKeyResponseItem {
     private String hndrEmnb; // 담당자 사번
     private String apvlYn; // 결재 유형의 업무 여부
     private String imgeScanYn; // 이미지 스캔 여부 
+    private String evntNm; // 이벤트 명
 
     public String getLoanPcesMgmtNo() {
         return loanPcesMgmtNo;
@@ -73,5 +74,13 @@ public class RunningWorkByCorrKeyResponseItem {
 
     public void setImgeScanYn(String imgeScanYn) {
         this.imgeScanYn = imgeScanYn;
+    }
+
+    public String getEvntNm() {
+        return evntNm;
+    }
+
+    public void setEvntNm(String evntNm) {
+        this.evntNm = evntNm;
     }
 }

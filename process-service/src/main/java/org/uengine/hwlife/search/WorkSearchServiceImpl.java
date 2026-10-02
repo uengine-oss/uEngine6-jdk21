@@ -15,10 +15,12 @@ import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
+import org.uengine.contexts.EventSynchronization;
 import org.uengine.five.entity.ProcessInstanceEntity;
 import org.uengine.five.entity.WorklistEntity;
 import org.uengine.five.repository.ProcessInstanceRepository;
 import org.uengine.five.repository.WorklistRepository;
+import org.uengine.five.service.DefinitionServiceUtil;
 import org.uengine.five.service.RootInstanceResolver;
 import org.uengine.hwlife.esbclient.dto.EsbCommonHeader;
 import org.uengine.hwlife.esbclient.support.EsbRequestBodyAdvice;
@@ -45,6 +47,8 @@ import org.uengine.hwlife.search.dto.RunningWorkByCorrKeyResponseItem;
 import org.uengine.hwlife.search.dto.WorklistByInstIdRequest;
 import org.uengine.hwlife.search.dto.WorklistByInstIdResponse;
 import org.uengine.hwlife.search.dto.WorklistByInstIdResponseItem;
+import org.uengine.kernel.Activity;
+import org.uengine.kernel.ProcessDefinition;
 import org.uengine.webservices.worklist.DefaultWorkList;
 
 /**
@@ -68,6 +72,7 @@ public class WorkSearchServiceImpl implements WorkSearchService {
   private final ProcessInstanceRepository processInstanceRepository;
   private final WorklistRepository worklistRepository;
   private final RootInstanceResolver rootInstanceResolver;
+  private final DefinitionServiceUtil definitionService;
 
   public WorkSearchServiceImpl(
       MyTodoSearchRepository myTodoSearchRepository,
@@ -77,7 +82,8 @@ public class WorkSearchServiceImpl implements WorkSearchService {
       BulkAssignSearchRepository bulkAssignSearchRepository,
       ProcessInstanceRepository processInstanceRepository,
       WorklistRepository worklistRepository,
-      RootInstanceResolver rootInstanceResolver) {
+      RootInstanceResolver rootInstanceResolver,
+      DefinitionServiceUtil definitionService) {
     this.myTodoSearchRepository = myTodoSearchRepository;
     this.myProgressSearchRepository = myProgressSearchRepository;
     this.orgRunningSearchRepository = orgRunningSearchRepository;
@@ -86,6 +92,7 @@ public class WorkSearchServiceImpl implements WorkSearchService {
     this.processInstanceRepository = processInstanceRepository;
     this.worklistRepository = worklistRepository;
     this.rootInstanceResolver = rootInstanceResolver;
+    this.definitionService = definitionService;
   }
 
   @Override
@@ -360,7 +367,7 @@ public class WorkSearchServiceImpl implements WorkSearchService {
   }
 
   /** MyProgress 매핑 — {@code bswrDvsnVal}=root {@code defId}, {@code fncgBpmPcesId}=worklist {@code defId}. */
-  MyProgressItem toMyProgressItem(
+  private MyProgressItem toMyProgressItem(
       WorklistEntity worklist, Map<Long, ProcessInstanceEntity> rootInstances) {
     ProcessInstanceEntity instance = worklist.getProcessInstance();
     Long instId = worklist.getInstId();
@@ -428,7 +435,7 @@ public class WorkSearchServiceImpl implements WorkSearchService {
   }
 
   /** OrgCompleted 매핑 — {@code bswrDvsnVal}=root {@code defId}. */
-  OrgCompletedItem toOrgCompletedItem(
+  private OrgCompletedItem toOrgCompletedItem(
       ProcessInstanceEntity instance, Map<Long, ProcessInstanceEntity> rootInstances) {
     Long instId = instance == null ? null : instance.getInstId();
     ProcessInstanceEntity rootInstance = rootInstanceResolver.resolve(instId, rootInstances);
@@ -467,7 +474,7 @@ public class WorkSearchServiceImpl implements WorkSearchService {
     return item;
   }
 
-  private static boolean isWorklistFiltered(String status) {
+  private boolean isWorklistFiltered(String status) {
     if (status == null) {
       return false;
     }
@@ -475,7 +482,7 @@ public class WorkSearchServiceImpl implements WorkSearchService {
     return DefaultWorkList.WORKITEM_STATUS_NEW.equals(normalized) || DefaultWorkList.WORKITEM_STATUS_COMPLETED.equals(normalized);
   }
 
-  private static WorklistByInstIdResponseItem toWorklistByInstIdItem(WorklistEntity worklist) {
+  private WorklistByInstIdResponseItem toWorklistByInstIdItem(WorklistEntity worklist) {
     WorklistByInstIdResponseItem item = new WorklistByInstIdResponseItem();
     item.setFncgBpmTaskTrcgNm(worklist.getTrcTag());
     item.setUworNm(worklist.getTitle());
@@ -494,7 +501,7 @@ public class WorkSearchServiceImpl implements WorkSearchService {
   }
 
 
-  private static RunningWorkByCorrKeyResponseItem toRunningWorkByCorrKeyItem(
+  private RunningWorkByCorrKeyResponseItem toRunningWorkByCorrKeyItem(
     String loanPcesMgmtNo,
     ProcessInstanceEntity processInstance,
     WorklistEntity workItem,
@@ -512,9 +519,32 @@ public class WorkSearchServiceImpl implements WorkSearchService {
       item.setHndrEmnb(workItem.getEndpoint());
       item.setApvlYn(toYn(workItem.getApvlYn()));
       item.setImgeScanYn(toYn(workItem.getImgeScanYn()));
+      item.setEvntNm(resolveEventType(workItem));
     }
 
     return item;
+  }
+
+  /** 진행중 단위업무 Activity 의 단일 EventSynchronization.eventType */
+  private String resolveEventType(WorklistEntity workItem) {
+    if (workItem == null || workItem.getTrcTag() == null || workItem.getDefId() == null) {
+      return null;
+    }
+    try {
+      ProcessDefinition definition = (ProcessDefinition) definitionService
+          .getDefinition(workItem.getDefId(), workItem.getDefVerId());
+      if (definition == null) {
+        return null;
+      }
+      Activity activity = definition.getActivity(workItem.getTrcTag());
+      if (activity == null) {
+        return null;
+      }
+      EventSynchronization sync = activity.getEventSynchronization();
+      return sync == null ? null : sync.getEventType();
+    } catch (Exception e) {
+      return null;
+    }
   }
 
   private static String toYn(Boolean value) {
@@ -636,19 +666,6 @@ public class WorkSearchServiceImpl implements WorkSearchService {
     calendar.setTime(value);
     calendar.add(Calendar.DAY_OF_MONTH, days);
     return calendar.getTime();
-  }
-
-  private static String firstNonBlank(String... values) {
-    if (values == null) {
-      return null;
-    }
-    for (String value : values) {
-      String trimmed = trimToNull(value);
-      if (trimmed != null) {
-        return trimmed;
-      }
-    }
-    return null;
   }
 
   private static String trimToNull(String value) {
