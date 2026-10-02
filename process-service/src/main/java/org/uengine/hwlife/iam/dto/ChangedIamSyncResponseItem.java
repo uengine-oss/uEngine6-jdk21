@@ -5,15 +5,15 @@ package org.uengine.hwlife.iam.dto;
  */
 public class ChangedIamSyncResponseItem {
 
-    private String loanCntnNo;
+    private String loanCntcNo;
     private String prcsRsltCntn;
 
-    public String getLoanCntnNo() {
-        return loanCntnNo;
+    public String getLoanCntcNo() {
+        return loanCntcNo;
     }
 
-    public void setLoanCntnNo(String loanCntnNo) {
-        this.loanCntnNo = loanCntnNo;
+    public void setLoanCntcNo(String loanCntcNo) {
+        this.loanCntcNo = loanCntcNo;
     }
 
     public String getPrcsRsltCntn() {

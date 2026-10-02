@@ -1012,9 +1012,6 @@ public class InstanceIntegrationServiceImpl implements InstanceIntegrationServic
     String instanceId = requireText(request.getFncgBpmPcesIntcId(), "fncgBpmPcesIntcId is required");
     String targetTracingTag = requireText(request.getFncgBpmTaskTrcgNm(), "fncgBpmTaskTrcgNm is required");
 
-    
-    // 프론트는 axios catch 의 e.response.data.message 를 쓰므로,
-    // 업무 실패도 HTTP 에러로 던져 skip 등과 동일하게 맞춘다.
     try {
       // List<String> userAuthorities = !ExternalIAMService.getDefault().resolveUserAuthorityIds(rqsrEmnb);
       instanceService.backToHere(instanceId, targetTracingTag);
@@ -1032,66 +1029,6 @@ public class InstanceIntegrationServiceImpl implements InstanceIntegrationServic
     return response;
   }
 
-  private WorklistEntity findWorklist(String taskId) {
-    Long numericTaskId = parseLong(taskId, "fncgBpmTaskLstId must be a number");
-    return worklistRepository.findById(numericTaskId)
-        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
-            "No such work item where fncgBpmTaskLstId=" + taskId));
-  }
-
-
-  private ProcessInstance requireProcessInstance(WorklistEntity current) throws Exception {
-    ProcessInstance instance = instanceService.getProcessInstanceLocal(String.valueOf(current.getInstId()));
-    if (instance == null) {
-      throw new ResponseStatusException(HttpStatus.NOT_FOUND,
-          "Instance not found for taskId=" + current.getTaskId());
-    }
-    return instance;
-  }
-
-  private static HumanActivity requireRunningHumanActivity(
-      ProcessInstance instance, WorklistEntity current, String action) throws Exception {
-    Activity activity = instance.getProcessDefinition().getActivity(current.getTrcTag());
-    if (!(activity instanceof HumanActivity)) {
-      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Human task only");
-    }
-    HumanActivity humanActivity = (HumanActivity) activity;
-    if (!instance.isRunning(humanActivity.getTracingTag()) && !humanActivity.isNotificationWorkitem()) {
-      throw new ResponseStatusException(HttpStatus.CONFLICT,
-          "Work item is not running and cannot " + action);
-    }
-    return humanActivity;
-  }
-
-  private static List<Activity> safeActivities(ProcessInstance instance) throws Exception {
-    List<Activity> activities = instance.getProcessDefinition().getChildActivities();
-    return activities == null ? List.of() : activities;
-  }
-
-  private static void applyExecutionScope(ProcessInstance instance, String executionScope) {
-    String normalized = trimToNull(executionScope);
-    if (normalized != null) {
-      instance.setExecutionScope(normalized);
-    }
-  }
-
-  private static void addDistinctWorkitems(List<WorklistEntity> target, List<WorklistEntity> source) {
-    if (source == null) {
-      return;
-    }
-    Set<Long> existingTaskIds = new HashSet<>();
-    for (WorklistEntity workitem : target) {
-      if (workitem != null && workitem.getTaskId() != null) {
-        existingTaskIds.add(workitem.getTaskId());
-      }
-    }
-    for (WorklistEntity workitem : source) {
-      if (workitem != null && workitem.getTaskId() != null && existingTaskIds.add(workitem.getTaskId())) {
-        target.add(workitem);
-      }
-    }
-  }
-
   private static String requireText(String value, String message) {
     String normalized = trimToNull(value);
     if (normalized == null) {
@@ -1099,27 +1036,6 @@ public class InstanceIntegrationServiceImpl implements InstanceIntegrationServic
     }
     return normalized;
   }
-
-  private static Long parseLong(String value, String message) {
-    try {
-      return Long.valueOf(value);
-    } catch (NumberFormatException e) {
-      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, message, e);
-    }
-  }
-
-  // @Override
-  // @Transactional(rollbackFor = { Exception.class })
-  // public TaskJumpResponse jumpToForward(@RequestBody TaskJumpRequest request) throws Exception {
-  //   WorklistEntity worklist = worklistRepository.findById(Long.parseLong(request.getTaskId())).orElse(null);
-  //   if (worklist == null) {
-  //     throw new ResponseStatusException(HttpStatus.NOT_FOUND,
-  //         "No such work item where taskId = " + request.getTaskId());
-  //   }
-  //   InstanceResource instance = instanceService.backToHere(
-  //       String.valueOf(worklist.getInstId()), request.getTargetTracingTag());
-  //   return TaskJumpResponse.from(instance, request);
-  // }
 
   @Override
   @Transactional

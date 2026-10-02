@@ -86,6 +86,11 @@ public interface ProcessInstanceRepository
         @Query("select pi from ProcessInstanceEntity pi where pi.status = :status")
         List<ProcessInstanceEntity> findByStatus(@Param("status") String status);
 
+        @Query("select pi from ProcessInstanceEntity pi where pi.loanCntcNo = :loanCntcNo and pi.status = :status")
+        List<ProcessInstanceEntity> findByLoanCntcNoAndStatus(
+                @Param("loanCntcNo") String loanCntcNo,
+                @Param("status") String status);
+
         @Query("select pi from ProcessInstanceEntity pi order by pi.startedDate desc")
         Page<ProcessInstanceEntity> findAll(Pageable pageable);
 

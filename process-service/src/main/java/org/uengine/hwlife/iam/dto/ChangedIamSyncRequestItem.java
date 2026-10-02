@@ -1,25 +1,20 @@
 package org.uengine.hwlife.iam.dto;
 
-import java.util.ArrayList;
-import java.util.List;
-
 /**
- * IAM 변경(기관 통폐합·인사변동)에 따른 인스턴스·업무 DB 반영 요청.
- *
- * <p>{@code changeType}: {@code ORG_MERGE}(기관 통폐합), {@code HR_CHANGE}(인사변동)</p>
+ * IAM 변경(기관 통폐합) 건 — 대출계약번호 기준 변경 전/후 기관코드.
  */
 public class ChangedIamSyncRequestItem {
-    
-    private String loanCntnNo;
-    private String chngBefrFncgWndwOrgnCode;
-    private String chngAftFncgWndwOrgnCode;
 
-    public String getLoanCntnNo() {
-        return loanCntnNo;
+    private String loanCntcNo;
+    private String chngBefrFncgWndwOrgnCode;
+    private String chngAfeqFncgWndwOrgnCode;
+
+    public String getLoanCntcNo() {
+        return loanCntcNo;
     }
 
-    public void setLoanCntnNo(String loanCntnNo) {
-        this.loanCntnNo = loanCntnNo;
+    public void setLoanCntcNo(String loanCntcNo) {
+        this.loanCntcNo = loanCntcNo;
     }
 
     public String getChngBefrFncgWndwOrgnCode() {
@@ -30,10 +25,11 @@ public class ChangedIamSyncRequestItem {
         this.chngBefrFncgWndwOrgnCode = chngBefrFncgWndwOrgnCode;
     }
 
-    public String getChngAftFncgWndwOrgnCode() {
-        return chngAftFncgWndwOrgnCode;
+    public String getChngAfeqFncgWndwOrgnCode() {
+        return chngAfeqFncgWndwOrgnCode;
+    }
+
+    public void setChngAfeqFncgWndwOrgnCode(String chngAfeqFncgWndwOrgnCode) {
+        this.chngAfeqFncgWndwOrgnCode = chngAfeqFncgWndwOrgnCode;
     }
 }
-
-    
-
