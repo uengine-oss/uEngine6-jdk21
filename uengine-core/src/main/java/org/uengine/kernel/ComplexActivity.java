@@ -510,23 +510,19 @@ public class ComplexActivity extends DefaultActivity implements NeedArrangementT
 		// In the other hand, other complex activities like SwitchActivity or
 		// AllActivity should check their child activities entirely and compensate only
 		// the child in running (compensatable) state.
-		boolean neverAffected = true;
 		int compensatedCnt = 0;
 		if (childActivities.size() > 0) {
 			for (int i = /* currStep */ childActivities.size() - 1; i >= 0; i--) {
 				Activity child = childActivities.get(i);
 				if (Activity.isCompensatable(child.getStatus(instance))) {
 					child.compensate(instance);
-					neverAffected = false;
 					compensatedCnt++;
 				}
 			}
 		}
 
-		// the child (which is compensated in the lastest order) whould compensate this
-		// (parent)activity by event escalation (CHILD_COMPENSATED).
-		// So we don't need to call the 'compensate' method for it-self.
-		if (neverAffected && Activity.isCompensatable(getStatus(instance)))
+		// Finalize this activity if child compensation did not already propagate here.
+		if (Activity.isCompensatable(getStatus(instance)))
 			super.compensate(instance);
 
 		// for (Activity childActivity : getProcessDefinition().getChildActivities()) {

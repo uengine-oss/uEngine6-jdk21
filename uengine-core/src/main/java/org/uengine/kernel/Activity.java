@@ -939,7 +939,7 @@ public abstract class Activity implements IElement, Validatable, java.io.Seriali
 			}
 		}
 
-		compensateToThis(instance);
+		compensateToThis(instance, false);
 		resetFlowToThis(instance);
 		resume(instance);
 		/*

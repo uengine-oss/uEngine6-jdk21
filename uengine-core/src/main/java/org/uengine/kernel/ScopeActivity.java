@@ -369,7 +369,8 @@ public class ScopeActivity extends FlowActivity implements MessageListener {
 		// EventHandler[] eventHandlers = getEventHandlers();
 
 		super.compensate(instance);
-		executeAttachedEvent(instance);
+		if (!STATUS_COMPENSATED.equals(getStatus(instance)))
+			executeAttachedEvent(instance);
 		// if (eventHandlers != null) {
 		// for (int i = 0; i < eventHandlers.length; i++) {
 		// // Activity eventHandlingActivity = eventHandlers[i].getHandlerActivity();
