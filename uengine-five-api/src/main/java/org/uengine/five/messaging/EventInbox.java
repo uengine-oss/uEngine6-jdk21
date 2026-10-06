@@ -12,24 +12,16 @@ import jakarta.persistence.*;
  * <ul>
  *   <li>{@code event_name}: dispatcher 가 EventMapping 매칭에 사용</li>
  *   <li>{@code payload}: 이벤트 본문 JSON</li>
- *   <li>{@code corr_key}: 비즈니스 식별자. {@code (corr_key, event_name)} 복합 UNIQUE 로 동일
- *       트랜잭션의 동일 이벤트 재전송 멱등 + 같은 트랜잭션의 다른 이벤트 시퀀스 허용</li>
+ *   <li>{@code corr_key}: 비즈니스 식별자. 요청마다 새 행을 보존하며 실행 중복은 처리 시 검증</li>
  *   <li>{@code created_at} / {@code processed_at}: 인입/처리 시각</li>
  *   <li>{@code try_cnt}: 총 시도 횟수 (1 = 첫 시도)</li>
  *   <li>{@code last_error}: 실패 시 메시지 (NULL 이면 정상, 값 있으면 dead-letter)</li>
  * </ul>
  *
- * <p>유니크 제약:
- * <pre>
- *   같은 (corr_key='X-1', event_name='START_CREDIT_RATING') 재전송 → 차단 (멱등)
- *   같은 corr_key='X-1' 의 다른 event_name='LOAN_APPROVED' → 허용 (시퀀스 이벤트)
- *   corr_key=NULL 인 이벤트 (엔진 내부 등) → UNIQUE 적용 안 됨, 자유 INSERT
- * </pre>
  */
 @Entity
 @Table(name = "BPM_EVENT_INBOX",
-    indexes = @Index(name = "idx_inbox_unprocessed", columnList = "processed_at"),
-    uniqueConstraints = @UniqueConstraint(name = "uk_inbox_corr_event", columnNames = { "corr_key", "event_name" })
+    indexes = @Index(name = "idx_inbox_unprocessed", columnList = "processed_at")
 )
 @SequenceGenerator(
     name = "event_inbox_seq_gen",

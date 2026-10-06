@@ -63,6 +63,7 @@ public class AsyncEventListener {
     @Autowired
     WorklistRepository worklistRepository;
 
+
     public void whatever(String eventString) {
         System.out.println("\n\n##### listener whatever : " + eventString + "\n\n");
     }
@@ -115,6 +116,8 @@ public class AsyncEventListener {
         Set<String> receiveCorrelationValues = new LinkedHashSet<>();
         Set<String> startedDefinitions = new LinkedHashSet<>();
         int startFailures = 0;
+        int handled = 0;
+        boolean duplicateStart = false;
         boolean shouldTriggerWaitingEvents = false;
 
         for (EventMappingEntity mapping : eventMappings) {
@@ -127,8 +130,11 @@ public class AsyncEventListener {
             if (Boolean.TRUE.equals(mapping.isStartEvent())
                     && startedDefinitions.add(mapping.getDefinitionId())) {
                 try {
-                    if (!hasRunningMappedDefinition(mapping, correlationValue)) {
+                    if (!hasStartedMappedDefinition(mapping, correlationValue)) {
                         startMappedDefinition(mapping, correlationValue, eventContent);
+                        handled++;
+                    } else {
+                        duplicateStart = true;
                     }
                 } catch (Exception e) {
                     startFailures++;
@@ -146,17 +152,35 @@ public class AsyncEventListener {
         }
 
         for (String correlationValue : receiveCorrelationValues) {
-            triggerReceiveActivitiesByCorrKeyAndEventType(
+            handled += triggerReceiveActivitiesByCorrKeyAndEventType(
                     correlationValue, eventType, eventContent, actorEndpoint);
         }
 
-        if (!startedDefinitions.isEmpty() && startFailures == startedDefinitions.size()) {
+        if (startFailures > 0 && handled == 0) {
             throw new IllegalStateException("All mapped process starts failed for eventType: " + eventType);
         }
 
         if (shouldTriggerWaitingEvents) {
-            triggerWaitingEvents(eventType);
+            handled += triggerWaitingEvents(eventType);
         }
+        if (handled == 0 && (duplicateStart || receiveCorrelationValues.stream().anyMatch(
+                key -> hasCompletedMappedWork(eventMappings, key)))) {
+            throw NonRetryableInboxException.duplicate();
+        }
+    }
+
+    private boolean hasCompletedMappedWork(List<EventMappingEntity> mappings, String corrKey) {
+        for (ProcessInstanceEntity instance : processInstanceRepository.findByCorrKey(corrKey)) {
+            for (EventMappingEntity mapping : mappings) {
+                if (!Boolean.TRUE.equals(mapping.isStartEvent())
+                        && withoutBpmnExtension(mapping.getDefinitionId()).equals(withoutBpmnExtension(instance.getDefId()))
+                        && worklistRepository.findByInstIdAndStatusIn(instance.getInstId(), List.of("COMPLETED"))
+                                .stream().anyMatch(task -> mapping.getTracingTag().equals(task.getTrcTag()))) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     private void startMappedDefinition(
@@ -171,12 +195,12 @@ public class AsyncEventListener {
         instanceService.start(command);
     }
 
-    boolean hasRunningMappedDefinition(EventMappingEntity mapping, String correlationValue) {
+    boolean hasStartedMappedDefinition(EventMappingEntity mapping, String correlationValue) {
         if (!UEngineUtil.isNotEmpty(correlationValue)) {
             return false;
         }
         String mappedDefinition = withoutBpmnExtension(mapping.getDefinitionId());
-        return processInstanceRepository.findByCorrKeyAndStatus(correlationValue, "Running").stream()
+        return processInstanceRepository.findByCorrKey(correlationValue).stream()
                 .map(ProcessInstanceEntity::getDefId)
                 .map(AsyncEventListener::withoutBpmnExtension)
                 .anyMatch(mappedDefinition::equals);
@@ -191,11 +215,12 @@ public class AsyncEventListener {
                 : definitionId;
     }
 
-    private void triggerReceiveActivitiesByCorrKeyAndEventType(
+    private int triggerReceiveActivitiesByCorrKeyAndEventType(
             String correlationValue,
             String eventType,
             HashMap<String, Object> eventContent,
             String actorEndpoint) throws Exception {
+        int handled = 0;
         List<ProcessInstanceEntity> processInstances =
                 processInstanceRepository.findByCorrKeyAndStatus(correlationValue, "Running");
         for (ProcessInstanceEntity processInstanceEntity : processInstances) {
@@ -216,6 +241,7 @@ public class AsyncEventListener {
                                     DefaultProcessInstance.EVENT_DATA,
                                     (Serializable) eventContent);
                             ((ReceiveActivity) activity).fireReceived(instance, eventContent);
+                            handled++;
                         } finally {
                             GlobalContext.setUserId(previousUserId);
                         }
@@ -224,6 +250,7 @@ public class AsyncEventListener {
                 }
             }
         }
+        return handled;
     }
 
     void validateHumanActivityCompletion(
@@ -250,6 +277,9 @@ public class AsyncEventListener {
                 if (worklist == null) {
                     continue;
                 }
+                if (!"NEW".equals(worklist.getStatus()) && !"RUNNING".equals(worklist.getStatus())) {
+                    continue;
+                }
                 if (!UEngineUtil.isNotEmpty(worklist.getEndpoint())) {
                     unclaimed = true;
                 } else if (worklist.getEndpoint().equals(actorEndpoint.trim())) {
@@ -270,7 +300,8 @@ public class AsyncEventListener {
         GlobalContext.setUserId(actorEndpoint.trim());
     }
 
-    private void triggerWaitingEvents(String eventType) throws Exception {
+    private int triggerWaitingEvents(String eventType) throws Exception {
+        int handled = 0;
         List<ProcessInstanceEntity> processInstances = processInstanceRepository.findByStatus("Running");
         for (ProcessInstanceEntity processInstanceEntity : processInstances) {
             ProcessInstance instance = instanceServiceImpl
@@ -281,11 +312,13 @@ public class AsyncEventListener {
                     if (eventType.equals(event.getEventKey())
                             && !Event.THROW_EVENT.equals(event.getEventType())) {
                         event.onMessage(instance, event.getTracingTag());
+                        handled++;
                     }
                     break;
                 }
             }
         }
+        return handled;
     }
 
     static ProcessVariableValue[] toProcessVariables(

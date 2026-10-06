@@ -6,7 +6,6 @@ import java.util.function.Function;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.uengine.five.dto.EventInboxRequest;
@@ -15,12 +14,6 @@ import org.uengine.five.dto.EventInboxResponse;
 /**
  * Event Inbox 공통 인입 구현.
  *
- * <p>NOTE: {@link #enqueue} 는 의도적으로 {@code @Transactional} 을 두지 않는다.
- * Postgres 는 트랜잭션 안에서 UNIQUE 위반이 나면 트랜잭션이 abort 되어
- * 이후 같은 트랜잭션에서 SELECT 를 못 하므로, 중복 행 조회를 위해 트랜잭션을 걸지 않는다.
- * {@code repo.save(...)} / {@code repo.findFirstBy...} 는 각자 자체 트랜잭션을 가진다.</p>
- *
- * <p>{@link #enqueueWithCorrKeyFromId} 만 id 채번 후 corrKey 확정을 한 트랜잭션으로 묶는다.</p>
  */
 @Service
 @ConditionalOnProperty(name = "uengine.messaging.mode", havingValue = "polling")
@@ -46,29 +39,7 @@ public class EventInboxEnqueueServiceImpl implements EventInboxEnqueueService {
         ev.setPayload(normalizedPayload);
         ev.setCorrKey(corrKey);
 
-        try {
-            repo.save(ev);
-        } catch (DataIntegrityViolationException dup) {
-            EventInbox existing = findExistingInboxForDuplicate(corrKey, eventName);
-            if (isRejectedCompletion(existing)) {
-                existing.setPayload(normalizedPayload);
-                existing.setProcessedAt(null);
-                existing.setTryCnt(0);
-                existing.setLastError(null);
-                existing.setStatus("PENDING");
-                repo.save(existing);
-                log.info("[inbox] explicitly resubmitted rejected completion (corrKey={}, eventName={}, id={})",
-                        corrKey, eventName, existing.getId());
-                return EventInboxResponse.success(eventName, corrKey, existing.getCreatedAt());
-            }
-            Long existingId = existing != null ? existing.getId() : null;
-            log.info("[inbox] duplicate (corrKey={}, eventName={}, existingId={}), treated as idempotent failure",
-                    corrKey, eventName, existingId);
-            return EventInboxResponse.duplicate(
-                    eventName,
-                    corrKey,
-                    existing != null ? existing.getCreatedAt() : null);
-        }
+        repo.save(ev);
 
         return EventInboxResponse.success(eventName, corrKey, ev.getCreatedAt());
     }
@@ -98,17 +69,4 @@ public class EventInboxEnqueueServiceImpl implements EventInboxEnqueueService {
         return EventInboxResponse.success(eventName, corrKey, ev.getCreatedAt());
     }
 
-    private EventInbox findExistingInboxForDuplicate(String corrKey, String eventName) {
-        if (corrKey == null || eventName == null) {
-            return null;
-        }
-        return repo.findFirstByCorrKeyAndEventName(corrKey, eventName).orElse(null);
-    }
-
-    private static boolean isRejectedCompletion(EventInbox existing) {
-        return existing != null
-                && "FAILED".equals(existing.getStatus())
-                && existing.getLastError() != null
-                && existing.getLastError().contains(NonRetryableInboxException.class.getName());
-    }
 }
