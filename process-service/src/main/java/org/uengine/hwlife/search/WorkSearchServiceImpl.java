@@ -322,38 +322,36 @@ public class WorkSearchServiceImpl implements WorkSearchService {
 
   private MyTodoItem toMyTodoItem(
       WorklistEntity worklist, Map<Long, ProcessInstanceEntity> rootInstances) {
-    ProcessInstanceEntity instance = worklist.getProcessInstance();
+    // ProcessInstanceEntity instance = worklist.getProcessInstance();
     Long instId = worklist.getInstId();
     ProcessInstanceEntity rootInstance = rootInstanceResolver.resolve(instId, rootInstances);
     MyTodoItem item = new MyTodoItem();
     
-    item.setBpmBswrClsfCode(instance == null ? null : instance.getBswrClsfCode());
-    item.setCustId(instance == null ? null : instance.getCustId());
-    item.setLoanCntcNo(instance == null ? null : instance.getLoanCntcNo());
-    item.setLoanCustClsfCode(instance == null ? null : instance.getLoanCustClsfCode());
-    item.setLoanSubjDvsnCode(instance == null ? null : instance.getLoanSubjDvsnCode());
-    item.setFncgMneyUsagDetlCode(instance == null ? null : instance.getFncgMneyUsagDetlCode());
-    item.setLoanHopeDate(instance == null ? null : instance.getLoanHopeDate());
-    item.setLoanPcesMgmtNo(instance == null ? null : instance.getCorrKey());
+    item.setBpmBswrClsfCode(rootInstance == null ? null : rootInstance.getBswrClsfCode());
+    item.setCustId(rootInstance == null ? null : rootInstance.getCustId());
+    item.setLoanCntcNo(rootInstance == null ? null : rootInstance.getLoanCntcNo());
+    item.setLoanCustClsfCode(rootInstance == null ? null : rootInstance.getLoanCustClsfCode());
+    item.setLoanSubjDvsnCode(rootInstance == null ? null : rootInstance.getLoanSubjDvsnCode());
+    item.setFncgMneyUsagDetlCode(rootInstance == null ? null : rootInstance.getFncgMneyUsagDetlCode());
+    item.setLoanHopeDate(rootInstance == null ? null : rootInstance.getLoanHopeDate());
+    item.setLoanPcesMgmtNo(rootInstance == null ? null : rootInstance.getCorrKey());
     item.setFncgBpmTaskTrcgNm(worklist.getTrcTag());
     item.setUworStarDttm(worklist.getStartDate());
     item.setUworNm(worklist.getTitle());
     item.setReptHndrEmnb(rootInstance == null ? null : rootInstance.getInitEp());
     item.setReptHndrFncgOrgnCode(rootInstance == null ? null : rootInstance.getInitGroupCd());
-    item.setPrcdHndrEmnb(instance == null ? null : instance.getPrevCurrEp());
-    item.setPrcdHndrFncgOrgnCode(instance == null ? null : instance.getPrevCurrGroupCd());
+    item.setPrcdHndrEmnb(rootInstance == null ? null : rootInstance.getPrevCurrEp());
+    item.setPrcdHndrFncgOrgnCode(rootInstance == null ? null : rootInstance.getPrevCurrGroupCd());
     item.setFncgBpmUworSttsCntn(worklist.getStatus());
-    item.setStarDttm(instance == null ? null : instance.getStartedDate());
+    item.setStarDttm(rootInstance == null ? null : rootInstance.getStartedDate());
     item.setBefoHndrEmnb(worklist.getPrevEndpoint());
     item.setBefoFncgOrgnCode(worklist.getPrevGroupCd());
     item.setHndrEmnb(worklist.getEndpoint());
     item.setHndrNm(worklist.getResName());
     item.setHndrOrgnCode(trimToNull(worklist.getGroupCd()));
     item.setScrnUrlAddr(worklist.getTool());
-    item.setFncgBpmTaskLstId(
-        worklist.getTaskId() == null ? null : String.valueOf(worklist.getTaskId()));
-    item.setFncgBpmPcesIntcId(
-        instId == null ? null : String.valueOf(instId));
+    item.setFncgBpmTaskLstId(worklist.getTaskId() == null ? null : String.valueOf(worklist.getTaskId()));
+    item.setFncgBpmPcesIntcId(instId == null ? null : String.valueOf(instId));
     item.setBswrDvsnVal(rootInstance == null ? null : rootInstance.getDefId());
     item.setFncgBpmPcesId(worklist.getDefId());
     item.setDstOptnVal(String.valueOf(worklist.getDispatchOption()));
@@ -369,29 +367,27 @@ public class WorkSearchServiceImpl implements WorkSearchService {
   /** MyProgress 매핑 — {@code bswrDvsnVal}=root {@code defId}, {@code fncgBpmPcesId}=worklist {@code defId}. */
   private MyProgressItem toMyProgressItem(
       WorklistEntity worklist, Map<Long, ProcessInstanceEntity> rootInstances) {
-    ProcessInstanceEntity instance = worklist.getProcessInstance();
+    // ProcessInstanceEntity instance = worklist.getProcessInstance();
     Long instId = worklist.getInstId();
     ProcessInstanceEntity rootInstance = rootInstanceResolver.resolve(instId, rootInstances);
     MyProgressItem item = new MyProgressItem();
-    item.setLoanCntcNo(instance == null ? null : instance.getLoanCntcNo());
-    item.setLoanCustClsfCode(instance == null ? null : instance.getLoanCustClsfCode());
-    item.setLoanSubjDvsnCode(instance == null ? null : instance.getLoanSubjDvsnCode());
-    item.setFncgMneyUsagDetlCode(instance == null ? null : instance.getFncgMneyUsagDetlCode());
-    item.setLoanHopeDate(instance == null ? null : instance.getLoanHopeDate());
-    item.setCustId(instance == null ? null : instance.getCustId());
-    item.setLoanPcesMgmtNo(instance == null ? null : instance.getCorrKey());
+    item.setLoanCntcNo(rootInstance == null ? null : rootInstance.getLoanCntcNo());
+    item.setLoanCustClsfCode(rootInstance == null ? null : rootInstance.getLoanCustClsfCode());
+    item.setLoanSubjDvsnCode(rootInstance == null ? null : rootInstance.getLoanSubjDvsnCode());
+    item.setFncgMneyUsagDetlCode(rootInstance == null ? null : rootInstance.getFncgMneyUsagDetlCode());
+    item.setLoanHopeDate(rootInstance == null ? null : rootInstance.getLoanHopeDate());
+    item.setCustId(rootInstance == null ? null : rootInstance.getCustId());
+    item.setLoanPcesMgmtNo(rootInstance == null ? null : rootInstance.getCorrKey());
     item.setUworNm(worklist.getTitle());
     item.setFncgBpmTaskTrcgNm(worklist.getTrcTag());
     item.setReptHndrEmnb(rootInstance == null ? null : rootInstance.getInitEp());
     item.setReptHndrFncgOrgnCode(rootInstance == null ? null : rootInstance.getInitGroupCd());
     item.setHndrEmnb(worklist.getEndpoint());
     item.setHndrOrgnCode(trimToNull(worklist.getGroupCd()));
-    item.setStarDttm(instance == null ? null : instance.getStartedDate());
-    item.setBpmBswrClsfCode(instance == null ? null : instance.getBswrClsfCode());
-    item.setFncgBpmTaskLstId(
-        worklist.getTaskId() == null ? null : String.valueOf(worklist.getTaskId()));
-    item.setFncgBpmPcesIntcId(
-        instId == null ? null : String.valueOf(instId));
+    item.setStarDttm(rootInstance == null ? null : rootInstance.getStartedDate());
+    item.setBpmBswrClsfCode(rootInstance == null ? null : rootInstance.getBswrClsfCode());
+    item.setFncgBpmTaskLstId(worklist.getTaskId() == null ? null : String.valueOf(worklist.getTaskId()));
+    item.setFncgBpmPcesIntcId(instId == null ? null : String.valueOf(instId));
     item.setBswrDvsnVal(rootInstance == null ? null : rootInstance.getDefId());
     item.setFncgBpmPcesId(worklist.getDefId());
     item.setBswrCntn(rootInstance == null ? null : rootInstance.getInfo());
@@ -401,19 +397,19 @@ public class WorkSearchServiceImpl implements WorkSearchService {
 
   private OrgRunningItem toOrgRunningItem(
     WorklistEntity worklist, Map<Long, ProcessInstanceEntity> rootInstances) {
-    ProcessInstanceEntity instance = worklist.getProcessInstance();
+    // ProcessInstanceEntity instance = worklist.getProcessInstance();
     Long instId = worklist.getInstId();
     ProcessInstanceEntity rootInstance = rootInstanceResolver.resolve(instId, rootInstances);
     OrgRunningItem item = new OrgRunningItem();
 
-    item.setStarDttm(instance == null ? null : instance.getStartedDate());
-    item.setLoanCntcNo(instance == null ? null : instance.getLoanCntcNo());
-    item.setLoanCustClsfCode(instance == null ? null : instance.getLoanCustClsfCode());
-    item.setLoanSubjDvsnCode(instance == null ? null : instance.getLoanSubjDvsnCode());
-    item.setCustId(instance == null ? null : instance.getCustId());
-    item.setFncgMneyUsagDetlCode(instance == null ? null : instance.getFncgMneyUsagDetlCode());
-    item.setLoanHopeDate(instance == null ? null : instance.getLoanHopeDate());
-    item.setLoanPcesMgmtNo(instance == null ? null : instance.getCorrKey());
+    item.setStarDttm(rootInstance == null ? null : rootInstance.getStartedDate());
+    item.setLoanCntcNo(rootInstance == null ? null : rootInstance.getLoanCntcNo());
+    item.setLoanCustClsfCode(rootInstance == null ? null : rootInstance.getLoanCustClsfCode());
+    item.setLoanSubjDvsnCode(rootInstance == null ? null : rootInstance.getLoanSubjDvsnCode());
+    item.setCustId(rootInstance == null ? null : rootInstance.getCustId());
+    item.setFncgMneyUsagDetlCode(rootInstance == null ? null : rootInstance.getFncgMneyUsagDetlCode());
+    item.setLoanHopeDate(rootInstance == null ? null : rootInstance.getLoanHopeDate());
+    item.setLoanPcesMgmtNo(rootInstance == null ? null : rootInstance.getCorrKey());
     item.setReptHndrEmnb(rootInstance == null ? null : rootInstance.getInitEp());
     item.setReptHndrFncgOrgnCode(rootInstance == null ? null : rootInstance.getInitGroupCd());
     item.setHndrEmnb(worklist.getEndpoint());
@@ -421,12 +417,8 @@ public class WorkSearchServiceImpl implements WorkSearchService {
     item.setUworNm(worklist.getTitle());
     item.setFncgBpmTaskTrcgNm(worklist.getTrcTag());
     item.setUworStarDttm(worklist.getStartDate());
-    item.setFncgBpmTaskLstId(
-        worklist.getTaskId() == null ? null : String.valueOf(worklist.getTaskId()));
-    item.setFncgBpmPcesIntcId(
-        instance == null || instance.getInstId() == null
-            ? null
-            : String.valueOf(instance.getInstId()));
+    item.setFncgBpmTaskLstId(worklist.getTaskId() == null ? null : String.valueOf(worklist.getTaskId()));
+    item.setFncgBpmPcesIntcId(instId == null ? null : String.valueOf(instId));
     item.setBswrDvsnVal(rootInstance == null ? null : rootInstance.getDefId());
     item.setFncgBpmPcesId(worklist.getDefId());
     item.setBswrCntn(rootInstance == null ? null : rootInstance.getInfo());
@@ -440,18 +432,18 @@ public class WorkSearchServiceImpl implements WorkSearchService {
     Long instId = instance == null ? null : instance.getInstId();
     ProcessInstanceEntity rootInstance = rootInstanceResolver.resolve(instId, rootInstances);
     OrgCompletedItem item = new OrgCompletedItem();
-    item.setStarDttm(instance == null ? null : instance.getStartedDate());
-    item.setLoanCntcNo(instance == null ? null : instance.getLoanCntcNo());
-    item.setLoanCustClsfCode(instance == null ? null : instance.getLoanCustClsfCode());
-    item.setLoanSubjDvsnCode(instance == null ? null : instance.getLoanSubjDvsnCode());
-    item.setCustId(instance == null ? null : instance.getCustId());
-    item.setFncgMneyUsagDetlCode(instance == null ? null : instance.getFncgMneyUsagDetlCode());
-    item.setLoanHopeDate(instance == null ? null : instance.getLoanHopeDate());
-    item.setLoanPcesMgmtNo(instance == null ? null : instance.getCorrKey());
+    item.setStarDttm(rootInstance == null ? null : rootInstance.getStartedDate());
+    item.setLoanCntcNo(rootInstance == null ? null : rootInstance.getLoanCntcNo());
+    item.setLoanCustClsfCode(rootInstance == null ? null : rootInstance.getLoanCustClsfCode());
+    item.setLoanSubjDvsnCode(rootInstance == null ? null : rootInstance.getLoanSubjDvsnCode());
+    item.setCustId(rootInstance == null ? null : rootInstance.getCustId());
+    item.setFncgMneyUsagDetlCode(rootInstance == null ? null : rootInstance.getFncgMneyUsagDetlCode());
+    item.setLoanHopeDate(rootInstance == null ? null : rootInstance.getLoanHopeDate());
+    item.setLoanPcesMgmtNo(rootInstance == null ? null : rootInstance.getCorrKey());
     item.setReptHndrEmnb(rootInstance == null ? null : rootInstance.getInitEp());
     item.setReptHndrFncgOrgnCode(rootInstance == null ? null : rootInstance.getInitGroupCd());
-    item.setEndDttm(instance == null ? null : instance.getFinishedDate());
-    item.setBpmBswrClsfCode(instance == null ? null : instance.getBswrClsfCode());
+    item.setEndDttm(rootInstance == null ? null : rootInstance.getFinishedDate());
+    item.setBpmBswrClsfCode(rootInstance == null ? null : rootInstance.getBswrClsfCode());
     item.setFncgBpmPcesIntcId(instId == null ? null : String.valueOf(instId));
     item.setBswrDvsnVal(rootInstance == null ? null : rootInstance.getDefId());
     item.setBswrCntn(rootInstance == null ? null : rootInstance.getInfo());

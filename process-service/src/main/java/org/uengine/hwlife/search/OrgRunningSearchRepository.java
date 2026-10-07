@@ -134,27 +134,21 @@ public class OrgRunningSearchRepository {
     addText(builder, predicates, worklist.get("defId"), request.getFncgBpmPcesId());
     // 단위업무명: worklist.title == uworNm
     addText(builder, predicates, worklist.get("title"), request.getUworNm());
-    addText(builder, predicates, instance.get("bswrClsfCode"), request.getBpmBswrClsfCode());
+    // 비즈니스 필드는 서브프로세스 포함 root_inst_id 기준 루트 인스턴스에서 비교
+    addRootText(builder, query, predicates, instance, "bswrClsfCode", request.getBpmBswrClsfCode());
     addDateRange(
         builder,
         predicates,
         worklist.get("startDate"),
         request.getRqstStarDate(),
         request.getRqstEndDate());
-    addText(
-        builder,
-        predicates,
-        instance.get("loanCustClsfCode"),
-        request.getLoanCustClsfCode());
-    addText(builder, predicates, instance.get("loanSubjDvsnCode"), request.getLoanSubjDvsnCode());
-    addText(
-        builder,
-        predicates,
-        instance.get("fncgMneyUsagDetlCode"),
-        request.getFncgMneyUsagDetlCode());
-    addText(builder, predicates, instance.get("loanCntcNo"), request.getLoanCntcNo());
-    addText(builder, predicates, instance.get("custId"), request.getCustId());
-    addOrganization(builder, predicates, worklist, instance, request);
+    addRootText(builder, query, predicates, instance, "loanCustClsfCode", request.getLoanCustClsfCode());
+    addRootText(builder, query, predicates, instance, "loanSubjDvsnCode", request.getLoanSubjDvsnCode());
+    addRootText(
+        builder, query, predicates, instance, "fncgMneyUsagDetlCode", request.getFncgMneyUsagDetlCode());
+    addRootText(builder, query, predicates, instance, "loanCntcNo", request.getLoanCntcNo());
+    addRootText(builder, query, predicates, instance, "custId", request.getCustId());
+    addOrganization(builder, query, predicates, worklist, instance, request);
     return predicates.toArray(Predicate[]::new);
   }
 
@@ -168,7 +162,20 @@ public class OrgRunningSearchRepository {
       List<Predicate> predicates,
       Join<WorklistEntity, ProcessInstanceEntity> instance,
       String bswrDvsnVal) {
-    String value = trimToNull(bswrDvsnVal);
+    addRootText(builder, query, predicates, instance, "defId", bswrDvsnVal);
+  }
+
+  /**
+   * 루트 인스턴스({@code coalesce(rootInstId, instId)}) 문자열 컬럼 필터.
+   */
+  private static void addRootText(
+      CriteriaBuilder builder,
+      AbstractQuery<?> query,
+      List<Predicate> predicates,
+      Join<WorklistEntity, ProcessInstanceEntity> instance,
+      String attribute,
+      String expected) {
+    String value = trimToNull(expected);
     if (value == null) {
       return;
     }
@@ -179,7 +186,7 @@ public class OrgRunningSearchRepository {
     rootMatch.select(rootInstance.get("instId"))
         .where(
             builder.equal(rootInstance.get("instId"), rootInstId),
-            builder.equal(rootInstance.get("defId"), value));
+            builder.equal(rootInstance.get(attribute), value));
     predicates.add(builder.exists(rootMatch));
   }
 
@@ -227,11 +234,12 @@ public class OrgRunningSearchRepository {
     return calendar.getTime();
   }
   /**
-   * 요청기관({@code rqstDvsnCode=Y}): {@code bpm_procinst.init_group_cd}<br>
+   * 요청기관({@code rqstDvsnCode=Y}): 루트 인스턴스 {@code init_group_cd}<br>
    * 진행기관({@code rqstDvsnCode=N}, 기본): 진행중 단위업무의 {@code bpm_worklist.group_cd}
    */
   private static void addOrganization(
       CriteriaBuilder builder,
+      AbstractQuery<?> query,
       List<Predicate> predicates,
       Root<WorklistEntity> worklist,
       Join<WorklistEntity, ProcessInstanceEntity> instance,
@@ -241,7 +249,7 @@ public class OrgRunningSearchRepository {
       return;
     }
     if ("Y".equalsIgnoreCase(trimToNull(request.getRqstDvsnCode()))) {
-      predicates.add(builder.equal(instance.get("initGroupCd"), organizationCode));
+      addRootText(builder, query, predicates, instance, "initGroupCd", organizationCode);
       return;
     }
     predicates.add(builder.equal(worklist.get("groupCd"), organizationCode));

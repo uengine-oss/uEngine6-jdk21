@@ -50,7 +50,7 @@ class IAMCandidateProviderTest {
     private static IAMIntegrationServiceImpl serviceUsing(ExternalIAMService external) {
         try (MockedStatic<ExternalIAMService> singleton = mockStatic(ExternalIAMService.class)) {
             singleton.when(ExternalIAMService::getDefault).thenReturn(external);
-            return new IAMIntegrationServiceImpl();
+            return new IAMIntegrationServiceImpl(null, null, null, null, null);
         }
     }
 }

@@ -152,24 +152,28 @@ public class MyTodoSearchRepository {
     addRootDefId(builder, query, predicates, instance, request.getBswrDvsnVal());
     // 단위업무명: worklist.title == uworNm
     addText(builder, predicates, worklist.get("title"), request.getUworNm());
-    addText(builder, predicates, instance.get("bswrClsfCode"), request.getBpmBswrClsfCode());
-    addText(builder, predicates, instance.get("custId"), request.getCustId());
-    addText(builder, predicates, instance.get("loanCntcNo"), request.getLoanCntcNo());
-    addText(builder, predicates, instance.get("loanCustClsfCode"), request.getLoanCustClsfCode());
-    addText(builder, predicates, instance.get("loanSubjDvsnCode"), request.getLoanSubjDvsnCode());
-    addText(builder, predicates, instance.get("fncgMneyUsagDetlCode"), request.getFncgMneyUsagDetlCode());
-    // 요청기관 필터 (fncgWndwOrgnCode → bpm_procinst.init_group_cd)
-    addText(builder, predicates, instance.get("initGroupCd"), request.getFncgWndwOrgnCode());
+    // 비즈니스 필드는 서브프로세스 포함 root_inst_id 기준 루트 인스턴스에서 비교
+    addRootText(builder, query, predicates, instance, "bswrClsfCode", request.getBpmBswrClsfCode());
+    addRootText(builder, query, predicates, instance, "custId", request.getCustId());
+    addRootText(builder, query, predicates, instance, "loanCntcNo", request.getLoanCntcNo());
+    addRootText(builder, query, predicates, instance, "loanCustClsfCode", request.getLoanCustClsfCode());
+    addRootText(builder, query, predicates, instance, "loanSubjDvsnCode", request.getLoanSubjDvsnCode());
+    addRootText(
+        builder, query, predicates, instance, "fncgMneyUsagDetlCode", request.getFncgMneyUsagDetlCode());
+    // 요청기관 필터 (fncgWndwOrgnCode → root.init_group_cd)
+    addRootText(builder, query, predicates, instance, "initGroupCd", request.getFncgWndwOrgnCode());
     addDateRange(
         builder,
         predicates,
         worklist.get("startDate"),
         request.getStarDate(),
         request.getEndDate());
-    addDateRange(
+    addRootDateRange(
         builder,
+        query,
         predicates,
-        instance.get("loanHopeDate"),
+        instance,
+        "loanHopeDate",
         request.getHopeStarDate(),
         request.getHopeEndDate());
     return predicates.toArray(Predicate[]::new);
@@ -208,7 +212,20 @@ public class MyTodoSearchRepository {
       List<Predicate> predicates,
       Join<WorklistEntity, ProcessInstanceEntity> instance,
       String bswrDvsnVal) {
-    String value = trimToNull(bswrDvsnVal);
+    addRootText(builder, query, predicates, instance, "defId", bswrDvsnVal);
+  }
+
+  /**
+   * 루트 인스턴스({@code coalesce(rootInstId, instId)}) 문자열 컬럼 필터.
+   */
+  private static void addRootText(
+      CriteriaBuilder builder,
+      AbstractQuery<?> query,
+      List<Predicate> predicates,
+      Join<WorklistEntity, ProcessInstanceEntity> instance,
+      String attribute,
+      String expected) {
+    String value = trimToNull(expected);
     if (value == null) {
       return;
     }
@@ -219,7 +236,38 @@ public class MyTodoSearchRepository {
     rootMatch.select(rootInstance.get("instId"))
         .where(
             builder.equal(rootInstance.get("instId"), rootInstId),
-            builder.equal(rootInstance.get("defId"), value));
+            builder.equal(rootInstance.get(attribute), value));
+    predicates.add(builder.exists(rootMatch));
+  }
+
+  /**
+   * 루트 인스턴스({@code coalesce(rootInstId, instId)}) 날짜 컬럼 범위 필터.
+   */
+  private static void addRootDateRange(
+      CriteriaBuilder builder,
+      AbstractQuery<?> query,
+      List<Predicate> predicates,
+      Join<WorklistEntity, ProcessInstanceEntity> instance,
+      String attribute,
+      Date startInclusive,
+      Date endInclusive) {
+    if (startInclusive == null && endInclusive == null) {
+      return;
+    }
+    Subquery<Long> rootMatch = query.subquery(Long.class);
+    Root<ProcessInstanceEntity> rootInstance = rootMatch.from(ProcessInstanceEntity.class);
+    Expression<Long> rootInstId =
+        builder.coalesce(instance.get("rootInstId"), instance.get("instId"));
+    Path<Date> datePath = rootInstance.get(attribute);
+    List<Predicate> where = new ArrayList<>();
+    where.add(builder.equal(rootInstance.get("instId"), rootInstId));
+    if (startInclusive != null) {
+      where.add(builder.greaterThanOrEqualTo(datePath, startOfDay(startInclusive)));
+    }
+    if (endInclusive != null) {
+      where.add(builder.lessThan(datePath, startOfNextDay(endInclusive)));
+    }
+    rootMatch.select(rootInstance.get("instId")).where(where.toArray(Predicate[]::new));
     predicates.add(builder.exists(rootMatch));
   }
 
