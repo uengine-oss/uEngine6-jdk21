@@ -92,7 +92,7 @@ public class InboxPollJob implements Job {
                 ev.setLastError(null);
                 ev.setStatus("SUCCESS");
             } catch (Exception e) {
-                String msg = truncate(e.toString() + " | " + rootCauseMessage(e), 2000);
+                String msg = isDuplicate(e) ? "중복" : truncate(e.toString() + " | " + rootCauseMessage(e), 2000);
                 ev.setLastError(msg);
                 boolean nonRetryable = isNonRetryable(e);
                 if (nonRetryable || ev.getTryCnt() >= maxTryCnt) {
@@ -137,6 +137,15 @@ public class InboxPollJob implements Job {
             // payload 에 EventMapping.correlationKey 매칭 필드가 없을 때 fallback 으로 사용됨
             builder.setHeader("corrKey", ev.getCorrKey());
         }
+        try {
+            com.fasterxml.jackson.databind.JsonNode content = new com.fasterxml.jackson.databind.ObjectMapper().readTree(ev.getPayload());
+            if (content != null) {
+                String actor = content.path("esbHeader").path("emnb").asText(null);
+                if (actor != null) builder.setHeader("emnb", actor);
+            }
+        } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
+            throw new NonRetryableInboxException("Invalid inbox payload: " + e.getMessage());
+        }
         return builder.build();
     }
 
@@ -149,6 +158,14 @@ public class InboxPollJob implements Job {
         Throwable cur = t;
         while (cur.getCause() != null && cur.getCause() != cur) cur = cur.getCause();
         return cur.getClass().getName() + ": " + cur.getMessage();
+    }
+
+    static boolean isDuplicate(Throwable error) {
+        for (Throwable cause = error; cause != null; cause = cause.getCause()) {
+            if (cause instanceof NonRetryableInboxException inboxError && inboxError.isDuplicate()) return true;
+            if (cause.getCause() == cause) break;
+        }
+        return false;
     }
 
     static boolean isNonRetryable(Throwable error) {

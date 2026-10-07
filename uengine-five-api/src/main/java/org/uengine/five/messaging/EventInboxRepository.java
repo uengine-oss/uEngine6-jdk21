@@ -5,6 +5,8 @@ import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -31,6 +33,11 @@ public interface EventInboxRepository extends JpaRepository<EventInbox, Long> {
 
     /** (corr_key, event_name) 멱등 충돌 시 기존 row 조회용. */
     Optional<EventInbox> findFirstByCorrKeyAndEventName(String corrKey, String eventName);
+
+    /** 최신 요청의 일반 실패를 재접수할 때 폴러와 동시에 변경하지 않도록 잠근다. */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @RestResource(exported = false)
+    Optional<EventInbox> findFirstByCorrKeyAndEventNameOrderByIdDesc(String corrKey, String eventName);
 
     /** Spring Data REST 자동 노출 차단. */
     @Override
