@@ -28,11 +28,28 @@ public class EventInboxEnqueueServiceImpl implements EventInboxEnqueueService {
     }
 
     @Override
+    @Transactional
     public EventInboxResponse enqueue(EventInboxRequest request) {
         String eventName = request != null ? request.getEventName() : null;
         String corrKey = request != null ? request.getCorrKey() : null;
         String payloadJson = request != null ? request.getPayloadJson() : null;
         String normalizedPayload = payloadJson != null ? payloadJson : "{}";
+
+        EventInbox existing = corrKey != null && eventName != null
+                ? repo.findFirstByCorrKeyAndEventNameOrderByIdDesc(corrKey, eventName).orElse(null)
+                : null;
+        if (existing != null && "FAILED".equals(existing.getStatus())
+                && !"중복".equals(existing.getLastError())) {
+            existing.setPayload(normalizedPayload);
+            existing.setProcessedAt(null);
+            existing.setTryCnt(0);
+            existing.setLastError(null);
+            existing.setStatus("PENDING");
+            repo.save(existing);
+            log.info("[inbox] resubmitted failed request (corrKey={}, eventName={}, id={})",
+                    corrKey, eventName, existing.getId());
+            return EventInboxResponse.success(eventName, corrKey, existing.getCreatedAt());
+        }
 
         EventInbox ev = new EventInbox();
         ev.setEventName(eventName);
