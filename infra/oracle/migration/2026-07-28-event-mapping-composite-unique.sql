@@ -1,5 +1,9 @@
 -- Preserve multiple BPM event mappings that share one event name.
 -- Run as the BPM application schema owner before deploying the new application.
+-- Consolidated migration: remove the legacy event-name UNIQUE and ensure the
+-- composite target UNIQUE in one execution. Safe to rerun after either step.
+-- Mapping rows, primary key and BPM_EVENT_INBOX are preserved.
+-- Execute this entire file in script mode, including both slash terminators.
 
 DECLARE
     constraint_count NUMBER;
