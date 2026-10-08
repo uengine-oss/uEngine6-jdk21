@@ -130,7 +130,7 @@ VALUES
     (3, 'dummy_deposit_notice', 'DepositBalanceNotice/DepositBalanceNotice',
         'Deposit Balance Notice', 'deposits', '수신', 'published'),
     (4, 'dummy_export_purchase', 'ExportBillPurchase/ExportBillPurchase_Level2',
-        'Export Bill Purchase Level 2', 'trade', '외환', 'published'),
+        '수출환어음 매입 업무', 'trade', '외환', 'published'),
     (5, 'dummy_new_deposit', 'NewDepositAccount/NewDepositAccount',
         'New Deposit Account', 'deposits', '수신', 'draft'),
     (6, 'dummy_home_mortgage', 'HomeMortgageLoan/HomeMortgageLoan',

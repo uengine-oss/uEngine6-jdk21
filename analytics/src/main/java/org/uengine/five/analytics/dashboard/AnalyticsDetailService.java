@@ -32,11 +32,14 @@ public class AnalyticsDetailService {
         String sql = """
                 SELECT d.process_key,
                        d.definition_id AS proc_def_id,
-                       COALESCE(NULLIF(d.definition_name, ''), d.definition_id, d.process_key) AS process_name,
+                       COALESCE(NULLIF(NULLIF(d.definition_name, ''), 'Noname'), d.definition_id, d.process_key) AS process_name,
                        COALESCE(NULLIF(d.definition_path, ''), d.definition_id || '.bpmn') AS definition_path
-                  FROM bpm_dim_process_def d
+                 FROM bpm_dim_process_def d
                  WHERE EXISTS (
-                       SELECT 1 FROM bpm_fact_proc_inst f WHERE f.process_key = d.process_key
+                       SELECT 1 FROM bpm_fact_proc_inst f
+                        WHERE f.process_key = d.process_key
+                          AND f.process_instance_id > 0
+                          AND COALESCE(f.deleted, false) = false
                  )
                  ORDER BY process_name
                 """;

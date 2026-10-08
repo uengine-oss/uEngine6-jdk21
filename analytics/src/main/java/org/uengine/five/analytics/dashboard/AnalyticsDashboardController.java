@@ -27,11 +27,13 @@ public class AnalyticsDashboardController {
             @RequestParam(required = false)
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
             @RequestParam(required = false)
-            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
+            @RequestParam(required = false) String processKey,
+            @RequestParam(defaultValue = "ALL") String status) {
         LocalDate effectiveTo = to == null ? LocalDate.now() : to;
         LocalDate effectiveFrom = from == null ? effectiveTo.minusDays(29) : from;
         try {
-            return dashboardService.getDashboard(effectiveFrom, effectiveTo);
+            return dashboardService.getDashboard(effectiveFrom, effectiveTo, processKey, status);
         } catch (IllegalArgumentException exception) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, exception.getMessage(), exception);
         }
