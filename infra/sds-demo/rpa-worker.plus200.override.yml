@@ -1,0 +1,5 @@
+services:
+  rpa-agent:
+    entrypoint: ["/bin/sh", "-c"]
+    command: ['tr -d "\r" < /docker-entrypoint.sh | /bin/sh -s -- python -m uengine_rpa.worker']
+    restart: unless-stopped

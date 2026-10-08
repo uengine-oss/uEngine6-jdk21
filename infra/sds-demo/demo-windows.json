@@ -1,0 +1,12 @@
+{
+  "windows": [
+    {"id":"heatmap","name":"히트맵","username":"hong","url":"http://localhost:8288/analytics/heatmap","background":true},
+    {"id":"kpi","name":"KPI","username":"hong","url":"http://localhost:8288/analytics/kpi","background":true},
+    {"id":"customer","name":"고객","username":"유","url":"http://localhost:5374/#/export-bills"},
+    {"id":"branch","name":"영업점","username":"hong","url":"http://localhost:5374/#/tasks"},
+    {"id":"head","name":"본점","username":"head","url":"http://localhost:5374/#/tasks"},
+    {"id":"admin","name":"관리자","username":"hong","url":"http://localhost:8288/admin"},
+    {"id":"mail","name":"메일 수신함","authenticate":false,"url":"http://localhost:8225"},
+    {"id":"dmn","name":"매입 심사 DMN 편집","username":"hong","url":"http://localhost:8288/business-rule/export-bill-purchase-route"}
+  ]
+}

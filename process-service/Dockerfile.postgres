@@ -28,6 +28,6 @@ ENV JAVA_OPTS="-Xms256m -Xmx768m --add-opens=java.base/java.util=ALL-UNNAMED --a
     UENGINE_MESSAGING_MODE="polling"
 
 HEALTHCHECK --interval=10s --timeout=5s --start-period=90s --retries=12 \
-    CMD bash -c 'exec 3<>/dev/tcp/127.0.0.1/9094'
+    CMD bash -c 'exec 3<>/dev/tcp/127.0.0.1/${PROCESS_SERVICE_PORT:-9094}'
 
 ENTRYPOINT ["sh", "-c", "exec java $JAVA_OPTS -jar /app/process.jar"]
