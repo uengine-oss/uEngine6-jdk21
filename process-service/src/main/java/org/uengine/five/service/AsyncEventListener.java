@@ -125,7 +125,7 @@ public class AsyncEventListener {
                     : firstNonBlank(inboxCorrKey, correlationField);
 
             if (Boolean.TRUE.equals(mapping.isStartEvent())
-                    && startedDefinitions.add(mapping.getDefinitionId())) {
+                    && startedDefinitions.add(canonicalDefinitionId(mapping.getDefinitionId()))) {
                 try {
                     if (!hasRunningMappedDefinition(mapping, correlationValue)) {
                         startMappedDefinition(mapping, correlationValue, eventContent);
@@ -175,20 +175,27 @@ public class AsyncEventListener {
         if (!UEngineUtil.isNotEmpty(correlationValue)) {
             return false;
         }
-        String mappedDefinition = withoutBpmnExtension(mapping.getDefinitionId());
+        String mappedDefinition = canonicalDefinitionId(mapping.getDefinitionId());
         return processInstanceRepository.findByCorrKeyAndStatus(correlationValue, "Running").stream()
                 .map(ProcessInstanceEntity::getDefId)
-                .map(AsyncEventListener::withoutBpmnExtension)
+                .map(AsyncEventListener::canonicalDefinitionId)
                 .anyMatch(mappedDefinition::equals);
     }
 
-    private static String withoutBpmnExtension(String definitionId) {
+    private static String canonicalDefinitionId(String definitionId) {
         if (definitionId == null) {
             return "";
         }
-        return definitionId.endsWith(".bpmn")
-                ? definitionId.substring(0, definitionId.length() - ".bpmn".length())
-                : definitionId;
+        String canonical = definitionId.replace('\\', '/');
+        while (canonical.startsWith("/")) {
+            canonical = canonical.substring(1);
+        }
+        if (canonical.startsWith("definitions/")) {
+            canonical = canonical.substring("definitions/".length());
+        }
+        return canonical.endsWith(".bpmn")
+                ? canonical.substring(0, canonical.length() - ".bpmn".length())
+                : canonical;
     }
 
     private void triggerReceiveActivitiesByCorrKeyAndEventType(

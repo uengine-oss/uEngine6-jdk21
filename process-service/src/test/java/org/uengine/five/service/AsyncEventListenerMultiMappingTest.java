@@ -66,6 +66,23 @@ class AsyncEventListenerMultiMappingTest {
     }
 
     @Test
+    void startsDefinitionOnlyOnceWhenMappingsUseDefinitionsPathAlias() throws Exception {
+        when(listener.eventMappingRepository.findAllByEventNameOrderByIdAsc("LOAN_RECEIVED"))
+                .thenReturn(List.of(
+                        mapping(1L, "loan-a.bpmn", "start-a"),
+                        mapping(2L, "definitions/loan-a.bpmn", "start-a-alias")));
+        when(processInstanceRepository.findByCorrKeyAndStatus("LP-101", "Running"))
+                .thenReturn(List.of());
+
+        listener.wheneverEvent(
+                "{\"loanPcesMgmtNo\":\"LP-101\"}",
+                "LOAN_RECEIVED",
+                "fallback");
+
+        verify(instanceService, times(1)).start(any(ProcessExecutionCommand.class));
+    }
+
+    @Test
     void oneFailedStartDoesNotHideOtherMappedDefinitions() throws Exception {
         EventMappingEntity first = mapping(1L, "definitions/loan-a.bpmn", "start-a");
         EventMappingEntity second = mapping(2L, "definitions/loan-b.bpmn", "start-b");
