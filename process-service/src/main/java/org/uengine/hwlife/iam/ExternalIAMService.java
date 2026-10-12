@@ -121,9 +121,24 @@ public class ExternalIAMService implements IAMService {
      * <p>TODO: ESB 기관 목록 조회로 교체. 현재는 연동 전 임시 하드코딩.</p>
      */
     public OrgSearchResponse getGroups() {
-        OrgSearchResponse response = esbClient().send("", "", null, OrgSearchResponse.class);
-        // List<FncgOrgInfo> list = new ArrayList<>();
-        // list.add(org("00320", "융자관리팀"));
+        // OrgSearchResponse response = esbClient().send("", "", null, OrgSearchResponse.class);
+        // return response;
+
+        OrgSearchResponse response = new OrgSearchResponse();
+        List<FncgOrgInfo> list = new ArrayList<>();
+        FncgOrgInfo org = new FncgOrgInfo();
+        org.setFncgWndwOrgnCode("00320");
+        org.setFncgWndwOrgnAbrvNm("융자관리팀");
+        org.setFncgWndwOrgnNm("융자관리팀");
+        list.add(org);
+
+        FncgOrgInfo org2 = new FncgOrgInfo();
+        org2.setFncgWndwOrgnCode("00025");
+        org2.setFncgWndwOrgnAbrvNm("IT운영팀");
+        org2.setFncgWndwOrgnNm("IT운영팀");
+        list.add(org2);
+        
+        response.setBpmOrgnList(list);
         return response;
     }
 
@@ -134,7 +149,9 @@ public class ExternalIAMService implements IAMService {
      * <p>TODO: ESB 권한 목록 조회로 교체. 현재는 연동 전 임시 하드코딩.</p>
      */
     public RoleSearchResponse getRoles() {
-        // TODO: esbClient().send(itfcId, rcveSrvcId, payload, RoleSearchResponse.class)
+        // RoleSearchResponse response = esbClient().send("", "", null, RoleSearchResponse.class);
+        // return response;
+
         RoleSearchResponse response = new RoleSearchResponse();
         List<FncgRoleInfo> list = new ArrayList<>();
         list.add(role("FN120", "사업부장"));

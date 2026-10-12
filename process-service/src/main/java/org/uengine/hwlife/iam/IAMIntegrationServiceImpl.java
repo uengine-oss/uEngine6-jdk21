@@ -62,16 +62,26 @@ public class IAMIntegrationServiceImpl implements IAMIntegrationService {
 
     @Override
     public OrgSearchResponse searchOrgs() throws Exception {
-        OrgSearchResponse response = new OrgSearchResponse();
-        response.setBpmOrgnList(externalIamService.getGroups().getBpmOrgnList());
-        return response;
+        try {
+            OrgSearchResponse response = new OrgSearchResponse();
+            response.setBpmOrgnList(externalIamService.getGroups().getBpmOrgnList());
+            return response;
+        } catch (Exception e) {
+            log.error("[IAM] LCS service processing error", e);
+            throw e;
+        }
     }
 
     @Override
     public RoleSearchResponse searchRoles() throws Exception {
-        RoleSearchResponse response = new RoleSearchResponse();
-        response.setBpmAtrtList(externalIamService.getRoles().getBpmAtrtList());
-        return response;
+        try {
+            RoleSearchResponse response = new RoleSearchResponse();
+            response.setBpmAtrtList(externalIamService.getRoles().getBpmAtrtList());
+            return response;
+        } catch (Exception e) {
+            log.error("[IAM] LCS service processing error", e);
+            throw e;
+        }
     }
 
     @Override
