@@ -2,6 +2,7 @@ package org.uengine.five.businessrule;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
+import java.io.StringWriter;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -11,6 +12,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
+import org.w3c.dom.Element;
+import org.w3c.dom.NodeList;
 
 import org.camunda.bpm.dmn.engine.DmnDecision;
 import org.camunda.bpm.dmn.engine.DmnDecisionRuleResult;
@@ -86,7 +93,8 @@ public class BusinessRuleEvaluator {
     }
 
     private Map<String, Object> evaluateDmnXml(String dmnXml, Map<String, Object> inputs) {
-        String normalized = normalizeDmnXmlForCamunda(dmnXml);
+        Map<String, Object> annotationValues = new HashMap<>();
+        String normalized = exposeNoteAnnotation(normalizeDmnXmlForCamunda(dmnXml), annotationValues);
 
         // convention: decision id stored as "decision_<ruleIdWithUnderscores>"
         String decisionId = extractDecisionId(normalized);
@@ -109,6 +117,7 @@ public class BusinessRuleEvaluator {
                 vars.putValue(e.getKey(), e.getValue());
             }
         }
+        annotationValues.forEach(vars::putValue);
 
         DmnDecisionTableResult result = DMN_ENGINE.evaluateDecisionTable(decision, vars);
         if (result == null || result.isEmpty()) {
@@ -117,41 +126,17 @@ public class BusinessRuleEvaluator {
 
         DmnDecisionRuleResult single = result.getSingleResult();
         Map<String, Object> out = new LinkedHashMap<>();
-        // DmnDecisionRuleResult#getEntry(...) may throw NPE when the key is missing in
-        // some versions,
-        // so access via Map view first.
-        if (single instanceof Map) {
-            @SuppressWarnings("unchecked")
-            Map<String, Object> m = (Map<String, Object>) single;
-
-            if ("true".equalsIgnoreCase(System.getProperty("uengine.businessrule.debug"))) {
-                System.out.println("[BusinessRuleEvaluator] DMN result keys=" + m.keySet());
-            }
-
-            Object outcome = m.get("outcome");
-            if (outcome == null) {
-                outcome = m.get("Outcome"); // fallback to label (some DMN exporters)
-            }
-            if (outcome != null) {
-                out.put("outcome", String.valueOf(outcome));
-            }
-
-            Object note = m.get("note");
-            if (note == null) {
-                note = m.get("Note");
-            }
-            if (note != null) {
-                out.put("note", String.valueOf(note));
-            }
-        } else {
-            // fallback (best-effort)
-            try {
-                Object outcome = single.getEntry("outcome");
-                if (outcome != null) {
-                    out.put("outcome", String.valueOf(outcome));
-                }
-            } catch (Exception ignore) {
-            }
+        // DMN에 정의된 출력 이름과 타입을 그대로 반환한다.
+        out.putAll(single.getEntryMap());
+        // 기존 내보내기 파일의 대문자 출력 이름도 기존 매핑에서 사용할 수 있게 유지한다.
+        if (!out.containsKey("outcome") && out.containsKey("Outcome")) {
+            out.put("outcome", out.get("Outcome"));
+        }
+        if (!out.containsKey("note") && out.containsKey("Note")) {
+            out.put("note", out.get("Note"));
+        }
+        if (out.containsKey("annotation") && !out.containsKey("note")) {
+            out.put("note", out.get("annotation")); // 기존 out_note 매핑 호환
         }
 
         // matchedRuleIndex 계산: DMN XML과 입력값을 사용하여 정확한 인덱스 계산
@@ -159,6 +144,63 @@ public class BusinessRuleEvaluator {
         out.put("matchedRuleIndex", matchedRuleIndex);
 
         return out;
+    }
+
+    private String exposeNoteAnnotation(String xml, Map<String, Object> annotationValues) {
+        try {
+            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+            factory.setNamespaceAware(true);
+            factory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
+            var document = factory.newDocumentBuilder().parse(new ByteArrayInputStream(xml.getBytes(StandardCharsets.UTF_8)));
+            NodeList tables = document.getElementsByTagNameNS("*", "decisionTable");
+            boolean changed = false;
+            for (int tableIndex = 0; tableIndex < tables.getLength(); tableIndex++) {
+                Element table = (Element) tables.item(tableIndex);
+                NodeList outputs = table.getElementsByTagNameNS("*", "output");
+                boolean hasNote = false;
+                for (int i = 0; i < outputs.getLength(); i++) {
+                    String name = ((Element) outputs.item(i)).getAttribute("name");
+                    if ("annotation".equals(name)) hasNote = true;
+                }
+                if (hasNote) continue;
+                NodeList annotations = table.getElementsByTagNameNS("*", "annotation");
+                int noteIndex = -1;
+                for (int i = 0; i < annotations.getLength(); i++) {
+                    String name = ((Element) annotations.item(i)).getAttribute("name");
+                    if ("annotation".equalsIgnoreCase(name) || "Note".equalsIgnoreCase(name)) noteIndex = i;
+                }
+                if (noteIndex < 0) continue;
+                String namespace = table.getNamespaceURI();
+                Element output = document.createElementNS(namespace, "output");
+                output.setAttribute("id", "annotation_note_output_" + tableIndex);
+                output.setAttribute("name", "annotation");
+                output.setAttribute("typeRef", "string");
+                table.insertBefore(output, annotations.item(0));
+                NodeList rules = table.getElementsByTagNameNS("*", "rule");
+                for (int i = 0; i < rules.getLength(); i++) {
+                    Element rule = (Element) rules.item(i);
+                    NodeList entries = rule.getElementsByTagNameNS("*", "annotationEntry");
+                    NodeList noteTexts = entries.getLength() > noteIndex
+                            ? ((Element) entries.item(noteIndex)).getElementsByTagNameNS("*", "text") : null;
+                    String note = noteTexts != null && noteTexts.getLength() > 0 ? noteTexts.item(0).getTextContent() : "";
+                    Element entry = document.createElementNS(namespace, "outputEntry");
+                    entry.setAttribute("id", "annotation_note_entry_" + tableIndex + "_" + i);
+                    Element text = document.createElementNS(namespace, "text");
+                    String valueKey = "uengineAnnotationNote_" + tableIndex + "_" + i;
+                    annotationValues.put(valueKey, note);
+                    text.setTextContent(valueKey);
+                    entry.appendChild(text);
+                    rule.insertBefore(entry, entries.getLength() > 0 ? entries.item(0) : null);
+                }
+                changed = true;
+            }
+            if (!changed) return xml;
+            StringWriter writer = new StringWriter();
+            TransformerFactory.newInstance().newTransformer().transform(new DOMSource(document), new StreamResult(writer));
+            return writer.toString();
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Failed to prepare DMN annotation mapping", e);
+        }
     }
 
     private String extractDecisionId(String dmnXml) {

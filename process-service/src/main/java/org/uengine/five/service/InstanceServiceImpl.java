@@ -4059,10 +4059,7 @@ public class InstanceServiceImpl implements InstanceService {
             long executionTime = System.currentTimeMillis() - startTime;
 
             // 결과 포맷팅
-            Map<String, Object> response = new LinkedHashMap<>();
-            response.put("outcome", evaluationResult.get("outcome"));
-            response.put("note", evaluationResult.get("note"));
-            response.put("matchedRuleIndex", evaluationResult.get("matchedRuleIndex"));
+            Map<String, Object> response = new LinkedHashMap<>(evaluationResult);
             response.put("executionTime", executionTime);
 
             return response;
