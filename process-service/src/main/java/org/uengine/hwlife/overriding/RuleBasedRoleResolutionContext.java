@@ -87,14 +87,13 @@ public class RuleBasedRoleResolutionContext extends RoleResolutionContext {
         // 5) GAP(가중치 − 업무량) 기반 담당자 결정
         String chosen = selectByGap(eligibleRules, remaining);
 
-        // 6) 부재 시 대결자로 대체
-        String assignee = service.resolveAbsentAssignee(chosen);
-
+        // 6) 선정 후 대리인 사번·기관을 함께 적용
         // 7) RoleMapping 생성 + BPM_ROLEMAPPING 메타 적재
         RoleMapping mapping = RoleMapping.create();
-        mapping.setEndpoint(assignee);
+        mapping.setEndpoint(chosen);
         mapping.setAssignType(Role.ASSIGNTYPE_USER);
         mapping.setDispatchingOption(Role.DISPATCHINGOPTION_LOADBALANCED);
+        service.applyAbsentAssignee(mapping);
         mapping.fill();
         saveMapping(mapping, policyId, difficulty, refId);
         service.persistRoleMapping(instance, mapping, policyId, difficulty, refId);

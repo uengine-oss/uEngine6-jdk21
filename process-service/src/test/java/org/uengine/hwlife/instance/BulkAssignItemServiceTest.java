@@ -31,18 +31,20 @@ class BulkAssignItemServiceTest {
   private InstanceServiceImpl instanceService;
   private WorklistRepository worklistRepository;
   private BulkAssignItemService service;
+  private org.uengine.hwlife.absence.AbsenceServiceImpl absenceService;
 
   @BeforeEach
   void setUp() {
     instanceService = mock(InstanceServiceImpl.class);
     worklistRepository = mock(WorklistRepository.class);
-    service = new BulkAssignItemService(instanceService, worklistRepository);
+    absenceService = mock(org.uengine.hwlife.absence.AbsenceServiceImpl.class);
+    service = new BulkAssignItemService(instanceService, worklistRepository, absenceService);
   }
 
   @Test
   void usesIndependentTransactionForEachItem() throws Exception {
     Transactional transactional = BulkAssignItemService.class
-        .getMethod("assign", BulkAssignRequestItem.class, String.class, String.class)
+        .getMethod("assign", BulkAssignRequestItem.class, String.class, String.class, String.class)
         .getAnnotation(Transactional.class);
 
     assertEquals(Propagation.REQUIRES_NEW, transactional.propagation());
@@ -55,7 +57,7 @@ class BulkAssignItemServiceTest {
 
     service.assign(item("101", "201", "kim"), "kim", "Kim", "101");
 
-    verify(instanceService).claimWorkItem(eq("101"), mapping.capture());
+    verify(instanceService).claimWorkItem(eq("101"), mapping.capture(), eq(false));
     assertEquals("kim", mapping.getValue().getEndpoint());
     assertEquals("Kim", mapping.getValue().getResourceName());
   }
@@ -65,7 +67,7 @@ class BulkAssignItemServiceTest {
     when(worklistRepository.findByIdForUpdate(101L)).thenReturn(Optional.of(worklist("hong", "NEW", 1)));
 
   
-    verify(instanceService, never()).claimWorkItem(any(), any());
+    verify(instanceService, never()).claimWorkItem(any(), any(), any(Boolean.class));
   }
 
   @Test
@@ -73,7 +75,7 @@ class BulkAssignItemServiceTest {
     when(worklistRepository.findByIdForUpdate(101L)).thenReturn(Optional.empty());
 
     assertCode("LBM070009", item("101", "201", "kim"));
-    verify(instanceService, never()).claimWorkItem(any(), any());
+    verify(instanceService, never()).claimWorkItem(any(), any(), any(Boolean.class));
   }
 
   @Test
@@ -96,12 +98,27 @@ class BulkAssignItemServiceTest {
     when(worklistRepository.findByIdForUpdate(101L))
         .thenReturn(Optional.of(worklist(null, "NEW", 1)));
     doThrow(new ResponseStatusException(HttpStatus.CONFLICT))
-        .when(instanceService).claimWorkItem(any(), any());
+        .when(instanceService).claimWorkItem(any(), any(), any(Boolean.class));
     assertCode("LBM070019", item("101", "201", "kim"));
 
     doThrow(new IllegalStateException("unexpected"))
-        .when(instanceService).claimWorkItem(any(), any());
+        .when(instanceService).claimWorkItem(any(), any(), any(Boolean.class));
     assertCode("LBM070020", item("101", "201", "kim"));
+  }
+
+  @Test
+  void assignsActiveAgentAfterOriginalOrganizationValidation() throws Exception {
+    when(worklistRepository.findByIdForUpdate(101L)).thenReturn(Optional.of(worklist(null, "NEW", 1)));
+    org.uengine.hwlife.absence.dto.AbsenceHistoryItem agent = new org.uengine.hwlife.absence.dto.AbsenceHistoryItem();
+    agent.setAgntEmnb("hong");
+    agent.setAgntFncgOrgnCode("202");
+    when(absenceService.findActiveAgent("kim")).thenReturn(agent);
+    ArgumentCaptor<RoleMappingCommand> mapping = ArgumentCaptor.forClass(RoleMappingCommand.class);
+    service.assign(item("101", "201", "kim"), "kim", "Kim", "101");
+    verify(instanceService).claimWorkItem(eq("101"), mapping.capture(), eq(true));
+    assertEquals("hong", mapping.getValue().getEndpoint());
+    assertEquals("202", mapping.getValue().getGroupName());
+    org.junit.jupiter.api.Assertions.assertNull(mapping.getValue().getResourceName());
   }
 
   private void assertCode(String expected, BulkAssignRequestItem item) {
@@ -119,6 +136,7 @@ class BulkAssignItemServiceTest {
     worklist.setEndpoint(endpoint);
     worklist.setStatus(status);
     worklist.setDispatchOption(dispatchOption);
+    worklist.setGroupCd("101");
     return worklist;
   }
 

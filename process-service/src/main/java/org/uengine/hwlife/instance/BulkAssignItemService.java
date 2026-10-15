@@ -1,5 +1,7 @@
 package org.uengine.hwlife.instance;
 
+import org.uengine.hwlife.absence.AbsenceServiceImpl;
+import org.uengine.hwlife.absence.dto.AbsenceHistoryItem;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -15,12 +17,15 @@ public class BulkAssignItemService {
 
   private final InstanceServiceImpl instanceService;
   private final WorklistRepository worklistRepository;
+  private final AbsenceServiceImpl absenceService;
 
   public BulkAssignItemService(
       InstanceServiceImpl instanceService,
-      WorklistRepository worklistRepository) {
+      WorklistRepository worklistRepository,
+      AbsenceServiceImpl absenceService) {
     this.instanceService = instanceService;
     this.worklistRepository = worklistRepository;
+    this.absenceService = absenceService;
   }
 
   @Transactional(propagation = Propagation.REQUIRES_NEW)
@@ -63,7 +68,13 @@ public class BulkAssignItemService {
     mapping.setEndpoint(targetEndpoint);
     mapping.setResourceName(targetName);
     try {
-      instanceService.claimWorkItem(String.valueOf(taskId), mapping);
+      AbsenceHistoryItem agent = absenceService.findActiveAgent(targetEndpoint);
+      if (agent != null) {
+        mapping.setEndpoint(agent.getAgntEmnb());
+        mapping.setResourceName(null);
+        mapping.setGroupName(agent.getAgntFncgOrgnCode());
+      }
+      instanceService.claimWorkItem(String.valueOf(taskId), mapping, agent != null);
     } catch (ResponseStatusException exception) {
       throw failure("LBM070019", exception);
     } catch (Exception exception) {

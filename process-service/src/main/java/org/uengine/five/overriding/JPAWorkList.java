@@ -1,5 +1,11 @@
 package org.uengine.five.overriding;
 
+import org.uengine.hwlife.absence.AbsenceServiceImpl;
+import org.uengine.processmanager.ProcessTransactionContext;
+import org.uengine.kernel.ProcessInstance;
+import org.uengine.kernel.RoleResolutionContext;
+import org.uengine.kernel.DirectRoleResolutionContext;
+import org.uengine.hwlife.overriding.BoundRoleResolutionContext;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.uengine.five.entity.WorklistEntity;
 import org.uengine.five.lifecycle.BpmLifecycleService;
@@ -53,10 +59,36 @@ public class JPAWorkList implements WorkList {
     @Autowired(required = false)
     WorkItemAssignmentStateService assignmentStateService;
 
+    @Autowired
+    AbsenceServiceImpl absenceService;
+
+    void applyDirectAssignmentAgent(RoleMapping mapping, Map parameters, boolean reservation,
+                                    TransactionContext tc) throws Exception {
+        if (reservation || mapping == null || !UEngineUtil.isNotEmpty(mapping.getEndpoint())
+                || !(tc instanceof ProcessTransactionContext processTc)) return;
+        ProcessInstance instance = processTc.getProcessInstanceInTransaction(
+                String.valueOf(parameters.get(KeyedParameter.INSTANCEID)));
+        if (instance == null || !(instance.getProcessDefinition().getActivity(
+                String.valueOf(parameters.get(KeyedParameter.TRACINGTAG))) instanceof org.uengine.kernel.HumanActivity)) return;
+        Role role = instance.getProcessDefinition().getRole(String.valueOf(parameters.get("roleName")));
+        if (role == null) return;
+        RoleResolutionContext context = role.getRoleResolutionContext();
+        while (context instanceof BoundRoleResolutionContext bound) {
+            context = bound.getBase();
+        }
+        if (!(context instanceof DirectRoleResolutionContext)) return;
+        if (absenceService.applyActiveAgent(mapping)) {
+            parameters.put("groupName", mapping.getGroupName());
+            parameters.put("resourceName", mapping.getResourceName());
+            instance.putRoleMapping(role.getName(), mapping);
+        }
+    }
+
     protected String addWorkItemImpl(String reservedTaskId, RoleMapping roleMapping, Map parameterMap, boolean isReservation, TransactionContext tc) throws RemoteException {
 
         try{
 
+            applyDirectAssignmentAgent(roleMapping, parameterMap, isReservation, tc);
             Calendar startDate = Calendar.getInstance();
 
             if(parameterMap.containsKey("startedTime")){
