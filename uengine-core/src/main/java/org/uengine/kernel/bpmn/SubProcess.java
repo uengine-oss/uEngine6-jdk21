@@ -417,7 +417,6 @@ public class SubProcess extends ScopeActivity {
                 executeActivity_CaseInParallel(instance);
             }
         } else {
-            super.executeActivity(instance);
             ProcessInstance thePI = initiateSubProcess(instance, null, null, false, 0);
             Vector subprocessInstanceIds = new Vector();
             subprocessInstanceIds.add(thePI.getInstanceId());

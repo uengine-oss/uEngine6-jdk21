@@ -1,6 +1,7 @@
 package org.uengine.hwlife.absence;
 
 
+import org.uengine.kernel.RoleMapping;
 import java.util.Date;
 import java.util.List;
 
@@ -181,6 +182,34 @@ public class AbsenceServiceImpl implements AbsenceService {
         item.setAbscRscsDttm(entity.getAbscRscsDttm());
         item.setAbscStupDttm(entity.getAbscCretDttm());
         return item;
+    }
+
+    /** 현재 유효한 대리인 정보. 미설정·기간 밖·해제 상태이면 null. */
+    @Transactional(readOnly = true)
+    public AbsenceHistoryItem findActiveAgent(String employeeNo) {
+        return findActiveAgent(employeeNo, new Date());
+    }
+
+    AbsenceHistoryItem findActiveAgent(String employeeNo, Date at) {
+        String userId = trimToNull(employeeNo);
+        if (userId == null) return null;
+        List<AbsenceEntity> active = absenceRepository.findActiveByUserIdAt(userId, at);
+        if (active.isEmpty() || trimToNull(active.get(0).getAgentUserId()) == null) return null;
+        return toHistoryItem(active.get(0));
+    }
+
+    /** 선정이 끝난 개인 배정에 한 번만 적용한다. */
+    public boolean applyActiveAgent(RoleMapping mapping) throws Exception {
+        if (mapping == null) return false;
+        AbsenceHistoryItem agent = findActiveAgent(mapping.getEndpoint());
+        if (agent == null) return false;
+        RoleMapping identity = RoleMapping.create();
+        identity.setEndpoint(agent.getAgntEmnb());
+        identity.fill();
+        mapping.setEndpoint(agent.getAgntEmnb());
+        mapping.setGroupName(agent.getAgntFncgOrgnCode());
+        mapping.setResourceName(identity.getResourceName());
+        return true;
     }
 
     private AbsenceResponse result(String prcsRsltCntn) {

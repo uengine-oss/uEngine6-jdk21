@@ -2663,7 +2663,13 @@ public class InstanceServiceImpl implements InstanceService {
     @ProcessTransactional // important!
     public void claimWorkItem(@PathVariable("taskId") String taskId, @RequestBody RoleMappingCommand roleMapping)
             throws Exception {
+        claimWorkItem(taskId, roleMapping, false);
+    }
 
+    /** 일괄배정 대리인 기관 반영용 내부 호출. 일반 선점 계약은 유지한다. */
+    @ProcessTransactional
+    public void claimWorkItem(String taskId, RoleMappingCommand roleMapping, boolean agentAssignment)
+            throws Exception {
         if (taskId == null || taskId.equals("null")) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "taskId is required");
         }
@@ -2737,6 +2743,10 @@ public class InstanceServiceImpl implements InstanceService {
             }
             // 1) 현재 taskId의 endpoint/resName 보강
             // assignmentStateService.rememberPrevious(worklistEntity);
+            if (agentAssignment) {
+                worklistEntity.setGroupCd(roleMapping.getGroupName());
+                worklistEntity.setResName(null);
+            }
             applyActorToWorklistIfEmpty(worklistEntity, actorEndpoint);
             worklistRepository.save(worklistEntity);
 
@@ -2748,12 +2758,21 @@ public class InstanceServiceImpl implements InstanceService {
                     for (WorklistEntity wl : siblings) {
                         if (wl == null) continue;
                         // assignmentStateService.rememberPrevious(wl);
+                        if (agentAssignment) {
+                            wl.setGroupCd(roleMapping.getGroupName());
+                            wl.setResName(null);
+                        }
                         applyActorToWorklistIfEmpty(wl, actorEndpoint);
                         worklistRepository.save(wl);
                     }
                 }
             }
 
+        }
+        if (agentAssignment) {
+            ProcessInstance instance = getProcessInstanceLocal(String.valueOf(worklistEntity.getInstId()));
+            RoleMapping lane = instance.getRoleMapping(worklistEntity.getRoleName());
+            if (lane != null) lane.setGroupName(worklistEntity.getGroupCd());
         }
         persistClaimedLane(worklistEntity);
 
@@ -4059,10 +4078,7 @@ public class InstanceServiceImpl implements InstanceService {
             long executionTime = System.currentTimeMillis() - startTime;
 
             // 결과 포맷팅
-            Map<String, Object> response = new LinkedHashMap<>();
-            response.put("outcome", evaluationResult.get("outcome"));
-            response.put("note", evaluationResult.get("note"));
-            response.put("matchedRuleIndex", evaluationResult.get("matchedRuleIndex"));
+            Map<String, Object> response = new LinkedHashMap<>(evaluationResult);
             response.put("executionTime", executionTime);
 
             return response;

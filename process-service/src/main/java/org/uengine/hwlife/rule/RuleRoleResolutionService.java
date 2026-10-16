@@ -1,5 +1,6 @@
 package org.uengine.hwlife.rule;
 
+import org.uengine.hwlife.absence.dto.AbsenceHistoryItem;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.ArrayList;
@@ -24,8 +25,8 @@ import org.uengine.five.entity.ProcessInstanceEntity;
 import org.uengine.five.entity.RoleMappingEntity;
 import org.uengine.five.overriding.JPAProcessInstance;
 import org.uengine.five.repository.RoleMappingRepository;
-import org.uengine.hwlife.absence.entity.AbsenceEntity;
-import org.uengine.hwlife.absence.repository.AbsenceRepository;
+import org.uengine.hwlife.absence.AbsenceServiceImpl;
+
 import org.uengine.hwlife.esbclient.client.EsbClient;
 import org.uengine.hwlife.rule.dto.RoleAssignRulesSyncRequest;
 import org.uengine.hwlife.rule.dto.RoleAssignRulesSyncResponse;
@@ -62,7 +63,7 @@ public class RuleRoleResolutionService {
 
     private final BpmRoleAssignRuleRepository ruleRepository;
     private final RoleMappingRepository roleMappingRepository;
-    private final AbsenceRepository absenceRepository;
+    private final AbsenceServiceImpl absenceService;
     private final EsbClient esbClient;
     private final TransactionTemplate transactionTemplate;
     private final RuleRoleResolutionService self;
@@ -73,13 +74,13 @@ public class RuleRoleResolutionService {
     public RuleRoleResolutionService(
             BpmRoleAssignRuleRepository ruleRepository,
             RoleMappingRepository roleMappingRepository,
-            AbsenceRepository absenceRepository,
+            AbsenceServiceImpl absenceService,
             EsbClient esbClient,
             PlatformTransactionManager transactionManager,
             @Lazy @Autowired RuleRoleResolutionService self) {
         this.ruleRepository = ruleRepository;
         this.roleMappingRepository = roleMappingRepository;
-        this.absenceRepository = absenceRepository;
+        this.absenceService = absenceService;
         this.esbClient = esbClient;
         this.transactionTemplate = new TransactionTemplate(transactionManager);
         this.self = self;
@@ -121,19 +122,12 @@ public class RuleRoleResolutionService {
      */
     @Transactional(readOnly = true)
     public String resolveAbsentAssignee(String endpoint) {
-        if (!isNotEmpty(endpoint)) {
-            return endpoint;
-        }
-        List<AbsenceEntity> active = absenceRepository.findActiveByUserIdAt(endpoint, new Date());
-        if (active.isEmpty()) {
-            return endpoint;
-        }
-        String agent = active.get(0).getAgentUserId();
-        if (isNotEmpty(agent)) {
-            log.debug("[RuleRoleResolution] 부재 대리 배정 | absent={} agent={}", endpoint, agent);
-            return agent;
-        }
-        return endpoint;
+        AbsenceHistoryItem agent = absenceService.findActiveAgent(endpoint);
+        return agent != null ? agent.getAgntEmnb() : endpoint;
+    }
+
+    public void applyAbsentAssignee(RoleMapping mapping) throws Exception {
+        absenceService.applyActiveAgent(mapping);
     }
 
     /**

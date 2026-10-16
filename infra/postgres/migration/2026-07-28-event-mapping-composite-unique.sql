@@ -1,5 +1,10 @@
 -- Preserve multiple BPM event mappings that share one event name.
 -- Apply before deploying code that queries mappings as a list.
+-- Consolidated migration: remove the legacy event-name UNIQUE and ensure the
+-- composite target UNIQUE in one execution. Safe to rerun after either step.
+-- Mapping rows, primary key and bpm_event_inbox are preserved.
+
+BEGIN;
 
 DO $$
 BEGIN
@@ -27,3 +32,5 @@ BEGIN
             UNIQUE (event_name, definition_id, tracing_tag, is_start_event);
     END IF;
 END $$;
+
+COMMIT;
