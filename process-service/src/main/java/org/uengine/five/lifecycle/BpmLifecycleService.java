@@ -1,5 +1,7 @@
 package org.uengine.five.lifecycle;
 
+import java.util.List;
+
 import org.springframework.stereotype.Service;
 import org.uengine.five.entity.ProcessInstanceEntity;
 import org.uengine.five.entity.WorklistEntity;
@@ -50,8 +52,11 @@ public class BpmLifecycleService {
 
     /** 업무 최초 배정 (생성). */
     public void onTaskAssigned(WorklistEntity wl, TransactionContext tc) {
+        if (wl == null) {
+            return;
+        }
         ProcessInstanceEntity pi = resolveAndAttach(wl, tc);
-        assignmentNotifyService.notifyAssigned(wl, pi);
+        assignmentNotifyService.notifyAssigned(List.of(wl), pi);
         workStatusNotifyService.notifyAssigned(wl, pi);
     }
 

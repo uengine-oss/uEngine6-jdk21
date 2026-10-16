@@ -5,13 +5,13 @@ package org.uengine.hwlife.instance.dto;
  */
 public class InstanceSyncResponse {
 
-    private String prcsRsltCntn;
+    private String prcsYn;
 
-    public String getPrcsRsltCntn() {
-        return prcsRsltCntn;
+    public String getPrcsYn() {
+        return prcsYn;
     }
 
-    public void setPrcsRsltCntn(String prcsRsltCntn) {
-        this.prcsRsltCntn = prcsRsltCntn;
+    public void setPrcsYn(String prcsYn) {
+        this.prcsYn = prcsYn;
     }
 }

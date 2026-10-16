@@ -1,16 +1,11 @@
 package org.uengine.hwlife.instance;
 
 import java.util.ArrayList;
-import java.util.ArrayDeque;
-import java.util.Date;
-import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.Vector;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,13 +18,16 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 import org.uengine.contexts.UserContext;
 import org.uengine.five.dto.*;
+import org.uengine.five.entity.ProcessInstanceEntity;
 import org.uengine.five.entity.WorklistEntity;
-import org.uengine.five.framework.ProcessTransactional;
+import org.uengine.five.lifecycle.BpmAssignmentNotifyService;
+import org.uengine.five.lifecycle.BpmLifecycleEventResponse;
+import org.uengine.five.overriding.JPAProcessInstance;
 import org.uengine.five.repository.WorklistRepository;
 import org.uengine.five.service.InstanceServiceImpl;
+import org.uengine.five.service.RootInstanceResolver;
 import org.uengine.five.spring.SecurityAwareServletFilter;
 import org.uengine.kernel.UEngineException;
-import org.uengine.kernel.Activity;
 import org.uengine.kernel.GlobalContext;
 import org.uengine.kernel.HumanActivity;
 import org.uengine.kernel.ProcessInstance;
@@ -60,16 +58,22 @@ public class InstanceIntegrationServiceImpl implements InstanceIntegrationServic
   @SuppressWarnings("unused") // isReassignAuthorized ESB 연동 시 사용
   private final EsbClient esbClient;
   private final BulkAssignItemService bulkAssignItemService;
+  private final BpmAssignmentNotifyService bpmAssignmentNotifyService;
+  private final RootInstanceResolver rootInstanceResolver;
 
   public InstanceIntegrationServiceImpl(
       InstanceServiceImpl instanceService,
       WorklistRepository worklistRepository,
       EsbClient esbClient,
-      BulkAssignItemService bulkAssignItemService) {
+      BulkAssignItemService bulkAssignItemService,
+      BpmAssignmentNotifyService bpmAssignmentNotifyService,
+      RootInstanceResolver rootInstanceResolver) {
     this.instanceService = instanceService;
     this.worklistRepository = worklistRepository;
     this.esbClient = esbClient;
     this.bulkAssignItemService = bulkAssignItemService;
+    this.bpmAssignmentNotifyService = bpmAssignmentNotifyService;
+    this.rootInstanceResolver = rootInstanceResolver;
   }
 
   /**
@@ -980,7 +984,13 @@ public class InstanceIntegrationServiceImpl implements InstanceIntegrationServic
     String hndrAtrtId = request.getHndrAtrtId();
 
     try {
-      // List<String> userAuthorities = !ExternalIAMService.getDefault().resolveUserAuthorityIds(rqsrEmnb);
+      List<String> userAuthorities = ExternalIAMService.getDefault().resolveUserAuthorityIds(rqsrEmnb);
+      if (!userAuthorities.contains("FN999")) {
+        TaskSkipResponse denied = new TaskSkipResponse();
+        denied.setPrcsRsltCntn("LBM090002");
+        return denied;
+      }
+
       TaskSkipCommand command = new TaskSkipCommand();
       command.setEndpoint(hndrEmnb);
       command.setGroupName(hndrOrgnCode);
@@ -1013,7 +1023,12 @@ public class InstanceIntegrationServiceImpl implements InstanceIntegrationServic
     String targetTracingTag = requireText(request.getFncgBpmTaskTrcgNm(), "fncgBpmTaskTrcgNm is required");
 
     try {
-      // List<String> userAuthorities = !ExternalIAMService.getDefault().resolveUserAuthorityIds(rqsrEmnb);
+      List<String> userAuthorities = ExternalIAMService.getDefault().resolveUserAuthorityIds(rqsrEmnb);
+      if (!userAuthorities.contains("FN999")) {
+        TaskReturnResponse denied = new TaskReturnResponse();
+        denied.setPrcsRsltCntn("LBM090002");
+        return denied;
+      }
       instanceService.backToHere(instanceId, targetTracingTag);
     } catch (ResponseStatusException e) {
       throw e;
@@ -1040,10 +1055,47 @@ public class InstanceIntegrationServiceImpl implements InstanceIntegrationServic
   @Override
   @Transactional
   public InstanceSyncResponse syncInstances(@RequestBody InstanceSyncRequest request) throws Exception {
-    return new InstanceSyncResponse();
+    if (request == null) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Request body is required");
+    }
+    String instanceId = requireText(request.getFncgBpmPcesIntcId(), "fncgBpmPcesIntcId is required");
+
+    ProcessInstance processInstance = instanceService.getProcessInstanceLocal(instanceId);
+    if (!(processInstance instanceof JPAProcessInstance)) {
+      throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Process instance not found: " + instanceId);
+    }
+
+    ProcessInstanceEntity processInstanceEntity =
+        ((JPAProcessInstance) processInstance).getProcessInstanceEntity();
+    if (processInstanceEntity == null || processInstanceEntity.getInstId() == null) {
+      throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Process instance entity not found: " + instanceId);
+    }
+
+    // rootInstId 필드 기준 1회 조회 — parent 체인 재귀 없음
+    Long rootInstId = RootInstanceResolver.rootInstIdOf(processInstanceEntity);
+    ProcessInstanceEntity rootInstanceEntity = processInstanceEntity;
+    if (rootInstId != null && !rootInstId.equals(processInstanceEntity.getInstId())) {
+      rootInstanceEntity = rootInstanceResolver.resolve(rootInstId);
+    }
+    if (rootInstanceEntity == null || rootInstanceEntity.getInstId() == null) {
+      throw new ResponseStatusException(HttpStatus.NOT_FOUND,
+          "Root process instance not found for: " + instanceId);
+    }
+
+    // root 기준 단건 조회 — 서브프로세스 wl 포함, 트리 재귀 없음
+    List<WorklistEntity> worklists =
+        worklistRepository.findActiveByRootOrInstance(rootInstanceEntity.getInstId());
+
+    BpmLifecycleEventResponse notifyResponse = bpmAssignmentNotifyService.notifyAssigned(
+        worklists == null ? List.of() : worklists,
+        rootInstanceEntity,
+        true);
+
+    InstanceSyncResponse response = new InstanceSyncResponse();
+    if (notifyResponse != null) {
+      response.setPrcsYn(notifyResponse.getPrcsYn());
+    }
+    return response;
   }
 
-  private static ResponseStatusException notImplemented(String operation) {
-    return new ResponseStatusException(HttpStatus.NOT_IMPLEMENTED, operation + " is not implemented yet");
-  }
 }

@@ -5,34 +5,7 @@ package org.uengine.hwlife.instance.dto;
  */
 public class InstanceSyncRequest {
 
-    private String loanPcesMgmtNo;
-    private String fncgBpmTaskTrcgNm;
-    private String fncgBpmTaskLstId;
     private String fncgBpmPcesIntcId;
-
-    public String getLoanPcesMgmtNo() {
-        return loanPcesMgmtNo;
-    }
-
-    public void setLoanPcesMgmtNo(String loanPcesMgmtNo) {
-        this.loanPcesMgmtNo = loanPcesMgmtNo;
-    }
-
-    public String getFncgBpmTaskTrcgNm() {
-        return fncgBpmTaskTrcgNm;
-    }
-
-    public void setFncgBpmTaskTrcgNm(String fncgBpmTaskTrcgNm) {
-        this.fncgBpmTaskTrcgNm = fncgBpmTaskTrcgNm;
-    }
-
-    public String getFncgBpmTaskLstId() {
-        return fncgBpmTaskLstId;
-    }
-
-    public void setFncgBpmTaskLstId(String fncgBpmTaskLstId) {
-        this.fncgBpmTaskLstId = fncgBpmTaskLstId;
-    }
 
     public String getFncgBpmPcesIntcId() {
         return fncgBpmPcesIntcId;

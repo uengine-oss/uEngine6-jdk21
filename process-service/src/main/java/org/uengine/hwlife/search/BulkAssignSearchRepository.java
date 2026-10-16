@@ -78,10 +78,17 @@ public class BulkAssignSearchRepository {
       String belnOrgnCode) {
     List<Predicate> predicates = new ArrayList<>();
     Path<String> endpoint = worklist.get("endpoint");
+    Path<String> scope = worklist.get("scope");
+    Expression<String> trimmedScope = builder.trim(scope);
     predicates.add(builder.equal(builder.upper(worklist.get("status")), "NEW"));
     predicates.add(builder.equal(worklist.get("dispatchOption"), 1));
     predicates.add(builder.or(builder.isNull(endpoint), builder.equal(builder.trim(endpoint), "")));
     predicates.add(builder.equal(builder.trim(worklist.get("groupCd")), belnOrgnCode));
+    // 권한이 있는 건(scope 지정) 제외 — null/blank/"null"만 대상
+    predicates.add(builder.or(
+        builder.isNull(scope),
+        builder.equal(trimmedScope, ""),
+        builder.equal(builder.lower(trimmedScope), "null")));
 
     addText(builder, predicates, instance.get("bswrClsfCode"), request.getBpmBswrClsfCode());
     addText(builder, predicates, instance.get("custId"), request.getCustId());
