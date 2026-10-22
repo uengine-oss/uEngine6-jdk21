@@ -11,6 +11,7 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.uengine.five.overriding.IAMRoleResolutionContext;
+import org.uengine.five.service.IAMServiceFactory;
 import org.uengine.kernel.DirectRoleResolutionContext;
 import org.uengine.kernel.DynamicRoleMappingContext;
 import org.uengine.kernel.GlobalContext;
@@ -93,6 +94,10 @@ public class BoundRoleResolutionContext extends RoleResolutionContext
         if (base == null) {
             throw new IllegalStateException("BoundRoleResolutionContext: base RoleResolutionContext is required");
         }
+        if (base instanceof RuleBasedRoleResolutionContext rule
+                && bindings != null && isNotEmpty(bindings.get("endpoint"))) {
+            return resolveRuleMapping(rule, pd, instance, tracingTag, currentMapping, options);
+        }
         // bindings 없거나 instance 변수가 하나도 없으면: 기존 mapping 유지(클레임), 없으면 base
         LinkedHashMap<String, String> values = readAvailableBindingValues(instance, tracingTag);
         if (bindings == null || bindings.isEmpty() || values.isEmpty()) {
@@ -128,6 +133,10 @@ public class BoundRoleResolutionContext extends RoleResolutionContext
         if (base == null) {
             throw new IllegalStateException("BoundRoleResolutionContext: base RoleResolutionContext is required");
         }
+        if (base instanceof RuleBasedRoleResolutionContext rule
+                && bindings != null && isNotEmpty(bindings.get("endpoint"))) {
+            return resolveRuleMapping(rule, pd, instance, tracingTag, null, options);
+        }
         RoleMapping mapping = base.getActualMapping(pd, instance, tracingTag, options);
         applyInstanceOverrides(mapping, instance, tracingTag);
         applyAssignType(mapping);
@@ -139,6 +148,27 @@ public class BoundRoleResolutionContext extends RoleResolutionContext
                     mapping != null ? mapping.getAssignType() : null);
         }
         return mapping;
+    }
+
+    @SuppressWarnings("rawtypes")
+    private RoleMapping resolveRuleMapping(RuleBasedRoleResolutionContext rule, ProcessDefinition pd,
+            ProcessInstance instance, String tracingTag, RoleMapping currentMapping, Map options) throws Exception {
+        String variable = bindings != null ? bindings.get("endpoint") : null;
+        Object value = instance != null && isNotEmpty(variable) ? instance.get("", variable) : null;
+        if (value == null && instance != null && isNotEmpty(variable) && tracingTag != null) {
+            value = instance.getProperty(tracingTag, variable);
+        }
+        String endpoint = value instanceof String ? ((String) value).trim() : null;
+        if (isNotEmpty(endpoint) && IAMServiceFactory.getDefault().isValidUser(endpoint)) {
+            // 동일 변수값의 후속 업무는 부재 대리인을 포함한 기존 배정을 계승한다.
+            if (currentMapping != null && endpoint.equals(currentMapping.getExtendedProperty("boundEndpoint"))) {
+                return currentMapping;
+            }
+            RoleMapping mapping = rule.getActualMapping(pd, instance, tracingTag, options, endpoint);
+            mapping.setExtendedProperty("boundEndpoint", endpoint);
+            return mapping;
+        }
+        return currentMapping != null ? currentMapping : rule.getActualMapping(pd, instance, tracingTag, options);
     }
 
     /**

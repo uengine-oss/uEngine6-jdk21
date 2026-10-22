@@ -200,6 +200,7 @@ public class ProcessInstanceEntity {// implements ProcessInstanceDAO {
         this.workLists = workLists;
     }
 
+    @JsonIgnore
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "processInstance")
     List<RoleMappingEntity> roleMappings;
 

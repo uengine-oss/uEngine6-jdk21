@@ -51,6 +51,11 @@ public class RuleBasedRoleResolutionContext extends RoleResolutionContext {
     @Override
     public RoleMapping getActualMapping(ProcessDefinition pd, ProcessInstance instance,
                                         String tracingTag, Map options) throws Exception {
+        return getActualMapping(pd, instance, tracingTag, options, null);
+    }
+
+    RoleMapping getActualMapping(ProcessDefinition pd, ProcessInstance instance,
+                                 String tracingTag, Map options, String assignedEndpoint) throws Exception {
         RuleRoleResolutionService service = RuleRoleResolutionSupport.get();
 
         // 1) policyId(context), difficulty(cpabLvdfLvelNm), refId(instance.corrKey)
@@ -65,27 +70,30 @@ public class RuleBasedRoleResolutionContext extends RoleResolutionContext {
                     "RuleBasedRoleResolutionContext: instance.corrKey(대출프로세스관리번호) 가 필요합니다.");
         }
 
-        // 2) 역량 기준정보 — 오늘 동기화분 DB 사용, 아니면 ESB 동기화
-        List<RuleCandidate> rules = syncRoleAssignRules(policyId, difficulty);
-        if (rules.isEmpty()) {
-            throw new IllegalStateException("RuleBasedRoleResolutionContext: 정책 " + policyId
-                    + " / 난이도 " + difficulty + " 에 대한 배정 규칙이 없습니다.");
+        String chosen = assignedEndpoint;
+        if (!isNotEmpty(chosen)) {
+            // 2) 역량 기준정보 — 오늘 동기화분 DB 사용, 아니면 ESB 동기화
+            List<RuleCandidate> rules = syncRoleAssignRules(policyId, difficulty);
+            if (rules.isEmpty()) {
+                throw new IllegalStateException("RuleBasedRoleResolutionContext: 정책 " + policyId
+                        + " / 난이도 " + difficulty + " 에 대한 배정 규칙이 없습니다.");
+            }
+
+            // 3) refId 동일 이력의 이전 처리자 제외
+            Set<String> excluded = service.findExcludedEndpointsByRefId(refId);
+            List<RuleCandidate> eligibleRules = excludeRules(rules, excluded);
+            if (eligibleRules.isEmpty()) {
+                throw new IllegalStateException("RuleBasedRoleResolutionContext: refId " + refId
+                        + " 에서 제외 후 배정 가능한 처리자가 없습니다.");
+            }
+
+            // 4) 후보 선정 + 업무량 조회 (전월 1일~오늘, 진행중+완료)
+            List<String> candidates = selectByAssignee(eligibleRules);
+            Map<String, Integer> remaining = service.queryWorkload(refId, candidates);
+
+            // 5) GAP(가중치 − 업무량) 기반 담당자 결정
+            chosen = selectByGap(eligibleRules, remaining);
         }
-
-        // 3) refId 동일 이력의 이전 처리자 제외
-        Set<String> excluded = service.findExcludedEndpointsByRefId(refId);
-        List<RuleCandidate> eligibleRules = excludeRules(rules, excluded);
-        if (eligibleRules.isEmpty()) {
-            throw new IllegalStateException("RuleBasedRoleResolutionContext: refId " + refId
-                    + " 에서 제외 후 배정 가능한 처리자가 없습니다.");
-        }
-
-        // 4) 후보 선정 + 업무량 조회 (전월 1일~오늘, 진행중+완료)
-        List<String> candidates = selectByAssignee(eligibleRules);
-        Map<String, Integer> remaining = service.queryWorkload(refId, candidates);
-
-        // 5) GAP(가중치 − 업무량) 기반 담당자 결정
-        String chosen = selectByGap(eligibleRules, remaining);
 
         // 6) 선정 후 대리인 사번·기관을 함께 적용
         // 7) RoleMapping 생성 + BPM_ROLEMAPPING 메타 적재
