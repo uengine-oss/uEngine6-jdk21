@@ -10,11 +10,7 @@ import org.uengine.contexts.UserContext;
 import org.uengine.five.ProcessServiceApplication;
 import org.uengine.five.service.IAMService;
 import org.uengine.hwlife.esbclient.client.EsbClient;
-import org.uengine.hwlife.iam.dto.FncgOrgInfo;
-import org.uengine.hwlife.iam.dto.FncgRoleInfo;
-import org.uengine.hwlife.iam.dto.UserSearchResponse;
-import org.uengine.hwlife.iam.dto.OrgSearchResponse;
-import org.uengine.hwlife.iam.dto.RoleSearchResponse;
+import org.uengine.hwlife.iam.dto.*;
 
 /**
  * 외부 IAM(ESB·사내 디렉터리 등) 연동 구현체.
@@ -137,7 +133,7 @@ public class ExternalIAMService implements IAMService {
         org2.setFncgWndwOrgnAbrvNm("IT운영팀");
         org2.setFncgWndwOrgnNm("IT운영팀");
         list.add(org2);
-        
+
         response.setBpmOrgnList(list);
         return response;
     }
@@ -203,6 +199,15 @@ public class ExternalIAMService implements IAMService {
         roles.add(role("FN230", "대출심사역"));
         response.setBpmAtrtList(roles);
         return response;
+    }
+
+    public RsaKyprResponse getRsaKypr() {
+
+        return new RsaKyprResponse();
+    }
+
+    public UserCtfnLognResponse requestUserCtfnLogn(UserCtfnLognRequest request) {
+        return new UserCtfnLognResponse();
     }
 
     /**

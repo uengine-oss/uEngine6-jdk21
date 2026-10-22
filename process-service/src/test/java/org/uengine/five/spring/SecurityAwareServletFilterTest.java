@@ -22,7 +22,6 @@ class SecurityAwareServletFilterTest {
         when(request.getHeader("Authorization")).thenReturn(token);
         return request;
     }
-
     private void assertEmpty() {
         assertNull(SecurityAwareServletFilter.getUserId());
         assertNull(UserContext.getThreadLocalInstance().getGroups());

@@ -111,6 +111,17 @@ spring:
 uengine:
   definition:
     basePath: ${UENGINE_BASEPATH:D:\uEngineProject\uEngine6-jdk21}
+  session:
+    idle-timeout-minutes: ${UENGINE_SESSION_IDLE_MINUTES:30}
+    idle-timeout-max-minutes: ${UENGINE_SESSION_IDLE_MAX_MINUTES:30}
+    extend-prompt-seconds: ${UENGINE_SESSION_EXTEND_PROMPT_SECONDS:60}
+    jwt-ttl-hours: ${UENGINE_SESSION_JWT_TTL_HOURS:8}
+    jwt-secret: ${UENGINE_SESSION_JWT_SECRET:uengine-session-dev-secret-change-me}
+    sso:
+      user-header: ${UENGINE_SESSION_SSO_USER_HEADER:SM_USER}
+      session-cookie: ${UENGINE_SESSION_SSO_COOKIE:SMSESSION}
+      session-id-header: ${UENGINE_SESSION_SSO_SESSION_ID_HEADER:SM_SERVERSESSIONID}
+      logout-cookie-value: ${UENGINE_SESSION_SSO_LOGOUT_VALUE:LOGGEDOFF}
   # 감사 로그: 저장소 유연 구성 (jpa | file | composite | none)
   audit:
     sink: none     # Method 0: None (기본)

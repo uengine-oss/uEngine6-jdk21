@@ -976,8 +976,9 @@ public class InstanceIntegrationServiceImpl implements InstanceIntegrationServic
     if (request == null) {
       throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Request body is required");
     }
-   
-    String rqsrEmnb = requireText(request.getRqsrEmnb(), "rqsrEmnb is required"); 
+
+    // 요청자 사번은 body rqsrEmnb가 아니라 Session/Keycloak JWT로 확정된 신원만 사용
+    String rqsrEmnb = requireAuthenticatedUserId();
     String taskId = requireText(request.getFncgBpmTaskLstId(), "fncgBpmTaskLstId is required");
     String hndrEmnb = requireText(request.getHndrEmnb(), "hndrEmnb is required");
     String hndrOrgnCode = request.getHndrOrgnCode();
@@ -1018,7 +1019,8 @@ public class InstanceIntegrationServiceImpl implements InstanceIntegrationServic
       throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Request body is required");
     }
 
-    String rqsrEmnb = requireText(request.getRqsrEmnb(), "rqsrEmnb is required");
+    // 요청자 사번은 body rqsrEmnb가 아니라 Session/Keycloak JWT로 확정된 신원만 사용
+    String rqsrEmnb = requireAuthenticatedUserId();
     String instanceId = requireText(request.getFncgBpmPcesIntcId(), "fncgBpmPcesIntcId is required");
     String targetTracingTag = requireText(request.getFncgBpmTaskTrcgNm(), "fncgBpmTaskTrcgNm is required");
 
@@ -1050,6 +1052,18 @@ public class InstanceIntegrationServiceImpl implements InstanceIntegrationServic
       throw new ResponseStatusException(HttpStatus.BAD_REQUEST, message);
     }
     return normalized;
+  }
+
+  /** Filter가 JWT에서 설정한 요청자 사번. body rqsrEmnb는 신뢰하지 않는다. */
+  private static String requireAuthenticatedUserId() {
+    String userId = trimToNull(UserContext.getThreadLocalInstance().getUserId());
+    if (userId == null) {
+      userId = trimToNull(SecurityAwareServletFilter.getUserId());
+    }
+    if (userId == null) {
+      throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authenticated user required");
+    }
+    return userId;
   }
 
   @Override

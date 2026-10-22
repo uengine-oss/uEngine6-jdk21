@@ -3,12 +3,7 @@ package org.uengine.hwlife.iam;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
-import org.uengine.hwlife.iam.dto.ChangedIamSyncRequest;
-import org.uengine.hwlife.iam.dto.ChangedIamSyncResponse;
-import org.uengine.hwlife.iam.dto.RoleSearchResponse;
-import org.uengine.hwlife.iam.dto.UserSearchRequest;
-import org.uengine.hwlife.iam.dto.UserSearchResponse;
-import org.uengine.hwlife.iam.dto.OrgSearchResponse;
+import org.uengine.hwlife.iam.dto.*;
 
 /**
  * 외부 IAM 연동 REST API — 조회 및 변경 수신·반영.
