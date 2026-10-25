@@ -5,7 +5,6 @@ import java.security.SecureRandom;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -31,7 +30,6 @@ import org.uengine.hwlife.esbclient.dto.EsbCommonHeader;
 public class EsbHeaderFactory {
 
     private static final SecureRandom RANDOM = new SecureRandom();
-    private static final AtomicInteger HSNO = new AtomicInteger(1);
 
     /** ESB 서버 구분값. application.yml {@code esb.server-type}(환경변수 {@code ESB_SERVER_TYPE})에서 주입. */
     private final String serverType;
@@ -69,7 +67,7 @@ public class EsbHeaderFactory {
                 .tlgrCretDttm(now)
                 .rqstDttm(now)
                 .rndmNo(String.format("%04d", RANDOM.nextInt(10000)))
-                .hsno(HSNO.getAndIncrement())
+                .hsno(1)
                 .ogtsTrnnNo(UUID.randomUUID().toString())
                 .prsnInfoIncsYn("N")
                 .serverType(serverType)
