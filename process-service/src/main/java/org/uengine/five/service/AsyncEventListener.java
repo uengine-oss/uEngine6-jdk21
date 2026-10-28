@@ -85,6 +85,9 @@ public class AsyncEventListener {
         try {
             String eventType = typeHeader;
             HashMap<String, Object> eventContent = eventObjectMapper().readValue(eventBody, HashMap.class);
+            if (!UEngineUtil.isNotEmpty(actorEndpoint)) {
+                actorEndpoint = resolveEsbHeaderEmnb(eventContent);
+            }
             List<EventMappingEntity> eventMappings =
                     eventMappingRepository.findAllByEventNameOrderByIdAsc(eventType);
 
@@ -105,6 +108,26 @@ public class AsyncEventListener {
         } catch (Exception e) {
             throw new RuntimeException("Error wheneverEvent :" + e.getMessage(), e);
         }
+    }
+
+    /**
+     * event_inbox payload 에 enrich 된 {@code esbHeader.emnb} 를 actorEndpoint 로 사용.
+     * {@link org.uengine.hwlife.events.ExternalEsbInboxSupport#enrichInboxPayload} 참고.
+     */
+    private String resolveEsbHeaderEmnb(Map<String, Object> eventContent) {
+        if (eventContent == null) {
+            return null;
+        }
+        Object esbHeaderObj = eventContent.get("esbHeader");
+        if (!(esbHeaderObj instanceof Map<?, ?> esbHeader)) {
+            return null;
+        }
+        Object emnb = esbHeader.get("emnb");
+        if (emnb == null) {
+            return null;
+        }
+        String value = emnb.toString().trim();
+        return value.isEmpty() ? null : value;
     }
 
     private void processEventMappings(

@@ -131,7 +131,12 @@ public class WorkSearchServiceImpl implements WorkSearchService {
    * 조회 실패 시 빈 목록 — scope 없는 업무만 노출된다.
    */
   private static List<String> resolveUserScopes(String emnb) {
-    return ExternalIAMService.getDefault().resolveUserAuthorityIds(emnb);
+    try {
+      List<String> scopes = ExternalIAMService.getDefault().getUserScopes(emnb);
+      return scopes != null ? scopes : List.of();
+    } catch (Exception e) {
+      return List.of();
+    }
   }
 
   @Override
@@ -349,7 +354,7 @@ public class WorkSearchServiceImpl implements WorkSearchService {
     item.setHndrEmnb(worklist.getEndpoint());
     item.setHndrNm(worklist.getResName());
     item.setHndrOrgnCode(trimToNull(worklist.getGroupCd()));
-    item.setScrnUrlAddr(worklist.getTool());
+    item.setScrnUrlAddr(toScrnUrlAddr(worklist.getTool()));
     item.setFncgBpmTaskLstId(worklist.getTaskId() == null ? null : String.valueOf(worklist.getTaskId()));
     item.setFncgBpmPcesIntcId(instId == null ? null : String.valueOf(instId));
     item.setBswrDvsnVal(rootInstance == null ? null : rootInstance.getDefId());
@@ -658,6 +663,24 @@ public class WorkSearchServiceImpl implements WorkSearchService {
     calendar.setTime(value);
     calendar.add(Calendar.DAY_OF_MONTH, days);
     return calendar.getTime();
+  }
+
+  /**
+   * worklist.tool 앞의 {@code urlHandler:} / {@code urlHandler} 접두어를 제거해 화면 URL만 남긴다.
+   * 예: {@code urlHandler:https://a} → {@code https://a}, {@code urlHandler} → null
+   */
+  private static String toScrnUrlAddr(String tool) {
+    String value = trimToNull(tool);
+    if (value == null) {
+      return null;
+    }
+    if (value.startsWith("urlHandler:")) {
+      return trimToNull(value.substring("urlHandler:".length()));
+    }
+    if (value.startsWith("urlHandler")) {
+      return trimToNull(value.substring("urlHandler".length()));
+    }
+    return value;
   }
 
   private static String trimToNull(String value) {

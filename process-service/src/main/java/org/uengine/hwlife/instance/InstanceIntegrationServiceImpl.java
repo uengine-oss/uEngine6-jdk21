@@ -124,9 +124,11 @@ public class InstanceIntegrationServiceImpl implements InstanceIntegrationServic
 
     boolean unclaim = "1".equals(trimToNull(request.getDvsnVal()));
     UserContext.getThreadLocalInstance().setUserId(actorEndpoint);
-    List<String> userAuthorities = unclaim
-        ? List.of()
-        : ExternalIAMService.getDefault().resolveUserAuthorityIds(actorEndpoint);
+    // 선점(claim)만 worklist.scope 검증에 IAM 권한 목록 필요 — 해제는 본인 endpoint 확인만
+    List<String> userAuthorities = List.of();
+    if (!unclaim) {
+      userAuthorities = resolveUserScopes(actorEndpoint);
+    }
 
     List<ClaimResponseItem> failList = new ArrayList<>();
     Set<String> seenTaskIds = new HashSet<>();
@@ -340,6 +342,16 @@ public class InstanceIntegrationServiceImpl implements InstanceIntegrationServic
     }
     failure.setPrcsRsltCntn(reason);
     failList.add(failure);
+  }
+
+  /** IAM 사용자 권한 코드 목록. 실패 시 빈 목록. */
+  private static List<String> resolveUserScopes(String emnb) {
+    try {
+      List<String> scopes = ExternalIAMService.getDefault().getUserScopes(emnb);
+      return scopes != null ? scopes : List.of();
+    } catch (Exception e) {
+      return List.of();
+    }
   }
 
   private static String trimToNull(String value) {
@@ -985,7 +997,7 @@ public class InstanceIntegrationServiceImpl implements InstanceIntegrationServic
     String hndrAtrtId = request.getHndrAtrtId();
 
     try {
-      List<String> userAuthorities = ExternalIAMService.getDefault().resolveUserAuthorityIds(rqsrEmnb);
+      List<String> userAuthorities = resolveUserScopes(rqsrEmnb);
       if (!userAuthorities.contains("FN999")) {
         TaskSkipResponse denied = new TaskSkipResponse();
         denied.setPrcsRsltCntn("LBM090002");
@@ -1025,7 +1037,7 @@ public class InstanceIntegrationServiceImpl implements InstanceIntegrationServic
     String targetTracingTag = requireText(request.getFncgBpmTaskTrcgNm(), "fncgBpmTaskTrcgNm is required");
 
     try {
-      List<String> userAuthorities = ExternalIAMService.getDefault().resolveUserAuthorityIds(rqsrEmnb);
+      List<String> userAuthorities = resolveUserScopes(rqsrEmnb);
       if (!userAuthorities.contains("FN999")) {
         TaskReturnResponse denied = new TaskReturnResponse();
         denied.setPrcsRsltCntn("LBM090002");

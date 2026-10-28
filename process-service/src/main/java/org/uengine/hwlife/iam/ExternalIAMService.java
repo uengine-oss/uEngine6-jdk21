@@ -76,9 +76,32 @@ public class ExternalIAMService implements IAMService {
         return new ArrayList<>();
     }
 
+    /**
+     * 사번의 보유 권한 코드({@code bpmAtrtList.fncgCoreAtrtId}) 목록.
+     * trim·빈값·{@code "null"} 제거. 조회 실패 시 빈 목록.
+     */
     @Override
     public List<String> getUserScopes(String userId) throws Exception {
-        return new ArrayList<>();
+        UserSearchResponse user;
+        try {
+            user = getUser(userId);
+        } catch (Exception e) {
+            return List.of();
+        }
+        if (user == null || user.getBpmAtrtList() == null || user.getBpmAtrtList().isEmpty()) {
+            return List.of();
+        }
+        List<String> authorities = new ArrayList<>();
+        for (FncgRoleInfo role : user.getBpmAtrtList()) {
+            if (role == null) {
+                continue;
+            }
+            String atrtId = trimToNull(role.getFncgCoreAtrtId());
+            if (atrtId != null && !"null".equalsIgnoreCase(atrtId)) {
+                authorities.add(atrtId);
+            }
+        }
+        return authorities;
     }
 
     @Override
@@ -208,33 +231,6 @@ public class ExternalIAMService implements IAMService {
 
     public UserCtfnLognResponse requestUserCtfnLogn(UserCtfnLognRequest request) {
         return new UserCtfnLognResponse();
-    }
-
-    /**
-     * 사번의 보유 권한 코드({@code bpmAtrtList.fncgCoreAtrtId}) 목록.
-     * trim·빈값·{@code "null"} 제거. 조회 실패 시 빈 목록.
-     */
-    public List<String> resolveUserAuthorityIds(String employeeNo) {
-        UserSearchResponse user;
-        try {
-            user = getUser(employeeNo);
-        } catch (Exception e) {
-            return List.of();
-        }
-        if (user == null || user.getBpmAtrtList() == null || user.getBpmAtrtList().isEmpty()) {
-            return List.of();
-        }
-        List<String> authorities = new ArrayList<>();
-        for (FncgRoleInfo role : user.getBpmAtrtList()) {
-            if (role == null) {
-                continue;
-            }
-            String atrtId = trimToNull(role.getFncgCoreAtrtId());
-            if (atrtId != null && !"null".equalsIgnoreCase(atrtId)) {
-                authorities.add(atrtId);
-            }
-        }
-        return authorities;
     }
 
     /**

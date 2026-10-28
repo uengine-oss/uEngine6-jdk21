@@ -61,7 +61,7 @@ public class BpmMessageDispatcher {
 
         // 2) type 헤더가 있으면 외부 이벤트로 wheneverEvent 처리
         if (typeHeader != null && !typeHeader.isEmpty()) {
-            asyncEventListener.wheneverEvent(payload, typeHeader, corrKeyHeader, actorEndpoint);
+            asyncEventListener.wheneverEvent(payload, typeHeader, corrKeyHeader);
         } else if (log.isWarnEnabled()) {
             log.warn("[BPM] no 'type' header - external event path skipped. All headers: {}", message.getHeaders().keySet());
         }
