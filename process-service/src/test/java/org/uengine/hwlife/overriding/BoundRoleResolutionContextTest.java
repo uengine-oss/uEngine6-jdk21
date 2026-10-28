@@ -483,6 +483,104 @@ class BoundRoleResolutionContextTest {
         assertEquals("ORG01", initial.getGroupName());
     }
 
+    @Test
+    void ruleBindingOverridesSelectionAndKeepsInheritedDelegate() throws Exception {
+        IAMService iam = mock(IAMService.class);
+        when(iam.isValidUser("hong")).thenReturn(true);
+        RuleBasedRoleResolutionContext rule = mock(RuleBasedRoleResolutionContext.class);
+        BoundRoleResolutionContext context = new BoundRoleResolutionContext();
+        context.setBase(rule);
+        context.setBindings(bindings("endpoint", "assignee"));
+        ProcessInstance instance = mock(ProcessInstance.class);
+        when(instance.get("", "assignee")).thenReturn("hong");
+        RoleMapping delegated = RoleMapping.create();
+        delegated.setEndpoint("kim");
+        when(rule.getActualMapping(null, instance, "Task_1", java.util.Map.of(), "hong")).thenReturn(delegated);
+        try (var factory = org.mockito.Mockito.mockStatic(org.uengine.five.service.IAMServiceFactory.class)) {
+            factory.when(org.uengine.five.service.IAMServiceFactory::getDefault).thenReturn(iam);
+            assertSame(delegated, context.resolveRoleMapping(null, instance, "Task_1", null, java.util.Map.of()));
+            assertSame(delegated, context.resolveRoleMapping(null, instance, "Task_2", delegated, java.util.Map.of()));
+            verify(rule, never()).getActualMapping(null, instance, "Task_1", java.util.Map.of());
+            when(iam.isValidUser("lee")).thenReturn(true);
+            when(instance.get("", "assignee")).thenReturn("lee");
+            RoleMapping changed = RoleMapping.create();
+            changed.setEndpoint("lee");
+            when(rule.getActualMapping(null, instance, "Task_3", java.util.Map.of(), "lee")).thenReturn(changed);
+            assertSame(changed, context.resolveRoleMapping(null, instance, "Task_3", delegated, java.util.Map.of()));
+            assertEquals("kim", delegated.getEndpoint());
+        }
+    }
+
+    @Test
+    void invalidRuleBindingKeepsCurrentOrFallsBackToRules() throws Exception {
+        IAMService iam = mock(IAMService.class);
+        RuleBasedRoleResolutionContext rule = mock(RuleBasedRoleResolutionContext.class);
+        BoundRoleResolutionContext context = new BoundRoleResolutionContext();
+        context.setBase(rule);
+        context.setBindings(bindings("endpoint", "assignee"));
+        ProcessInstance instance = mock(ProcessInstance.class);
+        RoleMapping current = RoleMapping.create();
+        RoleMapping fallback = RoleMapping.create();
+        when(rule.getActualMapping(null, instance, "Task_1", java.util.Map.of())).thenReturn(fallback);
+        try (var factory = org.mockito.Mockito.mockStatic(org.uengine.five.service.IAMServiceFactory.class)) {
+            factory.when(org.uengine.five.service.IAMServiceFactory::getDefault).thenReturn(iam);
+            for (Object value : new Object[] { "unknown", "", 123, java.util.Map.of("id", "hong") }) {
+                when(instance.get("", "assignee")).thenReturn((java.io.Serializable) value);
+                assertSame(current, context.resolveRoleMapping(null, instance, "Task_2", current, java.util.Map.of()));
+                assertSame(fallback, context.getActualMapping(null, instance, "Task_1", java.util.Map.of()));
+            }
+        }
+    }
+
+    @Test
+    void ruleOverrideAppliesAbsenceBeforePersistingWithoutRuleLookup() throws Exception {
+        var service = mock(org.uengine.hwlife.rule.RuleRoleResolutionService.class);
+        var rule = new RuleBasedRoleResolutionContext();
+        rule.setPolicyId("POL-001");
+        ProcessInstance instance = mock(ProcessInstance.class);
+        when(instance.get("", "corrKey")).thenReturn("REF-001");
+        org.mockito.Mockito.doAnswer(call -> {
+            RoleMapping mapping = call.getArgument(0);
+            assertEquals("hong", mapping.getEndpoint());
+            mapping.setEndpoint("kim");
+            return null;
+        }).when(service).applyAbsentAssignee(org.mockito.ArgumentMatchers.any());
+        try (var support = org.mockito.Mockito.mockStatic(org.uengine.hwlife.rule.RuleRoleResolutionSupport.class);
+             var factory = org.mockito.Mockito.mockStatic(org.uengine.five.service.IAMServiceFactory.class)) {
+            factory.when(org.uengine.five.service.IAMServiceFactory::getDefault).thenReturn(mock(IAMService.class));
+            support.when(org.uengine.hwlife.rule.RuleRoleResolutionSupport::get).thenReturn(service);
+            RoleMapping result = rule.getActualMapping(null, instance, "Task_1", java.util.Map.of(), "hong");
+            assertEquals("kim", result.getEndpoint());
+            assertEquals(Role.ASSIGNTYPE_USER, result.getAssignType());
+            verify(service).persistRoleMapping(instance, result, "POL-001", "LOW", "REF-001");
+            verify(service, never()).syncRoleAssignRules(org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.anyString());
+            verify(service, never()).findExcludedEndpointsByRefId(org.mockito.ArgumentMatchers.anyString());
+            verify(service, never()).queryWorkload(org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.anyList());
+        }
+    }
+
+    @Test
+    void assignedWorkItemDoesNotSerializeRoleMappingBackReferences() throws Exception {
+        var instance = new org.uengine.five.entity.ProcessInstanceEntity();
+        instance.setInstId(1L);
+        var roleMapping = new org.uengine.five.entity.RoleMappingEntity();
+        roleMapping.setProcessInstance(instance);
+        roleMapping.setRootProcessInstance(instance);
+        roleMapping.setEndpoint("hong@uengine.org");
+        instance.setRoleMappings(java.util.List.of(roleMapping));
+        var worklist = new org.uengine.five.entity.WorklistEntity();
+        worklist.setProcessInstance(instance);
+        worklist.setEndpoint("hong@uengine.org");
+        var resource = new org.uengine.five.dto.WorkItemResource();
+        resource.setWorklist(worklist);
+        resource.setActivity(new org.uengine.kernel.HumanActivity());
+        var mapper = new ObjectMapper();
+        var json = mapper.readTree(mapper.writeValueAsString(resource));
+        assertTrue(json.has("activity"));
+        assertEquals("hong@uengine.org", json.path("worklist").path("endpoint").asText());
+        assertFalse(json.path("worklist").path("processInstance").has("roleMappings"));
+    }
+
     private static BoundRoleResolutionContext contextWithIam(IAMService iam) {
         return new BoundRoleResolutionContext() {
             // @Override

@@ -598,7 +598,9 @@ public class HumanActivity extends ReceiveActivity {
 					try {
 						boolean eventInitiated = (instance instanceof DefaultProcessInstance)
 								&& ((DefaultProcessInstance) instance).isEventInitiated();
-						if (!eventInitiated && !instance.isSubProcess() && getRole().getRoleResolutionContext() != null
+						if (!eventInitiated
+								&& !Boolean.TRUE.equals(instance.getProcessTransactionContext().getSharedContext("simulationInitiation"))
+								&& !instance.isSubProcess() && getRole().getRoleResolutionContext() != null
 								&& !getRole().containsMapping(instance, currentLogin)) {
 							UEngineException ue = new UEngineException("You (" + currentLogin
 									+ ") are not permitted to initiate this process. The initiator group is '"

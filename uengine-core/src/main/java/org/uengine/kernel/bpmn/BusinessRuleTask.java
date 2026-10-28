@@ -160,6 +160,16 @@ public class BusinessRuleTask extends ReceiveActivity {
 
     public Map<String, Object> buildRuleInputs(ProcessInstance instance) throws Exception {
         Map<String, Object> inputs = new LinkedHashMap<>();
+        if (instance != null && instance.getProcessDefinition() != null) {
+            org.uengine.kernel.ProcessVariable[] variables = instance.getProcessDefinition().getProcessVariables();
+            if (variables != null) {
+                for (org.uengine.kernel.ProcessVariable variable : variables) {
+                    if (variable != null && variable.getName() != null) {
+                        inputs.put(variable.getName(), instance.getBeanProperty(variable.getName()));
+                    }
+                }
+            }
+        }
         if (instance == null || getEventSynchronization() == null
                 || getEventSynchronization().getMappingContext() == null) {
             return inputs;
