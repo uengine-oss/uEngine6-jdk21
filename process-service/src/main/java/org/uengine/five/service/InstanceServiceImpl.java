@@ -358,7 +358,7 @@ public class InstanceServiceImpl implements InstanceService {
 
                 ((JPAProcessInstance) instance).getProcessInstanceEntity().setDefVerId(processDefinition.getVersion());
                 // instance.setDefinitionVersionId(processDefinition.getVersion());
-                instance.execute();
+                executeWithInitiationPermission(instance, simulation);
                 if (definitionXml != null && !definitionXml.isEmpty()) {
                     TestDefinitionRegistry.put(instance.getInstanceId(), processDefinition);
                 }
@@ -1920,7 +1920,9 @@ public class InstanceServiceImpl implements InstanceService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
                         "No such work item where taskId = " + taskId));
         String actorEndpoint = currentActorEndpoint();
-        validateCompletionOwner(worklistEntity, actorEndpoint);
+        if (!"true".equals(isSimulate)) {
+            validateCompletionOwner(worklistEntity, actorEndpoint);
+        }
         GlobalContext.setUserId(actorEndpoint);
 
         String instanceId = worklistEntity.getInstId().toString();
@@ -2448,6 +2450,18 @@ public class InstanceServiceImpl implements InstanceService {
         }
     }
 
+    private void executeWithInitiationPermission(org.uengine.kernel.ProcessInstance instance,
+            boolean simulation) throws Exception {
+        org.uengine.processmanager.ProcessTransactionContext context = instance.getProcessTransactionContext();
+        Object previous = context.getSharedContext("simulationInitiation");
+        context.setSharedContext("simulationInitiation", simulation);
+        try {
+            instance.execute();
+        } finally {
+            context.setSharedContext("simulationInitiation", previous);
+        }
+    }
+
     private Object doDryRun(ProcessExecutionCommand command) throws Exception {
         ProcessExecutionCommand processCommand = new ProcessExecutionCommand();
         processCommand.setProcessDefinitionId(command.getProcessDefinitionId());
@@ -2487,7 +2501,7 @@ public class InstanceServiceImpl implements InstanceService {
                             .setCorrKey(processCommand.getCorrelationKeyValue());
                 }
 
-                instance.execute();
+                executeWithInitiationPermission(instance, true);
                 // new InstanceResource(instance); // TODO: returns HATEOAS _self link instead.
 
                 WorkItemResource workItem = new WorkItemResource();
