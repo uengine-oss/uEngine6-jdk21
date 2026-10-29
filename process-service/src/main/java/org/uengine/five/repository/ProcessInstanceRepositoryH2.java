@@ -55,6 +55,11 @@ public interface ProcessInstanceRepositoryH2 extends ProcessInstanceRepository {
             "and (cast(:finishedDate as date) is null or pi.finishedDate <= :finishedDate) " +
             "and (cast(:subProcess as boolean) is null or :subProcess = pi.subProcess) " +
             "and (COALESCE(:initEp, '') = '' or pi.initEp like CONCAT('%', :initEp, '%')) " +
+            "and (COALESCE(LENGTH(TRIM(COALESCE(:corrKey, ''))), 0) = 0 " +
+            "     or LOCATE(LOWER(TRIM(COALESCE(:corrKey, ''))), LOWER(pi.corrKey)) > 0) " +
+            "and (COALESCE(LENGTH(TRIM(COALESCE(:requester, ''))), 0) = 0 " +
+            "     or LOCATE(LOWER(TRIM(COALESCE(:requester, ''))), LOWER(pi.initEp)) > 0 " +
+            "     or LOCATE(LOWER(TRIM(COALESCE(:requester, ''))), LOWER(pi.initRsNm)) > 0) " +
             "and (COALESCE(:currEp, '') = '' or pi.currEp like CONCAT('%', :currEp, '%')) " +
             "and (COALESCE(:prevCurrEp, '') = '' or pi.prevCurrEp like CONCAT('%', :prevCurrEp, '%')) " +
             "and (COALESCE(:rolePattern, '') = '' or pi.currEp like CONCAT('%', :rolePattern, '%')) " +
@@ -78,6 +83,8 @@ public interface ProcessInstanceRepositoryH2 extends ProcessInstanceRepository {
             @Param("subProcess") Boolean subProcess,
             @Param("rolePattern") String rolePattern,
             @Param("namePattern") String namePattern,
+            @Param("corrKey") String corrKey,
+            @Param("requester") String requester,
             Pageable pageable);
 
     @Override

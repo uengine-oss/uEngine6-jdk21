@@ -48,6 +48,8 @@ public interface ProcessInstanceRepository
             @Param("subProcess") Boolean subProcess,
             @Param("rolePattern") String rolePattern,
             @Param("namePattern") String namePattern,
+            @Param("corrKey") String corrKey,
+            @Param("requester") String requester,
             Pageable pageable);
 
         @Query("select pi from ProcessInstanceEntity pi where pi.rootInstId = :instId")

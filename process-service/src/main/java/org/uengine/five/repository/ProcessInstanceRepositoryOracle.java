@@ -33,6 +33,11 @@ public interface ProcessInstanceRepositoryOracle extends ProcessInstanceReposito
                         "  AND (:finishedDate IS NULL OR pi.finishedDate <= :finishedDate) " +
                         "  AND (:subProcess IS NULL OR pi.subProcess = :subProcess) " +
                         "  AND (:initEp IS NULL OR pi.initEp LIKE CONCAT(CONCAT('%', :initEp), '%')) " +
+                        "  AND (COALESCE(LENGTH(TRIM(:corrKey)), 0) = 0 " +
+                        "       OR LOCATE(LOWER(TRIM(:corrKey)), LOWER(pi.corrKey)) > 0) " +
+                        "  AND (COALESCE(LENGTH(TRIM(:requester)), 0) = 0 " +
+                        "       OR LOCATE(LOWER(TRIM(:requester)), LOWER(pi.initEp)) > 0 " +
+                        "       OR LOCATE(LOWER(TRIM(:requester)), LOWER(pi.initRsNm)) > 0) " +
                         "  AND (:currEp IS NULL OR pi.currEp LIKE CONCAT(CONCAT('%', :currEp), '%')) " +
                         "  AND (:prevCurrEp IS NULL OR pi.prevCurrEp LIKE CONCAT(CONCAT('%', :prevCurrEp), '%')) " +
                         "  AND ( " +
@@ -52,6 +57,11 @@ public interface ProcessInstanceRepositoryOracle extends ProcessInstanceReposito
                         "  AND (:finishedDate IS NULL OR pi.finishedDate <= :finishedDate) " +
                         "  AND (:subProcess IS NULL OR pi.subProcess = :subProcess) " +
                         "  AND (:initEp IS NULL OR pi.initEp LIKE CONCAT(CONCAT('%', :initEp), '%')) " +
+                        "  AND (COALESCE(LENGTH(TRIM(:corrKey)), 0) = 0 " +
+                        "       OR LOCATE(LOWER(TRIM(:corrKey)), LOWER(pi.corrKey)) > 0) " +
+                        "  AND (COALESCE(LENGTH(TRIM(:requester)), 0) = 0 " +
+                        "       OR LOCATE(LOWER(TRIM(:requester)), LOWER(pi.initEp)) > 0 " +
+                        "       OR LOCATE(LOWER(TRIM(:requester)), LOWER(pi.initRsNm)) > 0) " +
                         "  AND (:currEp IS NULL OR pi.currEp LIKE CONCAT(CONCAT('%', :currEp), '%')) " +
                         "  AND (:prevCurrEp IS NULL OR pi.prevCurrEp LIKE CONCAT(CONCAT('%', :prevCurrEp), '%')) " +
                         "  AND ( " +
@@ -73,6 +83,8 @@ public interface ProcessInstanceRepositoryOracle extends ProcessInstanceReposito
                         @Param("subProcess") Boolean subProcess,
                         @Param("rolePattern") String rolePattern,
                         @Param("namePattern") String namePattern,
+                        @Param("corrKey") String corrKey,
+                        @Param("requester") String requester,
                         Pageable pageable);
 
         @Override

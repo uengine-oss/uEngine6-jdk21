@@ -45,10 +45,12 @@ public class ProcessInstanceSearchController {
             @RequestParam(required = false) Boolean subProcess,
             @RequestParam(required = false) String rolePattern,
             @RequestParam(required = false) String namePattern,
+            @RequestParam(required = false) String corrKey,
+            @RequestParam(required = false) String requester,
             @PageableDefault(size = 20, sort = "startedDate", direction = Sort.Direction.DESC) Pageable pageable) {
         return processInstanceRepository.findFilterICanSee(
                 defId, instId, status, eventHandler, name,
                 startedDate, finishedDate, initEp, prevCurrEp, currEp,
-                subProcess, rolePattern, namePattern, pageable);
+                subProcess, rolePattern, namePattern, corrKey, requester, pageable);
     }
 }
