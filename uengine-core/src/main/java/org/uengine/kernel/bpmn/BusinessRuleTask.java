@@ -107,6 +107,10 @@ public class BusinessRuleTask extends ReceiveActivity {
         String ruleId = getBusinessRuleId();
         BusinessRuleRuntime runtime = lookupRuntime();
         if (runtime == null || ruleId == null) {
+            if (instance.getProcessTransactionContext().getSharedContext(
+                    BusinessRuleRuntime.SIMULATION_CONTEXT_KEY) != null) {
+                throw new IllegalStateException("DMN simulation requires a rule ID and registered runtime");
+            }
             super.executeActivity(instance);
             return;
         }

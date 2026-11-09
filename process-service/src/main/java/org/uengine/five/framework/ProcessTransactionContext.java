@@ -40,6 +40,11 @@ public class ProcessTransactionContext implements org.uengine.processmanager.Pro
         return tc;
     }
 
+    /** Read without creating a transaction, including read-only simulation preflight. */
+    public static ProcessTransactionContext currentOrNull() {
+        return local.get();
+    }
+
     List<TransactionListener> transactionListeners = new ArrayList<TransactionListener>();
 
     public void addTransactionListener(TransactionListener tl) {
@@ -119,8 +124,16 @@ public class ProcessTransactionContext implements org.uengine.processmanager.Pro
             throw new Exception(
                     "This transaction is uncommitable. If you want to commit this, mark with @ProcessTransactional at the beginning of the service method.");
         }
-        beforeCommit();
-        remove();
+        if (getSharedContext(org.uengine.kernel.bpmn.BusinessRuleRuntime.SIMULATION_CONTEXT_KEY) != null) {
+            try {
+                beforeCommit();
+            } finally {
+                remove();
+            }
+        } else {
+            beforeCommit();
+            remove();
+        }
         afterCommit();
     }
 

@@ -21,6 +21,9 @@ public class BusinessRuleRuntimeImpl implements BusinessRuleRuntime {
 
     @Override
     public Map<String, Object> evaluate(String ruleId, Map<String, Object> inputs) throws Exception {
+        SimulationBusinessRuleContext simulation = SimulationBusinessRuleContext.current(
+                org.uengine.five.framework.ProcessTransactionContext.currentOrNull());
+        if (simulation != null) return simulation.evaluate(ruleId, inputs, businessRuleEvaluator);
         BusinessRuleStore.BusinessRuleFile file = businessRuleStore.loadOrThrow(ruleId);
         return businessRuleEvaluator.evaluate(file.getRuleJson(), inputs);
     }

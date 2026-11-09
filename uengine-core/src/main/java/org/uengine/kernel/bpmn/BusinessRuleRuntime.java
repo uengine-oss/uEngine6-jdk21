@@ -13,6 +13,8 @@ import java.util.Map;
  * </p>
  */
 public interface BusinessRuleRuntime {
+    /** Server-only transaction state; never a process variable or request parameter. */
+    String SIMULATION_CONTEXT_KEY = "__validatedSimulationBusinessRules";
 
     Map<String, Object> evaluate(String ruleId, Map<String, Object> inputs) throws Exception;
 }

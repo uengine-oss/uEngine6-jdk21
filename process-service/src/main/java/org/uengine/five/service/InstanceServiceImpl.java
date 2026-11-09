@@ -53,6 +53,8 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 import org.springframework.web.servlet.HandlerMapping;
 import org.uengine.five.lifecycle.BpmLifecycleService;
 import org.uengine.five.ProcessServiceApplication;
@@ -84,6 +86,9 @@ import org.uengine.five.repository.ServiceEndpointRepository;
 import org.uengine.five.repository.WorklistRepository;
 import org.uengine.five.businessrule.BusinessRuleStore;
 import org.uengine.five.businessrule.BusinessRuleEvaluator;
+import org.uengine.five.businessrule.BusinessRuleRuntimeImpl;
+import org.uengine.five.businessrule.SimulationBusinessRuleContext;
+import org.uengine.kernel.bpmn.BusinessRuleRuntime;
 import org.uengine.five.scenario.RunResult;
 import org.uengine.five.scenario.Scenario;
 import org.uengine.five.scenario.ScenarioController;
@@ -186,6 +191,42 @@ public class InstanceServiceImpl implements InstanceService {
 
     @Autowired
     BusinessRuleEvaluator businessRuleEvaluator;
+
+    @Autowired
+    private BusinessRuleRuntimeImpl simulationBusinessRuleRuntime;
+
+    private void validateSimulation(ProcessDefinition definition, boolean pin) {
+        ProcessTransactionContext transaction = pin ? ProcessTransactionContext.currentOrNull() : null;
+        SimulationBusinessRuleContext existing = SimulationBusinessRuleContext.current(transaction);
+        SimulationBusinessRuleContext[] prepared = { existing == null ? SimulationBusinessRuleContext.empty() : existing };
+        boolean[] hasRule = { false };
+        SimulationDefinitionValidator.validate(definition, task -> {
+            hasRule[0] = true;
+            try {
+                if (simulationBusinessRuleRuntime == null
+                        || simulationBusinessRuleRuntime.getClass() != BusinessRuleRuntimeImpl.class
+                        || GlobalContext.getComponent(BusinessRuleRuntime.class) != simulationBusinessRuleRuntime) {
+                    throw SimulationBusinessRuleContext.failure("승인된 DMN runtime이 없습니다");
+                }
+                String id = task.getBusinessRuleId();
+                if (!prepared[0].contains(id)) prepared[0] = prepared[0].withRule(id,
+                        businessRuleStore.loadOrThrow(id).getRuleJson(), businessRuleEvaluator);
+            } catch (ResponseStatusException error) {
+                throw SimulationBusinessRuleContext.failure("룰 " + task.getBusinessRuleId() + ": " + error.getReason());
+            } catch (Exception error) {
+                throw SimulationBusinessRuleContext.failure("룰을 준비할 수 없습니다: " + task.getBusinessRuleId());
+            }
+        });
+        if (pin && (transaction != null || hasRule[0])) prepared[0].pin(transaction);
+    }
+
+    private void checkSimulationTransaction(ProcessInstance instance) {
+        ProcessTransactionContext transaction = ProcessTransactionContext.currentOrNull();
+        SimulationBusinessRuleContext snapshot = SimulationBusinessRuleContext.current(transaction);
+        if (snapshot != null && snapshot.hasRules() && instance.getProcessTransactionContext() != transaction) {
+            throw SimulationBusinessRuleContext.failure("실행 인스턴스의 DMN 시험 트랜잭션이 일치하지 않습니다");
+        }
+    }
 
     @Autowired
     ScenarioController scenarioController;
@@ -302,6 +343,9 @@ public class InstanceServiceImpl implements InstanceService {
 
         if (definition instanceof ProcessDefinition) {
             ProcessDefinition processDefinition = (ProcessDefinition) definition;
+            if (simulation) {
+                validateSimulation(processDefinition, true);
+            }
 
             try {
                 // org.uengine.kernel.ProcessInstance instance =
@@ -683,6 +727,8 @@ public class InstanceServiceImpl implements InstanceService {
                 : 30;
 
         ProcessDefinition def = instance.getProcessDefinition();
+        validateSimulation(def, true);
+        checkSimulationTransaction(instance);
         if (def.getActivity(tracingTag) == null)
             throw new IllegalArgumentException("Activity not found: " + tracingTag);
 
@@ -1581,16 +1627,23 @@ public class InstanceServiceImpl implements InstanceService {
 
         // WorkItemAccess.requireVisible(worklistEntity, currentActorEndpoint());
         String defId = worklistEntity.getDefId();
-        ProcessDefinition definition = (ProcessDefinition) definitionService.getDefinition(defId,
-                worklistEntity.getDefVerId());
+        String instanceId = worklistEntity.getInstId().toString();
+        boolean simulation = RequestContextHolder.getRequestAttributes() instanceof ServletRequestAttributes attributes
+                && "true".equals(attributes.getRequest().getHeader("isSimulate"));
+        ProcessInstance instance = simulation ? getProcessInstanceLocal(instanceId) : null;
+        ProcessDefinition definition = simulation ? instance.getProcessDefinition()
+                : (ProcessDefinition) definitionService.getDefinition(defId, worklistEntity.getDefVerId());
+        if (simulation) {
+            validateSimulation(definition, false);
+        }
         HumanActivity activity = (HumanActivity) definition.getActivity(worklistEntity.getTrcTag());
 
         WorkItemResource workItem = new WorkItemResource();
+        workItem.setIncludeSimulationMetadata(simulation);
         workItem.setActivity(activity); // defaultHandler
         workItem.setWorklist(worklistEntity);
 
-        String instanceId = worklistEntity.getInstId().toString();
-        ProcessInstance instance = getProcessInstanceLocal(instanceId);
+        if (instance == null) instance = getProcessInstanceLocal(instanceId);
 
         // get the parameter values and set them to the "workItem.parameterValues" so
         // that WorkItemHandler.vue can insert the default values
@@ -1930,6 +1983,11 @@ public class InstanceServiceImpl implements InstanceService {
         System.out.println("[InstanceServiceImpl] completeWorkItemInternal: loaded instance " + instanceId + ", trcTag="
                 + worklistEntity.getTrcTag());
 
+        if ("true".equals(isSimulate)) {
+            validateSimulation(instance.getProcessDefinition(), true);
+            checkSimulationTransaction(instance);
+        }
+
         instance.setExecutionScope(workItem.getExecScope());
         HumanActivity humanActivity = ((HumanActivity) instance.getProcessDefinition()
                 .getActivity(worklistEntity.getTrcTag()));
@@ -2001,6 +2059,8 @@ public class InstanceServiceImpl implements InstanceService {
         if (instanceBefore == null)
             return null;
         ProcessDefinition def = instanceBefore.getProcessDefinition();
+        validateSimulation(def, true);
+        checkSimulationTransaction(instanceBefore);
         Map<String, Object> beforeVars = getProcessVariableSnapshot(instanceBefore, def);
 
         completeWorkItemInternal(taskId, workItem, "true");
@@ -2452,6 +2512,7 @@ public class InstanceServiceImpl implements InstanceService {
 
     private void executeWithInitiationPermission(org.uengine.kernel.ProcessInstance instance,
             boolean simulation) throws Exception {
+        if (simulation) checkSimulationTransaction(instance);
         org.uengine.processmanager.ProcessTransactionContext context = instance.getProcessTransactionContext();
         Object previous = context.getSharedContext("simulationInitiation");
         context.setSharedContext("simulationInitiation", simulation);
@@ -2484,6 +2545,7 @@ public class InstanceServiceImpl implements InstanceService {
         if (definition instanceof ProcessDefinition) {
             ProcessDefinition processDefinition = (ProcessDefinition) definition;
             // return processDefinition.getFirstHumanActivity();
+            validateSimulation(processDefinition, true);
 
             try {
                 org.uengine.kernel.ProcessInstance instance = AbstractProcessInstance.create(processDefinition,
@@ -2559,7 +2621,7 @@ public class InstanceServiceImpl implements InstanceService {
             @RequestHeader("isSimulate") String isSimulate) throws Exception {
         try {
             ProcessExecutionCommand processExecutionCommand = command.getProcessExecutionCommand();
-            processExecutionCommand.setSimulation(false);
+            processExecutionCommand.setSimulation("true".equals(isSimulate));
             InstanceResource instance = start(processExecutionCommand);
 
             if (instance == null)
@@ -2582,6 +2644,8 @@ public class InstanceServiceImpl implements InstanceService {
 
             putWorkItemComplete(taskId, command.getWorkItem(), isSimulate);
             return instance;
+        } catch (ResponseStatusException e) {
+            throw e;
         } catch (Exception e) {
             e.printStackTrace();
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,

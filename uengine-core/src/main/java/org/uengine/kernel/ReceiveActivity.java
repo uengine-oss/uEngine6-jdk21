@@ -249,23 +249,26 @@ public class ReceiveActivity extends DefaultActivity implements MessageListener,
     public Map<String, Object> getMappingInValues(ProcessInstance instance)
             throws Exception {
         Map<String, Object> mappingInValues = new HashMap();
-        if (getEventSynchronization().getMappingContext() == null)
+        if (getEventSynchronization() == null)
             return mappingInValues;
 
+        if (getEventSynchronization().getAttributes() != null) {
+            for (FieldDescriptor field : getEventSynchronization().getAttributes()) {
+                boolean isArray = "Array".equals(field.getClassName());
+                if (isArray) {
+                    ArrayList<Object> mappingInValue = new ArrayList<>();
+                    mappingInValues.put(field.getName(), mappingInValue);
+                } else {
+                    mappingInValues.put(field.getName(), null);
+                }
+            }
+        }
+        if (getEventSynchronization().getMappingContext() == null)
+            return mappingInValues;
         ParameterContext[] params = getEventSynchronization().getMappingContext().getMappingElements();
         Object value = null;
         if (params == null)
             return mappingInValues;
-
-        for (FieldDescriptor field : getEventSynchronization().getAttributes()) {
-            boolean isArray = "Array".equals(field.getClassName());
-            if (isArray) {
-                ArrayList<Object> mappingInValue = new ArrayList<>();
-                mappingInValues.put(field.getName(), mappingInValue);
-            } else {
-                mappingInValues.put(field.getName(), null);
-            }
-        }
         for (ParameterContext param : params) {
             try {
 

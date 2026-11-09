@@ -1,11 +1,15 @@
 package org.uengine.five.dto;
 
 import java.util.LinkedHashMap;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 import org.uengine.five.entity.WorklistEntity;
 import org.uengine.kernel.Activity;
 import org.uengine.kernel.HumanActivity;
+import org.uengine.kernel.FormActivity;
+import org.uengine.kernel.ParameterContext;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -45,6 +49,15 @@ public class WorkItemResource { //extends RepresentationModel {
     }
 
     Activity activity;
+
+    /** Set only after the server has validated a simulation definition. */
+    @JsonIgnore
+    private boolean includeSimulationMetadata;
+
+    @JsonIgnore
+    public void setIncludeSimulationMetadata(boolean includeSimulationMetadata) {
+        this.includeSimulationMetadata = includeSimulationMetadata;
+    }
 
     /** 직렬화 제외: Activity는 커널 객체라 JSON 직렬화 시 순환참조/실패로 parameterValues 등 다른 필드 누락 유발 */
     @JsonIgnore
@@ -89,6 +102,30 @@ public class WorkItemResource { //extends RepresentationModel {
                 }
             } catch (Exception ignored) {
                 // role 조회 실패 시 role 필드 없이 응답
+            }
+            if (includeSimulationMetadata) {
+                if (human instanceof FormActivity form && form.getVariableForHtmlFormContext() != null) {
+                    String name = form.getVariableForHtmlFormContext().getName();
+                    if (name != null) summary.put("variableForHtmlFormContext", Map.of("name", name));
+                }
+                if (human.getParameters() != null) {
+                    List<Map<String, Object>> parameters = new ArrayList<>();
+                    for (ParameterContext parameter : human.getParameters()) {
+                        if (parameter == null) continue;
+                        Map<String, Object> entry = new LinkedHashMap<>();
+                        entry.put("direction", parameter.getDirection());
+                        if (parameter.getArgument() != null && parameter.getArgument().getText() != null) {
+                            entry.put("argument", Map.of("text", parameter.getArgument().getText()));
+                        }
+                        if (parameter.getVariable() != null) {
+                            Map<String, Object> variable = new LinkedHashMap<>();
+                            variable.put("typeClassName", parameter.getVariable().getTypeClassName());
+                            entry.put("variable", variable);
+                        }
+                        parameters.add(entry);
+                    }
+                    summary.put("parameters", parameters);
+                }
             }
         }
         return summary;

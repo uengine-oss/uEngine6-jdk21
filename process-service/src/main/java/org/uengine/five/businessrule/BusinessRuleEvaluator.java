@@ -41,6 +41,16 @@ public class BusinessRuleEvaluator {
     private static final DmnEngine DMN_ENGINE = DmnEngineConfiguration.createDefaultDmnEngineConfiguration()
             .buildEngine();
 
+    /** Model validation only; the caller has already checked the simulation XML subset. */
+    public void validateDmnForSimulation(JsonNode ruleJson) throws Exception {
+        String normalized = exposeNoteAnnotation(normalizeDmnXmlForCamunda(ruleJson.path("dmnXml").asText()), new HashMap<>());
+        String decisionId = extractDecisionId(normalized);
+        if (decisionId == null || decisionId.isBlank()) throw new IllegalArgumentException("DMN decision id not found");
+        try (InputStream in = new ByteArrayInputStream(normalized.getBytes(StandardCharsets.UTF_8))) {
+            DMN_ENGINE.parseDecision(decisionId, in);
+        }
+    }
+
     public Map<String, Object> evaluate(JsonNode ruleJson, Map<String, Object> inputs) {
         if (ruleJson == null) {
             throw new IllegalArgumentException("ruleJson is required");
