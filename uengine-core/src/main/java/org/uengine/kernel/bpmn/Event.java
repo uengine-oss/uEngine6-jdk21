@@ -107,7 +107,24 @@ public class Event extends ReceiveActivity implements MessageListener, Validatab
 
     @Override
     public boolean onMessage(ProcessInstance instance, Object payload) throws Exception {
+        interruptAttachedActivity(instance);
 
+        if (payload instanceof String message && getTracingTag().equals(message)) {
+            fireComplete(instance);
+            return true;
+        }
+
+        return false;
+    }
+
+    public void completeForSimulation(ProcessInstance instance) throws Exception {
+        // Run event cleanup without changing the listener registry.
+        afterUnregistered(instance);
+        interruptAttachedActivity(instance);
+        fireComplete(instance);
+    }
+
+    private void interruptAttachedActivity(ProcessInstance instance) throws Exception {
         // Boundary Event 전용 -> 각 Boundary Event 별로 넣는 성질의 코드가 아니기 때문에 Event 클래스에 넣음
         if (getAttachedToRef() != null) {// 중단 비중단 처리
             if (isCancelActivity()) {
@@ -126,20 +143,6 @@ public class Event extends ReceiveActivity implements MessageListener, Validatab
                 }
             }
         }
-
-        if (payload instanceof String) {
-            String message = (String) payload;
-
-            if (getTracingTag().equals(message)) {
-
-                fireComplete(instance); // let event starts
-
-                return true;
-
-            }
-        }
-
-        return false;
     }
 
     @Override

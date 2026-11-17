@@ -613,6 +613,10 @@ public class BpmnXMLParser {
             }
         }
 
+        if (task instanceof Event event) {
+            event.setIntermediate("IntermediateCatchEvent".equals(className));
+        }
+
         if (task instanceof SubProcess) {
             parseActivities(element, laneInfo, (SubProcess) task, processDefinition);
         }
