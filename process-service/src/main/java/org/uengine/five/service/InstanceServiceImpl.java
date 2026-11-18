@@ -947,6 +947,113 @@ public class InstanceServiceImpl implements InstanceService {
         return new InstanceResource(instance);
     }
 
+    @GetMapping("/instance/{instanceId}/attributes")
+    @Transactional(readOnly = true)
+    public List<Map<String, Object>> getInstanceAttributes(@PathVariable("instanceId") Long instanceId) {
+        return instanceAttributeRows(processInstanceRepository.findById(instanceId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Instance not found")));
+    }
+
+    @PostMapping("/instance/{instanceId}/attributes")
+    @Transactional
+    public List<Map<String, Object>> updateInstanceAttributes(@PathVariable("instanceId") Long instanceId,
+            @RequestBody Map<String, JsonNode> changes) {
+        if (changes == null) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Changes are required");
+        Map<String, java.lang.reflect.Field> fields = instanceAttributeFields();
+        Map<String, Object> converted = new LinkedHashMap<>();
+        // Convert the entire patch before touching the managed entity.
+        for (Map.Entry<String, JsonNode> entry : changes.entrySet()) {
+            java.lang.reflect.Field field = fields.get(entry.getKey());
+            if (field == null) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unknown instance attribute: " + entry.getKey());
+            converted.put(entry.getKey(), parseInstanceAttribute(field, entry.getValue()));
+        }
+        ProcessInstanceEntity entity = processInstanceRepository.findById(instanceId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Instance not found"));
+        org.springframework.beans.BeanWrapper bean = new org.springframework.beans.BeanWrapperImpl(entity);
+        converted.forEach(bean::setPropertyValue);
+        processInstanceRepository.save(entity);
+        return instanceAttributeRows(entity);
+    }
+
+    private Map<String, java.lang.reflect.Field> instanceAttributeFields() {
+        Map<String, java.lang.reflect.Field> fields = new LinkedHashMap<>();
+        for (java.lang.reflect.Field field : ProcessInstanceEntity.class.getDeclaredFields()) {
+            Class<?> type = field.getType();
+            java.beans.PropertyDescriptor property = org.springframework.beans.BeanUtils.getPropertyDescriptor(ProcessInstanceEntity.class, field.getName());
+            if (java.lang.reflect.Modifier.isStatic(field.getModifiers())
+                    || field.getName().equals("variablesPath")
+                    || field.isAnnotationPresent(jakarta.persistence.Id.class)
+                    || field.isAnnotationPresent(com.fasterxml.jackson.annotation.JsonIgnore.class)
+                    || field.isAnnotationPresent(jakarta.persistence.Transient.class)
+                    || !(type == String.class || type == Long.class || type == long.class || type == boolean.class
+                            || type == Boolean.class || Date.class.isAssignableFrom(type))
+                    || property == null || property.getReadMethod() == null || property.getWriteMethod() == null) continue;
+            fields.put(field.getName(), field);
+        }
+        return fields;
+    }
+
+    private int instanceAttributeLength(java.lang.reflect.Field field) {
+        jakarta.persistence.Column column = field.getAnnotation(jakarta.persistence.Column.class);
+        return column == null ? 255 : column.length();
+    }
+
+    private Object parseInstanceAttribute(java.lang.reflect.Field field, JsonNode value) {
+        Class<?> type = field.getType();
+        try {
+            if (value == null || value.isNull()) {
+                if (type.isPrimitive()) throw new IllegalArgumentException("null is not allowed");
+                return null;
+            }
+            if (type == String.class && value.isTextual()
+                    && value.textValue().codePointCount(0, value.textValue().length()) <= instanceAttributeLength(field)) return value.textValue();
+            if ((type == boolean.class || type == Boolean.class) && value.isBoolean()) return value.booleanValue();
+            if (type == Long.class || type == long.class) {
+                if (value.isIntegralNumber() && value.canConvertToLong()) return value.longValue();
+                if (value.isTextual() && value.textValue().matches("-?\\d+")) return Long.parseLong(value.textValue());
+            }
+            if (Date.class.isAssignableFrom(type)) {
+                if (value.isIntegralNumber() && value.canConvertToLong()) return instanceAttributeDate(java.time.Instant.ofEpochMilli(value.longValue()));
+                if (value.isTextual()) {
+                    String text = value.textValue();
+                    java.time.Instant instant = text.matches("\\d{4}-\\d{2}-\\d{2}")
+                            ? java.time.LocalDate.parse(text).atStartOfDay(java.time.ZoneOffset.UTC).toInstant()
+                            : java.time.Instant.parse(text);
+                    return instanceAttributeDate(instant);
+                }
+            }
+        } catch (IllegalArgumentException | java.time.DateTimeException error) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid value for " + field.getName(), error);
+        }
+        throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid value for " + field.getName() + " (" + type.getSimpleName() + ")");
+    }
+
+    private Date instanceAttributeDate(java.time.Instant instant) {
+        int year = instant.atOffset(java.time.ZoneOffset.UTC).getYear();
+        if (year < 1 || year > 9999) throw new IllegalArgumentException("Date year must be between 1 and 9999");
+        return Date.from(instant);
+    }
+
+    private List<Map<String, Object>> instanceAttributeRows(ProcessInstanceEntity entity) {
+        org.springframework.beans.BeanWrapper bean = new org.springframework.beans.BeanWrapperImpl(entity);
+        List<Map<String, Object>> rows = new ArrayList<>();
+        for (java.lang.reflect.Field field : instanceAttributeFields().values()) {
+            Class<?> type = field.getType();
+            Object value = bean.getPropertyValue(field.getName());
+            if (value instanceof Long) value = value.toString();
+            if (value instanceof Date) value = java.time.Instant.ofEpochMilli(((Date) value).getTime()).toString();
+            Map<String, Object> row = new LinkedHashMap<>();
+            row.put("key", field.getName());
+            row.put("value", value);
+            row.put("type", type.getSimpleName());
+            row.put("nullable", !type.isPrimitive());
+            if (type == String.class) row.put("maxLength", instanceAttributeLength(field));
+            rows.add(row);
+        }
+        rows.sort(java.util.Comparator.comparing(row -> (String) row.get("key")));
+        return rows;
+    }
+
     @RequestMapping(value = "/instance/{instanceId}/variables", method = RequestMethod.GET, produces = "application/json;charset=UTF-8")
     @ProcessTransactional(readOnly = true)
     public Map getProcessVariables(@PathVariable("instanceId") String instanceId) throws Exception {
