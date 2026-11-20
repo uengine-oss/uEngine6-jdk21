@@ -46,6 +46,8 @@ public class BpmnXMLParser {
                 return "java.lang.Number";
             case "Date":
                 return "java.util.Date";
+            case "Attachment":
+                return "org.uengine.contexts.FileContext";
             case "Form":
                 return "org.uengine.kernel.FormActivity";
             default:

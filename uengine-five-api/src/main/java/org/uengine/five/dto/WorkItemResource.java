@@ -5,6 +5,7 @@ import java.util.Map;
 
 import org.uengine.five.entity.WorklistEntity;
 import org.uengine.kernel.Activity;
+import org.uengine.kernel.FormActivity;
 import org.uengine.kernel.HumanActivity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -68,6 +69,9 @@ public class WorkItemResource { //extends RepresentationModel {
         summary.put("tracingTag", activity.getTracingTag());
         if (activity.getEventSynchronizations() != null && activity.getEventSynchronizations().length > 0) {
             summary.put("eventSynchronizations", activity.getEventSynchronizations());
+        }
+        if (activity instanceof FormActivity form && form.getVariableForHtmlFormContext() != null) {
+            putIfNonNull(summary, "formVariableName", form.getVariableForHtmlFormContext().getName());
         }
         if (activity instanceof HumanActivity) {
             HumanActivity human = (HumanActivity) activity;

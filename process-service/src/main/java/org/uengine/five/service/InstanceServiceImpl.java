@@ -14,6 +14,8 @@ import java.io.Serializable;
 import java.io.StringWriter;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -54,6 +56,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.HandlerMapping;
+import org.uengine.contexts.FileContext;
+import org.uengine.contexts.HtmlFormContext;
 import org.uengine.five.lifecycle.BpmLifecycleService;
 import org.uengine.five.ProcessServiceApplication;
 import org.uengine.five.dto.InstanceResource;
@@ -98,6 +102,7 @@ import org.uengine.kernel.ResultPayload;
 import org.uengine.kernel.DefaultProcessInstance;
 import org.uengine.kernel.DeployFilter;
 import org.uengine.kernel.ExecutionScopeContext;
+import org.uengine.kernel.FormActivity;
 import org.uengine.kernel.GlobalContext;
 import org.uengine.kernel.HumanActivity;
 import org.uengine.kernel.ParameterContext;
@@ -130,6 +135,7 @@ import org.uengine.util.UEngineUtil;
 import org.uengine.webservices.worklist.DefaultWorkList;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.TextNode;
@@ -304,6 +310,8 @@ public class InstanceServiceImpl implements InstanceService {
 
         if (definition instanceof ProcessDefinition) {
             ProcessDefinition processDefinition = (ProcessDefinition) definition;
+            org.uengine.five.dto.ProcessVariableValue[] processVariableValues = command.getProcessVariableValues();
+            Serializable[] startupValues = prepareStartupValues(processDefinition, processVariableValues, simulation);
 
             try {
                 // org.uengine.kernel.ProcessInstance instance =
@@ -331,15 +339,12 @@ public class InstanceServiceImpl implements InstanceService {
                     ((JPAProcessInstance) instance).getProcessInstanceEntity().setCorrKey(corrKeyValue);
                 }
 
-                org.uengine.five.dto.ProcessVariableValue[] processVariableValues = command.getProcessVariableValues();
                 if (processVariableValues != null) {
-                    for (org.uengine.five.dto.ProcessVariableValue pv : processVariableValues) {
-                        if (pv.getName() == null)
+                    for (int i = 0; i < processVariableValues.length; i++) {
+                        String name = processVariableValues[i].getName();
+                        if (name == null)
                             continue;
-                        java.io.Serializable val = (pv.getValues() != null && pv.getValues().length > 0)
-                                ? (java.io.Serializable) pv.getValues()[0]
-                                : null;
-                        instance.set("", pv.getName(), val);
+                        instance.set("", name, startupValues[i]);
                     }
                 }
 
@@ -388,6 +393,66 @@ public class InstanceServiceImpl implements InstanceService {
             }
         }
         return null;
+    }
+
+    private static Serializable[] prepareStartupValues(ProcessDefinition definition,
+            org.uengine.five.dto.ProcessVariableValue[] variables, boolean simulation) {
+        if (variables == null) return new Serializable[0];
+        Serializable[] values = new Serializable[variables.length];
+        for (int i = 0; i < variables.length; i++) {
+            org.uengine.five.dto.ProcessVariableValue variable = variables[i];
+            String name = variable.getName();
+            if (name == null) continue;
+            Serializable[] supplied = variable.getValues();
+            Serializable value = supplied != null && supplied.length > 0 ? supplied[0] : null;
+            ProcessVariable declared = simulation && value instanceof String ? definition.getProcessVariable(name) : null;
+            values[i] = declared != null && name.equalsIgnoreCase(declared.getName())
+                    ? convertSimulationStartupValue(declared, value) : value;
+        }
+        return values;
+    }
+
+    static Serializable convertSimulationStartupValue(ProcessVariable variable, Serializable value) {
+        if (variable == null || !(value instanceof String input)) return value;
+        Class<?> type = variable.getType();
+        try {
+            if (type == Date.class) {
+                return Date.from(LocalDate.parse(input).atStartOfDay().toInstant(ZoneOffset.UTC));
+            }
+            if (type == FileContext.class) {
+                for (String part : input.split("/", -1)) {
+                    if (part.isBlank() || part.endsWith(".") || !part.equals(part.strip())
+                            || part.contains(":") || part.contains("\\") || part.chars().anyMatch(Character::isISOControl)) {
+                        throw new IllegalArgumentException("기존 파일의 상대 경로를 입력하세요.");
+                    }
+                }
+                FileContext attachment = new FileContext();
+                attachment.setPath(input);
+                return attachment;
+            }
+            if (type == FormActivity.class || type == HtmlFormContext.class) {
+                JsonNode json = plainObjectMapper.reader().with(DeserializationFeature.FAIL_ON_TRAILING_TOKENS).readTree(input);
+                if (json == null || !json.isObject() || json.findValue("_type") != null) {
+                    throw new IllegalArgumentException("폼 필드값을 JSON 객체로 입력하세요.");
+                }
+                Map<String, Serializable> fields = new LinkedHashMap<>();
+                HtmlFormContext form = new HtmlFormContext();
+                if (variable.getDefaultValue() instanceof HtmlFormContext defaultForm) {
+                    form.setFormDefId(defaultForm.getFormDefId());
+                    form.setFilePath(defaultForm.getFilePath());
+                    fields.putAll(defaultForm.getValueMap());
+                }
+                fields.putAll(plainObjectMapper.convertValue(json, new TypeReference<Map<String, Serializable>>() {}));
+                form.setValueMap(fields);
+                return form;
+            }
+            return value;
+        } catch (Exception error) {
+            String message = type == Date.class ? "날짜를 YYYY-MM-DD 형식으로 입력하세요."
+                    : type == FileContext.class ? "기존 파일의 상대 경로를 입력하세요."
+                    : "폼 필드값을 JSON 객체로 입력하세요.";
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, variable.getName() + ": " + message, error);
+        }
     }
 
     static boolean isInitiationPermissionFailure(Throwable error) {
@@ -1733,7 +1798,7 @@ public class InstanceServiceImpl implements InstanceService {
 
         // get the parameter values and set them to the "workItem.parameterValues" so
         // that WorkItemHandler.vue can insert the default values
-        Map parameterValues = new HashMap<String, Object>();
+        Map<String, Object> parameterValues = new HashMap<>();
         if (activity.getParameters() != null) {
             for (ParameterContext parameterContext : activity.getParameters()) {
                 if (parameterContext.getVariable() != null && parameterContext.getDirection().indexOf("in") == 0) {
@@ -1751,16 +1816,33 @@ public class InstanceServiceImpl implements InstanceService {
             }
         }
 
-        if (activity instanceof ReceiveActivity && ((ReceiveActivity) activity).getEventSynchronization() != null) {
-            Map<String, Object> mappingInValues = activity.getMappingInValues(instance);
-            if (mappingInValues.size() > 0) {
-                for (Map.Entry<String, Object> entry : mappingInValues.entrySet()) {
-                    parameterValues.put(entry.getKey(), entry.getValue());
-                }
-            }
+        boolean prefillArguments = false;
+        String tool = worklistEntity.getTool() != null ? worklistEntity.getTool() : activity.getTool();
+        if (tool != null && tool.contains("urlHandler")
+                && ("NEW".equalsIgnoreCase(worklistEntity.getStatus()) || "RUNNING".equalsIgnoreCase(worklistEntity.getStatus()))) {
+            Number rootId = worklistEntity.getRootInstId();
+            ProcessInstance root = rootId == null || rootId.toString().equals(instanceId)
+                    ? instance : getProcessInstanceLocal(rootId.toString());
+            prefillArguments = root != null && isSimulationEventOwner(root);
         }
 
-        workItem.setParameterValues(toJsonFriendlyMap((Map<String, Object>) parameterValues));
+        if (activity instanceof ReceiveActivity && ((ReceiveActivity) activity).getEventSynchronization() != null) {
+            Map<String, Object> mappingInValues = activity.getMappingInValues(instance);
+            for (Map.Entry<String, Object> entry : mappingInValues.entrySet()) {
+                String key = entry.getKey();
+                Object value = entry.getValue();
+                if (prefillArguments && parameterValues.get(key) != null
+                        && (value == null || value instanceof List<?> list && list.isEmpty() && !hasSimulationInputMapping(activity, key))) {
+                    continue;
+                }
+                parameterValues.put(key, value);
+            }
+        }
+        if (prefillArguments) {
+            prefillSimulationArguments(activity, instance, parameterValues);
+        }
+
+        workItem.setParameterValues(toJsonFriendlyMap(parameterValues));
 
         if (activity.getStatus(instance).equals(Activity.STATUS_COMPLETED)
                 && instance instanceof JPAProcessInstance) {
@@ -1771,6 +1853,70 @@ public class InstanceServiceImpl implements InstanceService {
         }
 
         return workItem;
+    }
+
+    static void prefillSimulationArguments(HumanActivity activity, ProcessInstance instance,
+            Map<String, Object> parameterValues) throws Exception {
+        var sync = activity.getEventSynchronization();
+        if (sync == null || sync.getAttributes() == null || sync.getMappingContext() == null) return;
+        ParameterContext[] mappings = sync.getMappingContext().getMappingElements();
+        if (mappings == null) return;
+
+        ProcessDefinition definition = instance.getProcessDefinition();
+        for (var attribute : sync.getAttributes()) {
+            if (attribute == null || attribute.getName() == null || attribute.getName().isBlank()) continue;
+            String name = attribute.getName();
+            Object existing = parameterValues.get(name);
+            if (existing != null && (!(existing instanceof List<?> list) || !list.isEmpty()
+                    || hasSimulationInputMapping(activity, name))) continue;
+
+            String source = "[Arguments]." + name;
+            ParameterContext match = null;
+            for (ParameterContext mapping : mappings) {
+                if (mapping == null || mapping.getVariable() == null || !source.equals(mapping.getVariable().getName())) continue;
+                if (match != null || mapping.getTransformerMapping() != null || mapping.getArgument() == null) {
+                    match = null;
+                    break;
+                }
+                match = mapping;
+            }
+            if (match == null) continue;
+
+            String target = match.getArgument().getText();
+            if (target == null || target.isBlank() || target.startsWith("[")) continue;
+            String[] path = target.split("\\.", 2);
+            String root = path[0];
+            ProcessVariable variable = definition.getProcessVariable(root);
+            if (variable == null || !root.equals(variable.getName())) continue;
+            Object value = instance.getBeanProperty(root);
+            if (path.length > 1) {
+                if (!(value instanceof HtmlFormContext form)) continue;
+                value = form.getValueMap().get(path[1]);
+                if (value == null && !form.getValueMap().containsKey(path[1])) {
+                    value = form.getValueMap();
+                    for (String field : path[1].split("\\.", -1)) {
+                        value = value instanceof Map<?, ?> fields ? fields.get(field) : null;
+                    }
+                }
+            }
+            if (value instanceof org.uengine.kernel.ProcessVariableValue multiple) {
+                value = new ArrayList<>(multiple.getValues() instanceof List<?> values ? values : List.of());
+            }
+            if (value != null) parameterValues.put(name, value);
+        }
+    }
+
+    private static boolean hasSimulationInputMapping(HumanActivity activity, String name) {
+        var sync = activity.getEventSynchronization();
+        if (sync.getMappingContext() == null || sync.getMappingContext().getMappingElements() == null) return false;
+        for (ParameterContext mapping : sync.getMappingContext().getMappingElements()) {
+            if (mapping == null || mapping.getArgument() == null) continue;
+            String target = mapping.getArgument().getText();
+            String source = mapping.getVariable() == null ? null : mapping.getVariable().getName();
+            if (target != null && (source == null || !source.startsWith("[Arguments]."))
+                    && name.equals(target.substring(target.indexOf('.') + 1))) return true;
+        }
+        return false;
     }
 
     private Map<String, Object> getPayloadValues(JPAProcessInstance instance, Activity activity) throws Exception {

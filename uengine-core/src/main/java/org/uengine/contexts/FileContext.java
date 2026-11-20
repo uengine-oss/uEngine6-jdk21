@@ -2,6 +2,8 @@ package org.uengine.contexts;
 
 import java.io.File;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import org.uengine.kernel.GlobalContext;
 import org.uengine.kernel.ProcessInstance;
 
@@ -124,6 +126,7 @@ public class FileContext implements java.io.Serializable, /* CommandVariableValu
 		this.templateFilePath = templateFile;
 	}
 
+	@JsonIgnore
 	public File getFile() {
 		if (getPath() == null)
 			return null;
@@ -131,6 +134,7 @@ public class FileContext implements java.io.Serializable, /* CommandVariableValu
 		return new File(getPath());
 	}
 
+	@JsonIgnore
 	public File getFileForEngine() {
 		if (getPath() == null)
 			return null;
