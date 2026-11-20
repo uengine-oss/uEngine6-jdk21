@@ -7,10 +7,11 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Serializable;
+import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
+import java.util.regex.Pattern;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
@@ -155,14 +156,28 @@ public class DefinitionServiceImpl implements DefinitionService, DefinitionXMLSe
             definition.setVersion(definition.name.replace(".bpmn", ""));
             definitions.add(definition);
         }
-        definitions.sort(Comparator.comparing(def -> {
-            String version = def.getVersion();
-            try {
-                return Float.parseFloat(version);
-            } catch (NumberFormatException e) {
-                return 0.0f;
+        Pattern numericVersion = Pattern.compile("\\d+(?:\\.\\d+)*");
+        definitions.sort((left, right) -> {
+            String leftVersion = left.getVersion();
+            String rightVersion = right.getVersion();
+            boolean leftNumeric = leftVersion != null && numericVersion.matcher(leftVersion).matches();
+            boolean rightNumeric = rightVersion != null && numericVersion.matcher(rightVersion).matches();
+            if (!leftNumeric || !rightNumeric) {
+                return Boolean.compare(leftNumeric, rightNumeric);
             }
-        }));
+
+            String[] leftParts = leftVersion.split("\\.");
+            String[] rightParts = rightVersion.split("\\.");
+            for (int i = 0; i < Math.max(leftParts.length, rightParts.length); i++) {
+                BigInteger leftPart = i < leftParts.length ? new BigInteger(leftParts[i]) : BigInteger.ZERO;
+                BigInteger rightPart = i < rightParts.length ? new BigInteger(rightParts[i]) : BigInteger.ZERO;
+                int comparison = leftPart.compareTo(rightPart);
+                if (comparison != 0) {
+                    return comparison;
+                }
+            }
+            return 0;
+        });
 
         return CollectionModel.of(definitions);
     }
