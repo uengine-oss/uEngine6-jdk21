@@ -3,7 +3,6 @@ package org.uengine.five.service;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.ByteArrayOutputStream;
-import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -17,7 +16,6 @@ import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
@@ -537,20 +535,21 @@ public class InstanceServiceImpl implements InstanceService {
         }
     }
 
-    private String findHighestNumberedFileName(String defPath) {
+    private String findHighestNumberedFileName(String defPath) throws Exception {
         if (!defPath.endsWith(".bpmn")) {
             defPath = defPath + ".bpmn";
         }
-        File dir = new File("archive/" + defPath);
-        if (!dir.exists() || !dir.isDirectory()) {
+        IContainer archive = new ContainerResource();
+        archive.setPath("/archive/" + defPath);
+        if (!resourceManager.isContainer(archive)) {
             return null;
         }
 
-        File[] files = dir.listFiles();
-        if (files == null || files.length == 0) {
+        List<IResource> files = new ArrayList<>(resourceManager.listFiles(archive));
+        if (files.isEmpty()) {
             return null;
         }
-        Arrays.sort(files, (f1, f2) -> {
+        files.sort((f1, f2) -> {
             String name1 = f1.getName().replaceFirst("\\.bpmn$", "");
             String name2 = f2.getName().replaceFirst("\\.bpmn$", "");
 
@@ -570,7 +569,7 @@ public class InstanceServiceImpl implements InstanceService {
             }
         });
 
-        return files[0].getName().replaceFirst("\\.bpmn$", "");
+        return files.get(0).getName().replaceFirst("\\.bpmn$", "");
     }
 
     private boolean isDotSeparatedNumericVersion(String str) {
