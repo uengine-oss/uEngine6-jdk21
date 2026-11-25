@@ -1,7 +1,15 @@
 package org.uengine.five.spring;
 
 import java.io.IOException;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.time.Duration;
+import java.util.Date;
 import java.util.List;
+import java.util.Objects;
+import java.util.function.Supplier;
 
 import jakarta.servlet.Filter;
 import jakarta.servlet.FilterChain;
@@ -12,28 +20,48 @@ import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
+import org.springframework.web.server.ResponseStatusException;
 import org.uengine.contexts.UserContext;
 import org.uengine.hwlife.session.entity.UserSessionEntity;
 import org.uengine.hwlife.session.repository.UserSessionRepository;
 import org.uengine.hwlife.session.support.JwtSessionTokenService;
+import org.uengine.hwlife.session.support.SessionIdlePolicy;
+import org.uengine.hwlife.session.support.SsoSessionEvidenceChecker;
+import org.uengine.kernel.GlobalContext;
 
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.interfaces.DecodedJWT;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 @Component
 public class SecurityAwareServletFilter implements Filter {
 
     static String userId;
 
+    private static final String FILE_EXECUTION_ACTOR = SecurityAwareServletFilter.class.getName() + ".fileExecutionActor";
+    private static final HttpClient IDENTITY_CLIENT = HttpClient.newBuilder()
+            .connectTimeout(Duration.ofSeconds(3)).build();
+    private static final ObjectMapper IDENTITY_JSON = new ObjectMapper();
+
     private final JwtSessionTokenService jwtSessionTokenService;
     private final UserSessionRepository userSessionRepository;
+    private final SessionIdlePolicy sessionIdlePolicy;
+    private final SsoSessionEvidenceChecker ssoSessionEvidenceChecker;
 
     public SecurityAwareServletFilter(
             JwtSessionTokenService jwtSessionTokenService,
-            UserSessionRepository userSessionRepository) {
+            UserSessionRepository userSessionRepository,
+            SessionIdlePolicy sessionIdlePolicy,
+            SsoSessionEvidenceChecker ssoSessionEvidenceChecker) {
         this.jwtSessionTokenService = jwtSessionTokenService;
         this.userSessionRepository = userSessionRepository;
+        this.sessionIdlePolicy = sessionIdlePolicy;
+        this.ssoSessionEvidenceChecker = ssoSessionEvidenceChecker;
     }
 
     static public String getUserId() {
@@ -43,6 +71,20 @@ public class SecurityAwareServletFilter implements Filter {
     /** ESB 등 JWT 없는 경로에서 업무 API 권한 검사에 쓸 사용자 ID를 설정한다. */
     static public void setUserId(String userId) {
         SecurityAwareServletFilter.userId = userId;
+    }
+
+    public static String getVerifiedFileExecutionActor() {
+        if (!(RequestContextHolder.getRequestAttributes() instanceof ServletRequestAttributes current)) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
+        }
+        HttpServletRequest request = current.getRequest();
+        Object identity = request.getAttribute(FILE_EXECUTION_ACTOR);
+        if (identity instanceof String actor) return actor;
+        if (identity instanceof Supplier<?> verification && verification.get() instanceof String actor) {
+            request.setAttribute(FILE_EXECUTION_ACTOR, actor);
+            return actor;
+        }
+        throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
     }
 
     @Override
@@ -73,6 +115,7 @@ public class SecurityAwareServletFilter implements Filter {
                         return;
                     }
                 } else {
+                    req.setAttribute(FILE_EXECUTION_ACTOR, (Supplier<String>) () -> verifyKeycloakFileActor(accessToken));
                     applyKeycloakJwt(peek);
                 }
             } catch (Exception e) {
@@ -102,6 +145,8 @@ public class SecurityAwareServletFilter implements Filter {
                 return rejectSessionAuth(req, res, "SESSION_NOT_ACTIVE");
             }
 
+            req.setAttribute(FILE_EXECUTION_ACTOR,
+                    (Supplier<String>) () -> verifySessionFileActor(req, verified, session, uid));
             SecurityAwareServletFilter.userId = uid;
             UserContext.getThreadLocalInstance().setUserId(uid);
             return true;
@@ -109,6 +154,47 @@ public class SecurityAwareServletFilter implements Filter {
             System.out.println("[SecurityAwareServletFilter] Session JWT verify failed: " + e.getMessage());
             return rejectSessionAuth(req, res, "INVALID_TOKEN");
         }
+    }
+
+    private String verifySessionFileActor(HttpServletRequest request, DecodedJWT verified,
+            UserSessionEntity session, String uid) {
+        if (!uid.equals(session.getUserId())
+                || !Objects.equals(verified.getClaim("ltp").asString(), session.getLoginType())
+                || sessionIdlePolicy.isExpired(session, new Date())
+                || ssoSessionEvidenceChecker.invalidReason(session, request) != null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
+        }
+        return "session:" + uid;
+    }
+
+    private static String verifyKeycloakFileActor(String accessToken) {
+        String server = System.getenv().getOrDefault("KEYCLOAK_URI",
+                GlobalContext.getPropertyString("keycloak.uri", "http://localhost:8080"));
+        String realm = System.getenv().getOrDefault("KEYCLOAK_REALM",
+                GlobalContext.getPropertyString("keycloak.realm", "uengine"));
+        if (!realm.matches("[a-zA-Z0-9_.-]+")) {
+            throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "Invalid file execution identity configuration");
+        }
+
+        try {
+            URI endpoint = URI.create(server.replaceAll("/+$", "") + "/realms/" + realm + "/protocol/openid-connect/userinfo");
+            HttpRequest request = HttpRequest.newBuilder(endpoint)
+                    .header("Authorization", "Bearer " + accessToken)
+                    .timeout(Duration.ofSeconds(3)).GET().build();
+            HttpResponse<String> response = IDENTITY_CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
+            if (response.statusCode() == 200) {
+                JsonNode subject = IDENTITY_JSON.readTree(response.body()).path("sub");
+                if (subject.isTextual() && !subject.asText().isBlank()) return "keycloak:" + realm + ":" + subject.asText();
+            } else if (response.statusCode() >= 500 || response.statusCode() == 429) {
+                throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "File execution identity provider unavailable");
+            }
+        } catch (InterruptedException interrupted) {
+            Thread.currentThread().interrupt();
+            throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "File execution identity verification interrupted", interrupted);
+        } catch (IOException | IllegalArgumentException unavailable) {
+            throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "File execution identity provider unavailable", unavailable);
+        }
+        throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
     }
 
     private boolean rejectSessionAuth(HttpServletRequest req, HttpServletResponse res, String reason)

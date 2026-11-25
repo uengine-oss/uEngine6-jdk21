@@ -52,6 +52,7 @@ import org.uengine.modeling.resource.ContainerResource;
 import org.uengine.modeling.resource.DefaultResource;
 import org.uengine.modeling.resource.IContainer;
 import org.uengine.modeling.resource.IResource;
+import org.uengine.modeling.resource.LocalFileStorage;
 import org.uengine.modeling.resource.ResourceManager;
 import org.uengine.modeling.resource.Serializer;
 import org.uengine.modeling.resource.Version;
@@ -902,6 +903,7 @@ public class DefinitionServiceImpl implements DefinitionService, DefinitionXMLSe
 
     private void zipDirectory(File folder, String parentFolder, ZipOutputStream zipOutputStream) throws IOException {
         for (File file : folder.listFiles()) {
+            requireReleaseFileAvailable(file);
             if (file.isDirectory()) {
                 zipDirectory(file, parentFolder + "/" + file.getName(), zipOutputStream);
                 continue;
@@ -924,6 +926,7 @@ public class DefinitionServiceImpl implements DefinitionService, DefinitionXMLSe
                 String fileName = zipEntry.getName();
                 String filePath = fileName;
                 File newFile = new File(filePath);
+                requireReleaseFileAvailable(newFile);
 
                 System.out.println("Processing file: " + newFile.getAbsolutePath());
 
@@ -956,6 +959,16 @@ public class DefinitionServiceImpl implements DefinitionService, DefinitionXMLSe
         }
     }
 
+    private void requireReleaseFileAvailable(File file) throws IOException {
+        if (resourceManager.getStorage() instanceof LocalFileStorage storage) {
+            try {
+                storage.requireAvailable(file, false);
+            } catch (SecurityException error) {
+                throw new IOException("Release file uses a reserved storage path", error);
+            }
+        }
+    }
+
     private void addArchive(String fileName, String releaseName, String filePath) throws IOException {
         if (fileName.lastIndexOf('.') == -1)
             return;
@@ -964,12 +977,14 @@ public class DefinitionServiceImpl implements DefinitionService, DefinitionXMLSe
         if (".bpmn".equals(extension) || ".form".equals(extension)) {
             String folderName = fileName.replace(RESOURCE_ROOT + "/", "");
             File folder = new File(uploadPath, folderName);
+            requireReleaseFileAvailable(folder);
 
             if (!folder.exists() && !folder.mkdirs()) {
                 throw new IOException("폴더 생성 실패: " + folder.getAbsolutePath());
             }
             File sourceFile = new File(filePath);
             File targetReleaseFile = new File(uploadPath + folderName, releaseName + extension);
+            requireReleaseFileAvailable(targetReleaseFile);
             byte[] buffer = new byte[1024];
             try (FileInputStream fis = new FileInputStream(sourceFile);
                     FileOutputStream fos = new FileOutputStream(targetReleaseFile)) {

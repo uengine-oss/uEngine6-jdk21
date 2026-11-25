@@ -4,6 +4,7 @@
 package org.uengine.five.overriding;
 
 import org.uengine.five.service.WorkItemAssignmentStateService;
+import org.uengine.five.service.ExecutionRecords;
 import org.uengine.kernel.*;
 import org.uengine.kernel.bpmn.ServiceTask;
 import org.uengine.webservices.worklist.WorkList;
@@ -119,7 +120,8 @@ public class InstanceDataAppendingActivityFilter implements ActivityFilter, Seri
 					((DefaultActivity) activity).setTaskIds(instance, new String[] { taskId });
 				}
 
-				assignmentStateService.synchronize(Long.valueOf(instance.getRootProcessInstanceId()));
+				Long rootId = Long.valueOf(instance.getRootProcessInstanceId());
+				ExecutionRecords.runDatabaseEffect(rootId, () -> assignmentStateService.synchronize(rootId));
 
 			} catch (Exception e) {
 				e.printStackTrace();
@@ -214,7 +216,8 @@ public class InstanceDataAppendingActivityFilter implements ActivityFilter, Seri
 							processInstance.getProcessInstanceEntity(), rm);
 					processInstance.getProcessInstanceEntity().setInitComCd(rm.getCompanyId());
 				}
-				assignmentStateService.synchronize(Long.valueOf(instance.getRootProcessInstanceId()));
+				Long rootId = Long.valueOf(instance.getRootProcessInstanceId());
+				ExecutionRecords.runDatabaseEffect(rootId, () -> assignmentStateService.synchronize(rootId));
 			} catch (Exception e) {
 				e.printStackTrace();
 			}

@@ -17,14 +17,17 @@ public class ProcessTransactionAdvice {
     @Before("@annotation(processTransactional)")
     public void initiateTransaction(JoinPoint joinPoint, ProcessTransactional processTransactional) throws Exception {
         System.out.println("start tx");
-        new ProcessTransactionContext();
-        ProcessTransactionContext.getThreadLocalInstance().setCommitable(!processTransactional.readOnly());
+        ProcessTransactionContext context = new ProcessTransactionContext();
+        context.setAnnotatedBoundary();
+        context.setCommitable(!processTransactional.readOnly());
     }
 
     @AfterReturning("@annotation(processTransactional)")
     public void commitTransaction(JoinPoint joinPoint, ProcessTransactional processTransactional) throws Exception {
         if (!processTransactional.readOnly()) {
             ProcessTransactionContext.getThreadLocalInstance().commit();
+        } else {
+            ProcessTransactionContext.closeFileSimulationRead();
         }
         System.out.println("commit");
     }

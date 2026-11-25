@@ -26,9 +26,16 @@ import org.springframework.stereotype.Component;
 @Component
 public class LocalFileStorage extends AbstractStorage {
 
+    private Path reservedSubtree;
+
+    public void reserveSubtree(String relativePath) {
+        reservedSubtree = Path.of(getBasePath()).resolve(relativePath).toAbsolutePath().normalize();
+    }
+
     @Override
     public void delete(IResource fileResource) throws IOException {
         File file = getFile(fileResource);
+        requireAvailable(file, true);
 
         if (file.isDirectory()) {
             FileUtils.deleteDirectory(file);
@@ -40,23 +47,29 @@ public class LocalFileStorage extends AbstractStorage {
 
     @Override
     public void rename(IResource fileResource, String newName) {
-        getFile(fileResource).renameTo(new File(getTenantBasePath() + newName));
+        File source = getFile(fileResource);
+        File destination = resolveFile(newName);
+        requireAvailable(source, true);
+        requireAvailable(destination, true);
+        source.renameTo(destination);
     }
 
     @Override
     public void copy(IResource src, String desPath) throws IOException {
-        File destinationFile = new File(getTenantBasePath() + desPath);
+        File destinationFile = resolveFile(desPath);
         File sourceFile = getFile(src);
 
         if (sourceFile.isDirectory()) {
-            FileUtils.copyDirectory(getFile(src), destinationFile);
+            requireAvailable(sourceFile, true);
+            requireAvailable(destinationFile, true);
+            FileUtils.copyDirectory(sourceFile, destinationFile);
         } else {
             destinationFile.getParentFile().mkdirs();
 
             if (isDoNotOverwrite())
-                Files.copy(getFile(src).toPath(), destinationFile.toPath());
+                Files.copy(sourceFile.toPath(), destinationFile.toPath());
             else
-                Files.copy(getFile(src).toPath(), destinationFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+                Files.copy(sourceFile.toPath(), destinationFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
         }
 
     }
@@ -179,16 +192,35 @@ public class LocalFileStorage extends AbstractStorage {
     }
 
     private File getFile(IResource fileResource) {
-        String tenantBasePath = getTenantBasePath();
+        return resolveFile(fileResource.getPath());
+    }
 
-        return new File(tenantBasePath
-                + fileResource.getPath());
+    private File resolveFile(String relativePath) {
+        File file = new File(getTenantBasePath() + relativePath);
+        requireAvailable(file, false);
+        return file;
+    }
+
+    public void requireAvailable(File file, boolean includeAncestors) {
+        if (reservedSubtree == null) return;
+
+        try {
+            Path requested = file.getCanonicalFile().toPath();
+            Path reserved = reservedSubtree.toFile().getCanonicalFile().toPath();
+            if (requested.startsWith(reserved) || (includeAncestors && reserved.startsWith(requested))) {
+                throw new SecurityException("Reserved simulation storage");
+            }
+        } catch (IOException error) {
+            throw new java.io.UncheckedIOException("Cannot resolve the resource path", error);
+        }
     }
 
     @Override
     public void move(IResource src, IContainer container) throws IOException {
-        Path source = getFile(src).toPath();
-        Path target = new File(getTenantBasePath() + container.getPath() + "/" + src.getName()).toPath();
-        Files.move(source, target, REPLACE_EXISTING);
+        File source = getFile(src);
+        File target = resolveFile(container.getPath() + "/" + src.getName());
+        requireAvailable(source, true);
+        requireAvailable(target, true);
+        Files.move(source.toPath(), target.toPath(), REPLACE_EXISTING);
     }
 }

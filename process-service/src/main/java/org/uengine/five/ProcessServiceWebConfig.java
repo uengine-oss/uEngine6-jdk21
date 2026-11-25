@@ -1,21 +1,38 @@
 package org.uengine.five;
 
+import java.nio.charset.StandardCharsets;
+import java.util.Comparator;
+import java.util.List;
 import java.util.Map;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Scope;
 import org.springframework.data.spel.spi.EvaluationContextExtension;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.servlet.HandlerInterceptor;
 import org.springframework.web.servlet.config.annotation.EnableWebMvc;
+import org.springframework.web.servlet.handler.MappedInterceptor;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
+import org.springframework.web.util.UrlPathHelper;
+import org.uengine.five.entity.ProcessInstanceEntity;
+import org.uengine.five.entity.WorklistEntity;
+import org.uengine.five.framework.ProcessTransactionContext;
 import org.uengine.five.overriding.CLOBProcessInstance;
 import org.uengine.five.overriding.EmailServiceLocalImpl;
+import org.uengine.five.overriding.FileSimulationProcessInstance;
 // import org.uengine.five.overriding.AuditActivityFilter;
 import org.uengine.five.overriding.InstanceDataAppendingActivityFilter;
 import org.uengine.five.service.WorkItemAssignmentStateService;
 import org.uengine.five.overriding.InstanceServiceLocalImpl;
-import org.uengine.five.overriding.JPAProcessInstance;
 import org.uengine.five.overriding.JPAWorkList;
 import org.uengine.five.spring.TenantSecurityEvaluationContextExtension;
 import org.uengine.kernel.ActivityFilter;
@@ -92,6 +109,7 @@ public class ProcessServiceWebConfig {
         // storage.setBasePath("/Users/" + UserName);
 
         storage.setBasePath(basePath);
+        storage.reserveSubtree("definition/simulation");
 
         return storage;
     }
@@ -115,8 +133,23 @@ public class ProcessServiceWebConfig {
     @Scope("prototype")
     public ProcessInstance processInstance(ProcessDefinition procDefinition, String instanceId, Map<?, ?> options)
             throws Exception {
-        // return new JPAProcessInstance(procDefinition, instanceId, options);
+        if (usesFileSimulation(procDefinition, instanceId)) {
+            return new FileSimulationProcessInstance(procDefinition, instanceId, options);
+        }
         return new CLOBProcessInstance(procDefinition, instanceId, options);
+    }
+
+    private boolean usesFileSimulation(ProcessDefinition definition, String instanceId) throws Exception {
+        if (instanceId == null) {
+            return definition != null
+                    && ProcessTransactionContext.getThreadLocalInstance().getFileSimulationStorage(null) != null;
+        }
+        try {
+            return ProcessTransactionContext.isFileSimulationId(Long.valueOf(instanceId));
+        } catch (NumberFormatException ignored) {
+            // Let the existing instance loader report an invalid ID.
+            return false;
+        }
     }
 
     @Bean
@@ -127,6 +160,95 @@ public class ProcessServiceWebConfig {
     @Bean
     public WorkList workList() {
         return new JPAWorkList();
+    }
+
+    @Bean
+    MappedInterceptor fileSimulationRestReads(ObjectMapper objectMapper) {
+        ObjectMapper halMapper = objectMapper.copy().addMixIn(WorklistEntity.class, FileWorklistHal.class);
+        return new MappedInterceptor(
+                new String[] {"/worklist/search/findWorkListByInstId", "/instances/*"},
+                new FileSimulationRestReads(halMapper));
+    }
+
+    private interface FileWorklistHal {
+        @JsonIgnore
+        ProcessInstanceEntity getProcessInstance();
+    }
+
+    private record FileSimulationRestReads(ObjectMapper mapper) implements HandlerInterceptor {
+        private static final String WORKLIST_SEARCH = "/worklist/search/findWorkListByInstId";
+        private static final String INSTANCE_PREFIX = "/instances/";
+        private static final TypeReference<Map<String, Object>> HAL_BODY = new TypeReference<>() {};
+
+        @Override
+        public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler)
+                throws Exception {
+            if (!"GET".equals(request.getMethod())) return true;
+
+            String requestPath = UrlPathHelper.defaultInstance.getPathWithinApplication(request);
+            boolean worklistSearch = WORKLIST_SEARCH.equals(requestPath);
+            String requestId = worklistSearch ? request.getParameter("instId")
+                    : requestPath.startsWith(INSTANCE_PREFIX) ? requestPath.substring(INSTANCE_PREFIX.length()) : null;
+            Long id;
+            try {
+                id = Long.valueOf(requestId);
+            } catch (NumberFormatException ignored) {
+                return true;
+            }
+            if (!ProcessTransactionContext.isFileSimulationId(id)) return true;
+
+            ProcessTransactionContext context = ProcessTransactionContext.getThreadLocalInstance();
+            try (var storage = context.getFileSimulationStorage(id)) {
+                Map<String, Object> halBody;
+                if (worklistSearch) {
+                    List<Map<String, Object>> items = storage.findWorkItems(id).stream()
+                            .filter(item -> id.equals(item.getInstId()))
+                            .sorted(Comparator.comparing(WorklistEntity::getEndDate,
+                                    Comparator.nullsLast(Comparator.naturalOrder())))
+                            .map(item -> worklistHal(request, item))
+                            .toList();
+                    halBody = Map.of(
+                            "_embedded", Map.of("worklist", items),
+                            "_links", Map.of("self", link(ServletUriComponentsBuilder.fromRequest(request).build().toUriString())));
+                } else {
+                    var instance = storage.findInstance(id)
+                            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+                    String self = url(request, "/instances/" + id);
+                    halBody = mapper.convertValue(instance, HAL_BODY);
+                    halBody.put("_links", Map.of(
+                            "self", link(self),
+                            "processInstanceEntity", link(self),
+                            "workLists", link(self + "/workLists"),
+                            "roleMappings", link(self + "/roleMappings")));
+                }
+                response.setContentType("application/hal+json");
+                response.setCharacterEncoding(StandardCharsets.UTF_8.name());
+                response.setHeader("Cache-Control", "no-store");
+                mapper.writeValue(response.getOutputStream(), halBody);
+                return false;
+            } finally {
+                context.remove();
+            }
+        }
+
+        private Map<String, Object> worklistHal(HttpServletRequest request, WorklistEntity workItem) {
+            Map<String, Object> body = mapper.convertValue(workItem, HAL_BODY);
+            body.remove("taskId");
+            String self = url(request, "/worklist/" + workItem.getTaskId());
+            body.put("_links", Map.of(
+                    "self", link(self),
+                    "worklistEntity", link(self),
+                    "processInstance", link(self + "/processInstance")));
+            return body;
+        }
+
+        private static Map<String, String> link(String href) {
+            return Map.of("href", href);
+        }
+
+        private static String url(HttpServletRequest request, String path) {
+            return ServletUriComponentsBuilder.fromContextPath(request).path(path).build().toUriString();
+        }
     }
 
     /**

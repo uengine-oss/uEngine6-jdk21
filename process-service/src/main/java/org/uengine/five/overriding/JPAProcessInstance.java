@@ -4,6 +4,7 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 import jakarta.annotation.PostConstruct;
@@ -21,6 +22,7 @@ import org.uengine.five.framework.ProcessTransactionContext;
 import org.uengine.five.repository.ProcessInstanceRepository;
 import org.uengine.five.service.DefinitionServiceUtil;
 import org.uengine.five.service.InstanceServiceImpl;
+import org.uengine.five.service.TestDefinitionRegistry;
 import org.uengine.kernel.AbstractProcessInstance;
 import org.uengine.kernel.Activity;
 import org.uengine.kernel.DefaultProcessInstance;
@@ -209,7 +211,7 @@ public class JPAProcessInstance extends DefaultProcessInstance implements Transa
             return;
 
         if (isNewInstance()) { // if new instance, create one
-            processInstanceRepository.save(getProcessInstanceEntity());
+            saveInstanceEntity(getProcessInstanceEntity());
             if (getProcessInstanceEntity().getRootInstId() == null) {
                 getProcessInstanceEntity().setRootInstId(getProcessInstanceEntity().getInstId());
             }
@@ -223,9 +225,7 @@ public class JPAProcessInstance extends DefaultProcessInstance implements Transa
             
             try {
                 Long instanceId = Long.valueOf(instanceIdStr);
-                processInstanceRepository.findById(instanceId).ifPresent(entity -> {
-                    setProcessInstanceEntity(entity);
-                });
+                findInstanceEntity(instanceId).ifPresent(this::setProcessInstanceEntity);
             } catch (NumberFormatException e) {
                 throw new UEngineException("Invalid instance ID format: " + instanceIdStr + ". Expected a numeric value.", e);
             }
@@ -248,15 +248,26 @@ public class JPAProcessInstance extends DefaultProcessInstance implements Transa
         // applicationEventPublisher.publishEvent(new ProcessInstanceChangeEvent(this));
     }
 
+    protected Optional<ProcessInstanceEntity> findInstanceEntity(Long instanceId) throws Exception {
+        return processInstanceRepository.findById(instanceId);
+    }
+
+    protected void saveInstanceEntity(ProcessInstanceEntity entity) throws Exception {
+        processInstanceRepository.save(entity);
+    }
+
+    protected ProcessDefinition findTestDefinition(Long instanceId) throws Exception {
+        return TestDefinitionRegistry.get(instanceId == null ? null : instanceId.toString());
+    }
+
     @Override
     public ProcessDefinition getProcessDefinition() throws Exception {
         ProcessDefinition definition = super.getProcessDefinition();
         if (definition == null) {
             Long instIdLong = processInstanceEntity != null ? processInstanceEntity.getInstId() : null;
-            String instIdStr = instIdLong != null ? String.valueOf(instIdLong) : null;
-            ProcessDefinition fromRegistry = org.uengine.five.service.TestDefinitionRegistry.get(instIdStr);
-            if (fromRegistry != null) {
-                setProcessDefinition(fromRegistry);
+            ProcessDefinition testDefinition = findTestDefinition(instIdLong);
+            if (testDefinition != null) {
+                setProcessDefinition(testDefinition);
             } else {
                 setProcessDefinition((ProcessDefinition) definitionService.getDefinition(processInstanceEntity.getDefId(),
                         processInstanceEntity.getDefVerId()));
@@ -358,7 +369,7 @@ public class JPAProcessInstance extends DefaultProcessInstance implements Transa
 
     @Override
     public void beforeCommit(TransactionContext tx) throws Exception {
-        processInstanceRepository.save(getProcessInstanceEntity());
+        saveInstanceEntity(getProcessInstanceEntity());
         saveVariables();
     }
 
@@ -484,19 +495,19 @@ public class JPAProcessInstance extends DefaultProcessInstance implements Transa
                 pi.setFinishedDate(new Date());
                 saveVariables();
 
-                if (status.equals(Activity.STATUS_COMPLETED)
-                        && processCompletionWorkitemReconciler != null) {
-                    processCompletionWorkitemReconciler.reconcile(pi.getInstId());
-                }
-
-                // ── [HOOK] 메인 프로세스 인스턴스 종료 ───────────────────
-                // 서브프로세스 제외: isSubProcess=true 이면 BpmLifecycleService 내부에서 무시
-                if (bpmLifecycleService != null) {
-                    bpmLifecycleService.onProcessCompleted(pi);
-                }
+                afterProcessFinished(pi, status);
             }
         }
 
+    }
+
+    protected void afterProcessFinished(ProcessInstanceEntity instance, String status) throws Exception {
+        if (status.equals(Activity.STATUS_COMPLETED) && processCompletionWorkitemReconciler != null) {
+            processCompletionWorkitemReconciler.reconcile(instance.getInstId());
+        }
+        if (bpmLifecycleService != null) {
+            bpmLifecycleService.onProcessCompleted(instance);
+        }
     }
 
     public void stop(String status) throws Exception {

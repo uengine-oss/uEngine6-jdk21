@@ -69,6 +69,7 @@ public class DefinitionServiceApplication {
         // String userName = System.getenv("USER");
         // storage.setBasePath("/Users/" + userName);
         storage.setBasePath(basePath);
+        storage.reserveSubtree("definition/simulation");
         try {
             System.out.println("-------------------> " + storage.exists(new DefaultResource("."))
                     + " ---> file system is mounted.");

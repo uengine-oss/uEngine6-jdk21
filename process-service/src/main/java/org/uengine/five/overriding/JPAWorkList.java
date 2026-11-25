@@ -1,7 +1,6 @@
 package org.uengine.five.overriding;
 
 import org.uengine.hwlife.absence.AbsenceServiceImpl;
-import org.uengine.processmanager.ProcessTransactionContext;
 import org.uengine.kernel.ProcessInstance;
 import org.uengine.kernel.RoleResolutionContext;
 import org.uengine.kernel.DirectRoleResolutionContext;
@@ -10,6 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.uengine.five.entity.WorklistEntity;
 import org.uengine.five.lifecycle.BpmLifecycleService;
 import org.uengine.five.repository.WorklistRepository;
+import org.uengine.five.service.ExecutionRecords;
 import org.uengine.five.service.WorkItemAssignmentStateService;
 import org.uengine.kernel.KeyedParameter;
 import org.uengine.kernel.RoleMapping;
@@ -62,10 +62,40 @@ public class JPAWorkList implements WorkList {
     @Autowired
     AbsenceServiceImpl absenceService;
 
+    protected void prepareWorkItemStorage(Long instanceId) throws Exception {
+    }
+
+    protected WorklistEntity findWorkItem(Long taskId) throws Exception {
+        return worklistRepository.findById(taskId).orElseThrow();
+    }
+
+    protected WorklistEntity findReservedWorkItem(Long instanceId, Long taskId) throws Exception {
+        return findWorkItem(taskId);
+    }
+
+    protected WorklistEntity createWorkItem() {
+        WorklistEntity workItem = new WorklistEntity();
+        worklistRepository.save(workItem);
+        return workItem;
+    }
+
+    protected void saveWorkItem(WorklistEntity workItem) throws Exception {
+        worklistRepository.save(workItem);
+    }
+
+    @FunctionalInterface
+    protected interface DatabaseUpdate {
+        void run() throws Exception;
+    }
+
+    protected void applyDatabaseUpdates(DatabaseUpdate update) throws Exception {
+        update.run();
+    }
+
     void applyDirectAssignmentAgent(RoleMapping mapping, Map parameters, boolean reservation,
                                     TransactionContext tc) throws Exception {
         if (reservation || mapping == null || !UEngineUtil.isNotEmpty(mapping.getEndpoint())
-                || !(tc instanceof ProcessTransactionContext processTc)) return;
+                || !(tc instanceof org.uengine.processmanager.ProcessTransactionContext processTc)) return;
         ProcessInstance instance = processTc.getProcessInstanceInTransaction(
                 String.valueOf(parameters.get(KeyedParameter.INSTANCEID)));
         if (instance == null || !(instance.getProcessDefinition().getActivity(
@@ -88,7 +118,9 @@ public class JPAWorkList implements WorkList {
 
         try{
 
-            applyDirectAssignmentAgent(roleMapping, parameterMap, isReservation, tc);
+            Long instId = Long.valueOf(String.valueOf(parameterMap.get(KeyedParameter.INSTANCEID)));
+            prepareWorkItemStorage(instId);
+            applyDatabaseUpdates(() -> applyDirectAssignmentAgent(roleMapping, parameterMap, isReservation, tc));
             Calendar startDate = Calendar.getInstance();
 
             if(parameterMap.containsKey("startedTime")){
@@ -134,16 +166,13 @@ public class JPAWorkList implements WorkList {
 
             final WorklistEntity wl;
 
-            Long taskId;
             if(reservedTaskId!=null){
-                taskId = new Long(reservedTaskId);
-                wl = worklistRepository.findById(taskId).get();
+                Long taskId = Long.valueOf(reservedTaskId);
+                ExecutionRecords.requireSameStorage(instId, taskId);
+                wl = findReservedWorkItem(instId, taskId);
             }
             else{
-                wl = new WorklistEntity();
-                worklistRepository.save(wl);
-
-                taskId = wl.getTaskId();
+                wl = createWorkItem();
             }
 
             if(dueDate!=null)
@@ -167,7 +196,7 @@ public class JPAWorkList implements WorkList {
 
             wl.setTitle(""+parameterMap.get(KeyedParameter.TITLE));
             wl.setTrcTag(""+parameterMap.get(KeyedParameter.TRACINGTAG));
-            wl.setInstId(new Long(""+parameterMap.get(KeyedParameter.INSTANCEID)));
+            wl.setInstId(instId);
             wl.setRootInstId(new Long(""+parameterMap.get(KeyedParameter.ROOTINSTANCEID)));
             wl.setDefId(""+parameterMap.get(KeyedParameter.PROCESSDEFINITION));
             wl.setDefName(""+parameterMap.get(KeyedParameter.PROCESSDEFINITIONNAME));
@@ -272,21 +301,20 @@ public class JPAWorkList implements WorkList {
             wl.setStatus(defaultStatus);
             //
 
-            worklistRepository.save(wl);
+            saveWorkItem(wl);
+            applyDatabaseUpdates(() -> {
+                if (assignmentStateService != null) {
+                    Long rootInstId = wl.getRootInstId() != null ? wl.getRootInstId() : wl.getInstId();
+                    assignmentStateService.initializeFirstUnitHandler(wl);
+                    assignmentStateService.synchronize(rootInstId);
+                }
+                // endpoint 가 있으면 즉시 배정 확정. 경합(endpoint=null)은 claim 시 발행.
+                if (bpmLifecycleService != null) {
+                    bpmLifecycleService.onTaskAssigned(wl, tc);
+                }
+            });
 
-            if (assignmentStateService != null) {
-                Long rootInstId = wl.getRootInstId() != null ? wl.getRootInstId() : wl.getInstId();
-                assignmentStateService.initializeFirstUnitHandler(wl);
-                assignmentStateService.synchronize(rootInstId);
-            }
-
-            // ── [HOOK] 업무 배정 (최초) ──────────────────────────────────
-            // endpoint 가 있으면 즉시 배정 확정. 경합(endpoint=null)은 claim 시 발행.
-            if (bpmLifecycleService != null) {
-                bpmLifecycleService.onTaskAssigned(wl, tc);
-            }
-
-            return ""+taskId;
+            return String.valueOf(wl.getTaskId());
 
         }catch(Exception e){
 
@@ -301,7 +329,8 @@ public class JPAWorkList implements WorkList {
 
         try{
 
-            WorklistEntity wl = worklistRepository.findById(new Long(taskID)).get();
+            Long id = Long.valueOf(taskID);
+            WorklistEntity wl = findWorkItem(id);
 
             if(wl==null) return;
 
@@ -318,12 +347,8 @@ public class JPAWorkList implements WorkList {
                 }
             }
 
-            worklistRepository.save(wl);
-
-            // ── [HOOK] 업무 종료 (취소·스킵) ──────────────────────────────
-            if (bpmLifecycleService != null) {
-                bpmLifecycleService.onTaskTerminated(wl, tc);
-            }
+            saveWorkItem(wl);
+            applyDatabaseUpdates(() -> notifyTaskTerminated(wl, tc));
 
         }catch(Exception e){
             throw new RemoteException("ExtWorkList", e);
@@ -335,7 +360,8 @@ public class JPAWorkList implements WorkList {
 
         try{
 
-            WorklistEntity wl = worklistRepository.findById(new Long(taskID)).get();
+            Long id = Long.valueOf(taskID);
+            WorklistEntity wl = findWorkItem(id);
 
             if(wl==null) return;
 
@@ -352,12 +378,8 @@ public class JPAWorkList implements WorkList {
                 }
             }
 
-            worklistRepository.save(wl);
-
-            // ── [HOOK] 업무 종료 (보상) ────────────────────────────────────
-            if (bpmLifecycleService != null) {
-                bpmLifecycleService.onTaskTerminated(wl, tc);
-            }
+            saveWorkItem(wl);
+            applyDatabaseUpdates(() -> notifyTaskTerminated(wl, tc));
 
         }catch(Exception e){
             throw new RemoteException("ExtWorkList", e);
@@ -370,20 +392,18 @@ public class JPAWorkList implements WorkList {
         try{
             Calendar now = Calendar.getInstance();
 
-            WorklistEntity wl = worklistRepository.findById(new Long(taskID)).get();
+            Long id = Long.valueOf(taskID);
+            WorklistEntity wl = findWorkItem(id);
             wl.setStatus(DefaultWorkList.WORKITEM_STATUS_COMPLETED);
             wl.setEndDate(new Timestamp(now.getTimeInMillis()));
 
-            worklistRepository.save(wl);
-
-            if (assignmentStateService != null) {
-                assignmentStateService.completeUnitWork(wl);
-            }
-
-            // ── [HOOK] 업무 종료 (정상 완료) ──────────────────────────────
-            if (bpmLifecycleService != null) {
-                bpmLifecycleService.onTaskTerminated(wl, tc);
-            }
+            saveWorkItem(wl);
+            applyDatabaseUpdates(() -> {
+                if (assignmentStateService != null) {
+                    assignmentStateService.completeUnitWork(wl);
+                }
+                notifyTaskTerminated(wl, tc);
+            });
 
         }catch(Exception e){
             throw new RemoteException("ExtWorkList", e);
@@ -399,7 +419,8 @@ public class JPAWorkList implements WorkList {
 
         try{
 
-            WorklistEntity wlDAO = worklistRepository.findById(new Long(taskId)).get();
+            Long id = Long.valueOf(taskId);
+            WorklistEntity wlDAO = findWorkItem(id);
 
             // 변경 전 endpoint 기억 (배정 변경 감지용)
             String previousEndpoint = wlDAO.getEndpoint();
@@ -432,27 +453,32 @@ public class JPAWorkList implements WorkList {
                 }
             }
 
-            worklistRepository.save(wlDAO);
-
-            if (bpmLifecycleService != null) {
-                boolean delegatedTermination =
-                        DefaultWorkList.WORKITEM_STATUS_DELEGATED.equalsIgnoreCase(terminateStatus);
-                String newEndpoint = wlDAO.getEndpoint();
-                boolean endpointChanged = UEngineUtil.isNotEmpty(newEndpoint)
-                        && !Objects.equals(newEndpoint, previousEndpoint);
-
-                if (delegatedTermination) {
-                    // 완전 위임: 원 workitem DELEGATED 종료 (신규 workitem은 executeActivity에서 별도 생성)
-                    bpmLifecycleService.onTaskTerminated(wlDAO, tc);
-                } else if (endpointChanged) {
-                    // 원소유 유지 위임·담당자 재배정: endpoint 변경만 (DRAFT 저장 등은 제외)
-                    bpmLifecycleService.onTaskAssignmentChanged(wlDAO, tc);
-                }
-                // 그 외(DRAFT·dispatchOption·dueDate 변경 등): lifecycle 알림 없음
-            }
+            saveWorkItem(wlDAO);
+            String updatedStatus = terminateStatus;
+            applyDatabaseUpdates(() -> notifyTaskUpdated(wlDAO, tc, updatedStatus, previousEndpoint));
 
         }catch(Exception e){
             throw new RemoteException("ExtWorkList", e);
+        }
+    }
+
+    private void notifyTaskTerminated(WorklistEntity workItem, TransactionContext tc) {
+        if (bpmLifecycleService != null) {
+            bpmLifecycleService.onTaskTerminated(workItem, tc);
+        }
+    }
+
+    private void notifyTaskUpdated(WorklistEntity workItem, TransactionContext tc, String status,
+                                   String previousEndpoint) {
+        if (bpmLifecycleService == null) return;
+
+        if (DefaultWorkList.WORKITEM_STATUS_DELEGATED.equalsIgnoreCase(status)) {
+            // 완전 위임: 원 workitem DELEGATED 종료. 신규 workitem은 executeActivity에서 생성한다.
+            bpmLifecycleService.onTaskTerminated(workItem, tc);
+        } else if (UEngineUtil.isNotEmpty(workItem.getEndpoint())
+                && !Objects.equals(workItem.getEndpoint(), previousEndpoint)) {
+            // 원소유 유지 위임·담당자 재배정에서 endpoint가 변경된 경우만 발행한다.
+            bpmLifecycleService.onTaskAssignmentChanged(workItem, tc);
         }
     }
 

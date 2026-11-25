@@ -309,8 +309,10 @@ public class InstanceServiceImpl implements InstanceService {
         if (definition instanceof ProcessDefinition) {
             ProcessDefinition processDefinition = (ProcessDefinition) definition;
             org.uengine.five.dto.ProcessVariableValue[] processVariableValues = command.getProcessVariableValues();
-            Serializable[] startupValues = prepareStartupValues(processDefinition, processVariableValues, simulation);
+            Serializable[] startupValues = prepareStartupValues(processDefinition, processVariableValues,
+                    simulation || command.isParseStartupInputs());
 
+            ExecutionRecords.begin(simulation);
             try {
                 // org.uengine.kernel.ProcessInstance instance =
                 // AbstractProcessInstance.create(processDefinition, command.getInstanceName(),
@@ -370,6 +372,7 @@ public class InstanceServiceImpl implements InstanceService {
                 executeWithInitiationPermission(instance, simulation);
                 if (definitionXml != null && !definitionXml.isEmpty()) {
                     TestDefinitionRegistry.put(instance.getInstanceId(), processDefinition);
+                    executionRecords(Long.valueOf(instance.getInstanceId())).saveDefinitionXml(definitionXml);
                 }
                 try {
                     return new InstanceResource(instance);
@@ -394,7 +397,7 @@ public class InstanceServiceImpl implements InstanceService {
     }
 
     private static Serializable[] prepareStartupValues(ProcessDefinition definition,
-            org.uengine.five.dto.ProcessVariableValue[] variables, boolean simulation) {
+            org.uengine.five.dto.ProcessVariableValue[] variables, boolean parseStartupInputs) {
         if (variables == null) return new Serializable[0];
         Serializable[] values = new Serializable[variables.length];
         for (int i = 0; i < variables.length; i++) {
@@ -403,7 +406,7 @@ public class InstanceServiceImpl implements InstanceService {
             if (name == null) continue;
             Serializable[] supplied = variable.getValues();
             Serializable value = supplied != null && supplied.length > 0 ? supplied[0] : null;
-            ProcessVariable declared = simulation && value instanceof String ? definition.getProcessVariable(name) : null;
+            ProcessVariable declared = parseStartupInputs && value instanceof String ? definition.getProcessVariable(name) : null;
             values[i] = declared != null && name.equalsIgnoreCase(declared.getName())
                     ? convertSimulationStartupValue(declared, value) : value;
         }
@@ -615,6 +618,7 @@ public class InstanceServiceImpl implements InstanceService {
     //   롤백되어 추가 stop이 불필요.
     @RequestMapping(value = "/instance/{instanceId}", method = RequestMethod.DELETE, produces = "application/json;charset=UTF-8")
     @Transactional
+    @ProcessTransactional
     public void deleteInstance(@PathVariable("instanceId") String instanceId) throws Exception {
         Long instId;
         try {
@@ -622,24 +626,13 @@ public class InstanceServiceImpl implements InstanceService {
         } catch (NumberFormatException e) {
             return;
         }
-
-        try {
-            List<WorklistEntity> worklists = processInstanceRepository.findAllWorklistsByRootInstId(instId);
-            if (worklists != null && !worklists.isEmpty()) {
-                worklistRepository.deleteAll(worklists);
-            }
-        } catch (Exception ignored) {
-        }
-
-        if (processInstanceRepository.existsById(instId)) {
-            processInstanceRepository.deleteById(instId);
-        }
-
+        executionRecords(instId).delete();
         TestDefinitionRegistry.remove(instanceId);
     }
 
     @RequestMapping(value = "/instance/{instanceId}/delete", method = RequestMethod.POST, produces = "application/json;charset=UTF-8")
     @Transactional
+    @ProcessTransactional
     public void deleteInstancePost(@PathVariable("instanceId") String instanceId) throws Exception {
         deleteInstance(instanceId);
     }
@@ -1181,8 +1174,7 @@ public class InstanceServiceImpl implements InstanceService {
     public ResponseEntity<List<WorklistEntity>> getRunningTaskId(@PathVariable("instanceId") String instanceId)
             throws Exception {
 
-        List<WorklistEntity> worklistEntity = worklistRepository
-                .findCurrentWorkItemByInstId(Long.parseLong(instanceId));
+        List<WorklistEntity> worklistEntity = findRunningWorkItems(Long.parseLong(instanceId));
 
         return ResponseEntity.ok(worklistEntity);
     }
@@ -1192,8 +1184,7 @@ public class InstanceServiceImpl implements InstanceService {
     public ResponseEntity<List<WorklistEntity>> getCompletedTaskId(@PathVariable("instanceId") String instanceId)
             throws Exception {
 
-        List<WorklistEntity> worklistEntity = worklistRepository
-                .findWorkListByInstId(Long.parseLong(instanceId));
+        List<WorklistEntity> worklistEntity = executionRecords(Long.valueOf(instanceId)).forInstance();
 
         return ResponseEntity.ok(worklistEntity);
     }
@@ -1205,8 +1196,7 @@ public class InstanceServiceImpl implements InstanceService {
     @RequestMapping(value = "/instance/{instanceId}/worklists", method = RequestMethod.GET, produces = "application/json;charset=UTF-8")
     @ProcessTransactional(readOnly = true)
     public ResponseEntity<List<WorklistEntity>> getAllTasksByInstanceId(@PathVariable("instanceId") String instanceId) {
-        Long rootInstId = Long.parseLong(instanceId);
-        List<WorklistEntity> tasks = processInstanceRepository.findAllWorklistsByRootInstId(rootInstId);
+        List<WorklistEntity> tasks = executionRecords(Long.valueOf(instanceId)).forRoot();
 
         return ResponseEntity.ok(tasks);
     }
@@ -1351,7 +1341,7 @@ public class InstanceServiceImpl implements InstanceService {
         }
 
         instance.putRoleMapping(roleName, rm);
-        assignmentStateService.synchronize(Long.valueOf(instanceId));
+        synchronizeAssignment(Long.valueOf(instanceId));
 
         return rm;
     }
@@ -1395,7 +1385,7 @@ public class InstanceServiceImpl implements InstanceService {
         instance.putRoleMapping(roleName, currentMapping);
 
         // BPM_PROCINST.curr_ep 동기화 (POST/PUT 공용 헬퍼)
-        assignmentStateService.synchronize(Long.valueOf(instanceId));
+        synchronizeAssignment(Long.valueOf(instanceId));
 
         return currentMapping;
     }
@@ -1409,6 +1399,11 @@ public class InstanceServiceImpl implements InstanceService {
 
     @GetMapping("/instance/{instanceId}")
     public ProcessInstance getProcessInstanceLocal(@PathVariable("instanceId") String instanceId) {
+        try {
+            ExecutionRecords.requireAccess(Long.valueOf(instanceId));
+        } catch (NumberFormatException ignored) {
+            // Preserve the existing instance loader's validation for nonnumeric IDs.
+        }
 
         ProcessInstance instance = ProcessTransactionContext.getThreadLocalInstance()
                 .getProcessInstanceInTransaction(instanceId);
@@ -1420,6 +1415,22 @@ public class InstanceServiceImpl implements InstanceService {
                 new Object[] { null, instanceId, null });
         return instance;
 
+    }
+
+    private ExecutionRecords.Records executionRecords(Long id) {
+        return ExecutionRecords.forId(id, processInstanceRepository, worklistRepository);
+    }
+
+    private void synchronizeAssignment(Long instanceId) {
+        ExecutionRecords.runDatabaseEffect(instanceId, () -> assignmentStateService.synchronize(instanceId));
+    }
+
+    private List<WorklistEntity> findRunningWorkItems(Long rootId) {
+        return executionRecords(rootId).running();
+    }
+
+    private java.util.Optional<WorklistEntity> findExecutionWorkItem(Long taskId, boolean lock) {
+        return executionRecords(taskId).workItem(lock);
     }
 
     final static String SERVICES_ROOT = "services";
@@ -1774,10 +1785,12 @@ public class InstanceServiceImpl implements InstanceService {
     }
 
     @RequestMapping(value = "/work-item/{taskId}", method = RequestMethod.GET, produces = "application/json;charset=UTF-8")
+    @ProcessTransactional(readOnly = true)
     public WorkItemResource getWorkItem(@PathVariable("taskId") String taskId) throws Exception {
         if (taskId == null || taskId.equals("null"))
             return null;
-        WorklistEntity worklistEntity = worklistRepository.findById(new Long(taskId)).get();
+        WorklistEntity worklistEntity = findExecutionWorkItem(Long.valueOf(taskId), false)
+                .orElseThrow(ResourceNotFoundException::new);
         if (worklistEntity == null) {
             throw new Exception("No such work item where taskId = " + taskId);
         }
@@ -1946,7 +1959,8 @@ public class InstanceServiceImpl implements InstanceService {
     public void putWorkItem(@PathVariable("taskId") String taskId, @RequestBody WorkItemResource workItem)
             throws Exception {
 
-        WorklistEntity worklistEntity = worklistRepository.findById(new Long(taskId)).get();
+        WorklistEntity worklistEntity = findExecutionWorkItem(Long.valueOf(taskId), false)
+                .orElseThrow(ResourceNotFoundException::new);
         // WorkItemAccess.requireVisible(worklistEntity, currentActorEndpoint());
 
         String instanceId = worklistEntity.getInstId().toString();
@@ -2200,7 +2214,7 @@ public class InstanceServiceImpl implements InstanceService {
     @Transactional(rollbackFor = { Exception.class })
     void completeWorkItemInternal(String taskId, WorkItemResource workItem, String isSimulate) throws Exception {
         System.out.println("[InstanceServiceImpl] completeWorkItemInternal: starting for taskId=" + taskId);
-        WorklistEntity worklistEntity = worklistRepository.findByIdForUpdate(Long.valueOf(taskId))
+        WorklistEntity worklistEntity = findExecutionWorkItem(Long.valueOf(taskId), true)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
                         "No such work item where taskId = " + taskId));
         String actorEndpoint = currentActorEndpoint();
@@ -2222,14 +2236,13 @@ public class InstanceServiceImpl implements InstanceService {
             throw new UEngineException("Illegal completion for workitem [" + humanActivity + ":"
                     + humanActivity.getStatus(instance) + "]: Already closed or illegal status.");
         }
-        // ObjectMapper objectMapper = new ObjectMapper();
-        // String workItemJson = objectMapper.writeValueAsString(workItem);
-        writeToFile(instance.getProcessDefinition().getId() + "/" + humanActivity.getTracingTag() + ".json",
-                workItem);
-
-        if ("true".equals(isSimulate)) {
-            writeToFileRecord(instance.getProcessDefinition().getId() + "/record/" + instance.getInstanceId() + ".json",
-                    humanActivity.getTracingTag(), humanActivity.getName(), workItem);
+        if (!ProcessTransactionContext.isFileSimulationId(worklistEntity.getInstId())) {
+            String definitionId = instance.getProcessDefinition().getId();
+            writeToFile(definitionId + "/" + humanActivity.getTracingTag() + ".json", workItem);
+            if ("true".equals(isSimulate)) {
+                writeToFileRecord(definitionId + "/record/" + instance.getInstanceId() + ".json",
+                        humanActivity.getTracingTag(), humanActivity.getName(), workItem);
+            }
         }
 
         // map the argument list to variables change list
@@ -2277,7 +2290,7 @@ public class InstanceServiceImpl implements InstanceService {
             completeWorkItemInternal(taskId, workItem, isSimulate != null ? isSimulate : "false");
             return null;
         }
-        WorklistEntity we = worklistRepository.findById(Long.valueOf(taskId)).orElse(null);
+        WorklistEntity we = findExecutionWorkItem(Long.valueOf(taskId), false).orElse(null);
         if (we == null)
             return null;
         String instanceId = we.getInstId().toString();
@@ -2397,7 +2410,7 @@ public class InstanceServiceImpl implements InstanceService {
             throw new IllegalArgumentException("Invalid instanceId format: " + instanceId, e);
         }
 
-        List<WorklistEntity> worklistEntities = worklistRepository.findCurrentWorkItemByInstId(rootInstId);
+        List<WorklistEntity> worklistEntities = findRunningWorkItems(rootInstId);
         if (worklistEntities == null || worklistEntities.isEmpty()) {
             throw new IllegalArgumentException("No current work items found for instanceId: " + instanceId);
         }

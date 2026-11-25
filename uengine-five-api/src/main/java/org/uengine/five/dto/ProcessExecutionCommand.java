@@ -10,6 +10,7 @@ public class ProcessExecutionCommand implements Serializable {
 
     private String instanceName;
     private boolean simulation;
+    private boolean parseStartupInputs;
 
     private RoleMapping[] roleMappings;
     private ProcessVariableValue[] processVariableValues;
@@ -89,6 +90,14 @@ public class ProcessExecutionCommand implements Serializable {
 
     public void setSimulation(boolean simulation) {
         this.simulation = simulation;
+    }
+
+    public boolean isParseStartupInputs() {
+        return parseStartupInputs;
+    }
+
+    public void setParseStartupInputs(boolean parseStartupInputs) {
+        this.parseStartupInputs = parseStartupInputs;
     }
 
     public String getGroup() {
